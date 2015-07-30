@@ -44,6 +44,15 @@ class WooCommerceESPlugin {
 
 		add_filter( 'load_textdomain_mofile', array( $this, 'load_mo_file' ), 10, 2 );
 
+        /* EU VAT */
+	    add_filter( 'woocommerce_billing_fields' , array( $this, 'woocommerce_add_billing_fields' ) );	
+        add_filter( 'woocommerce_shipping_fields' , array( $this, 'woocommerce_add_shipping_fields' ) );
+        add_filter( 'woocommerce_admin_billing_fields', 
+                   array( $this, 'woocommerce_add_billing_shipping_fields_admin') );
+        add_filter( 'woocommerce_admin_shipping_fields', 
+                   array( $this, 'woocommerce_add_billing_shipping_fields_admin') );
+        add_filter( 'woocommerce_load_order_data', 
+                   array( $this, 'woocommerce_add_var_load_order_data') );
 		/*
 		 * WooThemes/WooCommerce don't execute the load_plugin_textdomain() in the 'init'
 		 * action, therefor we have to make sure this plugin will load first
@@ -79,9 +88,9 @@ class WooCommerceESPlugin {
 	public function plugins_loaded() {
 		$rel_path = dirname( plugin_basename( $this->file ) ) . '/languages/';
 
-		// Load plugin text domain - WooCommerce Gravity Forms
+		// Load plugin text domain - WooCommerce ES
 		// WooCommerce mixed use of 'wc_gf_addons' and 'wc_gravityforms'
-		load_plugin_textdomain( 'wc_gravityforms', false, $rel_path );
+		load_plugin_textdomain( 'wces', false, $rel_path );
 	}
 
 	////////////////////////////////////////////////////////////
@@ -107,13 +116,13 @@ class WooCommerceESPlugin {
 		if ( $this->is_spa ) {
 			$domains = array(
 				// @see https://github.com/woothemes/woocommerce/tree/v2.0.5
-				'woocommerce'                => array(
+				/*'woocommerce'                => array(
 					'i18n/languages/woocommerce-es_ES.mo'       => 'woocommerce/es_ES.mo',
 					'i18n/languages/woocommerce-admin-es_ES.mo' => 'woocommerce/admin-es_ES.mo'
 				),
 				'wc_eu_vat_number'           => array(
 					'wc_eu_vat_number-es_ES.mo'                 => 'woocommerce-eu-vat-number/es_ES.mo'
-				),
+				),*/
 				'woocommerce-shipping-table-rate'               => array(
 					'languages/woocommerce-shipping-table-rate-es_ES.mo'           => 'woocommerce-shipping-table-rate/es_ES.mo'
 				),
@@ -148,6 +157,80 @@ class WooCommerceESPlugin {
 
 		return $mo_file;
 	}
+    
+    
+    //EU VAT
+    /**
+     * Insert element before of a specific array position
+     * 
+     * @return array
+     * @since 1.0.0
+     */
+	public function array_splice_assoc( &$source, $need, $previous ) {
+	    $return = array();
+	    
+	    foreach( $source as $key => $value ) {
+	        if( $key == $previous ) {
+                $need_key = array_keys( $need );
+                $key_need = array_shift( $need_key );
+	            $value_need = $need[$key_need];
+	            
+	            $return[$key_need] = $value_need;
+	        }
+	        
+	        $return[$key] = $value;
+	    }
+	    
+	    $source = $return;
+	}
+
+	public function woocommerce_add_billing_fields( $fields ) {
+		$fields['billing_company']['class'] = array('form-row-first');
+		$fields['billing_company']['clear'] = false;
+        //$fields['billing_country']['clear'] = true;
+		$field = array('billing_vat' => array(
+	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
+		    'placeholder' => apply_filters( 'vatssn_label_x', _x('VAT No', 'placeholder', 'wces') ),
+		    'required'    => false,
+		    'class'       => array('form-row-last'),
+		    'clear'       => true
+	     ));
+
+		$this->array_splice_assoc( $fields, $field, 'billing_address_1');
+		return $fields;
+	}
+
+
+	public function woocommerce_add_shipping_fields( $fields ) {
+		$fields['shipping_company']['class'] = array('form-row-first');
+		$fields['shipping_company']['clear'] = false;
+        //$fields['shipping_country']['clear'] = true;
+		$field = array('shipping_vat' => array(
+	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
+		    'placeholder' => apply_filters( 'vatssn_label_x', _x('VAT No', 'placeholder', 'wces') ),
+		    'required'    => false,
+		    'class'       => array('form-row-last'),
+		    'clear'       => true
+	     ));
+
+		$this->array_splice_assoc( $fields, $field, 'shipping_address_1');
+		return $fields;
+	}
+
+    public function woocommerce_add_billing_shipping_fields_admin( $fields ) {
+        $fields['vat'] = array(
+            'label' => apply_filters( 'vatssn_label', __('VAT No', 'wces') )
+        );
+
+        return $fields;
+    }
+
+    public function woocommerce_add_var_load_order_data( $fields ) {
+        $fields['billing_vat'] = '';
+        $fields['shipping_vat'] = '';
+        return $fields;
+    }
+    /* END EU VAT*/
 }
 
 global $woocommerce_es_plugin;
