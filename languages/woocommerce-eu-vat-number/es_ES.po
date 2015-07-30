@@ -1,0 +1,85 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Woocommerce EU VAT Number\n"
+"POT-Creation-Date: 2013-10-21 10:01+0100\n"
+"PO-Revision-Date: 2013-10-21 10:05+0100\n"
+"Last-Translator: David <david@closemarketing.es>\n"
+"Language-Team: Closemarketing <david@closemarketing.es>\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.7\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;_e;__\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: ..\n"
+
+#: ../eu-vat-number.php:63
+msgid "EU VAT Title"
+msgstr "Título EU VAT"
+
+#: ../eu-vat-number.php:64
+msgid "The title that appears at checkout above the VAT Number box."
+msgstr "Este título aparece en el Pedido después de la caja del número CIF/NIF"
+
+#: ../eu-vat-number.php:69
+msgid "EU VAT Message"
+msgstr "Mensaje EU VAT"
+
+#: ../eu-vat-number.php:70
+msgid "The message that appears at checkout above the VAT Number box."
+msgstr ""
+"Este es el mensaje que aparece en el Pedido después de la caja del número "
+"CIF/NIF"
+
+#: ../eu-vat-number.php:76
+msgid "Show field for base country"
+msgstr "Mostrar el Código basado en el País"
+
+#: ../eu-vat-number.php:77
+msgid "Show the VAT field even when the customer is in your base country"
+msgstr ""
+"Mostrar el campo CIF/NIF incluso cuando el cliente está basado en el país "
+"centrado"
+
+#: ../eu-vat-number.php:82
+msgid "Deduct VAT for base country"
+msgstr "Deducir el VAT basado en el País"
+
+#: ../eu-vat-number.php:83
+msgid ""
+"Deduct the VAT even when the customer is in your base country and has a "
+"valid number"
+msgstr ""
+"Deducir el Impuesto incluso cuando el cliente está basado en el mismo País "
+"de la tienda y tiene un número correcto CIF/NIF."
+
+#: ../eu-vat-number.php:90
+msgid "EU VAT Number"
+msgstr "NIF/CIF"
+
+#: ../eu-vat-number.php:91
+msgid ""
+"If you are in the EU and have a valid EU VAT registration number please "
+"enter it below."
+msgstr ""
+"Si estás en Europa y tíenes un número NIF/CIF válido, introdúcelo a "
+"continuación."
+
+#: ../eu-vat-number.php:153 ../eu-vat-number.php:154
+msgid "VAT Number"
+msgstr "NIF/CIF"
+
+#: ../eu-vat-number.php:283
+#, php-format
+msgid ""
+"You cannot use a VAT number since your country (%s) is outside of the EU."
+msgstr ""
+"No puedes utilizar dicho CIF/NIF porque está basado en el país (%s) que está "
+"fuera de Europa."
+
+#: ../eu-vat-number.php:325
+#, php-format
+msgid "You have entered an invalid VAT number (%s) for your country."
+msgstr "Has introducido un número incorrecto de CIF/NIF (%s)."

@@ -1,0 +1,455 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Woocommerce Shipping Table Rate\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: \n"
+"Last-Translator: David <david@closemarketing.es>\n"
+"Language-Team: Closemarketing <david@closemarketing.es>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;"
+"_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2\n"
+"X-Textdomain-Support: yes\n"
+"Language: es_ES\n"
+"X-Generator: Poedit 1.6.3\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SearchPath-0: .\n"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:59
+msgid "Table rates"
+msgstr "Tarifas"
+
+# @ woothemes
+# @ wc_table_rate
+#: shipping-table-rate.php:113 shipping-table-rate.php:229
+msgid "Enable/Disable"
+msgstr "Habilitar/Deshabilitar"
+
+# @ woothemes
+#: shipping-table-rate.php:115
+msgid "Enable Table Rate shipping"
+msgstr "Habilitar Tarifa de envio"
+
+# @ woothemes
+#: shipping-table-rate.php:119
+msgid "Method Title"
+msgstr "Título del método"
+
+# @ woothemes
+#: shipping-table-rate.php:121
+msgid "This controls the title which the user sees during checkout."
+msgstr "Los Controles del título"
+
+# @ woothemes
+#: shipping-table-rate.php:122
+msgid "Table Rate"
+msgstr "Tarifa"
+
+# @ woothemes
+#: shipping-table-rate.php:125
+msgid "Tax Status"
+msgstr "Estado Impuesto"
+
+# @ woothemes
+#: shipping-table-rate.php:130
+msgid "Taxable"
+msgstr "Imponible"
+
+# @ woothemes
+# @ wc_table_rate
+#: shipping-table-rate.php:131 shipping-table-rate.php:278
+#: shipping-table-rate.php:371
+msgid "None"
+msgstr "Ninguno"
+
+# @ woothemes
+#: shipping-table-rate.php:135
+msgid "Handling Fee"
+msgstr "Coste Manipulación"
+
+# @ woothemes
+#: shipping-table-rate.php:137
+msgid ""
+"Fee excluding tax. Enter an amount, e.g. 2.50, or a percentage, e.g. 5%. "
+"Leave blank to disable."
+msgstr ""
+"Coste excluyendo impuesto. Introduce una cantidad, ej 2.50, o un porcentaje, "
+"ej. 5%. Deja en blanco para deshabilitarlo."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:153
+msgid "Table Rates"
+msgstr "Tabla Tarifas"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:154
+msgid ""
+"Table rates let you calculate shipping costs based on weight, price, or "
+"items vs destination."
+msgstr ""
+"Las Tablas de Tarifas permiten calcular los costes de envío basados en peso, "
+"precio, o items respecto al destino."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:161 shipping-table-rate.php:226
+msgid "Shipping Table Rates"
+msgstr "Tabla Tarifa Envios"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:163
+#, php-format
+msgid ""
+"Define rates below. Class specific table rates can be added from the <a href="
+"\"%s\">Shipping Class</a> section."
+msgstr ""
+"Define los ratios más abajo. La Tarifa específica de clase puede ser añadida "
+"en la sección <a href=\"%s\">Clases de Envios</a>"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:168
+msgid "Shipping Class Priorities"
+msgstr "Clases Prioridades para Envíos"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:170
+msgid ""
+"When calculating shipping, the cart contents will be searched for all "
+"Shipping Classes. If all product shipping classes are identical, the "
+"corresponding class will be used. If there is a mix of classes then the "
+"class with the highest priority (defined below) will be used. If no shipping "
+"classes are found, or if the matching class has it's rates disabled, the "
+"default rates (on this page) will be used instead."
+msgstr ""
+"Cuando se calcula el envio, el contenido del carrito se buscará para todas "
+"las clases de envío. Si todas las clases de envío son identicos, la clase "
+"correspondiente será utilizada. Si hay una mezcla de clases, entonces la "
+"prioridad más alta (definida más abajo) será usada. Si no hay clases de "
+"envío, o no si la clase tiene deshabilitada los ratios, los ratios por "
+"defecto (en esta página) serán usados."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:175
+msgid "No shipping classes exist - you can ignore this option :)"
+msgstr "No existen clases de envío - puedes ignorar esta opción."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:182
+msgid "Class"
+msgstr "Clase"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:183 shipping-table-rate.php:255
+msgid "Priority"
+msgstr "Prioridad"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:184 shipping-table-rate.php:198
+msgid "Configure"
+msgstr "Configurar"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:189
+msgid "Default"
+msgstr "Por defecto"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:230
+msgid "Enable Table Rates for this shipping class?"
+msgstr "¿Habilitar Tarifas para esta clase de envío?"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:248
+msgid "Destination countries/states"
+msgstr "Destino Países / Provincias"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:249
+msgid "Postcode"
+msgstr "Código Postal"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:249
+msgid ""
+"(optional) Comma separated list of ZIPs/Postcodes. Accepts wildcards, e.g. "
+"P* will match a postcode of PE30."
+msgstr ""
+"(opcional) Lista de Códigos Postales separados por comas. Acepta wildcards, "
+"ej. 18* cojerá el código postal de 18001."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:250
+msgid "Exclude Postcode"
+msgstr "Excluir Código Postal"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:250
+msgid ""
+"(optional) Comma separated list of ZIPs/Postcodes to EXCLUDE. Accepts "
+"wildcards, e.g. P* will match a postcode of PE30."
+msgstr ""
+"(opcional) Lista de Códigos Postales separados por comas para EXCLUIR. "
+"Acepta wildcards, ej. 18* cojerá el código postal de 18001."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:251
+msgid "Condition"
+msgstr "Condición"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:251
+msgid "Condition vs. destination"
+msgstr "Condición vs Destino"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:252
+msgid "Range"
+msgstr "Rango"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:252
+msgid "Bottom/top range for the selected condition."
+msgstr "Rango Posterior/Superior para la condición seleccionada."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:253
+msgid "Cost"
+msgstr "Coste"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:253
+msgid "Cost, excluding tax."
+msgstr "Coste, excluído impuesto."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:254
+msgid "Label"
+msgstr "Etiqueta"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:254
+msgid "Label for the shipping method which the user will be presented."
+msgstr "Etiqueta para el método de envios que se le presentará al usuario."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:255
+msgid ""
+"Enable this option to offer this rate and no others if matched. Priority is "
+"given to rates at the top of the list."
+msgstr ""
+"Habilita esta opción para ofrecer este ratio y no incluir los que encajen. "
+"La Prioridad facilitada de los ratios está en la parte superior de la lista."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:260
+msgid "+ Add Shipping Rate"
+msgstr "+ Añadir Envío Ratio"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:261
+msgid ""
+"Note, if the user has multiple matching rates they will get the choice of "
+"which to use."
+msgstr ""
+"Ten en cuenta, que si el usuario tiene multiplres ratios se le dará la "
+"opción para que elija."
+
+# @ wc_table_rate
+#: shipping-table-rate.php:261
+msgid "Duplicate selected rows"
+msgstr "Duplicar filas seleccionadas"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:261
+msgid "Delete selected rows"
+msgstr "Borrar Filas seleccionadas"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:271 shipping-table-rate.php:320
+#: shipping-table-rate.php:324 shipping-table-rate.php:366
+msgid "Edit"
+msgstr "Editar"
+
+# @ woothemes
+#: shipping-table-rate.php:273 shipping-table-rate.php:368
+msgid "Choose countries&hellip;"
+msgstr "Elegir Países&hellip;"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:278 shipping-table-rate.php:371
+msgid "All"
+msgstr "Todo"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:278 shipping-table-rate.php:371
+msgid "US States"
+msgstr "Estados de US"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:278 shipping-table-rate.php:371
+msgid "EU States"
+msgstr "Estados de EU"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:284 shipping-table-rate.php:377
+msgid "Price"
+msgstr "Precio"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:285 shipping-table-rate.php:378
+msgid "Weight"
+msgstr "Peso"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:286 shipping-table-rate.php:379
+msgid "# of Items"
+msgstr "# de Items"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:288 shipping-table-rate.php:381
+msgid "n/a"
+msgstr "n/a"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:290 shipping-table-rate.php:382
+msgid "0.00"
+msgstr "0.00"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:322
+msgid "Done"
+msgstr "Hecho"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:350
+msgid " countries/states selected"
+msgstr "Países/Provincias seleccionadas"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:366 shipping-table-rate.php:757
+msgid "No countries selected"
+msgstr "Sin Países seleccionados"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:395
+msgid "Delete the selected rates?"
+msgstr "¿Borrar las tarifas seleccionadas?"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:406
+msgid "Duplicate the selected rates?"
+msgstr "¿Duplicar las tarifas seleccionadas?"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:713
+msgid "Shipping"
+msgstr "Envío"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:761
+#, php-format
+msgid "(1 state)"
+msgid_plural "(%s states)"
+msgstr[0] "(1 state)"
+msgstr[1] "(%s Provincias)"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:763
+#, php-format
+msgid "%s"
+msgstr "%s"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:767
+#, php-format
+msgid "and 1 state"
+msgid_plural "and %s states"
+msgstr[0] "y una Provincia"
+msgstr[1] "y %s Provincias"
+
+# @ wc_table_rate
+#: shipping-table-rate.php:769
+#, php-format
+msgid "1 country"
+msgid_plural "%1$s countries"
+msgstr[0] "1 country"
+msgstr[1] "%1$s Países"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:147
+msgid "WooThemes Updates"
+msgstr "Actualizaciones WooThemes"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:167
+msgid "WooThemes Plugin Updater"
+msgstr "Actualizador Plugin WooThemes"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:174
+msgid "WooThemes Username"
+msgstr "Woothemes Usuario"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:178
+msgid "WooThemes Password"
+msgstr "WooThemes Contraseña"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:187
+msgid "Login"
+msgstr "Acceso"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:238
+msgid "Switch WooThemes Account"
+msgstr "Cambiar Cuenta WooThemes"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:240
+#, php-format
+msgid ""
+"You are currently logged in as %1$s. To switch to a different WooThemes "
+"account, please fill in the login details below."
+msgstr ""
+"Actualmente estás registrado como %1$s. Para cambiar de cuenta WooThemes, "
+"rellena a continuación los detalles del login."
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:243
+msgid "Update your Plugins"
+msgstr "Actualizar Plugins"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:250
+msgid "Login Error"
+msgstr "Error acceso"
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:252
+msgid "The login details supplied are invalid. Please try again."
+msgstr ""
+"Los detalles del login facilitados son inválidos. Por favor inténtalo de "
+"nuevo."
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:262
+msgid "Enable WooThemes Plugin Updates."
+msgstr "Habilitar Actualizaciones WooThemes Plugins."
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:264
+#, php-format
+msgid "Please <a href=\"%1$s\">login</a> to enable automatic plugin updates."
+msgstr ""
+"Por favor, haz <a href=\"%1$s\">login</a> para habilitar las actualizaciones "
+"automáticas del plugin."
+
+# @ woothemes
+#: woo-includes/class-woothemes-plugin-updater.php:277
+msgid "Hide This Message"
+msgstr "Ocultar mensaje"

@@ -1,0 +1,143 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Product Enquiry Form v1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: \n"
+"PO-Revision-Date: 2012-04-23 14:24+0100\n"
+"Last-Translator: David Perez <david@closemarketing.es>\n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Poedit-Language: Spanish\n"
+"X-Poedit-Country: SPAIN\n"
+"X-Poedit-SourceCharset: utf-8\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2\n"
+"X-Textdomain-Support: yes\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#@ woothemes
+#: product-enquiry-form.php:44
+msgid "Product enquiry email"
+msgstr "Email Más información producto"
+
+#@ woothemes
+#: product-enquiry-form.php:45
+msgid "Where to send product enquiries."
+msgstr "Donde enviar preguntas sobre el producto."
+
+#@ woothemes
+#: product-enquiry-form.php:51
+msgid "ReCaptcha public key"
+msgstr "ReCaptcha public key"
+
+#@ woothemes
+#: product-enquiry-form.php:52
+#: product-enquiry-form.php:59
+msgid "Enter your key if you wish to use <a href=\"https://www.google.com/recaptcha/\">recaptcha</a> on the product enquiry form."
+msgstr "Introduce la clave si quieres usar <a href=\"https://www.google.com/recaptcha/\">recaptcha</a> en el formulario Preguntas al Producto."
+
+#@ woothemes
+#: product-enquiry-form.php:58
+msgid "ReCaptcha private key"
+msgstr "ReCaptcha private key"
+
+#@ woothemes
+#: product-enquiry-form.php:96
+#: product-enquiry-form.php:112
+msgid "Product Enquiry"
+msgstr "Preguntas al Producto"
+
+#@ woothemes
+#: product-enquiry-form.php:119
+msgid "Name"
+msgstr "Nombre"
+
+#@ woothemes
+#: product-enquiry-form.php:120
+msgid "Your name"
+msgstr "Tu Nombre"
+
+#@ woothemes
+#: product-enquiry-form.php:124
+msgid "Email address"
+msgstr "Dirección Email"
+
+#@ woothemes
+#: product-enquiry-form.php:125
+msgid "you@yourdomain.com"
+msgstr "tu@tudominio.com"
+
+#@ woothemes
+#: product-enquiry-form.php:133
+msgid "Enquiry"
+msgstr "Pregunta"
+
+#@ woothemes
+#: product-enquiry-form.php:134
+msgid "What would you like to know?"
+msgstr "¿Qué te gustaría saber?"
+
+#@ woothemes
+#: product-enquiry-form.php:164
+msgid "Send Enquiry"
+msgstr "Enviar Pregunta"
+
+#@ woothemes
+#: product-enquiry-form.php:181
+msgid "Please enter your name."
+msgstr "Introduce tu nombre"
+
+#@ woothemes
+#: product-enquiry-form.php:187
+msgid "Please enter your email."
+msgstr "Introduce tu email"
+
+#@ woothemes
+#: product-enquiry-form.php:193
+msgid "Please enter your enquiry."
+msgstr "Introduce la pregunta"
+
+#@ woothemes
+#: product-enquiry-form.php:212
+msgid "Enquiry sent successfully. We will get back to your shortly."
+msgstr "Pregunta enviada satisfactoriamente. Te contactaremos en poco tiempo."
+
+#@ woothemes
+#: product-enquiry-form.php:260
+msgid "Invalid product!"
+msgstr "¡Producto inválido!"
+
+#@ woothemes
+#: product-enquiry-form.php:265
+msgid "Please enter a valid email."
+msgstr "Introduce un email válido."
+
+#@ woothemes
+#: product-enquiry-form.php:281
+msgid "Please double check the anti-spam field."
+msgstr "Selecciona doble el campo anti-spam."
+
+#@ woothemes
+#: product-enquiry-form.php:288
+#, php-format
+msgid "Product Enquiry - %s"
+msgstr "Preguntas al Producto - %s"
+
+#@ woothemes
+#: product-enquiry-form.php:292
+msgid "Hello, "
+msgstr "Hola,"
+
+#@ woothemes
+#: product-enquiry-form.php:294
+#, php-format
+msgid "You have been contacted by %s (%s) about %s (%s). Their enquiry is as follows: "
+msgstr "Has sido contactado por %s (%s) sobre %s (%s). La pregunta es:"
+
+#@ woothemes
+#: product-enquiry-form.php:317
+msgid "Disable enquiry form?"
+msgstr "¿Deshabilitar Formulario preguntas?"
+

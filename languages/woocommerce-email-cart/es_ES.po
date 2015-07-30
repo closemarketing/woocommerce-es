@@ -1,0 +1,245 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Woocommerce Email Cart\n"
+"POT-Creation-Date: 2013-10-17 13:31+0100\n"
+"PO-Revision-Date: 2013-10-17 13:44+0100\n"
+"Last-Translator: David <david@closemarketing.es>\n"
+"Language-Team: Closemarketing <david@closemarketing.es>\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.7\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;_e;__\n"
+"X-Poedit-Basepath: .\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: email-cart.php:332 email-cart.php:333 email-cart.php:446
+msgid "Email Cart"
+msgstr "Carrito de Compra por Email"
+
+#: email-cart.php:370
+msgid ""
+"Are you sure you want to remove the selected items? If you have previously "
+"reduced this item's stock, or this order was submitted by a customer, you "
+"will need to manually restore the item's stock."
+msgstr ""
+
+#: email-cart.php:371
+msgid "Please select some items."
+msgstr "Por favor, selecciona algún item."
+
+#: email-cart.php:372
+msgid "Remove this item meta?"
+msgstr ""
+
+#: email-cart.php:373
+msgid "Remove this attribute?"
+msgstr ""
+
+#: email-cart.php:374
+msgid "Name"
+msgstr "Nombre"
+
+#: email-cart.php:375
+msgid "Remove"
+msgstr "Borrar"
+
+#: email-cart.php:376
+msgid "Click to toggle"
+msgstr ""
+
+#: email-cart.php:377
+msgid "Value(s)"
+msgstr "Valor(es)"
+
+#: email-cart.php:378
+msgid "Enter some text, or some attributes by pipe (|) separating values."
+msgstr ""
+
+#: email-cart.php:379
+msgid "Visible on the product page"
+msgstr "Visible en la página de producto"
+
+#: email-cart.php:380
+msgid "Used for variations"
+msgstr "Utilizado para variaciones"
+
+#: email-cart.php:381
+msgid "Enter a name for the new attribute term:"
+msgstr ""
+
+#: email-cart.php:382
+msgid "Calculate totals based on order items, discounts, and shipping?"
+msgstr ""
+
+#: email-cart.php:383
+msgid ""
+"Calculate line taxes? This will calculate taxes based on the customers "
+"country. If no billing/shipping is set it will use the store base country."
+msgstr ""
+
+#: email-cart.php:384
+msgid ""
+"Copy billing information to shipping information? This will remove any "
+"currently entered shipping information."
+msgstr ""
+
+#: email-cart.php:385
+msgid ""
+"Load the customer's billing information? This will remove any currently "
+"entered billing information."
+msgstr ""
+
+#: email-cart.php:386
+msgid ""
+"Load the customer's shipping information? This will remove any currently "
+"entered shipping information."
+msgstr ""
+
+#: email-cart.php:387
+msgid "Featured"
+msgstr "Destacado"
+
+#: email-cart.php:390
+msgid "No customer selected"
+msgstr "Sin cliente seleccionado"
+
+#: email-cart.php:449
+msgid "Your cart has successfully sent."
+msgstr "Tu Carrito fue enviado correctamente."
+
+#: email-cart.php:468
+msgid ""
+"<strong>Create a Cart</strong> &#8211; A link to the cart will be emailed to "
+"the address provided."
+msgstr ""
+"<strong>Crear un carrito</strong> &#8211; Crearás un enlace al carrito que "
+"podrá ser enviado por email."
+
+#: email-cart.php:481
+msgid "Item"
+msgstr "Item"
+
+#: email-cart.php:486
+msgid "Tax Class"
+msgstr "Clase de impuesto"
+
+#: email-cart.php:486
+msgid "Tax class for the line item"
+msgstr ""
+
+#: email-cart.php:489
+msgid "Qty"
+msgstr "Ctd"
+
+#: email-cart.php:491
+msgid "Totals"
+msgstr "Totales"
+
+#: email-cart.php:491
+msgid "Line subtotals are before pre-tax discounts, totals are after."
+msgstr ""
+
+#: email-cart.php:494
+msgid "Tax"
+msgstr "Impuesto"
+
+#: email-cart.php:506
+msgid "Actions"
+msgstr "Acciones"
+
+#: email-cart.php:507
+msgid "Edit"
+msgstr "Editar"
+
+#: email-cart.php:508
+msgid "Delete Lines"
+msgstr "Borrar Lineas"
+
+#: email-cart.php:512
+msgid "Apply"
+msgstr "Aplicar"
+
+#: email-cart.php:516
+msgid "Search for a product&hellip;"
+msgstr "Buscar por producto&hellip;"
+
+#: email-cart.php:518
+msgid "Add item(s)"
+msgstr "Añadir item(s)"
+
+#: email-cart.php:523
+msgid "Landing Page"
+msgstr "Página Aterrizaje"
+
+#: email-cart.php:524
+msgid "Select whether to direct users to the Cart or the Checkout Page"
+msgstr ""
+
+#: email-cart.php:541
+msgid "Email Address"
+msgstr "Dirección Email"
+
+#: email-cart.php:542
+msgid ""
+"Enter the email address you would like to send this cart to. (Separate "
+"multiple addresses with a comma)"
+msgstr ""
+
+#: email-cart.php:549
+msgid "Email Subject"
+msgstr "Asunto Email"
+
+#: email-cart.php:550
+msgid "Edit the email subject."
+msgstr "Editar el Asunto del email."
+
+#: email-cart.php:557
+msgid "Email Content"
+msgstr "Contenido Email"
+
+#: email-cart.php:558
+msgid "Edit the email contents."
+msgstr "Editar el contenido del email."
+
+#: email-cart.php:579
+msgid "Send Cart"
+msgstr "Enviar Carrito"
+
+#: email-cart.php:589
+msgid "Share Cart"
+msgstr "Compartir Carrito"
+
+#: email-cart.php:590
+msgid "Copy the link below to use in any other application"
+msgstr ""
+
+#: email-cart.php:647
+msgid "Product ID:"
+msgstr "ID Producto:"
+
+#: email-cart.php:650
+msgid "Variation ID:"
+msgstr "ID Variación:"
+
+#: email-cart.php:653
+msgid "Product SKU:"
+msgstr "SKU Producto:"
+
+#: email-cart.php:702
+msgid "Tax class"
+msgstr "Clase Impuesto"
+
+#: email-cart.php:709
+msgid "Standard"
+msgstr "Estandard"
+
+#: email-cart.php:728
+msgid "Total"
+msgstr "Total"
+
+#: email-cart.php:730
+msgid "Subtotal"
+msgstr "Subtotal"
