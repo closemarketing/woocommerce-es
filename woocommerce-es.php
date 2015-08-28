@@ -45,13 +45,13 @@ class WooCommerceESPlugin {
 		add_filter( 'load_textdomain_mofile', array( $this, 'load_mo_file' ), 10, 2 );
 
         /* EU VAT */
-	    add_filter( 'woocommerce_billing_fields' , array( $this, 'woocommerce_add_billing_fields' ) );	
+	    add_filter( 'woocommerce_billing_fields' , array( $this, 'woocommerce_add_billing_fields' ) );
         add_filter( 'woocommerce_shipping_fields' , array( $this, 'woocommerce_add_shipping_fields' ) );
-        add_filter( 'woocommerce_admin_billing_fields', 
+        add_filter( 'woocommerce_admin_billing_fields',
                    array( $this, 'woocommerce_add_billing_shipping_fields_admin') );
-        add_filter( 'woocommerce_admin_shipping_fields', 
+        add_filter( 'woocommerce_admin_shipping_fields',
                    array( $this, 'woocommerce_add_billing_shipping_fields_admin') );
-        add_filter( 'woocommerce_load_order_data', 
+        add_filter( 'woocommerce_load_order_data',
                    array( $this, 'woocommerce_add_var_load_order_data') );
 		/*
 		 * WooThemes/WooCommerce don't execute the load_plugin_textdomain() in the 'init'
@@ -116,28 +116,22 @@ class WooCommerceESPlugin {
 		if ( $this->is_spa ) {
 			$domains = array(
 				// @see https://github.com/woothemes/woocommerce/tree/v2.0.5
-				/*'woocommerce'                => array(
-					'i18n/languages/woocommerce-es_ES.mo'       => 'woocommerce/es_ES.mo',
-					'i18n/languages/woocommerce-admin-es_ES.mo' => 'woocommerce/admin-es_ES.mo'
-				),
-				'wc_eu_vat_number'           => array(
-					'wc_eu_vat_number-es_ES.mo'                 => 'woocommerce-eu-vat-number/es_ES.mo'
-				),*/
+
 				'woocommerce-shipping-table-rate'               => array(
 					'languages/woocommerce-shipping-table-rate-es_ES.mo'           => 'woocommerce-shipping-table-rate/es_ES.mo'
 				),
+
 				'woocommerce-product-enquiry-form'            => array(
 					'languages/woothemes-es_ES.mo'        => 'woocommerce-product-enquiry-form/es_ES.mo'
 				),
-				'woocommerce-email-cart' => array(
-					'woocommerce-email-cart-es_ES.mo'       => 'woocommerce-email-cart/es_ES.mo'
-				)/*,
-				'x3m_gf'                     => array(
-					'languages/x3m_gf-es_ES.mo'                 => 'woocommerce-gateway-fees/es_ES.mo'
+
+				'email-cart' => array(
+					'email-cart-es_ES.mo'       => 'woocommerce-email-cart/es_ES.mo'
 				),
-				'woocommerce-delivery-notes' => array(
-					'languages/woocommerce-delivery-notes-es_ES.mo' => 'woocommerce-delivery-notes/es_ES.mo'
-				)*/
+
+				'wcva'               => array(
+					'languages/wcva-es_ES.mo'           => 'woocommerce-colororimage-variation-select/es_ES.mo'
+				)
 			);
 
 			if ( isset( $domains[$domain] ) ) {
@@ -157,30 +151,30 @@ class WooCommerceESPlugin {
 
 		return $mo_file;
 	}
-    
-    
+
+
     //EU VAT
     /**
      * Insert element before of a specific array position
-     * 
+     *
      * @return array
      * @since 1.0.0
      */
 	public function array_splice_assoc( &$source, $need, $previous ) {
 	    $return = array();
-	    
+
 	    foreach( $source as $key => $value ) {
 	        if( $key == $previous ) {
                 $need_key = array_keys( $need );
                 $key_need = array_shift( $need_key );
 	            $value_need = $need[$key_need];
-	            
+
 	            $return[$key_need] = $value_need;
 	        }
-	        
+
 	        $return[$key] = $value;
 	    }
-	    
+
 	    $source = $return;
 	}
 
@@ -190,7 +184,7 @@ class WooCommerceESPlugin {
         //$fields['billing_country']['clear'] = true;
 		$field = array('billing_vat' => array(
 	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
-		    'placeholder' => apply_filters( 'vatssn_label_x', _x('VAT No', 'placeholder', 'wces') ),
+		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
 		    'required'    => false,
 		    'class'       => array('form-row-last'),
 		    'clear'       => true
@@ -207,7 +201,7 @@ class WooCommerceESPlugin {
         //$fields['shipping_country']['clear'] = true;
 		$field = array('shipping_vat' => array(
 	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
-		    'placeholder' => apply_filters( 'vatssn_label_x', _x('VAT No', 'placeholder', 'wces') ),
+		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
 		    'required'    => false,
 		    'class'       => array('form-row-last'),
 		    'clear'       => true
