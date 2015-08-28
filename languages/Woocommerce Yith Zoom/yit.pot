@@ -1,0 +1,220 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: YITH WooCommerce Magnifier v1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2013-05-17 18:04+0100\n"
+"PO-Revision-Date: 2013-05-17 18:05+0100\n"
+"Last-Translator: Your Inspiration Themes <plugins@yithemes.com>\n"
+"Language-Team: \n"
+"Language: en_US\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Poedit 1.5.5\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;__ngettext:1,2;_n:1,2;__ngettext_noop:1,2;"
+"_n_noop:1,2;_c,_nc:4c,1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;_nx_noop:4c,1,2\n"
+"X-Textdomain-Support: yes\n"
+
+# @ yit
+#: class.yith-wcmg-admin.php:119 class.yith-wcmg-admin.php:169
+msgid "Magnifier"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:138
+msgid "Catalog Zoom Images"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:139
+msgid "The size of images used within the magnifier box"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:168 class.yith-wcmg-admin.php:206
+msgid "General Settings"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:170
+msgid "Slider"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:213
+msgid "Enable YITH Magnifier"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:214
+msgid "Enable the plugin or use the Woocommerce default product image."
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:222
+msgid "Forcing Zoom Image sizes"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:223
+msgid ""
+"If disabled, you will able to customize the sizes of Zoom Images. Please "
+"disable at your own risk; the magnifier should not properly work with "
+"unproportioned image sizes."
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:234
+msgid "Magnifier Settings"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:241
+msgid "Zoom Area Width"
+msgstr ""
+
+#: class.yith-wcmg-admin.php:242
+msgid "The width of magnifier box (default: auto)"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:250
+msgid "Zoom Area Height"
+msgstr ""
+
+#: class.yith-wcmg-admin.php:251
+msgid "The height of magnifier box (default: auto)"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:259
+msgid "Zoom Area Position"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:260
+msgid "The magnifier position"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:266
+msgid "Right"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:267 class.yith-wcmg-admin.php:280
+msgid "Inside"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:272
+msgid "Zoom Area Mobile Position"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:273
+msgid "The magnifier position with mobile devices (iPhone, Android, etc.)"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:279
+msgid "Default"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:281
+msgid "Disable"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:286
+msgid "Loading label"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:289 class.yith-wcmg-admin.php:290
+msgid "Loading..."
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:316
+msgid "Lens Opacity"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:340
+msgid "Blur"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:341
+msgid "Add a blur effect to the small image on mouse hover."
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:352
+msgid "Slider Settings"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:359
+msgid "Enable Slider"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:360
+msgid "Enable Thumbnail slider."
+msgstr ""
+
+#: class.yith-wcmg-admin.php:368
+msgid "Enable Slider Responsive"
+msgstr ""
+
+#: class.yith-wcmg-admin.php:369
+msgid ""
+"The option fits the thumbnails within the available space. Disable it if you "
+"want to manage by yourself the thumbnails (eg. add margins, paddings, etc.)"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:377
+msgid "Items"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:378
+msgid "Number of items to show"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:389
+msgid "Circular carousel"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:390
+msgid "Determines whether the carousel should be circular."
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:398
+msgid "Infinite carousel"
+msgstr ""
+
+# @ yit
+#: class.yith-wcmg-admin.php:399
+msgid ""
+"Determines whether the carousel should be infinite. Note: It is possible to "
+"create a non-circular, infinite carousel, but it is not possible to create a "
+"circular, non-infinite carousel."
+msgstr ""
+
+#: class.yith-wcmg-admin.php:626
+msgid "Settings"
+msgstr ""
+
+#: class.yith-wcmg-admin.php:627
+msgid "Docs"
+msgstr ""

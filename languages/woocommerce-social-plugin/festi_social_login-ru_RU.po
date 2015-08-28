@@ -1,0 +1,123 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: festi-woocommerce-cart\n"
+"POT-Creation-Date: 2014-09-29 17:22+0200\n"
+"PO-Revision-Date: 2014-09-29 17:22+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: ru_RU\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.5.7\n"
+"X-Poedit-KeywordsList: _;gettext;gettext_noop;__;_e\n"
+"X-Poedit-Basepath: ../\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: common/FacebookAdapterFestiPlugin.php:396
+#: common/WooSocialLoginBackendFestiPlugin.php:425
+msgid "Facebook"
+msgstr ""
+
+#: common/FacebookAdapterFestiPlugin.php:542
+msgid "Data error. Log it possible"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:109
+msgid "WooLogin Pro Settings"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:110
+msgid "WooLogin Pro"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:175
+msgid "Success refresh plugin"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:260
+msgid "Caching does not work! "
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:265
+msgid "You don't have permission to access: "
+msgstr "У Вас нет прав доступа "
+
+#: common/WooSocialLoginBackendFestiPlugin.php:370
+msgid "App ID"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:379
+msgid "App Secret"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:388
+msgid "Login Button Text"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:393
+msgid "Log In With Facebook"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:400
+msgid "Link Button Text"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:405
+msgid "Link your account to Facebook"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:419
+msgid "Enabled Social Provider"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:431
+msgid "Display Social Login Button on"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:437
+msgid "Checkout"
+msgstr "Оформить"
+
+#: common/WooSocialLoginBackendFestiPlugin.php:438
+msgid "My Account"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:444
+msgid "Text Before the Login Buttons"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:449
+#: common/WooSocialLoginBackendFestiPlugin.php:472
+msgid ""
+"Save time next time you checkout by linking your account to your favorite "
+"social network. No need to remember another username and password."
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:458
+msgid "Display \"Link Your Account\" for registered users"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:467
+msgid "Text Before the \"Link Your Account\" Buttons"
+msgstr ""
+
+#: common/WooSocialLoginBackendFestiPlugin.php:493
+msgid "Woo Social Login Pro Options"
+msgstr ""
+
+#: common/WooSocialLoginFrontendFestiPlugin.php:172
+msgid "My Social Logins Account"
+msgstr ""
+
+#: templates/backend/refresh.phtml:10
+msgid "Refresh Plugin"
+msgstr ""
+
+#: templates/backend/settings_page.phtml:35
+msgid "Save Changes"
+msgstr ""
+
+#~ msgid "WooCommerce not active or not installed."
+#~ msgstr "WooCommerce не активен или не установлен"
