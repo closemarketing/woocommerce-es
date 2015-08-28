@@ -2,9 +2,9 @@
 /*
 Plugin Name: WooCommerce (ES)
 Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
-Description: Extends the WooCommerce plugin and add-ons with the Spanish language: <strong>WooCommerce</strong> 2.0.20 | <strong>WooCommerce EU VAT Number</strong> | <strong>WooCommerce Email Cart</strong> [Download](http://codecanyon.net/item/email-cart-for-woocommerce/5568059?ref=closemarketing) | Send Carts by Email to users | <strong>WooCommerce Product Enquiry Form</strong> | <strong>WooCommerce Shipping Table Rate</strong>
+Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language: <strong>WooCommerce Email Cart</strong> [Download](http://codecanyon.net/item/email-cart-for-woocommerce/5568059?ref=closemarketing) | Send Carts by Email to users | <strong>WooCommerce Product Enquiry Form</strong> | <strong>WooCommerce Shipping Table Rate</strong>
 
-Version: 0.2
+Version: 0.3
 Requires at least: 3.0
 
 Author: Closemarketing
