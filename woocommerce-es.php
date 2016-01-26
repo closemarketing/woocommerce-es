@@ -2,15 +2,15 @@
 /*
 Plugin Name: WooCommerce (ES)
 Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
-Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language: <strong>WooCommerce Email Cart</strong> [Download](http://codecanyon.net/item/email-cart-for-woocommerce/5568059?ref=closemarketing) | Send Carts by Email to users | <strong>WooCommerce Product Enquiry Form</strong> | <strong>WooCommerce Shipping Table Rate</strong>
+Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
 
-Version: 0.3
-Requires at least: 3.0
+Version: 1.0
+Requires at least: 4.4
 
 Author: Closemarketing
 Author URI: http://www.closemarketing.es/
 
-Text Domain: woocommerce_es
+Text Domain: wces
 Domain Path: /languages/
 
 License: GPL
@@ -40,19 +40,19 @@ class WooCommerceESPlugin {
 		$this->file = $file;
 
 		// Filters and actions
-		add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
+		add_action( 'plugins_loaded', array( $this, 'wces_plugins_loaded' ) );
 
-		add_filter( 'load_textdomain_mofile', array( $this, 'load_mo_file' ), 10, 2 );
+		add_filter( 'load_textdomain_mofile', array( $this, 'wces_load_mo_file' ), 10, 2 );
 
         /* EU VAT */
-	    add_filter( 'woocommerce_billing_fields' , array( $this, 'woocommerce_add_billing_fields' ) );
-        add_filter( 'woocommerce_shipping_fields' , array( $this, 'woocommerce_add_shipping_fields' ) );
-        add_filter( 'woocommerce_admin_billing_fields',
-                   array( $this, 'woocommerce_add_billing_shipping_fields_admin') );
-        add_filter( 'woocommerce_admin_shipping_fields',
-                   array( $this, 'woocommerce_add_billing_shipping_fields_admin') );
-        add_filter( 'woocommerce_load_order_data',
-                   array( $this, 'woocommerce_add_var_load_order_data') );
+	    add_filter( 'woocommerce_billing_fields' , array( $this, 'wces_add_billing_fields' ) );
+        add_filter( 'woocommerce_shipping_fields' , array( $this, 'wces_add_shipping_fields' ) );
+        add_filter( 'woocommerce_admin_billing_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
+        add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
+        add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data') );
+		add_filter( 'woocommerce_email_order_meta_keys', array( $this, 'woocommerce_email_notification'));
+   		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices') );
+
 		/*
 		 * WooThemes/WooCommerce don't execute the load_plugin_textdomain() in the 'init'
 		 * action, therefor we have to make sure this plugin will load first
@@ -85,7 +85,7 @@ class WooCommerceESPlugin {
 	/**
 	 * Plugins loaded
 	 */
-	public function plugins_loaded() {
+	public function wces_plugins_loaded() {
 		$rel_path = dirname( plugin_basename( $this->file ) ) . '/languages/';
 
 		// Load plugin text domain - WooCommerce ES
@@ -101,7 +101,7 @@ class WooCommerceESPlugin {
 	 * @param string $moFile
 	 * @param string $domain
 	 */
-	public function load_mo_file( $mo_file, $domain ) {
+	public function wces_load_mo_file( $mo_file, $domain ) {
 		if ( $this->language == null ) {
 			$this->language = get_option( 'WPLANG', WPLANG );
 			$this->is_spa = ( $this->language == 'es' || $this->language == 'es_ES' );
@@ -178,7 +178,7 @@ class WooCommerceESPlugin {
 	    $source = $return;
 	}
 
-	public function woocommerce_add_billing_fields( $fields ) {
+	public function wces_add_billing_fields( $fields ) {
 		$fields['billing_company']['class'] = array('form-row-first');
 		$fields['billing_company']['clear'] = false;
         //$fields['billing_country']['clear'] = true;
@@ -195,7 +195,7 @@ class WooCommerceESPlugin {
 	}
 
 
-	public function woocommerce_add_shipping_fields( $fields ) {
+	public function wces_add_shipping_fields( $fields ) {
 		$fields['shipping_company']['class'] = array('form-row-first');
 		$fields['shipping_company']['clear'] = false;
         //$fields['shipping_country']['clear'] = true;
@@ -211,7 +211,7 @@ class WooCommerceESPlugin {
 		return $fields;
 	}
 
-    public function woocommerce_add_billing_shipping_fields_admin( $fields ) {
+    public function wces_add_billing_shipping_fields_admin( $fields ) {
         $fields['vat'] = array(
             'label' => apply_filters( 'vatssn_label', __('VAT No', 'wces') )
         );
@@ -219,14 +219,35 @@ class WooCommerceESPlugin {
         return $fields;
     }
 
-    public function woocommerce_add_var_load_order_data( $fields ) {
+    public function wces_add_var_load_order_data( $fields ) {
         $fields['billing_vat'] = '';
         $fields['shipping_vat'] = '';
         return $fields;
     }
+
+	/**
+	 * Adds NIF in email notification
+	 */
+
+	public function woocommerce_email_notification( $keys ) {
+	    $keys[] = 'billing_vat';
+	    return $keys;
+	}
+
+	/**
+	* Adds VAT info in WooCommerce PDF Invoices & Packing Slips
+	*/
+	public function wces_add_vat_invoices( $address ){
+	  global $wpo_wcpdf;
+
+	  echo $address . '<p>';
+	  $wpo_wcpdf->custom_field( 'billing_vat', __('VAT info:', 'wces') );
+	  echo '</p>';
+	}
+
     /* END EU VAT*/
 }
 
-global $woocommerce_es_plugin;
+global $wces_plugin;
 
-$woocommerce_es_plugin = new WooCommerceESPlugin( __FILE__ );
+$wces_plugin = new WooCommerceESPlugin( __FILE__ );
