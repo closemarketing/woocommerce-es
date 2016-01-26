@@ -10,11 +10,8 @@ Requires at least: 4.4
 Author: Closemarketing
 Author URI: http://www.closemarketing.es/
 
-<<<<<<< HEAD
-Text Domain: woocommerce
-=======
 Text Domain: wces
->>>>>>> develop
+
 Domain Path: /languages/
 
 License: GPL
