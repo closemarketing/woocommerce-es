@@ -1,43 +1,38 @@
+# Translation of Woocommerce Send Cart in Spanish (Spain)
+# This file is distributed under the same license as the Woocommerce Send Cart package.
 msgid ""
 msgstr ""
-"Project-Id-Version: Woocommerce Email Cart\n"
+"Project-Id-Version: Woocommerce Send Cart\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2015-08-28 13:16+0200\n"
+"PO-Revision-Date: 2015-09-30 14:14+0200\n"
 "Last-Translator: David <david@closemarketing.es>\n"
-"Language-Team: Closemarketing <david@closemarketing.es>\n"
+"Language-Team: David <david@closemarketing.es>\n"
 "Language: es_ES\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"X-Generator: Poedit 1.8.4\n"
-"X-Poedit-KeywordsList: _;gettext;gettext_noop;_e;__\n"
-"X-Poedit-Basepath: .\n"
-"X-Poedit-SourceCharset: UTF-8\n"
-"X-Poedit-SearchPath-0: .\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Poedit 1.8.5\n"
 
 #. translators: plugin header field 'Name'
 #: email-cart.php:0
 msgid "WooCommerce Email Cart"
 msgstr "WooCommerce Carrito por Email"
 
-# @ email-cart
 #. translators: plugin header field 'PluginURI'
 #: email-cart.php:0
 msgid "http://codecanyon.net/item/email-cart-for-woocommerce/5568059"
 msgstr ""
-"http://codecanyon.net/item/email-cart-for-woocommerce/5568059?"
-"ref=closemarketing"
+"http://codecanyon.net/item/email-cart-for-woocommerce/5568059?ref=closemarketing"
 
-# @ email-cart
 #. translators: plugin header field 'Description'
 #: email-cart.php:0
 msgid "Create a WooCommerce cart and send it to any email address."
 msgstr ""
-"Podrás Crear un Carrito de Compra WooCommerce y enviarlo a cualquier "
-"dirección de correo."
+"Podrás Crear un Carrito de Compra WooCommerce y enviarlo a cualquier dirección de "
+"correo."
 
-# @ email-cart
 #. translators: plugin header field 'Author'
 #: email-cart.php:0
 msgid "cxThemes"
@@ -49,39 +44,36 @@ msgstr "Tu carrito ha sido enviado correctamente."
 
 #: email-cart.php:640 email-cart.php:641 email-cart.php:803 email-cart.php:1049
 #: email-cart.php:1661 settings/class-email-cart-settings.php:45
-#: settings/class-email-cart-settings.php:46
-#: settings/class-email-cart-settings.php:79
+#: settings/class-email-cart-settings.php:46 settings/class-email-cart-settings.php:79
 msgid "Email Cart"
-msgstr "Carrito de Compra por Email"
+msgstr "Carrito por Email"
 
 #: email-cart.php:696 email-cart.php:747
 msgid ""
-"Are you sure you want to remove the selected items? If you have previously "
-"reduced this item's stock, or this order was submitted by a customer, you "
-"will need to manually restore the item's stock."
+"Are you sure you want to remove the selected items? If you have previously reduced "
+"this item's stock, or this order was submitted by a customer, you will need to "
+"manually restore the item's stock."
 msgstr ""
-"¿Estás seguro de que quieres eliminar los elementos seleccionados? Si ya has "
-"reducido el stock de este artículo, o este pedido fue pedido por un cliente, "
+"¿Estás seguro de que quieres eliminar los artículos seleccionados? Si has reducido "
+"anteriormente el stock de este artículo o este pedido fue realizado por un cliente, "
 "tendrás que restaurar manualmente el stock del artículo."
 
-# @ email-cart
 #: settings/class-email-cart-settings.php:126
 #, php-format
 msgid ""
 "Hi There,\n"
 "\n"
-"Please find a link below to your cart on our online store where your items "
-"have already been added.\n"
+"Please find a link below to your cart on our online store where your items have "
+"already been added.\n"
 "\n"
 "Here is what you will find in your cart:\n"
 "[product_items]\n"
 "\n"
-"You can now easily checkout and pay, or, continue browsing and adding other "
-"items to your cart\n"
+"You can now easily checkout and pay, or, continue browsing and adding other items to "
+"your cart\n"
 "\n"
-"If you are a new customer you may need to register your details to create a "
-"new account. If you are returning, please just log in to finish your "
-"checkout.\n"
+"If you are a new customer you may need to register your details to create a new "
+"account. If you are returning, please just log in to finish your checkout.\n"
 "\n"
 "[link]\n"
 "\n"
@@ -91,17 +83,17 @@ msgid ""
 msgstr ""
 "Hola!\n"
 "\n"
-"Por favor tenga en cuenta el enlace a continuación para ver el carrito "
-"diseñado según tus necesidades en nuestra tienda online.\n"
+"Por favor tenga en cuenta el enlace a continuación para ver el carrito diseñado "
+"según tus necesidades en nuestra tienda online.\n"
 "\n"
 "A continuación será lo que puedas ver en tu carrito:\n"
 "[product_items]\n"
 "\n"
-"Ahora puedas fácilmente comprar, pagar o seguir buscando más productos "
-"añadiéndolos al carrito.\n"
+"Ahora puedas fácilmente comprar, pagar o seguir buscando más productos añadiéndolos "
+"al carrito.\n"
 "\n"
-"El siguiente paso será indicar los datos de pago o puedes recuperarlo si ya "
-"eres cliente.\n"
+"El siguiente paso será indicar los datos de pago o puedes recuperarlo si ya eres "
+"cliente.\n"
 "\n"
 "[link]\n"
 "\n"
@@ -110,25 +102,22 @@ msgstr ""
 "Atención al Cliente\n"
 "%s Tienda Online"
 
-# @ email-cart
 #: email-cart.php:834
 msgid "Step 1:"
 msgstr "Paso 1:"
 
-# @ email-cart
 #: email-cart.php:845
 msgid "Add Products to your Cart"
 msgstr "Añadir Productos al Carrito"
 
-# @ email-cart
 #: email-cart.php:848
 msgid ""
-"Search and add products to email the cart to a customer. They can then log-"
-"in or register to checkout and pay via the existing store settings."
+"Search and add products to email the cart to a customer. They can then log-in or "
+"register to checkout and pay via the existing store settings."
 msgstr ""
-"Buscar y añadir productos que se enviarán al email del cliente. Ellos pueden "
-"Iniciar Sesión o registrarse en el Proceso de Compra, utilizando el método "
-"de pago que elijan."
+"Buscar y añadir productos que se enviarán al email del cliente. Ellos pueden Iniciar "
+"Sesión o registrarse en el Proceso de Compra, utilizando el método de pago que "
+"elijan."
 
 #: email-cart.php:860
 msgid "Item"
@@ -141,6 +130,8 @@ msgstr "Ctd"
 #: email-cart.php:868
 msgid "Line subtotals are before pre-tax discounts, totals are after."
 msgstr ""
+"Subtotales de línea son antes de los descuentos antes de impuestos, los totales son "
+"después."
 
 #: email-cart.php:881
 msgid "Search for a product&hellip;"
@@ -156,19 +147,16 @@ msgstr "Página Aterrizaje"
 
 #: email-cart.php:894
 msgid "Select whether to direct users to the Cart or the Checkout Page"
-msgstr ""
-"Selecciona si quieres dirigir los usuarios al Carrito o a Finalizar Pedido"
+msgstr "Selecciona si quieres dirigir los usuarios al Carrito o a Finalizar Pedido"
 
 #: email-cart.php:899 email-cart.php:1643
 msgid "Cart"
 msgstr "Carrito"
 
-# @ email-cart
 #: email-cart.php:900 email-cart.php:1644
 msgid "Checkout"
-msgstr "Finalizar compra"
+msgstr "Compra"
 
-# @ email-cart
 #: email-cart.php:920
 msgid "Step 2:"
 msgstr "Paso 2:"
@@ -183,15 +171,16 @@ msgstr "Dirección Email"
 
 #: email-cart.php:931
 msgid ""
-"Enter the email address you would like to send this cart to. (Separate "
-"multiple addresses with a comma)"
+"Enter the email address you would like to send this cart to. (Separate multiple "
+"addresses with a comma)"
 msgstr ""
+"Introduce la dirección de correo electrónico a quién deseas enviar este carrito. "
+"(Separa las direcciones con una coma)"
 
 #: email-cart.php:972
 msgid "Email Subject"
 msgstr "Asunto Email"
 
-# @ email-cart
 #: email-cart.php:976
 #, php-format
 msgid "Shopping Cart from %s"
@@ -201,36 +190,33 @@ msgstr "Carrito de Compra de %s"
 msgid "Email Content"
 msgstr "Contenido Email"
 
-# @ email-cart
 #: email-cart.php:984
-msgid ""
-"Edit the email message. [Shortcodes] will replaced will relevant content."
+msgid "Edit the email message. [Shortcodes] will replaced will relevant content."
 msgstr ""
-"Editar el mensaje email. [Shortcodes] serán reemplazados con contenido "
-"relevante."
+"Editar el mensaje email. [Shortcodes] serán reemplazados con contenido relevante."
 
-# @ email-cart
 #: email-cart.php:995
 msgid ""
-"When you've finished adding products and preparing your email, then send "
-"your cart."
+"When you've finished adding products and preparing your email, then send your cart."
 msgstr ""
+"Cuando hayas terminado de añadir productos y la preparación del correo electrónico, "
+"a continuación, envías el carrito."
 
 #: email-cart.php:998
 msgid "Send Cart"
 msgstr "Enviar Carrito"
 
-# @ email-cart
 #: email-cart.php:1016
 msgid "Cart URL"
 msgstr "URL del Carrito"
 
-# @ email-cart
 #: email-cart.php:1026
 msgid ""
-"Alternatively copy this link to share via any other app (Email Newsletter, "
-"Social Network, etc)."
+"Alternatively copy this link to share via any other app (Email Newsletter, Social "
+"Network, etc)."
 msgstr ""
+"Alternativamente copia el enlace y comparte a través de cualquier otra aplicación "
+"(Boletín electrónico, redes sociales, etc.)."
 
 #: email-cart.php:358 email-cart.php:868
 msgid "Total"
@@ -238,14 +224,12 @@ msgstr "Total"
 
 #: email-cart.php:1511 email-cart.php:1609
 msgid "Email this Cart"
-msgstr "Enviar por email este Carrito"
+msgstr "Enviar este Carrito por Email"
 
-# @ email-cart
 #: email-cart.php:1529
 msgid "Close"
 msgstr "Cerrar"
 
-# @ email-cart
 #: settings/class-email-cart-settings.php:161
 #, php-format
 msgid ""
@@ -255,12 +239,11 @@ msgid ""
 "Here is what it contains:\n"
 "[product_items]\n"
 "\n"
-"You can now easily edit it, checkout and pay, or, browse around the store "
-"and continue adding other items to your cart. \n"
+"You can now easily edit it, checkout and pay, or, browse around the store and "
+"continue adding other items to your cart. \n"
 "\n"
-"If you are a new customer you may need to register your details to create a "
-"new account to checkout. If you are returning, just log in to finish your "
-"checkout.\n"
+"If you are a new customer you may need to register your details to create a new "
+"account to checkout. If you are returning, just log in to finish your checkout.\n"
 "\n"
 "[link]\n"
 "\n"
@@ -268,42 +251,61 @@ msgid ""
 "\n"
 "The %s Team"
 msgstr ""
+"Hola,\n"
+"\n"
+"Acabo de crear un carrito según tus necesidades en %s. Haz clic a continuación y "
+"podrás verlo. \n"
+"A continuación econtrarás:\n"
+"[product_items]\n"
+"\n"
+"Ahora puedes fácilmente editarlo, comprarlo y pagarlo, o navegar en la Tienda y "
+"seguir añadiendo productos al carrito. \n"
+"\n"
+"Si ya estás registrado, inicia sesión o por el contrario, tendrás que rellenar los "
+"datos de facturación y de pago.\n"
+"\n"
+"[link]\n"
+"\n"
+"Gracias!\n"
+"\n"
+"Atención al Cliente\n"
+"%s Tienda Online"
 
-# @ email-cart
 #: email-cart.php:1613 email-cart.php:1620 email-cart.php:1628
 msgid "Separate more than one with a comma (,)"
 msgstr "Separa más de uno con una coma (,)"
 
-# @ email-cart
 #: email-cart.php:1634
 #, php-format
 msgid "View my Cart on %s"
 msgstr "Ver mi Carrito en %s"
 
-# @ email-cart
 #: email-cart.php:1646
 msgid ""
-"Choose which page the user will land. Only visible to Admin level user's. "
-"That's you!"
+"Choose which page the user will land. Only visible to Admin level user's. That's you!"
 msgstr ""
+"Elige la página que el usuario va a aterrizar. Solo visible para el nivel de "
+"administrador del usuario. ¡Ese eres tu!"
 
-# @ email-cart
 #: email-cart.php:1657
 msgid ""
-"Edit the email content above as you wish. The [placeholder] items will add "
-"the appropriate content when the email is sent to your recipients, so make "
-"sure you keep them!"
+"Edit the email content above as you wish. The [placeholder] items will add the "
+"appropriate content when the email is sent to your recipients, so make sure you keep "
+"them!"
 msgstr ""
+"Edita el contenido de correo electrónico anterior como desees. Los [marcadores de "
+"posición] serán añadidos en el contenido cuando el correo electrónico se envía a los "
+"destinatarios, así que asegúrate de mantenerlos!"
 
-# @ email-cart
 #: email-cart.php:1668
 msgid "or Share the Link Anywhere!"
 msgstr "¡o comparte este enlace donde quieras!"
 
-# @ email-cart
 #: email-cart.php:1672
 msgid "Just copy the link below and paste into any other place you like!"
 msgstr ""
+"Sólo tienes que copiar el enlace de abajo y pegarlo en cualquier otro lugar que te "
+"guste!"
 
 # @ email-cart
 #: email-cart.php:356 email-cart.php:864
@@ -322,9 +324,11 @@ msgstr "Dirección Email en Copia"
 # @ email-cart
 #: email-cart.php:944
 msgid ""
-"Enter the email address you would like to CC on this cart email. (Separate "
-"multiple addresses with a comma)"
+"Enter the email address you would like to CC on this cart email. (Separate multiple "
+"addresses with a comma)"
 msgstr ""
+"Introduce la dirección de correo electrónico que te gustaría en CC de este carrito "
+"de correo electrónico. (Separa las direcciones con una coma)"
 
 #: email-cart.php:958
 msgid "BCC Email Address"
@@ -333,40 +337,46 @@ msgstr "Dirección Email en Copia Oculta"
 # @ email-cart
 #: email-cart.php:959
 msgid ""
-"Enter the email address you would like to BCC on this cart email. (Separate "
-"multiple addresses with a comma)"
+"Enter the email address you would like to BCC on this cart email. (Separate multiple "
+"addresses with a comma)"
 msgstr ""
+"Introduce la dirección de correo electrónico que te gustaría en BCC de este carrito "
+"de correo electrónico. (Separa las direcciones con una coma)"
 
-# @ email-cart
 #: email-cart.php:1061 settings/class-email-cart-settings.php:198
 msgid "Show on Front-End Cart"
-msgstr "Mostrar en el Carrito Público"
+msgstr "Nombre para mostrar el Carrito Público"
 
 # @ email-cart
 #: email-cart.php:1063 settings/class-email-cart-settings.php:200
-msgid ""
-"Show a button to allow users to email their cart from the front-end cart page"
+msgid "Show a button to allow users to email their cart from the front-end cart page"
 msgstr ""
+"Mostrar un botón para permitir a los usuarios por correo electrónico su compra desde "
+"la página de la cesta de compra"
 
 # @ email-cart
 #: email-cart.php:1077 settings/class-email-cart-settings.php:214
 msgid "Show CC Email Field "
-msgstr "Mostrar Campo de Dirección Email en Copia"
+msgstr "Dirección Email en Copia"
 
 # @ email-cart
 #: email-cart.php:1097 settings/class-email-cart-settings.php:234
 msgid "Display a field for users to add CC email addresses to the email"
 msgstr ""
+"Mostrar un campo para que los usuarios añadan direcciones de correo electrónico CC "
+"al correo electrónico"
 
 # @ email-cart
 #: email-cart.php:1113 settings/class-email-cart-settings.php:250
 msgid "Show BCC Email Field"
-msgstr "Mostrar Campo de Dirección Email en Copia Oculta"
+msgstr "Dirección Email en Copia Oculta"
 
 # @ email-cart
 #: email-cart.php:1133 settings/class-email-cart-settings.php:270
 msgid "Display a field for users to add BCC email addresses to the email"
 msgstr ""
+"Mostrar un campo para que los usuarios añadan direcciones de correo electrónico BCC "
+"al correo electrónico"
 
 # @ email-cart
 #: email-cart.php:1149 settings/class-email-cart-settings.php:286
@@ -379,29 +389,30 @@ msgid ""
 "Add addresses that will receive a copy of the emailed cart on each send. Add "
 "multiple separated by comma"
 msgstr ""
+"Añadir direcciones que recibirán una copia de la compra enviado por correo "
+"electrónico en cada envío. Agrega múltiples correos separados por comas"
 
 # @ email-cart
 #: email-cart.php:544
 msgid "the backend"
-msgstr "la administración"
+msgstr "el backend"
 
-# @ email-cart
 #: email-cart.php:545
 msgid "the cart page"
-msgstr "la página de carrito"
+msgstr "página carrito"
 
 # @ email-cart
 #: email-cart.php:550
 #, php-format
 msgid ""
 "\n"
-"The following email was sent using Email Cart for WooCommerce from %s of "
-"your site %s:\n"
+"The following email was sent using Email Cart for WooCommerce from %s of your site "
+"%s:\n"
 "<br>\n"
 msgstr ""
 "\n"
-"El siguiente email fue enviado utilizando Email Cart para WooCommerce desde "
-"%s tu sitio web %s:\n"
+"El siguiente email fue enviado utilizando Email Cart para WooCommerce desde %s tu "
+"sitio web %s:\n"
 "<br>\n"
 
 # @ email-cart
@@ -413,7 +424,7 @@ msgid ""
 "<br>\n"
 msgstr ""
 "\n"
-"A:\t\t%s\n"
+"De:\t\t%s\n"
 "<br>\n"
 
 # @ email-cart
@@ -470,18 +481,16 @@ msgstr ""
 # @ email-cart
 #: email-cart.php:1053
 msgid "Complete the following fields to setup your Email Cart"
-msgstr "Completa los siguientes campos para configurar tu Carrito por Email"
+msgstr "Completa los siguientes campos para configurar Email Cart"
 
 # @ email-cart
-#: email-cart.php:1079 email-cart.php:1117
-#: settings/class-email-cart-settings.php:216
+#: email-cart.php:1079 email-cart.php:1117 settings/class-email-cart-settings.php:216
 #: settings/class-email-cart-settings.php:254
 msgid "Back-end"
 msgstr "Administración"
 
 # @ email-cart
-#: email-cart.php:1095 email-cart.php:1131
-#: settings/class-email-cart-settings.php:232
+#: email-cart.php:1095 email-cart.php:1131 settings/class-email-cart-settings.php:232
 #: settings/class-email-cart-settings.php:268
 msgid "Front-end"
 msgstr "Pública"
@@ -509,9 +518,9 @@ msgstr "Configuración Email Cart"
 # @ email-cart
 #: settings/class-email-cart-settings.php:79
 msgid "Settings"
-msgstr "Configuración"
+msgstr "Ajustes"
 
-# @ email-cart
+# @ woocommerce
 #: settings/class-email-cart-settings.php:96
 msgid "Save changes"
 msgstr "Guardar cambios"
@@ -519,59 +528,62 @@ msgstr "Guardar cambios"
 # @ email-cart
 #: settings/class-email-cart-settings.php:145
 msgid "Default Backend Email Template"
-msgstr ""
+msgstr "Plantilla de email predeterminado"
 
-# @ email-cart
+# @ default
 #: settings/class-email-cart-settings.php:147
 msgid ""
-"This is the default text to be editable in each Email Cart created on the "
-"backend."
+"This is the default text to be editable in each Email Cart created on the backend."
 msgstr ""
+"Este es el texto predeterminado para ser editable en cada Carrito de Correo "
+"electrónico creado en la administración."
 
 # @ email-cart
 #: settings/class-email-cart-settings.php:147
 #: settings/class-email-cart-settings.php:182
 msgid ""
-"Please do no remove any text containing [square brackets] as this will be "
-"populated with the cart information."
+"Please do no remove any text containing [square brackets] as this will be populated "
+"with the cart information."
 msgstr ""
+"Por favor, no quites textos que contenga [corchetes], ya que se rellenará con la "
+"información de la compra."
 
 # @ email-cart
 #: settings/class-email-cart-settings.php:180
 msgid "Default Frontend Email Template"
-msgstr ""
+msgstr "Por defecto Plantilla Pùblica de correo electrónico"
 
-# @ email-cart
+# @ default
 #: settings/class-email-cart-settings.php:182
 msgid ""
-"This is the default text to be editable in each Email Cart on the Frontend "
-"Checkout page."
+"This is the default text to be editable in each Email Cart on the Frontend Checkout "
+"page."
 msgstr ""
+"Este es el texto predeterminado para ser editable en cada correo electrónico de la "
+"compra en la página Finalizar Compra."
 
 #: settings/class-email-cart-settings.php:302
 msgid "Send From"
-msgstr "Enviar desde"
+msgstr "Enviar De"
 
 # @ email-cart
 #: settings/class-email-cart-settings.php:304
 msgid "The Default From Address. Default is WooCommerce From Address"
-msgstr ""
+msgstr "La dirección de origen predeterminada. Por defecto es WooCommerce De Dirección"
 
-# @ email-cart
+# @ woocommerce
 #: settings/class-email-cart-settings.php:337
 msgid "Action failed. Please refresh the page and retry."
-msgstr ""
-"Error en la acción. Por favor, recarga la página y vuelve a intentarlo."
+msgstr "Error en la acción. Por favor, recarga la página y vuelve a intentarlo."
 
 #: email-cart.php:428
 msgid "Cart Subtotal"
-msgstr "Subtotal del Carrito"
+msgstr "Subtotal Carrito"
 
 #: email-cart.php:470
 msgid "Order Total"
 msgstr "Total Pedido"
 
-# @ email-cart
 #. translators: plugin header field 'AuthorURI'
 #: email-cart.php:0
 msgid "http://codecanyon.net/user/cxThemes/portfolio"
@@ -584,7 +596,7 @@ msgstr "Producto"
 # @ email-cart
 #: email-cart.php:392 email-cart.php:1316
 msgid "Available on backorder"
-msgstr "Disponible para reserva"
+msgstr "Disponible para reservar"
 
 # @ email-cart
 #: email-cart.php:487
@@ -592,27 +604,24 @@ msgstr "Disponible para reserva"
 msgid "(Includes %s)"
 msgstr "(Incluye %s)"
 
-# @ email-cart
 #: email-cart.php:1243
 msgid "Remove this item"
-msgstr "Borrar este artículo"
+msgstr "Eliminar este item"
 
 #: email-cart.php:1383 email-cart.php:1441
 msgid "Please choose product options&hellip;"
-msgstr "Por favor, elige las opciones del producto&hellip;"
+msgstr "Por favor, elija las opciones del producto&hellip;"
 
 # @ email-cart
 #: email-cart.php:1475
-msgid ""
-"Please choose the quantity of items you wish to add to your cart&hellip;"
+msgid "Please choose the quantity of items you wish to add to your cart&hellip;"
 msgstr ""
-"Por favor escoge la cantidad de artículos que deseas agregar a tu carrito "
-"&hellip;"
+"Por favor escoge la cantidad de articulos que deseas agregar a tu carrito&hellip;"
 
 # @ email-cart
 #: email-cart.php:1482
 msgid "Please choose a product to add to your cart&hellip;"
-msgstr "Por favor, elige un producto para agregar al carrito &hellip;"
+msgstr "Por favor, elige un producto para agregar al carrito&hellip;"
 
 # @ email-cart
 #. translators: plugin header field 'Version'
@@ -624,21 +633,32 @@ msgstr "1.14"
 #: email-cart.php:1698
 #, php-format
 msgid ""
-"%sEmail Cart for WooCommerce needs WooCommerce%s %sWooCommerce%s must be "
-"active for Email Cart to work. Please install & activate WooCommerce."
+"%sEmail Cart for WooCommerce needs WooCommerce%s %sWooCommerce%s must be active for "
+"Email Cart to work. Please install & activate WooCommerce."
 msgstr ""
 
 # @ email-cart
 #: email-cart.php:1715
 #, php-format
 msgid ""
-"%sEmail Cart for WooCommerce is inactive%s This version of Email Cart "
-"requires WooCommerce %s or newer. For more information about our WooCommerce "
-"version support %sclick here%s."
+"%sEmail Cart for WooCommerce is inactive%s This version of Email Cart requires "
+"WooCommerce %s or newer. For more information about our WooCommerce version support "
+"%sclick here%s."
 msgstr ""
+
+# @ email-cart
+#~ msgid "1.12"
+#~ msgstr "1.12"
+
+# @ email-cart
+#~ msgid "1.10"
+#~ msgstr "1.10"
 
 #~ msgid "Please select some items."
 #~ msgstr "Por favor, selecciona algún item."
+
+#~ msgid "Remove this attribute?"
+#~ msgstr "¿Quitar este atributo?"
 
 #~ msgid "Name"
 #~ msgstr "Nombre"
@@ -646,8 +666,15 @@ msgstr ""
 #~ msgid "Remove"
 #~ msgstr "Borrar"
 
+#~ msgid "Click to toggle"
+#~ msgstr "Clic para cambiar"
+
 #~ msgid "Value(s)"
 #~ msgstr "Valor(es)"
+
+#, fuzzy
+#~ msgid "Enter some text, or some attributes by pipe (|) separating values."
+#~ msgstr "Ingrese algún texto, o algunos atributos separados por barras (|)"
 
 #~ msgid "Visible on the product page"
 #~ msgstr "Visible en la página de producto"
@@ -655,21 +682,55 @@ msgstr ""
 #~ msgid "Used for variations"
 #~ msgstr "Utilizado para variaciones"
 
+#, fuzzy
+#~ msgid "Enter a name for the new attribute term:"
+#~ msgstr "Introduce un nombre para el nuevo término del atributo:"
+
+#, fuzzy
+#~ msgid ""
+#~ "Calculate line taxes? This will calculate taxes based on the customers country. "
+#~ "If no billing/shipping is set it will use the store base country."
+#~ msgstr ""
+#~ "¿Calcular impuestos por línea? Esto calculará los impuestos basados en el país de "
+#~ "los clientes. Si no se ha especificado una dirección de facturación/envío se "
+#~ "usará el país base de la tienda."
+
+#, fuzzy
+#~ msgid ""
+#~ "Copy billing information to shipping information? This will remove any currently "
+#~ "entered shipping information."
+#~ msgstr ""
+#~ "¿Copiar la información de facturación a la información de envío? Esto eliminará "
+#~ "cualquier información de envío introducida actualmente."
+
+#, fuzzy
+#~ msgid ""
+#~ "Load the customer's billing information? This will remove any currently entered "
+#~ "billing information."
+#~ msgstr ""
+#~ "¿Cargar la información de facturación del cliente? Esto eliminará la información "
+#~ "de facturación introducida actualmente."
+
+#, fuzzy
+#~ msgid ""
+#~ "Load the customer's shipping information? This will remove any currently entered "
+#~ "shipping information."
+#~ msgstr ""
+#~ "¿Cargar la información de envío del cliente? Esto eliminará la información de "
+#~ "envío introducida actualmente."
+
 #~ msgid "Featured"
 #~ msgstr "Destacado"
 
 #~ msgid "No customer selected"
 #~ msgstr "Sin cliente seleccionado"
 
-#~ msgid ""
-#~ "<strong>Create a Cart</strong> &#8211; A link to the cart will be emailed "
-#~ "to the address provided."
-#~ msgstr ""
-#~ "<strong>Crear un carrito</strong> &#8211; Crearás un enlace al carrito "
-#~ "que podrá ser enviado por email."
-
 #~ msgid "Tax Class"
 #~ msgstr "Clase de impuesto"
+
+#, fuzzy
+#~ msgid "Tax class for the line item"
+#~ msgstr "Clase de impuesto por la línea del artículo"
 
 #~ msgid "Totals"
 #~ msgstr "Totales"
@@ -689,12 +750,6 @@ msgstr ""
 #~ msgid "Apply"
 #~ msgstr "Aplicar"
 
-#~ msgid "Edit the email contents."
-#~ msgstr "Editar el contenido del email."
-
-#~ msgid "Share Cart"
-#~ msgstr "Compartir Carrito"
-
 #~ msgid "Variation ID:"
 #~ msgstr "ID Variación:"
 
@@ -706,3 +761,16 @@ msgstr ""
 
 #~ msgid "Standard"
 #~ msgstr "Estandard"
+
+#~ msgid "Product Name"
+#~ msgstr "Nombre del producto"
+
+#~ msgid "WooCommerce"
+#~ msgstr "WooCommerce"
+
+# @ email-cart
+#~ msgid "Are you sure you want to revoke access to this download?"
+#~ msgstr "¿Seguro que desea revocar el acceso a esta descarga?"
+
+#~ msgid "1.06"
+#~ msgstr "1.06"

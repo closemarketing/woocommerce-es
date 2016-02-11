@@ -11,6 +11,7 @@ Author: Closemarketing
 Author URI: http://www.closemarketing.es/
 
 Text Domain: wces
+
 Domain Path: /languages/
 
 License: GPL
@@ -126,7 +127,7 @@ class WooCommerceESPlugin {
 				),
 
 				'email-cart' => array(
-					'email-cart-es_ES.mo'       => 'woocommerce-email-cart/es_ES.mo'
+					'email-cart-es_ES.mo' => 'woocommerce-email-cart/es_ES.mo'
 				),
 
 				'wcva'               => array(
