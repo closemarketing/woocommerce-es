@@ -4,8 +4,8 @@ Plugin Name: WooCommerce (ES)
 Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
 Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
 
-Version: 1.0
-Requires at least: 4.4
+Version: 1.1
+Requires at least: 4.4.2
 
 Author: Closemarketing
 Author URI: http://www.closemarketing.es/
@@ -53,6 +53,8 @@ class WooCommerceESPlugin {
         add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data') );
 		add_filter( 'woocommerce_email_order_meta_keys', array( $this, 'woocommerce_email_notification'));
    		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices') );
+
+		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_vat_option') );
 
 		/*
 		 * WooThemes/WooCommerce don't execute the load_plugin_textdomain() in the 'init'
@@ -183,10 +185,15 @@ class WooCommerceESPlugin {
 		$fields['billing_company']['class'] = array('form-row-first');
 		$fields['billing_company']['clear'] = false;
         //$fields['billing_country']['clear'] = true;
+
+		$vatinfo_mandatory = get_option( 'wces_vat_mandatory', 1 );
+
+		if($vatinfo_mandatory=='yes') $mandatory= true; else $mandatory = false;
+
 		$field = array('billing_vat' => array(
 	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
 		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
-		    'required'    => false,
+		    'required'    => $mandatory,
 		    'class'       => array('form-row-last'),
 		    'clear'       => true
 	     ));
@@ -200,10 +207,15 @@ class WooCommerceESPlugin {
 		$fields['shipping_company']['class'] = array('form-row-first');
 		$fields['shipping_company']['clear'] = false;
         //$fields['shipping_country']['clear'] = true;
+
+		$vatinfo_mandatory = get_option( 'wces_vat_mandatory', 1 );
+
+		if($vatinfo_mandatory=='yes') $mandatory= true; else $mandatory = false;
+
 		$field = array('shipping_vat' => array(
 	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
 		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
-		    'required'    => false,
+		    'required'    => $mandatory,
 		    'class'       => array('form-row-last'),
 		    'clear'       => true
 	     ));
@@ -247,7 +259,37 @@ class WooCommerceESPlugin {
 	}
 
     /* END EU VAT*/
-}
+
+
+
+	/**
+	 * Add option to make mandatory VAT info
+	 */
+
+	public function wces_add_vat_option( $settings ) {
+
+		$updated_settings = array();
+
+	    foreach ( $settings as $section ) {
+	      // at the bottom of the General Options section
+	      if ( isset( $section['id'] ) && 'general_options' == $section['id'] &&
+	         isset( $section['type'] ) && 'sectionend' == $section['type'] ) {
+
+	        $updated_settings[] = array(
+			    'name'    => __( 'VAT info mandatory?', 'wces' ),
+			    'desc'    => __( 'This controls if VAT info would be mandatory in checkout.', 'wces' ),
+			    'id'      => 'wces_vat_mandatory',
+			    'std'     => 'no', // WooCommerce < 2.0
+			    'default' => 'no', // WooCommerce >= 2.0
+			    'type'    => 'checkbox'
+	        );
+	      }
+	      $updated_settings[] = $section;
+	    }
+	    return $updated_settings;
+	}
+
+} //from class
 
 global $wces_plugin;
 
