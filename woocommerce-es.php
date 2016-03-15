@@ -134,7 +134,11 @@ class WooCommerceESPlugin {
 
 				'wcva'               => array(
 					'languages/wcva-es_ES.mo'           => 'woocommerce-colororimage-variation-select/es_ES.mo'
-				)
+				),
+
+				'wc_brands'            => array(
+					'languages/wc_brands-es_ES.mo'        => 'woocommerce-brands/wc_brands-es_ES.mo'
+				),
 			);
 
 			if ( isset( $domains[$domain] ) ) {
