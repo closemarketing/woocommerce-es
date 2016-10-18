@@ -4,8 +4,8 @@ Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commer
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
 Requires at least: 3.0
 Tested up to: 4.4
-Stable tag: 1.1
-Version: 1.1
+Stable tag: 1.2
+Version: 1.2
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and tranlations add-ons with the Spanish language.
 
@@ -32,6 +32,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog ==
+= 1.2 =
+*	Adds an option in Woocommerce / General Options to Optimize the checkout for better conversion.
+
 = 1.1 =
 *	Add an option in Woocommerce / General Options to make it mandatory VAT info field.
 
