@@ -4,14 +4,13 @@ Plugin Name: WooCommerce (ES)
 Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
 Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
 
-Version: 1.1
-Requires at least: 4.4.2
+Version: 1.2
+Requires at least: 4.6
 
 Author: Closemarketing
 Author URI: http://www.closemarketing.es/
 
 Text Domain: wces
-
 Domain Path: /languages/
 
 License: GPL
@@ -55,6 +54,14 @@ class WooCommerceESPlugin {
    	add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices') );
 
 		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_vat_option') );
+
+		/* Optimizes Checkout */
+		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_opt_option') );
+
+		$op_checkout = get_option( 'wces_opt_checkout', 1 );
+		if($op_checkout=='yes') {
+			add_filter( 'woocommerce_locate_template', array($this,'wces_woocommerce_locate_template'), 10, 3 );
+		}
 
 		/*
 		 * WooThemes/WooCommerce don't execute the load_plugin_textdomain() in the 'init'
@@ -134,7 +141,11 @@ class WooCommerceESPlugin {
 
 				'wcva'               => array(
 					'languages/wcva-es_ES.mo'           => 'woocommerce-colororimage-variation-select/es_ES.mo'
-				)
+				),
+
+				'wc_brands'            => array(
+					'languages/wc_brands-es_ES.mo'        => 'woocommerce-brands/wc_brands-es_ES.mo'
+				),
 			);
 
 			if ( isset( $domains[$domain] ) ) {
@@ -288,6 +299,63 @@ class WooCommerceESPlugin {
 	    }
 	    return $updated_settings;
 	}
+
+	//* Optimize Checkout
+
+	/**
+	 * Add option to optimize Checkout
+	 */
+
+	public function wces_add_opt_option( $settings ) {
+
+		$updated_settings = array();
+
+	    foreach ( $settings as $section ) {
+	      // at the bottom of the General Options section
+	      if ( isset( $section['id'] ) && 'general_options' == $section['id'] &&
+	         isset( $section['type'] ) && 'sectionend' == $section['type'] ) {
+
+	        $updated_settings[] = array(
+			    'name'    => __( 'Optimize Checkout?', 'wces' ),
+			    'desc'    => __( 'Optimizes your checkout to better conversion.', 'wces' ),
+			    'id'      => 'wces_opt_checkout',
+			    'std'     => 'no', // WooCommerce < 2.0
+			    'default' => 'no', // WooCommerce >= 2.0
+			    'type'    => 'checkbox'
+	        );
+	      }
+	      $updated_settings[] = $section;
+	    }
+	    return $updated_settings;
+	}
+
+  function wces_woocommerce_locate_template( $template, $template_name, $template_path ) {
+    global $woocommerce;
+
+    $_template = $template;
+    if ( ! $template_path ) $template_path = $woocommerce->template_url;
+    $plugin_path  = untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/woocommerce/';
+
+    // Look within passed path within the theme - this is priority
+    $template = locate_template(
+
+      array(
+        $template_path . $template_name,
+        $template_name
+      )
+    );
+
+    // Modification: Get the template from this plugin, if it exists
+    if ( ! $template && file_exists( $plugin_path . $template_name ) )
+      $template = $plugin_path . $template_name;
+    // Use default template
+
+    if ( ! $template )
+      $template = $_template;
+    // Return what we found
+
+    return $template;
+  }
 
 } //from class
 
