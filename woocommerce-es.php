@@ -2,15 +2,15 @@
 /*
 Plugin Name: WooCommerce (ES)
 Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
-Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
+Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
 Version: 1.2
 Requires at least: 4.6
 
-Author: Closemarketing
-Author URI: http://www.closemarketing.es/
+Author: closemarketing, davidperez
+Author URI: https://www.closemarketing.es/
 
-Text Domain: wces
+Text Domain: woocommerce-es
 Domain Path: /languages/
 
 License: GPL
@@ -100,7 +100,7 @@ class WooCommerceESPlugin {
 
 		// Load plugin text domain - WooCommerce ES
 		// WooCommerce mixed use of 'wc_gf_addons' and 'wc_gravityforms'
-		load_plugin_textdomain( 'wces', false, $rel_path );
+		load_plugin_textdomain( 'woocommerce-es', false, $rel_path );
 	}
 
 	////////////////////////////////////////////////////////////
@@ -202,8 +202,8 @@ class WooCommerceESPlugin {
 		if($vatinfo_mandatory=='yes') $mandatory= true; else $mandatory = false;
 
 		$field = array('billing_vat' => array(
-	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
-		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
+	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'woocommerce-es') ),
+		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'woocommerce-es') ),
 		    'required'    => $mandatory,
 		    'class'       => array('form-row-last'),
 		    'clear'       => true
@@ -224,8 +224,8 @@ class WooCommerceESPlugin {
 		if($vatinfo_mandatory=='yes') $mandatory= true; else $mandatory = false;
 
 		$field = array('shipping_vat' => array(
-	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
-		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
+	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'woocommerce-es') ),
+		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'woocommerce-es') ),
 		    'required'    => $mandatory,
 		    'class'       => array('form-row-last'),
 		    'clear'       => true
@@ -237,7 +237,7 @@ class WooCommerceESPlugin {
 
     public function wces_add_billing_shipping_fields_admin( $fields ) {
         $fields['vat'] = array(
-            'label' => apply_filters( 'vatssn_label', __('VAT No', 'wces') )
+            'label' => apply_filters( 'vatssn_label', __('VAT No', 'woocommerce-es') )
         );
 
         return $fields;
@@ -265,7 +265,7 @@ class WooCommerceESPlugin {
 	  global $wpo_wcpdf;
 
 	  echo $address . '<p>';
-	  $wpo_wcpdf->custom_field( 'billing_vat', __('VAT info:', 'wces') );
+	  $wpo_wcpdf->custom_field( 'billing_vat', __('VAT info:', 'woocommerce-es') );
 	  echo '</p>';
 	}
 
@@ -287,8 +287,8 @@ class WooCommerceESPlugin {
 	         isset( $section['type'] ) && 'sectionend' == $section['type'] ) {
 
 	        $updated_settings[] = array(
-			    'name'    => __( 'VAT info mandatory?', 'wces' ),
-			    'desc'    => __( 'This controls if VAT info would be mandatory in checkout.', 'wces' ),
+			    'name'    => __( 'VAT info mandatory?', 'woocommerce-es' ),
+			    'desc'    => __( 'This controls if VAT info would be mandatory in checkout.', 'woocommerce-es' ),
 			    'id'      => 'wces_vat_mandatory',
 			    'std'     => 'no', // WooCommerce < 2.0
 			    'default' => 'no', // WooCommerce >= 2.0
@@ -316,8 +316,8 @@ class WooCommerceESPlugin {
 	         isset( $section['type'] ) && 'sectionend' == $section['type'] ) {
 
 	        $updated_settings[] = array(
-			    'name'    => __( 'Optimize Checkout?', 'wces' ),
-			    'desc'    => __( 'Optimizes your checkout to better conversion.', 'wces' ),
+			    'name'    => __( 'Optimize Checkout?', 'woocommerce-es' ),
+			    'desc'    => __( 'Optimizes your checkout to better conversion.', 'woocommerce-es' ),
 			    'id'      => 'wces_opt_checkout',
 			    'std'     => 'no', // WooCommerce < 2.0
 			    'default' => 'no', // WooCommerce >= 2.0
