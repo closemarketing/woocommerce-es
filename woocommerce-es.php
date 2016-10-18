@@ -45,14 +45,14 @@ class WooCommerceESPlugin {
 
 		add_filter( 'load_textdomain_mofile', array( $this, 'wces_load_mo_file' ), 10, 2 );
 
-        /* EU VAT */
-	    add_filter( 'woocommerce_billing_fields' , array( $this, 'wces_add_billing_fields' ) );
-        add_filter( 'woocommerce_shipping_fields' , array( $this, 'wces_add_shipping_fields' ) );
-        add_filter( 'woocommerce_admin_billing_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
-        add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
-        add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data') );
+    /* EU VAT */
+	  add_filter( 'woocommerce_billing_fields' , array( $this, 'wces_add_billing_fields' ) );
+    add_filter( 'woocommerce_shipping_fields' , array( $this, 'wces_add_shipping_fields' ) );
+    add_filter( 'woocommerce_admin_billing_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
+    add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
+    add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data') );
 		add_filter( 'woocommerce_email_order_meta_keys', array( $this, 'woocommerce_email_notification'));
-   		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices') );
+   	add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices') );
 
 		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_vat_option') );
 
