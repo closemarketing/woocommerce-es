@@ -4,14 +4,13 @@ Plugin Name: WooCommerce (ES)
 Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
 Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
 
-Version: 1.1
-Requires at least: 4.4.2
+Version: 1.2
+Requires at least: 4.6
 
 Author: Closemarketing
 Author URI: http://www.closemarketing.es/
 
 Text Domain: wces
-
 Domain Path: /languages/
 
 License: GPL
@@ -58,7 +57,7 @@ class WooCommerceESPlugin {
 
 		/* Optimizes Checkout */
 		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_opt_option') );
-		
+
 		$op_checkout = get_option( 'wces_opt_checkout', 1 );
 		if($op_checkout=='yes') {
 			add_filter( 'woocommerce_locate_template', array($this,'wces_woocommerce_locate_template'), 10, 3 );
