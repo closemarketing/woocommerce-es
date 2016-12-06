@@ -4,7 +4,7 @@ Plugin Name: WooCommerce (ES)
 Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
 Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
 
-Version: 1.2
+Version: 1.3
 Requires at least: 4.6
 
 Author: Closemarketing
@@ -145,6 +145,26 @@ class WooCommerceESPlugin {
 
 				'wc_brands'            => array(
 					'languages/wc_brands-es_ES.mo'        => 'woocommerce-brands/wc_brands-es_ES.mo'
+				),
+
+				'woocommerce-memberships' => array(
+					'languages/woocommerce-memberships-es_ES.mo'        => 'woocommerce-memberships/woocommerce-memberships-es_ES.mo'
+				),
+
+				'woocommerce-subscriptions' => array(
+					'languages/woocommerce-subscriptions-es_ES.mo'        => 'woocommerce-subscriptions/woocommerce-subscriptions-es_ES.mo'
+				),
+
+				'woocommerce-events' => array(
+					'languages/woocommerce-events-es_ES.mo' => 'woocommerce-events/woocommerce-events-es_ES.mo'
+				),
+
+				'woocommerce-brands' => array(
+					'languages/woocommerce-brands-es_ES.mo' => 'woocommerce-brands/woocommerce-brands-es_ES.mo'
+				),
+
+				'spwcsp' => array(
+					'languages/spwcsp-es_ES.mo' => 'sp-wc-gateway-sepa/spwcsp-es_ES.mo'
 				),
 			);
 
