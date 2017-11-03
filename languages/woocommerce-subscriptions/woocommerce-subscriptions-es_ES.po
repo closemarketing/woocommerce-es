@@ -9,7 +9,7 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2016-12-06 13:28+0100\n"
+"PO-Revision-Date: 2016-12-08 23:20+0100\n"
 "Language-Team: Prospress Translations <translations@prospress.com>\n"
 "X-Generator: Poedit 1.8.11\n"
 "Last-Translator: David <david@closemarketing.es>\n"
@@ -103,7 +103,7 @@ msgstr "Sin Límite"
 
 #: includes/admin/class-wc-subscriptions-admin.php:274
 msgid "Limit to one active subscription"
-msgstr ""
+msgstr "Limitado a una suscrpción activa"
 
 #: includes/admin/class-wc-subscriptions-admin.php:275
 msgid "Limit to one of any status"
@@ -138,12 +138,16 @@ msgid ""
 "Unable to change subscription status to \"%s\". Please assign a customer to "
 "the subscription to activate it."
 msgstr ""
+"No se puede cambiar el estado de la suscripción a \"%s\". Por favor, asignar "
+"a un cliente la suscripción para activarlo."
 
 #: includes/admin/class-wc-subscriptions-admin.php:692
 msgid ""
 "Trashing this order will also trash the subscriptions purchased with the "
 "order."
 msgstr ""
+"Borrando este pedido también se borrará la suscripción adquirida en dicha "
+"orden."
 
 #: includes/admin/class-wc-subscriptions-admin.php:705
 msgid "Enter the new period, either day, week, month or year:"
@@ -151,13 +155,15 @@ msgstr ""
 
 #: includes/admin/class-wc-subscriptions-admin.php:706
 msgid "Enter a new length (e.g. 5):"
-msgstr ""
+msgstr "Introduce una nueva duración (ej. 5):"
 
 #: includes/admin/class-wc-subscriptions-admin.php:707
 msgid ""
 "Enter a new interval as a single number (e.g. to charge every 2nd month, "
 "enter 2):"
 msgstr ""
+"Introduce un nuevo intervalo como un sólo número (ej. para cambiar cada 2do "
+"mes, ingresa el número 2):"
 
 #: includes/admin/class-wc-subscriptions-admin.php:712
 msgid ""
@@ -322,7 +328,7 @@ msgstr ""
 
 #: includes/admin/class-wc-subscriptions-admin.php:1102
 msgid "Turn off Automatic Payments"
-msgstr ""
+msgstr "Desactivar los Pagos Automáticos"
 
 #. translators: placeholders are opening and closing link tags
 #: includes/admin/class-wc-subscriptions-admin.php:1107
@@ -362,7 +368,7 @@ msgstr ""
 #: includes/admin/class-wc-subscriptions-admin.php:1142
 #: includes/upgrades/templates/wcs-about.php:108
 msgid "Drip Downloadable Content"
-msgstr ""
+msgstr "Activar Descarga por Goteo"
 
 #: includes/admin/class-wc-subscriptions-admin.php:1143
 msgid "Enable dripping for downloadable content on subscription products."
@@ -406,7 +412,7 @@ msgstr ""
 
 #: includes/admin/class-wc-subscriptions-admin.php:1210
 msgid "Add a Subscription Product"
-msgstr ""
+msgstr "Agregar  Suscripción de un producto"
 
 #: includes/admin/class-wc-subscriptions-admin.php:1211
 #: includes/upgrades/templates/wcs-about.php:35
@@ -424,17 +430,17 @@ msgstr ""
 #: includes/admin/class-wc-subscriptions-admin.php:1330
 #: includes/admin/class-wc-subscriptions-admin.php:1335
 msgid "Showing orders for %sSubscription %s%s"
-msgstr ""
+msgstr "Mostrando órdenes desde %sSubscripción %s%s"
 
 #. translators: number of 1$: days, 2$: weeks, 3$: months, 4$: years
 #: includes/admin/class-wc-subscriptions-admin.php:1359
 msgid "The trial period can not exceed: %1s, %2s, %3s or %4s."
-msgstr ""
+msgstr "El periodo de prueba gratis no puede exceder: %1s, %2s, %3s o %4s."
 
 #. translators: placeholder is a time period (e.g. "4 weeks")
 #: includes/admin/class-wc-subscriptions-admin.php:1364
 msgid "The trial period can not exceed %s."
-msgstr ""
+msgstr "El periodo de prueba gratis no puede exceder %s."
 
 #: includes/admin/class-wc-subscriptions-admin.php:1420
 #: includes/admin/class-wc-subscriptions-admin.php:1473
@@ -463,11 +469,11 @@ msgstr "Pedidos relacionados"
 
 #: includes/admin/class-wcs-admin-meta-boxes.php:103
 msgid "Please enter a start date in the past."
-msgstr ""
+msgstr "Por favor introduce una fecha de inicio en el pasado."
 
 #: includes/admin/class-wcs-admin-meta-boxes.php:104
 msgid "Please enter a date at least one hour into the future."
-msgstr ""
+msgstr "Por favor introduce una fecha de al menos una hora en adelante."
 
 #: includes/admin/class-wcs-admin-meta-boxes.php:105
 msgid "Please enter a date after the trial end."
@@ -478,11 +484,11 @@ msgstr ""
 #: includes/admin/class-wcs-admin-meta-boxes.php:106
 #: includes/admin/class-wcs-admin-meta-boxes.php:107
 msgid "Please enter a date after the start date."
-msgstr ""
+msgstr "Por favor introduce una fecha posterior a la fecha de inicio."
 
 #: includes/admin/class-wcs-admin-meta-boxes.php:108
 msgid "Please enter a date before the next payment."
-msgstr ""
+msgstr "Por favor, introduce una fecha antes del próximo pago."
 
 #: includes/admin/class-wcs-admin-meta-boxes.php:109
 msgid "Please enter a date after the next payment."
@@ -647,7 +653,7 @@ msgstr "Mostrar más detalles"
 msgid "%d item"
 msgid_plural "%d items"
 msgstr[0] "%d item"
-msgstr[1] ""
+msgstr[1] "% items"
 
 #. translators: placeholder is the display name of a payment gateway a
 #. subscription was paid by
@@ -674,11 +680,11 @@ msgstr "Suscripción actualizada"
 
 #: includes/admin/class-wcs-admin-post-types.php:830
 msgid "Custom field updated."
-msgstr ""
+msgstr "Campo personalizado actualizado."
 
 #: includes/admin/class-wcs-admin-post-types.php:831
 msgid "Custom field deleted."
-msgstr ""
+msgstr "Campo personalizado eliminado."
 
 #: includes/admin/class-wcs-admin-post-types.php:836
 msgid "Subscription saved."
@@ -691,15 +697,15 @@ msgstr "Suscripción enviada."
 #. translators: php date string
 #: includes/admin/class-wcs-admin-post-types.php:839
 msgid "Subscription scheduled for: %1$s."
-msgstr ""
+msgstr "Suscripción prevista para: %1$s."
 
 #: includes/admin/class-wcs-admin-post-types.php:840
 msgid "Subscription draft updated."
-msgstr ""
+msgstr "Borrador de suscripción actualizado."
 
 #: includes/admin/class-wcs-admin-post-types.php:878
 msgid "Any Payment Method"
-msgstr ""
+msgstr "Cualquier forma de pago"
 
 #: includes/admin/class-wcs-admin-post-types.php:879
 msgid "None"
@@ -715,11 +721,11 @@ msgstr "Ver otras suscripciones"
 
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:76
 msgid "Search for a customer&hellip;"
-msgstr ""
+msgstr "Buscar un Cliente&hellip;"
 
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:80
 msgid "Subscription Status:"
-msgstr ""
+msgstr "Estado de la suscripción:"
 
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:98
 msgid "Billing Details"
@@ -734,7 +740,7 @@ msgstr "Dirección"
 
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:106
 msgid "No billing address set."
-msgstr ""
+msgstr "Sin dirección de facturación establecido."
 
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:122
 #: includes/class-wcs-change-payment-method-admin.php:38
@@ -748,7 +754,7 @@ msgstr "Detalles de envío"
 
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:174
 msgid "No shipping address set."
-msgstr ""
+msgstr "Sin dirección de envío configurado."
 
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:192
 #: includes/admin/meta-boxes/class-wcs-meta-box-subscription-data.php:219
@@ -846,7 +852,7 @@ msgstr ""
 
 #: includes/api/class-wc-api-subscriptions.php:389 wcs-functions.php:137
 msgid "Invalid subscription billing period given."
-msgstr ""
+msgstr "Periodo de facturación dado para la suscripción no válido."
 
 #: includes/class-wc-subscription.php:309
 #: includes/class-wc-subscription.php:400
@@ -1253,14 +1259,14 @@ msgstr ""
 #: includes/class-wc-subscriptions-product.php:379
 #: includes/wcs-formatting-functions.php:164
 msgid "%1$s on %2$s %3$s each year"
-msgstr ""
+msgstr "%1$s el %2$s %3$s por año"
 
 #. translators: 1$: recurring amount, 2$: month (e.g. "March"), 3$: day of the
 #. month (e.g. "23rd") (e.g. "$15 on March 15th every 3rd year")
 #: includes/class-wc-subscriptions-product.php:382
 #: includes/wcs-formatting-functions.php:173
 msgid "%1$s on %2$s %3$s every %4$s year"
-msgstr ""
+msgstr "%1$s el %2$s %3$s cada %4$s año/s"
 
 #. translators: 1$: recurring amount, 2$: subscription period (e.g. "month" or
 #. "3 months") (e.g. "$15 / month" or "$15 every 2nd month")
@@ -1268,38 +1274,38 @@ msgstr ""
 #: includes/wcs-formatting-functions.php:184
 msgid "%1$s / %2$s"
 msgid_plural " %1$s every %2$s"
-msgstr[0] ""
+msgstr[0] "%1$s / %2$s"
 msgstr[1] ""
 
 #. translators: billing period (e.g. "every week")
 #: includes/class-wc-subscriptions-product.php:394
 msgid "every %s"
-msgstr ""
+msgstr "cada %s"
 
 #. translators: 1$: subscription string (e.g. "$10 up front then $5 on March
 #. 23rd every 3rd year"), 2$: length (e.g. "4 years")
 #: includes/class-wc-subscriptions-product.php:400
 #: includes/wcs-formatting-functions.php:194
 msgid "%1$s for %2$s"
-msgstr ""
+msgstr "%1$s por %2$s"
 
 #. translators: 1$: subscription string (e.g. "$15 on March 15th every 3 years
 #. for 6 years"), 2$: trial length (e.g.: "with 4 months free trial")
 #: includes/class-wc-subscriptions-product.php:406
 msgid "%1$s with %2$s free trial"
-msgstr ""
+msgstr "%1$s con %2$s de prueba gratis"
 
 #. translators: 1$: subscription string (e.g. "$15 on March 15th every 3 years
 #. for 6 years with 2 months free trial"), 2$: signup fee price (e.g. "and a
 #. $30 sign-up fee")
 #: includes/class-wc-subscriptions-product.php:411
 msgid "%1$s and a %2$s sign-up fee"
-msgstr ""
+msgstr "%1$s y un %2$s por cargo de registro."
 
 #. translators: placeholder is order ID
 #: includes/class-wc-subscriptions-renewal-order.php:140
 msgid "Order %s created to record renewal."
-msgstr ""
+msgstr "Pedido %s creado para registrar la renovación."
 
 #: includes/class-wc-subscriptions-renewal-order.php:160
 msgid "Subscription renewal orders cannot be cancelled."
@@ -1313,7 +1319,7 @@ msgstr ""
 
 #: includes/class-wc-subscriptions-switcher.php:157
 msgid "Choose a new subscription."
-msgstr ""
+msgstr "Elige una nueva suscripción."
 
 #: includes/class-wc-subscriptions-switcher.php:179
 #: includes/class-wc-subscriptions-switcher.php:857
@@ -1342,7 +1348,7 @@ msgstr ""
 
 #: includes/class-wc-subscriptions-switcher.php:318
 msgid "Switching"
-msgstr ""
+msgstr "Cambiando"
 
 #. translators: placeholders are opening and closing link tags
 #: includes/class-wc-subscriptions-switcher.php:321
@@ -1353,7 +1359,7 @@ msgstr ""
 
 #: includes/class-wc-subscriptions-switcher.php:326
 msgid "Allow Switching"
-msgstr ""
+msgstr "Permitir cambio"
 
 #: includes/class-wc-subscriptions-switcher.php:327
 msgid ""
@@ -1364,7 +1370,7 @@ msgstr ""
 
 #: includes/class-wc-subscriptions-switcher.php:343
 msgid "Prorate Recurring Payment"
-msgstr ""
+msgstr "Pago periódico prorrateado"
 
 #: includes/class-wc-subscriptions-switcher.php:344
 msgid ""
@@ -1375,7 +1381,7 @@ msgstr ""
 
 #: includes/class-wc-subscriptions-switcher.php:361
 msgid "Prorate Sign up Fee"
-msgstr ""
+msgstr "Prorrateo de la Cuota de Inscripción."
 
 #: includes/class-wc-subscriptions-switcher.php:362
 msgid ""
@@ -1474,47 +1480,47 @@ msgstr ""
 #. translators: placeholder is a day of the week
 #: includes/class-wc-subscriptions-synchroniser.php:615
 msgid "%s each week"
-msgstr ""
+msgstr "%s cada semana"
 
 #. translators: placeholder is a number of day with language specific suffix
 #. applied (e.g. "1st", "3rd", "5th", etc...)
 #: includes/class-wc-subscriptions-synchroniser.php:621
 msgid "%s day of the month"
-msgstr ""
+msgstr "%s día del mes"
 
 #: includes/class-wc-subscriptions-synchroniser.php:623
 msgid "Last day of the month"
-msgstr ""
+msgstr "Último día del mes"
 
 #: includes/class-wc-subscriptions-synchroniser.php:671
 msgid "Today!"
-msgstr ""
+msgstr "Hoy!"
 
 #. translators: placeholder is a date
 #: includes/class-wc-subscriptions-synchroniser.php:678
 msgid "First payment prorated. Next payment: %s"
-msgstr ""
+msgstr "Primer pago prorrateado. Pago siguiente: %s"
 
 #. translators: placeholder is a date
 #: includes/class-wc-subscriptions-synchroniser.php:681
 msgid "First payment: %s"
-msgstr ""
+msgstr "Primer Pago: %s"
 
 #: includes/class-wcs-auth.php:39
 msgid "View subscriptions"
-msgstr ""
+msgstr "Ver suscripciones"
 
 #: includes/class-wcs-auth.php:42
 msgid "Create subscriptions"
-msgstr ""
+msgstr "Crear suscripciones"
 
 #: includes/class-wcs-auth.php:45
 msgid "View and manage subscriptions"
-msgstr ""
+msgstr "Ver y administrar suscripciones"
 
 #: includes/class-wcs-cart-initial-payment.php:48
 msgid "That doesn't appear to be your order."
-msgstr ""
+msgstr "Parece no ser tu pedido"
 
 #. translators: placeholder is an item name
 #: includes/class-wcs-cart-renewal.php:162
@@ -2327,8 +2333,8 @@ msgstr ""
 #: includes/wcs-cart-functions.php:91
 msgid "Shipping"
 msgid_plural "Shipping %d"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "Shipping"
+msgstr[1] "Envíos %d"
 
 #: includes/wcs-cart-functions.php:220
 msgid "Free shipping coupon"
@@ -2337,7 +2343,7 @@ msgstr ""
 #. translators: placeholder is a date
 #: includes/wcs-cart-functions.php:323
 msgid "First renewal: %s"
-msgstr ""
+msgstr "Primera renovación: %s"
 
 #. translators: placeholder is either subscription key or a subscription id,
 #. or, failing that, empty (e.g. "145_21" or "145")
@@ -2400,14 +2406,14 @@ msgstr ""
 #. (e.g. "23rd")
 #: includes/wcs-formatting-functions.php:161
 msgid "%1$s %2$s then %3$s on %4$s %5$s each year"
-msgstr ""
+msgstr "%1$s %2$s después %3$s en el %4$s de cada año"
 
 #. translators: 1$: initial amount, 2$: initial description (e.g. "up front"),
 #. 3$: recurring amount, 4$: month (e.g. "March"), 5$: day of the month (e.g.
 #. "23rd"), 6$: interval (e.g. "3rd")
 #: includes/wcs-formatting-functions.php:170
 msgid "%1$s %2$s then %3$s on %4$s %5$s every %6$s year"
-msgstr ""
+msgstr "%1$s %2$s después %3$s el %4$s %5$s cada %6$s año"
 
 #. translators: 1$: initial amount, 2$: initial description (e.g. "up front"),
 #. 3$: recurring amount, 4$: subscription period (e.g. "month" or "3 months")
@@ -2432,25 +2438,25 @@ msgstr ""
 #. translators: date placeholder for input, javascript format
 #: includes/wcs-helper-functions.php:38
 msgid "YYYY-MM-DD"
-msgstr ""
+msgstr "AAAA-MM-DD"
 
 #. translators: hour placeholder for time input, javascript format
 #: includes/wcs-helper-functions.php:43
 msgid "HH"
-msgstr ""
+msgstr "HH"
 
 #. translators: minute placeholder for time input, javascript format
 #: includes/wcs-helper-functions.php:46
 msgid "MM"
-msgstr ""
+msgstr "MM"
 
 #: includes/wcs-order-functions.php:267
 msgid "Subscription Renewal Order &ndash; %s"
-msgstr ""
+msgstr "Pedido &ndash; %s"
 
 #: includes/wcs-order-functions.php:270
 msgid "Resubscribe Order &ndash; %s"
-msgstr ""
+msgstr "Pedido &ndash; %s"
 
 #: includes/wcs-order-functions.php:289
 msgid "$type passed to the function was not a string."
@@ -2471,8 +2477,8 @@ msgstr ""
 #: includes/wcs-time-functions.php:54
 msgid "%s day"
 msgid_plural "a %s-day"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "%s día"
+msgstr[1] "un %s-día"
 
 #: includes/wcs-time-functions.php:55
 msgid "%s week"
@@ -2500,7 +2506,7 @@ msgstr "Resuscribir"
 
 #: templates/admin/html-variation-price.php:20
 msgid "Sign-up Fee: (%s)"
-msgstr ""
+msgstr "Cuota de Inscripción: (%s)"
 
 #: templates/admin/html-variation-price.php:25
 msgid "Free Trial:"
@@ -2537,11 +2543,11 @@ msgstr "Otro"
 
 #: templates/admin/post-types/writepanels/order-tax-html.php:17
 msgid "Recurring Sales Tax:"
-msgstr ""
+msgstr "Impuestos sobre Ventas Recurrentes:"
 
 #: templates/admin/post-types/writepanels/order-tax-html.php:21
 msgid "Shipping Tax:"
-msgstr ""
+msgstr "Impuestos de envío:"
 
 #: templates/cart/cart-recurring-shipping.php:19
 msgid "Recurring shipping options can be selected on checkout."
@@ -3518,57 +3524,57 @@ msgstr ""
 #: includes/class-wcs-user-change-status-handler.php:76
 msgctxt "Notice displayed to user confirming their action."
 msgid "Your subscription has been cancelled."
-msgstr ""
+msgstr "Tu suscripción ha sido cancelada"
 
 #. translators: placeholder is {blogname}, a variable that will be substituted
 #. when email is sent out
 #: includes/emails/class-wcs-email-cancelled-subscription.php:32
 msgctxt "default email subject for cancelled emails sent to the admin"
 msgid "[%s] Subscription Cancelled"
-msgstr ""
+msgstr "[%s] Suscripción Cancelada"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:120
 #: includes/emails/class-wcs-email-customer-renewal-invoice.php:174
 msgctxt "an email notification"
 msgid "Enable/Disable"
-msgstr ""
+msgstr "Habilitar/Deshabilitar"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:126
 msgctxt "of an email"
 msgid "Recipient(s)"
-msgstr ""
+msgstr "Destinatario(s)"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:134
 msgctxt "of an email"
 msgid "Subject"
-msgstr ""
+msgstr "Asunto"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:141
 msgctxt ""
 "Name the setting that controls the main heading contained within the email "
 "notification"
 msgid "Email Heading"
-msgstr ""
+msgstr "Cabecera correo electrónico"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:148
 msgctxt "text, html or multipart"
 msgid "Email type"
-msgstr ""
+msgstr "Tipo de email"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:154
 msgctxt "email type"
 msgid "Plain text"
-msgstr ""
+msgstr "Texto sin formato"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:155
 msgctxt "email type"
 msgid "HTML"
-msgstr ""
+msgstr "HTML"
 
 #: includes/emails/class-wcs-email-cancelled-subscription.php:156
 msgctxt "email type"
 msgid "Multipart"
-msgstr ""
+msgstr "Multiparte"
 
 #: includes/emails/class-wcs-email-customer-completed-renewal-order.php:29
 msgctxt ""
@@ -3784,8 +3790,8 @@ msgstr ""
 msgctxt "Subscription billing period."
 msgid "day"
 msgid_plural "%s days"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "día"
+msgstr[1] "%s días"
 
 #. translators: placeholder is number of weeks. (e.g. "Bill this every week / 4
 #. weeks")
@@ -3793,8 +3799,8 @@ msgstr[1] ""
 msgctxt "Subscription billing period."
 msgid "week"
 msgid_plural "%s weeks"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "semana"
+msgstr[1] "%s semanas"
 
 #. translators: placeholder is number of months. (e.g. "Bill this every month /
 #. 4 months")
@@ -3802,8 +3808,8 @@ msgstr[1] ""
 msgctxt "Subscription billing period."
 msgid "month"
 msgid_plural "%s months"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "mes"
+msgstr[1] "&s meses"
 
 #. translators: placeholder is number of years. (e.g. "Bill this every year / 4
 #. years")
@@ -3811,8 +3817,8 @@ msgstr[1] ""
 msgctxt "Subscription billing period."
 msgid "year"
 msgid_plural "%s years"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "año"
+msgstr[1] "%s años"
 
 #: includes/wcs-time-functions.php:81
 msgctxt "Subscription length (eg \"$10 per month for _all time_\")"
@@ -3822,34 +3828,34 @@ msgstr ""
 #: includes/wcs-time-functions.php:86
 msgctxt "Subscription lengths. e.g. \"For 1 day...\""
 msgid "1 day"
-msgstr ""
+msgstr "1 día"
 
 #: includes/wcs-time-functions.php:90
 msgctxt "Subscription lengths. e.g. \"For 1 week...\""
 msgid "1 week"
-msgstr ""
+msgstr "1 semana"
 
 #: includes/wcs-time-functions.php:94
 msgctxt "Subscription lengths. e.g. \"For 1 month...\""
 msgid "1 month"
-msgstr ""
+msgstr "1 mes"
 
 #: includes/wcs-time-functions.php:98
 msgctxt "Subscription lengths. e.g. \"For 1 year...\""
 msgid "1 year"
-msgstr ""
+msgstr "1 año"
 
 #: includes/wcs-time-functions.php:148
 msgctxt "period interval (eg \"$10 _every_ 2 weeks\")"
 msgid "every"
-msgstr ""
+msgstr "cada"
 
 #. translators: period interval, placeholder is ordinal (eg "$10 every
 #. _2nd/3rd/4th_", etc)
 #: includes/wcs-time-functions.php:152
 msgctxt "period interval with ordinal number (e.g. \"every 2nd\""
 msgid "every %s"
-msgstr ""
+msgstr "cada %s"
 
 #: includes/wcs-time-functions.php:176
 msgctxt ""
@@ -3857,8 +3863,8 @@ msgctxt ""
 "plural, 1 will need singular."
 msgid "day"
 msgid_plural "days"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "día"
+msgstr[1] "días"
 
 #: includes/wcs-time-functions.php:177
 msgctxt ""
@@ -3866,8 +3872,8 @@ msgctxt ""
 "plural, 1 will need singular."
 msgid "week"
 msgid_plural "weeks"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "semana"
+msgstr[1] "semanas"
 
 #: includes/wcs-time-functions.php:178
 msgctxt ""
@@ -3875,8 +3881,8 @@ msgctxt ""
 "plural, 1 will need singular."
 msgid "month"
 msgid_plural "months"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "mes"
+msgstr[1] "meses"
 
 #: includes/wcs-time-functions.php:179
 msgctxt ""
@@ -3884,25 +3890,25 @@ msgctxt ""
 "plural, 1 will need singular."
 msgid "year"
 msgid_plural "years"
-msgstr[0] ""
-msgstr[1] ""
+msgstr[0] "año"
+msgstr[1] "años"
 
 #: includes/wcs-time-functions.php:197
 msgctxt "no trial period"
 msgid "no"
-msgstr ""
+msgstr "no"
 
 #: templates/admin/deprecated/html-variation-price.php:59
 msgctxt ""
 "Edit product screen, between the Billing Period and Subscription Length "
 "dropdowns"
 msgid "for"
-msgstr ""
+msgstr "para"
 
 #: templates/admin/deprecated/html-variation-price.php:105
 msgctxt "example number of days / weeks / months"
 msgid "e.g. 3"
-msgstr ""
+msgstr "ej. 3"
 
 #: templates/checkout/form-change-payment-method.php:20
 #: templates/emails/admin-new-renewal-order.php:35
@@ -3917,7 +3923,7 @@ msgstr ""
 #: templates/myaccount/view-subscription.php:95
 msgctxt "table headings in notification email"
 msgid "Product"
-msgstr ""
+msgstr "Producto"
 
 #: templates/checkout/form-change-payment-method.php:21
 #: templates/emails/admin-new-renewal-order.php:36
@@ -3931,12 +3937,12 @@ msgstr ""
 #: templates/emails/customer-renewal-invoice.php:43
 msgctxt "table headings in notification email"
 msgid "Quantity"
-msgstr ""
+msgstr "Cantidad"
 
 #: templates/checkout/form-change-payment-method.php:22
 msgctxt "table headings in notification email"
 msgid "Totals"
-msgstr ""
+msgstr "Totales"
 
 #: templates/emails/admin-new-renewal-order.php:37
 #: templates/emails/admin-new-switch-order.php:40
@@ -3950,17 +3956,17 @@ msgstr ""
 #: templates/emails/customer-renewal-invoice.php:44
 msgctxt "table headings in notification email"
 msgid "Price"
-msgstr ""
+msgstr "Precio"
 
 #: templates/emails/cancelled-subscription.php:29
 msgctxt "table headings in notification email"
 msgid "End of Prepaid Term"
-msgstr ""
+msgstr "Fin de Plazo Prepago"
 
 #: templates/checkout/form-change-payment-method.php:55
 msgctxt "text on button on checkout page"
 msgid "Change Payment Method"
-msgstr ""
+msgstr "Cambiar Método de Pago"
 
 #. translators: $1: customer's billing first name, $2: customer's billing last
 #. name
@@ -4028,31 +4034,31 @@ msgstr ""
 #: templates/emails/plain/subscription-info.php:21
 msgctxt "in plain emails for subscription information"
 msgid "View Subscription: %s"
-msgstr ""
+msgstr "Ver Suscripción: %s"
 
 #. translators: placeholder is subscription's number
 #: templates/emails/plain/subscription-info.php:19
 msgctxt "in plain emails for subscription information"
 msgid "Subscription: %s"
-msgstr ""
+msgstr "Suscripción: %s"
 
 #. translators: placeholder is localised start date
 #: templates/emails/plain/subscription-info.php:23
 msgctxt "in plain emails for subscription information"
 msgid "Start Date: %s"
-msgstr ""
+msgstr "Fecha de Inicio: %s"
 
 #. translators: placeholder is localised end date, or "when cancelled"
 #: templates/emails/plain/subscription-info.php:27
 msgctxt "in plain emails for subscription information"
 msgid "End Date: %s"
-msgstr ""
+msgstr "Fecha de Fin: %s"
 
 #. translators: placeholder is the formatted order total for the subscription
 #: templates/emails/plain/subscription-info.php:29
 msgctxt "in plain emails for subscription information"
 msgid "Price: %s"
-msgstr ""
+msgstr "Precio: %s"
 
 #: templates/emails/plain/subscription-info.php:25
 #: templates/emails/subscription-info.php:29
