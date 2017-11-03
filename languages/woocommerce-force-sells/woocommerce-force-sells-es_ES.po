@@ -1,0 +1,84 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce Force Sells\n"
+"POT-Creation-Date: 2016-12-08 22:33+0100\n"
+"PO-Revision-Date: 2016-12-08 22:35+0100\n"
+"Last-Translator: David <david@closemarketing.es>\n"
+"Language-Team: David <david@closemarketing.es>\n"
+"Language: es_ES\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 1.8.11\n"
+"X-Poedit-Basepath: ..\n"
+"X-Poedit-WPHeader: woocommerce-force-sells.php\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: __;_e;_n:1,2;_x:1,2c;_ex:1,2c;_nx:4c,1,2;esc_attr__;"
+"esc_attr_e;esc_attr_x:1,2c;esc_html__;esc_html_e;esc_html_x:1,2c;"
+"_n_noop:1,2;_nx_noop:3c,1,2;__ngettext_noop:1,2\n"
+"X-Poedit-SearchPath-0: .\n"
+"X-Poedit-SearchPathExcluded-0: *.js\n"
+
+#: woocommerce-force-sells.php:142
+msgid "Linked to"
+msgstr "Vinculado a"
+
+#: woocommerce-force-sells.php:190
+msgid "Force Sells"
+msgstr "Forzar ventas"
+
+#: woocommerce-force-sells.php:192 woocommerce-force-sells.php:204
+#: woocommerce-force-sells.php:230 woocommerce-force-sells.php:242
+msgid "Search for a product&hellip;"
+msgstr "Buscar un producto&hellip;"
+
+#: woocommerce-force-sells.php:225
+msgid ""
+"These products will be added to the cart when the main product is added. "
+"Quantity will not be synced in case the main product quantity changes."
+msgstr ""
+"Estos productos se añadirán al carrito cuando se agregue el producto "
+"principal. La cantidad no se sincronizará en caso de que cambie la cantidad "
+"del producto principal."
+
+#: woocommerce-force-sells.php:228
+msgid "Synced Force Sells"
+msgstr "Sincronizar Forzar ventas"
+
+#: woocommerce-force-sells.php:263
+msgid ""
+"These products will be added to the cart when the main product is added and "
+"quantity will be synced in case the main product quantity changes."
+msgstr ""
+"Estos productos se añadirán al carrito cuando se agregue el producto "
+"principal y se sincronizará la cantidad en caso de que cambie la cantidad "
+"del producto principal."
+
+#: woocommerce-force-sells.php:315
+msgid "This will also add the following products to your cart:"
+msgstr "Esto también agregará los productos siguientes a su carrito:"
+
+#. Plugin Name of the plugin/theme
+msgid "WooCommerce Force Sells"
+msgstr "WooCommerce Force Sells"
+
+#. Plugin URI of the plugin/theme
+msgid "http://woocommerce.com/products/force-sells/"
+msgstr "http://woocommerce.com/products/force-sells/"
+
+#. Description of the plugin/theme
+msgid ""
+"Allows you to select products which will be used as force-sells - items "
+"which get added to the cart along with other items."
+msgstr ""
+"Permite seleccionar los productos que se utilizarán como venta forzada - "
+"artículos que se añadirán al carrito junto con otros."
+
+#. Author of the plugin/theme
+msgid "Automattic"
+msgstr "Automattic"
+
+#. Author URI of the plugin/theme
+msgid "https://woocommerce.com"
+msgstr "https://woocommerce.com"

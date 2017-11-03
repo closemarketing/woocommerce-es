@@ -3,9 +3,9 @@ Contributors: closemarketing
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
 Requires at least: 3.0
-Tested up to: 4.6
-Stable tag: 1.2
-Version: 1.2
+Tested up to: 4.7
+Stable tag: 1.3
+Version: 1.3
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
@@ -17,9 +17,13 @@ It gives you the option to activate optimization in the checkout. It changes the
 
 Furthermore, this plugin includes the Woocommerce Translation from some plugins that translate it.
 
-*	<strong>WooCommerce Email Cart</strong> [Download](http://codecanyon.net/item/email-cart-for-woocommerce/5568059?ref=closemarketing) Send Carts by Email to users
+*	<strong>[WooCommerce Email Cart](https://www.closemarketing.es/likes/email-cart/)</strong> Send Carts by Email to users
 *	<strong>WooCommerce Product Enquiry Form</strong>
 *	<strong>WooCommerce Shipping Table Rate</strong>
+*	<strong>WooCommerce Memberships</strong>
+*	<strong>WooCommerce Subscriptions</strong>
+*	<strong>WooCommerce Brands</strong>
+*	<strong>[WooCommerce SEPA Direct](https://www.closemarketing.es/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
 
 > This plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce plugin</a>
 
@@ -33,7 +37,12 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 == Developers ==
 
 
-== Changelog ==
+== Changelog =
+== 1.3 =
+*	Added translation for Woocommerce Memberships, Subscriptions, Events plugin and SEPA direct debit.
+*     Added option to remove company field.
+*     Added option to show/not show VAT Field.
+
 = 1.2 =
 *	Adds an option in Woocommerce / General Options to Optimize the checkout for better conversion.
 
@@ -57,9 +66,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 == Closemarketing plugins ==
 
-*	[Send SMS to WordPress Users via Arsys](https://wordpress.org/plugins/send-sms-arsys/)
-*	[Clean HTML Code in the Editor](https://wordpress.org/plugins/clean-html/)
-*	[Gravity Forms Spanish](https://wordpress.org/plugins/gravityforms-es/)
+* [Send SMS to WordPress Users via Arsys](https://wordpress.org/plugins/send-sms-arsys/)
+* [Clean HTML Code in the Editor](https://wordpress.org/plugins/clean-html/)
+* [Gravity Forms Spanish](https://wordpress.org/plugins/gravityforms-es/)
 * [Bootstrap ShortCodes for Content](https://wordpress.org/plugins/bootstrap-shortcodes-for-content/)
 * [Event Espresso (Spanish)](https://wordpress.org/plugins/event-espresso-es/)
 * [Debug MO Translations](https://wordpress.org/plugins/debug-mo-translations/)

@@ -1,0 +1,350 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: WooCommerce SEPA Payment Gateway\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2016-03-04 15:38+0100\n"
+"PO-Revision-Date: \n"
+"Last-Translator: David <david@closemarketing.es>\n"
+"Language-Team: Closemarketing <info@closemarketing.es>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Poedit-SourceCharset: UTF-8\n"
+"X-Poedit-KeywordsList: _e;__\n"
+"X-Poedit-Basepath: .\n"
+"X-Generator: Poedit 1.8.11\n"
+"X-Poedit-SearchPath-0: .\n"
+
+#: sp-wc-gateway-sepa.php:127
+msgid "SEPA"
+msgstr "SEPA"
+
+#: sp-wc-gateway-sepa.php:128
+msgid "Allows payments by SEPA, more commonly known as direct debit."
+msgstr ""
+"Permite el pago mediante la SEPA, más comúnmente conocida como la "
+"domiciliación bancaria."
+
+#: sp-wc-gateway-sepa.php:208
+msgid "Enable/Disable"
+msgstr "Activar/Desactivar"
+
+#: sp-wc-gateway-sepa.php:210
+msgid "Enable SEPA Payment"
+msgstr "Habilitar Pago SEPA"
+
+#: sp-wc-gateway-sepa.php:212 sp-wc-gateway-sepa.php:567
+msgid "SEPA Payment only works with EUR as currency."
+msgstr "El pago de la SEPA sólo funciona con el EUR como moneda."
+
+#: sp-wc-gateway-sepa.php:215
+msgid "Title"
+msgstr "Título"
+
+#: sp-wc-gateway-sepa.php:217
+#, fuzzy
+msgid "This controls the title which the user will see during checkout."
+msgstr ""
+"Hier kannst Du den Titel eintragen, der im Checkout-Prozess angezeigt wird."
+
+#: sp-wc-gateway-sepa.php:218
+#, fuzzy
+msgid "SEPA Direct Debit"
+msgstr "SEPA Lastschrift"
+
+#: sp-wc-gateway-sepa.php:222
+msgid "Description"
+msgstr "Descripción"
+
+#: sp-wc-gateway-sepa.php:224
+#, fuzzy
+msgid "Payment method description that the customer will see on your checkout."
+msgstr ""
+"Beschreibung der Zahlungsmethode, die im Checkout-Prozess angezeigt wird."
+
+#: sp-wc-gateway-sepa.php:225
+#, fuzzy
+msgid ""
+"We will debit the amount directly from your account via SEPA direct debit. "
+"Your order won't be shipped until the funds have cleared in our account."
+msgstr "Der Betrag wird per SEPA Lastschrift von Ihrem Konto eingezogen. "
+
+#: sp-wc-gateway-sepa.php:229
+#, fuzzy
+msgid "Instructions"
+msgstr "Anleitung"
+
+#: sp-wc-gateway-sepa.php:231
+#, fuzzy
+msgid "Instructions that will be added to the thank you page and emails."
+msgstr ""
+"Anleitung zu der Zahlungsmethode, die im Checkout-Prozess angezeigt wird."
+
+#: sp-wc-gateway-sepa.php:236 sp-wc-gateway-sepa.php:334
+#: sp-wc-gateway-sepa.php:502 sp-wc-gateway-sepa.php:541
+#: sp-wc-gateway-sepa.php:665 sp-wc-gateway-sepa.php:869
+#, fuzzy
+msgid "Account Owner"
+msgstr "Konto Inhaber"
+
+#: sp-wc-gateway-sepa.php:238
+#, fuzzy
+msgid "The Owner of your bank account."
+msgstr "Der Inhaber des Bankkontos."
+
+#: sp-wc-gateway-sepa.php:243 sp-wc-gateway-sepa.php:335
+#: sp-wc-gateway-sepa.php:506 sp-wc-gateway-sepa.php:542
+#: sp-wc-gateway-sepa.php:671 sp-wc-gateway-sepa.php:880
+msgid "Account IBAN"
+msgstr "Número de cuenta IBAN"
+
+#: sp-wc-gateway-sepa.php:245
+msgid "Your IBAN."
+msgstr "Tu IBAN"
+
+#: sp-wc-gateway-sepa.php:250 sp-wc-gateway-sepa.php:336
+#: sp-wc-gateway-sepa.php:510 sp-wc-gateway-sepa.php:543
+#: sp-wc-gateway-sepa.php:677 sp-wc-gateway-sepa.php:891
+msgid "Account BIC"
+msgstr "Cuenta BIC"
+
+#: sp-wc-gateway-sepa.php:252
+msgid "Your BIC."
+msgstr "Tu BIC"
+
+#: sp-wc-gateway-sepa.php:257
+msgid "Creditor Id"
+msgstr "ID acreedor SEPA"
+
+#: sp-wc-gateway-sepa.php:259
+msgid "Your Creditor ID."
+msgstr "Su identificación de acreedor."
+
+#: sp-wc-gateway-sepa.php:264
+msgid "Mandate Id"
+msgstr "Id Mandato"
+
+#: sp-wc-gateway-sepa.php:266
+#, fuzzy
+msgid "The default mandate id. This will be extended by the order-id."
+msgstr ""
+"Die Standard-Mandats-Id. Bei Verarbeitung wird die Mandats-Id um die "
+"Bestell-/Rechnungsnummer ergänzt."
+
+#: sp-wc-gateway-sepa.php:333 sp-wc-gateway-sepa.php:536
+#: sp-wc-gateway-sepa.php:662 sp-wc-gateway-sepa.php:863
+msgid "SEPA Bank Details"
+msgstr "SEPA Datos bancarios"
+
+#: sp-wc-gateway-sepa.php:357
+#, fuzzy
+msgid "Awaiting SEPA payment"
+msgstr "Warte auf SEPA Lastschrift"
+
+#: sp-wc-gateway-sepa.php:580
+#, fuzzy
+msgid "Account-Owner must be filled."
+msgstr "Der Konto-Inhaber muss eingetragen werden."
+
+#: sp-wc-gateway-sepa.php:667 sp-wc-gateway-sepa.php:874
+#, fuzzy
+msgid "Please enter the account owner."
+msgstr "Bitte trage den Konto-Inhaber ein."
+
+#: sp-wc-gateway-sepa.php:673 sp-wc-gateway-sepa.php:885
+#, fuzzy
+msgid "Please enter the IBAN."
+msgstr "Bitte tage die IBAN ein."
+
+#: sp-wc-gateway-sepa.php:679 sp-wc-gateway-sepa.php:896
+#, fuzzy
+msgid "Please enter the BIC."
+msgstr "Bitte trage den BIC ein."
+
+#: sp-wc-gateway-sepa.php:772
+msgid "Unpayed"
+msgstr "Impagado"
+
+#: sp-wc-gateway-sepa.php:847
+msgid "SEPA Create XML"
+msgstr "Crear XML SEPA"
+
+#: sp-wc-gateway-sepa.php:848 sp-wc-gateway-sepa.php:969
+msgid "SEPA Transactions"
+msgstr "Transacciones SEPA"
+
+#: sp-wc-gateway-sepa.php:979 sp-wc-gateway-sepa.php:1034
+msgid "Transaction-ID"
+msgstr "ID-transacción"
+
+#: sp-wc-gateway-sepa.php:980 sp-wc-gateway-sepa.php:1035
+#, fuzzy
+msgid "Transaction-Date"
+msgstr "Transaktions-Datum"
+
+#: sp-wc-gateway-sepa.php:981 sp-wc-gateway-sepa.php:1036
+#, fuzzy
+msgid "Transaction-Amount"
+msgstr "Transaktions-Betrag"
+
+#: sp-wc-gateway-sepa.php:982 sp-wc-gateway-sepa.php:1037
+#, fuzzy
+msgid "Transaction-Records"
+msgstr "Anzahl Datensätze"
+
+#: sp-wc-gateway-sepa.php:983 sp-wc-gateway-sepa.php:1038
+#, fuzzy
+msgid "File-Name-XML"
+msgstr "XML Dateiname"
+
+#: sp-wc-gateway-sepa.php:1059
+#, fuzzy
+msgid "Create SEPA XML File"
+msgstr "Erstelle SEPA XML Datei"
+
+#: sp-wc-gateway-sepa.php:1069 sp-wc-gateway-sepa.php:1347
+msgid "Order-ID"
+msgstr "ID-pedido"
+
+#: sp-wc-gateway-sepa.php:1070 sp-wc-gateway-sepa.php:1348
+msgid "Order-Date"
+msgstr "Fecha-Pedido"
+
+#: sp-wc-gateway-sepa.php:1071 sp-wc-gateway-sepa.php:1349
+#, fuzzy
+msgid "Order-Amount"
+msgstr "Bestell-Betrag"
+
+#: sp-wc-gateway-sepa.php:1072 sp-wc-gateway-sepa.php:1350
+msgid "IBAN"
+msgstr "IBAN"
+
+#: sp-wc-gateway-sepa.php:1073 sp-wc-gateway-sepa.php:1351
+msgid "BIC"
+msgstr "BIC"
+
+#: sp-wc-gateway-sepa.php:1247 sp-wc-gateway-sepa.php:1263
+msgid "Your Order"
+msgstr "Tu pedido"
+
+#: sp-wc-gateway-sepa.php:1247 sp-wc-gateway-sepa.php:1263
+msgid "from Date"
+msgstr "desde fecha"
+
+#: sp-wc-gateway-sepa.php:1312
+msgid "SEPA payment processed"
+msgstr "Pago de la SEPA procesado"
+
+#: sp-wc-gateway-sepa.php:1673
+#, fuzzy
+msgid "IBAN must be filled."
+msgstr "Die IBAN muss eingetragen werden."
+
+#: sp-wc-gateway-sepa.php:1691
+#, fuzzy
+msgid "This is not an IBAN from a SEPA country."
+msgstr ""
+"Dies ist eine IBAN aus einem Land das nicht am SEPA Prozess teilnimmt. "
+
+#: sp-wc-gateway-sepa.php:1700
+#, fuzzy
+msgid "IBAN has not the right length."
+msgstr "Die IBAN hat die falsche Länge."
+
+#: sp-wc-gateway-sepa.php:1713
+#, fuzzy
+msgid "IBAN is not valid."
+msgstr "Die IBAN ist nicht korrekt."
+
+#: sp-wc-gateway-sepa.php:1737
+#, fuzzy
+msgid "BIC must be filled."
+msgstr "Der BIC muss eingetragen werden."
+
+#: sp-wc-gateway-sepa.php:1760
+#, fuzzy
+msgid "BIC has not the right len."
+msgstr "Der BIC hat die falsche Länge."
+
+#: sp-wc-gateway-sepa.php:1767
+#, fuzzy
+msgid "BIC is not valid."
+msgstr "Der BIC ist nicht korrekt."
+
+#: sp-wc-gateway-sepa.php:1780
+#, fuzzy
+msgid "This is not a BIC from a SEPA country."
+msgstr "Dies ist ein BIC aus einem Land das nicht am SEPA Prozess teilnimmt."
+
+#: sp-wc-gateway-sepa.php:1788
+#, fuzzy
+msgid "IBAN and BIC country must be equal."
+msgstr "IBAN und BIC müssen über das gleiche Land verfügen."
+
+#~ msgid "IBAN does not have the right length."
+#~ msgstr "Die IBAN hat die falsche Länge."
+
+#~ msgid "Account Owner:"
+#~ msgstr "Konto Inhaber:"
+
+#~ msgid "BIC:"
+#~ msgstr "BIC:"
+
+#~ msgid "IBAN:"
+#~ msgstr "IBAN:"
+
+#~ msgid "SEPA Information"
+#~ msgstr "SEPA Informationen"
+
+#~ msgid "SAP User Connect Settings"
+#~ msgstr "SAP User Connect Einstellungen"
+
+#~ msgid "Connect Settings"
+#~ msgstr "Verbindungs Parameter"
+
+#~ msgid "Plugin Settings"
+#~ msgstr "Plugin Einstellungen"
+
+#~ msgid "Only SAP-Users could register"
+#~ msgstr "Nur SAP-Benutzer dürfen sich Registrieren"
+
+#~ msgid "Only SAP-Users could login"
+#~ msgstr "Nur SAP-Benutzer dürfen sich Anmelden"
+
+#~ msgid "Exclude Users"
+#~ msgstr "Benutzer ausschliessen"
+
+#~ msgid ""
+#~ "Add the Usernames that should not be checked against SAP(e.g. the ADMIN). "
+#~ "Seperate the usernames with a comma"
+#~ msgstr ""
+#~ "Tragen Sie hier die Benutzernamen ein, die beim Anmelden NICHT gegen SAP "
+#~ "geprüft werden sollen (z.b. der Wordpress Admin). Bitte trennen Sie die "
+#~ "Benutzernamen mit einem Komma."
+
+#~ msgid "Save Changes"
+#~ msgstr "Änderungen speichern"
+
+#~ msgid "Please Note !<br />Your username will be checked against SAP."
+#~ msgstr "Achtung !<br />Der Benutzername wird gegen SAP geprüft."
+
+#~ msgid ""
+#~ "Username <strong>%s</strong> doesn't exist in SAP. <br />Please use your "
+#~ "SAP Username to Register."
+#~ msgstr ""
+#~ "Benutzername <strong>%s</strong> existiert nicht in SAP. <br />Bitte "
+#~ "verwenden Sie Ihren SAP-Benutzernamen zur Registrierung."
+
+#~ msgid ""
+#~ "Username <strong>%s</strong> doesn't exist in SAP. <br />Please use your "
+#~ "SAP Username to Login."
+#~ msgstr ""
+#~ "Benutzername <strong>%s</strong> existiert nicht in SAP. <br />Bitte "
+#~ "verwenden Sie Ihren SAP-Benutzernamen zur Anmeldung"
+
+#~ msgid "Determine Details for an User"
+#~ msgstr "Zeigt Details zum Benutzer an"
+
+#~ msgid "Not a SAP User"
+#~ msgstr "Kein SAP Benutzer"
