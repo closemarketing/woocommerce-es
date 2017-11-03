@@ -10,7 +10,7 @@ Requires at least: 4.6
 Author: Closemarketing
 Author URI: http://www.closemarketing.es/
 
-Text Domain: wces
+Text Domain: woocommerce-es
 Domain Path: /languages/
 
 License: GPL
@@ -44,19 +44,17 @@ class WooCommerceESPlugin {
 
 		add_filter( 'load_textdomain_mofile', array( $this, 'wces_load_mo_file' ), 10, 2 );
 
-    /* EU VAT */
-	  add_filter( 'woocommerce_billing_fields' , array( $this, 'wces_add_billing_fields' ) );
-    add_filter( 'woocommerce_shipping_fields' , array( $this, 'wces_add_shipping_fields' ) );
-    add_filter( 'woocommerce_admin_billing_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
-    add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
-    add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data') );
+	    	/* EU VAT */
+		add_filter( 'woocommerce_billing_fields' , array( $this, 'wces_add_billing_fields' ) );
+		add_filter( 'woocommerce_admin_billing_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
+		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'wces_add_billing_shipping_fields_admin') );
+		add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data') );
 		add_filter( 'woocommerce_email_order_meta_keys', array( $this, 'woocommerce_email_notification'));
-   	add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices') );
+	   	add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices') );
 
-		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_vat_option') );
-
-		/* Optimizes Checkout */
+		/* Options for the plugin */
 		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_opt_option') );
+		add_filter( 'woocommerce_checkout_fields' , array( $this, 'custom_override_checkout_fields') );
 
 		$op_checkout = get_option( 'wces_opt_checkout', 1 );
 		if($op_checkout=='yes') {
@@ -218,12 +216,17 @@ class WooCommerceESPlugin {
         //$fields['billing_country']['clear'] = true;
 
 		$vatinfo_mandatory = get_option( 'wces_vat_mandatory', 1 );
+		$vatinfo_show = get_option( 'wces_vat_show', 1 );
+
+		if($vatinfo_show!='yes')
+			return $fields;
+
 
 		if($vatinfo_mandatory=='yes') $mandatory= true; else $mandatory = false;
 
 		$field = array('billing_vat' => array(
-	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
-		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
+	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'woocommerce-es') ),
+		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'woocommerce-es') ),
 		    'required'    => $mandatory,
 		    'class'       => array('form-row-last'),
 		    'clear'       => true
@@ -233,31 +236,17 @@ class WooCommerceESPlugin {
 		return $fields;
 	}
 
+	// Our hooked in function - $fields is passed via the filter!
+	function custom_override_checkout_fields( $fields ) {
+		if (get_option('wces_company', 1)!='yes')
+	     	unset($fields['billing']['billing_company']);
 
-	public function wces_add_shipping_fields( $fields ) {
-		$fields['shipping_company']['class'] = array('form-row-first');
-		$fields['shipping_company']['clear'] = false;
-        //$fields['shipping_country']['clear'] = true;
-
-		$vatinfo_mandatory = get_option( 'wces_vat_mandatory', 1 );
-
-		if($vatinfo_mandatory=='yes') $mandatory= true; else $mandatory = false;
-
-		$field = array('shipping_vat' => array(
-	        'label'       => apply_filters( 'vatssn_label', __('VAT No', 'wces') ),
-		    'placeholder' => apply_filters( 'vatssn_label_x', __('VAT No', 'placeholder', 'wces') ),
-		    'required'    => $mandatory,
-		    'class'       => array('form-row-last'),
-		    'clear'       => true
-	     ));
-
-		$this->array_splice_assoc( $fields, $field, 'shipping_address_1');
-		return $fields;
+	     	return $fields;
 	}
 
     public function wces_add_billing_shipping_fields_admin( $fields ) {
         $fields['vat'] = array(
-            'label' => apply_filters( 'vatssn_label', __('VAT No', 'wces') )
+            'label' => apply_filters( 'vatssn_label', __('VAT No', 'woocommerce-es') )
         );
 
         return $fields;
@@ -265,7 +254,6 @@ class WooCommerceESPlugin {
 
     public function wces_add_var_load_order_data( $fields ) {
         $fields['billing_vat'] = '';
-        $fields['shipping_vat'] = '';
         return $fields;
     }
 
@@ -285,7 +273,7 @@ class WooCommerceESPlugin {
 	  global $wpo_wcpdf;
 
 	  echo $address . '<p>';
-	  $wpo_wcpdf->custom_field( 'billing_vat', __('VAT info:', 'wces') );
+	  $wpo_wcpdf->custom_field( 'billing_vat', __('VAT info:', 'woocommerce-es') );
 	  echo '</p>';
 	}
 
@@ -294,36 +282,7 @@ class WooCommerceESPlugin {
 
 
 	/**
-	 * Add option to make mandatory VAT info
-	 */
-
-	public function wces_add_vat_option( $settings ) {
-
-		$updated_settings = array();
-
-	    foreach ( $settings as $section ) {
-	      // at the bottom of the General Options section
-	      if ( isset( $section['id'] ) && 'general_options' == $section['id'] &&
-	         isset( $section['type'] ) && 'sectionend' == $section['type'] ) {
-
-	        $updated_settings[] = array(
-			    'name'    => __( 'VAT info mandatory?', 'wces' ),
-			    'desc'    => __( 'This controls if VAT info would be mandatory in checkout.', 'wces' ),
-			    'id'      => 'wces_vat_mandatory',
-			    'std'     => 'no', // WooCommerce < 2.0
-			    'default' => 'no', // WooCommerce >= 2.0
-			    'type'    => 'checkbox'
-	        );
-	      }
-	      $updated_settings[] = $section;
-	    }
-	    return $updated_settings;
-	}
-
-	//* Optimize Checkout
-
-	/**
-	 * Add option to optimize Checkout
+	 * Add options for WooCommerce
 	 */
 
 	public function wces_add_opt_option( $settings ) {
@@ -334,10 +293,33 @@ class WooCommerceESPlugin {
 	      // at the bottom of the General Options section
 	      if ( isset( $section['id'] ) && 'general_options' == $section['id'] &&
 	         isset( $section['type'] ) && 'sectionend' == $section['type'] ) {
-
 	        $updated_settings[] = array(
-			    'name'    => __( 'Optimize Checkout?', 'wces' ),
-			    'desc'    => __( 'Optimizes your checkout to better conversion.', 'wces' ),
+			    'name'    => __( 'Ask for VAT in Checkout?', 'woocommerce-es' ),
+			    'desc'    => __( 'This controls if VAT field will be shown in checkout.', 'woocommerce-es' ),
+			    'id'      => 'wces_vat_show',
+			    'std'     => 'yes', // WooCommerce < 2.0
+			    'default' => 'yes', // WooCommerce >= 2.0
+			    'type'    => 'checkbox'
+	        );
+	        $updated_settings[] = array(
+			    'name'    => __( 'VAT info mandatory?', 'woocommerce-es' ),
+			    'desc'    => __( 'This controls if VAT info would be mandatory in checkout.', 'woocommerce-es' ),
+			    'id'      => 'wces_vat_mandatory',
+			    'std'     => 'no', // WooCommerce < 2.0
+			    'default' => 'no', // WooCommerce >= 2.0
+			    'type'    => 'checkbox'
+	        );
+	        $updated_settings[] = array(
+			    'name'    => __( 'Show Company field?', 'woocommerce-es' ),
+			    'desc'    => __( 'This controls if company field will be shown', 'woocommerce-es' ),
+			    'id'      => 'wces_company',
+			    'std'     => 'no', // WooCommerce < 2.0
+			    'default' => 'no', // WooCommerce >= 2.0
+			    'type'    => 'checkbox'
+	        );
+	        $updated_settings[] = array(
+			    'name'    => __( 'Optimize Checkout?', 'woocommerce-es' ),
+			    'desc'    => __( 'Optimizes your checkout to better conversion.', 'woocommerce-es' ),
 			    'id'      => 'wces_opt_checkout',
 			    'std'     => 'no', // WooCommerce < 2.0
 			    'default' => 'no', // WooCommerce >= 2.0
