@@ -153,10 +153,6 @@ class WooCommerceESPlugin {
 					'languages/woocommerce-subscriptions-es_ES.mo'        => 'woocommerce-subscriptions/woocommerce-subscriptions-es_ES.mo'
 				),
 
-				'woocommerce-events' => array(
-					'languages/woocommerce-events-es_ES.mo' => 'woocommerce-events/woocommerce-events-es_ES.mo'
-				),
-
 				'woocommerce-brands' => array(
 					'languages/woocommerce-brands-es_ES.mo' => 'woocommerce-brands/woocommerce-brands-es_ES.mo'
 				),

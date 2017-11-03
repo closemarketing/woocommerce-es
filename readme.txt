@@ -24,7 +24,6 @@ Furthermore, this plugin includes the Woocommerce Translation from some plugins 
 *	<strong>WooCommerce Subscriptions</strong>
 *	<strong>WooCommerce Brands</strong>
 *	<strong>[WooCommerce SEPA Direct](https://www.closemarketing.es/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
-*	<strong>[WooCommerce Events](https://www.closemarketing.es/likes/woo-events/)</strong> Sell tickets in your WooCommerce store.
 
 > This plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce plugin</a>
 
@@ -41,6 +40,8 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 == Changelog =
 == 1.3 =
 *	Added translation for Woocommerce Memberships, Subscriptions, Events plugin and SEPA direct debit.
+*     Added option to remove company field.
+*     Added option to show/not show VAT Field.
 
 = 1.2 =
 *	Adds an option in Woocommerce / General Options to Optimize the checkout for better conversion.
