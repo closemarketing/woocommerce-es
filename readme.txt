@@ -1,11 +1,11 @@
 === WooCommerce (es) ===
-Contributors: closemarketing
+Contributors: closemarketing, davidperez
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
 Requires at least: 3.0
-Tested up to: 4.7
-Stable tag: 1.3
-Version: 1.3
+Tested up to: 4.8.2
+Stable tag: 1.4
+Version: 1.4
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
@@ -38,10 +38,12 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
-== 1.3 =
-*	Added translation for Woocommerce Memberships, Subscriptions, Events plugin and SEPA direct debit.
+= 1.4 =
 *     Added option to remove company field.
 *     Added option to show/not show VAT Field.
+
+= 1.3 =
+*	Added translation for Woocommerce Memberships, Subscriptions, Events plugin and SEPA direct debit.
 
 = 1.2 =
 *	Adds an option in Woocommerce / General Options to Optimize the checkout for better conversion.
