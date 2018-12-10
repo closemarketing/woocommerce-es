@@ -1,11 +1,11 @@
-=== WooCommerce (es) ===
+=== WooCommerce enhacements for Spanish Market ===
 Contributors: closemarketing, davidperez
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
 Requires at least: 3.0
-Tested up to: 4.8.2
-Stable tag: 1.4
-Version: 1.4
+Tested up to: 4.9.8
+Stable tag: 1.5
+Version: 1.5
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
@@ -20,9 +20,9 @@ Furthermore, this plugin includes the Woocommerce Translation from some plugins 
 *	<strong>[WooCommerce Email Cart](https://www.closemarketing.es/likes/email-cart/)</strong> Send Carts by Email to users
 *	<strong>WooCommerce Product Enquiry Form</strong>
 *	<strong>WooCommerce Shipping Table Rate</strong>
-*	<strong>WooCommerce Memberships</strong>
-*	<strong>WooCommerce Subscriptions</strong>
-*	<strong>WooCommerce Brands</strong>
+*	<strong>[WooCommerce Memberships](https://www.closemarketing.es/likes/wces-woocommerce-memberships/)</strong>
+*	<strong>[WooCommerce Subscriptions](https://www.closemarketing.es/likes/wces-woocommerce-subscriptions/)</strong>
+*	<strong>[WooCommerce Brands](https://www.closemarketing.es/likes/wces-woocommerce-brands/)</strong>
 *	<strong>[WooCommerce SEPA Direct](https://www.closemarketing.es/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
 
 > This plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce plugin</a>
@@ -38,6 +38,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
+= 1.5 =
+*	Hide shipping rates when free shipping is available.
+
 = 1.4 =
 *     Added option to remove company field.
 *     Added option to show/not show VAT Field.
