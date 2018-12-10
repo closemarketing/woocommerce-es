@@ -56,12 +56,11 @@ class WooCommerceESPlugin {
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
 
 		// Hide shipping rates when free shipping is available.
-
 		add_filter( 'woocommerce_package_rates', array( $this, 'shipping_when_free_is_available' ), 100 );
 
 		$op_checkout = get_option( 'wces_opt_checkout', 1 );
-		if ( $op_checkout == 'yes' ) {
-			add_filter( 'woocommerce_locate_template', array( $this, 'wces_woocommerce_locate_template' ), 10, 3 );
+		if ( 'yes' === $op_checkout ) {
+			add_action( 'woocommerce_before_checkout_form', array( $this, 'wces_style' ), 5 );
 		}
 
 		/*
@@ -225,7 +224,7 @@ class WooCommerceESPlugin {
 		$field = array(
 			'billing_vat' => array(
 				'label'       => apply_filters( 'vatssn_label', __( 'VAT No', 'woocommerce-es' ) ),
-				'placeholder' => apply_filters( 'vatssn_label_x', __( 'VAT No', 'placeholder', 'woocommerce-es' ) ),
+				'placeholder' => apply_filters( 'vatssn_label_x', __( 'VAT No', 'woocommerce-es' ) ),
 				'required'    => $mandatory,
 				'class'       => array( 'form-row-last' ),
 				'clear'       => true,
@@ -332,34 +331,16 @@ class WooCommerceESPlugin {
 		return $updated_settings;
 	}
 
-	function wces_woocommerce_locate_template( $template, $template_name, $template_path ) {
-		global $woocommerce;
-
-		$_template = $template;
-		if ( ! $template_path ) {
-			$template_path = $woocommerce->template_url;
-		}
-		$plugin_path = untrailingslashit( plugin_dir_path( __FILE__ ) ) . '/woocommerce/';
-
-		// Look within passed path within the theme - this is priority
-		$template = locate_template(
-
-			array(
-				$template_path . $template_name,
-				$template_name,
-			)
-		);
-
-		// Modification: Get the template from this plugin, if it exists
-		if ( ! $template && file_exists( $plugin_path . $template_name ) ) {
-			$template = $plugin_path . $template_name;
-		}
-		// Use default template
-		if ( ! $template ) {
-			$template = $_template;
-		}
-		// Return what we found
-		return $template;
+	function wces_style() {
+		echo '<style>@media (min-width: 993px) {
+			body .woocommerce .col2-set .col-1{width:100%;}
+			.woocommerce .col2-set, .woocommerce-page .col2-set {width:48%;float:left;}
+			.woocommerce .col2-set .col-2 { width:100%; clear:both; margin-top: 40px; }
+			#order_review_heading, .woocommerce #order_review, .woocommerce-page #order_review{float:left;width:48%;margin-left:2%;}
+			#billing_country_field { float:left; width:48%; }
+			#billing_postcode_field, #billing_city_field, #billing_state_field { width:33%; float:left; clear:none;}
+			#billing_phone_field, #billing_email_field { float:left; width:48%; clear:none;}
+		}</style>';
 	}
 
 

@@ -40,6 +40,8 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 == Changelog =
 = 1.5 =
 *	Hide shipping rates when free shipping is available.
+*	Fixed for WooCommerce 3.5.
+*	Better management of checkout page.
 
 = 1.4 =
 *     Added option to remove company field.
