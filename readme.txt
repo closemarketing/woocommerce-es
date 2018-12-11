@@ -1,4 +1,4 @@
-=== WooCommerce enhacements for Spanish Market ===
+=== WooCommerce Enhancements for Spanish Market ===
 Contributors: closemarketing, davidperez
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
