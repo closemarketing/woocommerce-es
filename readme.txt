@@ -42,6 +42,7 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 *	Hide shipping rates when free shipping is available.
 *	Fixed for WooCommerce 3.5.
 *	Better management of checkout page.
+*     Added VAT Field in email WooCommerce notification.
 
 = 1.4 =
 *     Added option to remove company field.

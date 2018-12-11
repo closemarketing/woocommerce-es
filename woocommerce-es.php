@@ -48,7 +48,7 @@ class WooCommerceESPlugin {
 		add_filter( 'woocommerce_admin_billing_fields', array( $this, 'wces_add_billing_shipping_fields_admin' ) );
 		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'wces_add_billing_shipping_fields_admin' ) );
 		add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data' ) );
-		add_filter( 'woocommerce_email_order_meta_keys', array( $this, 'woocommerce_email_notification' ) );
+		add_action( 'woocommerce_email_after_order_table', array( $this, 'woocommerce_email_key_notification' ), 10, 1 );
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices' ) );
 
 		/* Options for the plugin */
@@ -259,11 +259,13 @@ class WooCommerceESPlugin {
 
 	/**
 	 * Adds NIF in email notification
+	 *
+	 * @param object $order Order object.
+	 * @return void
 	 */
-
-	public function woocommerce_email_notification( $keys ) {
-		$keys[] = 'billing_vat';
-		return $keys;
+	public function woocommerce_email_key_notification( $order ) {
+		echo '<p><strong>' . __( 'VAT No', 'woocommerce-es' ) .':</strong> ';
+		echo esc_html( get_post_meta( $order->id, '_billing_vat', true ) ) . '</p>';
 	}
 
 	/**
