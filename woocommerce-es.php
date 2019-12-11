@@ -110,7 +110,7 @@ class WooCommerceESPlugin {
 	 */
 	public function wces_load_mo_file( $mo_file, $domain ) {
 		if ( $this->language == null ) {
-			$this->language = get_option( 'WPLANG', WPLANG );
+			$this->language = defined( 'WPLANG' ) ? WPLANG : get_locale();
 			$this->is_spa   = ( $this->language == 'es' || $this->language == 'es_ES' );
 		}
 

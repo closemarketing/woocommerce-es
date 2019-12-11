@@ -4,8 +4,8 @@ Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commer
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
 Requires at least: 3.0
 Tested up to: 4.9.8
-Stable tag: 1.5
-Version: 1.5
+Stable tag: 1.6
+Version: 1.6
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
@@ -38,6 +38,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
+= 1.6 =
+*	Fixed fatal error.
+
 = 1.5 =
 *	Hide shipping rates when free shipping is available.
 *	Fixed for WooCommerce 3.5.
