@@ -3,7 +3,7 @@ Contributors: closemarketing, davidperez
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
 Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
 Requires at least: 3.0
-Tested up to: 4.9.8
+Tested up to: 5.3
 Stable tag: 1.6
 Version: 1.6
 
