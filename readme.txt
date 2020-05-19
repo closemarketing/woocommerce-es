@@ -1,11 +1,11 @@
 === WooCommerce Enhancements for Spanish Market ===
-Contributors: closemarketing, davidperez
+Contributors: closemarketing, davidperez, sacrajaimez
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
-Donate link: https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=ZYGC6AT5JFQVE
+Donate link: https://www.closemarketing.es/go/donate/
 Requires at least: 3.0
-Tested up to: 5.3
-Stable tag: 1.6
-Version: 1.6
+Tested up to: 5.4.1
+Stable tag: 1.6.1
+Version: 1.6.1
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
@@ -38,6 +38,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
+= 1.6.1 =
+*	Tested versions and update readme.
+
 = 1.6 =
 *	Fixed fatal error.
 
