@@ -41,7 +41,8 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 == Changelog =
 = 1.7 =
-*	
+*	Fixed error in email.
+*	Updated and tested versions.
 
 = 1.6.1 =
 *	Tested versions and update readme.
