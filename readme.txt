@@ -3,9 +3,11 @@ Contributors: closemarketing, davidperez, sacrajaimez
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
 Donate link: https://www.closemarketing.es/go/donate/
 Requires at least: 3.0
-Tested up to: 5.4.1
-Stable tag: 1.6.1
-Version: 1.6.1
+WC requires at least: 4.0
+WC tested up to: 4.1
+Tested up to: 5.5.3
+Stable tag: 1.7
+Version: 1.7
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
@@ -17,7 +19,7 @@ It gives you the option to activate optimization in the checkout. It changes the
 
 Furthermore, this plugin includes the Woocommerce Translation from some plugins that translate it.
 
-*	<strong>[WooCommerce Email Cart](https://www.closemarketing.es/likes/email-cart/)</strong> Send Carts by Email to users
+*	<strong>[WooCommerce Email Cart](https://www.closemarketing.es/go/email-cart/)</strong> Send Carts by Email to users
 *	<strong>WooCommerce Product Enquiry Form</strong>
 *	<strong>WooCommerce Shipping Table Rate</strong>
 *	<strong>[WooCommerce Memberships](https://www.closemarketing.es/likes/wces-woocommerce-memberships/)</strong>
@@ -38,6 +40,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
+= 1.7 =
+*	
+
 = 1.6.1 =
 *	Tested versions and update readme.
 

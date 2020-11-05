@@ -272,7 +272,7 @@ class WooCommerceESPlugin {
 	 */
 	public function woocommerce_email_key_notification( $order ) {
 		echo '<p><strong>' . __( 'VAT No', 'woocommerce-es' ) .':</strong> ';
-		echo esc_html( get_post_meta( $order->id, '_billing_vat', true ) ) . '</p>';
+		echo esc_html( get_post_meta( $order->get_id(), '_billing_vat', true ) ) . '</p>';
 	}
 
 	/**
