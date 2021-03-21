@@ -25,30 +25,36 @@ require_once plugin_dir_path( __FILE__ ) . '/includes/class-languages.php';
 require_once plugin_dir_path( __FILE__ ) . '/includes/class-admin.php';
 
 if ( ! function_exists( 'wces_fs' ) ) {
-	// Create a helper function for easy SDK access.
+
+	/**
+	 * Freemius Loader
+	 *
+	 * @return array
+	 */
 	function wces_fs() {
 		global $wces_fs;
   
 		if ( ! isset( $wces_fs ) ) {
 			// Include Freemius SDK.
-			require_once dirname( __FILE__ ) . '/freemius/start.php';
+			require_once dirname( __FILE__ ) . '/vendor/freemius/wordpress-sdk/start.php';
 
-			$wces_fs = fs_dynamic_init( array(
-				'id'                  => '8034',
-				'slug'                => 'woocommerce-es',
-				'type'                => 'plugin',
-				'public_key'          => 'pk_a7641c2a1d3188ddea51542610085',
-				'is_premium'          => false,
-				'has_addons'          => true,
-				'has_paid_plans'      => false,
-				'menu'                => array(
-				'slug'           => 'wces',
-				'first-path'     => 'admin.php?page=wces',
+			$wces_fs = fs_dynamic_init(
+				array(
+					'id'             => '8034',
+					'slug'           => 'woocommerce-es',
+					'type'           => 'plugin',
+					'public_key'     => 'pk_a7641c2a1d3188ddea51542610085',
+					'is_premium'     => false,
+					'has_addons'     => true,
+					'has_paid_plans' => false,
+					'menu'           => array(
+					'slug'           => 'wces',
+					'first-path'     => 'admin.php?page=wces',
 				),
-			) );
+			));
 		}
-  
-	    return $wces_fs;
+
+		return $wces_fs;
 	}
   
 	// Init Freemius.

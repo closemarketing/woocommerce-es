@@ -58,7 +58,7 @@ class WCIMPH_Admin {
 	public function add_plugin_page() {
 		add_menu_page(
 			__( 'WPSPA eCommerce', 'woocommerce-es' ),
-			__( 'WPSPA eCommerce', 'woocommerce-es' ),
+			__( 'Settings', 'woocommerce-es' ),
 			'manage_options',
 			'wces',
 			array( $this, 'create_admin_page' ),
@@ -86,8 +86,8 @@ class WCIMPH_Admin {
 				<form method="post" action="options.php">
 					<?php 
 					settings_fields( 'wces_settings' );
-					do_settings_sections( 'import-holded-automate' );
-					submit_button( __( 'Save automate', 'wpautotranslate' ), 'primary', 'submit_automate' );
+					do_settings_sections( 'woocommerce-es-admin' );
+					submit_button( __( 'Save Settings', 'woocommerce-es' ), 'primary', 'submit_automate' );
 					?>
 				</form>
 			</div>
@@ -104,58 +104,92 @@ class WCIMPH_Admin {
 
 		add_settings_section(
 			'wces_setting_section',
-			__( 'Settings for Importing in Easy Digital Downloads', 'woocommerce-es' ),
+			__( 'Settings for Spanish Enhacements in WooCommerce', 'woocommerce-es' ),
 			array( $this, 'wces_section_info' ),
-			'import-holded-admin'
+			'woocommerce-es-admin'
 		);
-		add_settings_field(
-			'wcpimh_api',
-			__( 'Holded API Key', 'woocommerce-es' ),
-			array( $this, 'wcpimh_api_callback' ),
-			'import-holded-admin',
-			'wces_setting_section'
-		);
-		add_settings_field(
-			'wcpimh_prodst',
-			__( 'Default status for new products?', 'woocommerce-es' ),
-			array( $this, 'wcpimh_prodst_callback' ),
-			'import-holded-admin',
-			'wces_setting_section'
-		);
+		/*
+				$updated_settings[] = array(
+					'name'    => __( 'Ask for VAT in Checkout?', 'woocommerce-es' ),
+					'desc'    => __( 'This controls if VAT field will be shown in checkout.', 'woocommerce-es' ),
+					'id'      => 'wces_vat_show',
+					'std'     => 'yes', // WooCommerce < 2.0
+					'default' => 'yes', // WooCommerce >= 2.0
+					'type'    => 'checkbox',
+				);
+				$updated_settings[] = array(
+					'name'    => __( 'VAT info mandatory?', 'woocommerce-es' ),
+					'desc'    => __( 'This controls if VAT info would be mandatory in checkout.', 'woocommerce-es' ),
+					'id'      => 'wces_vat_mandatory',
+					'std'     => 'no', // WooCommerce < 2.0
+					'default' => 'no', // WooCommerce >= 2.0
+					'type'    => 'checkbox',
+				);
+				$updated_settings[] = array(
+					'name'    => __( 'Show Company field?', 'woocommerce-es' ),
+					'desc'    => __( 'This controls if company field will be shown', 'woocommerce-es' ),
+					'id'      => 'wces_company',
+					'std'     => 'no', // WooCommerce < 2.0
+					'default' => 'no', // WooCommerce >= 2.0
+					'type'    => 'checkbox',
+				);
+				$updated_settings[] = array(
+					'name'    => __( 'Optimize Checkout?', 'woocommerce-es' ),
+					'desc'    => __( 'Optimizes your checkout to better conversion.', 'woocommerce-es' ),
+					'id'      => 'wces_opt_checkout',
+					'std'     => 'no', // WooCommerce < 2.0
+					'default' => 'no', // WooCommerce >= 2.0
+					'type'    => 'checkbox',
+				);*/
 		
-		$label_cat = __( 'Category separator', 'woocommerce-es' );
-		if ( cmk_fs()->is_not_paying() ) {
-			$label_cat .= ' ' . $this->label_premium;
-		}
 		add_settings_field(
-			'wcpimh_catsep',
-			$label_cat,
-			array( $this, 'wcpimh_catsep_callback' ),
-			'import-holded-admin',
+			'wces_vat_show',
+			__( 'Ask for VAT in Checkout?', 'woocommerce-es' ),
+			array( $this, 'wces_vat_show_callback' ),
+			'woocommerce-es-admin',
 			'wces_setting_section'
 		);
 		add_settings_field(
-			'wcpimh_filter',
-			__( 'Filter products by tag?', 'woocommerce-es' ),
-			array( $this, 'wcpimh_filter_callback' ),
-			'import-holded-admin',
+			'wces_vat_mandatory',
+			__( 'VAT info mandatory?', 'woocommerce-es' ),
+			array( $this, 'wces_vat_mandatory_callback' ),
+			'woocommerce-es-admin',
 			'wces_setting_section'
 		);
-		$label_filter = __( 'Product price rate for this eCommerce', 'woocommerce-es' );
-		$desc_tip = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
-		if ( cmk_fs()->is_not_paying() ) {
-			$label_filter .= ' ' . $this->label_premium;
-		}
+
 		add_settings_field(
-			'wcpimh_rates',
-			$label_filter,
-			array( $this, 'wcpimh_rates_callback' ),
-			'import-holded-admin',
+			'wces_company_field',
+			__( 'Show Company field?', 'woocommerce-es' ),
+			array( $this, 'wces_company_field_callback' ),
+			'woocommerce-es-admin',
 			'wces_setting_section'
 		);
-		$name_catnp = __( 'Import category only in new products?', 'woocommerce-es' );
+
+		add_settings_field(
+			'wces_company_field',
+			__( 'Optimize Checkout?', 'woocommerce-es' ),
+			array( $this, 'wces_company_field_callback' ),
+			'woocommerce-es-admin',
+			'wces_setting_section'
+		);
+
+		add_settings_field(
+			'wces_remove_free_others',
+			__( 'Remove other shipping methods when free is possible?', 'woocommerce-es' ),
+			array( $this, 'wces_remove_free_others_callback' ),
+			'woocommerce-es-admin',
+			'wces_setting_section'
+		);
+
+		add_settings_field(
+			'wces_terms_registration',
+			__( 'Adds terms and conditions in registration page?', 'woocommerce-es' ),
+			array( $this, 'wces_terms_registration_callback' ),
+			'woocommerce-es-admin',
+			'wces_setting_section'
+		);
 	}
-	
+
 	/**
 	 * Sanitize fiels before saves in DB
 	 *
@@ -167,41 +201,29 @@ class WCIMPH_Admin {
 		$sanitary_values = array();
 		$wces_settings   = get_option( 'wces_settings' );
 
-		if ( isset( $input['wcpimh_api'] ) ) {
-			$sanitary_values['wcpimh_api'] = sanitize_text_field( $input['wcpimh_api'] );
+		if ( isset( $input['vat_show'] ) ) {
+			$sanitary_values['vat_show'] = sanitize_text_field( $input['vat_show'] );
 		}
-		if ( isset( $input['wcpimh_stock'] ) ) {
-			$sanitary_values['wcpimh_stock'] = $input['wcpimh_stock'];
+
+		if ( isset( $input['vat_mandatory'] ) ) {
+			$sanitary_values['vat_mandatory'] = $input['vat_mandatory'];
 		}
-		if ( isset( $input['wcpimh_prodst'] ) ) {
-		$sanitary_values['wcpimh_prodst'] = $input['wcpimh_prodst'];
+
+		if ( isset( $input['company_field'] ) ) {
+			$sanitary_values['company_field'] = $input['company_field'];
 		}
-		if ( isset( $input['wcpimh_virtual'] ) ) {
-		$sanitary_values['wcpimh_virtual'] = $input['wcpimh_virtual'];
+
+		if ( isset( $input['terms_registration'] ) ) {
+			$sanitary_values['terms_registration'] = $input['terms_registration'];
 		}
-		if ( isset( $input['wcpimh_backorders'] ) ) {
-		$sanitary_values['wcpimh_backorders'] = $input['wcpimh_backorders'];
+
+		if ( isset( $input['remove_free'] ) ) {
+			$sanitary_values['remove_free'] = $input['remove_free'];
 		}
-		if ( isset( $input['wcpimh_catsep'] ) ) {
-		$sanitary_values['wcpimh_catsep'] = sanitize_text_field( $input['wcpimh_catsep'] );
-		}
-		if ( isset( $input['wcpimh_filter'] ) ) {
-		$sanitary_values['wcpimh_filter'] = sanitize_text_field( $input['wcpimh_filter'] );
-		}
-		if ( isset( $input['wcpimh_rates'] ) ) {
-		$sanitary_values['wcpimh_rates'] = $input['wcpimh_rates'];
-		}
-		if ( isset( $input['wcpimh_catnp'] ) ) {
-		$sanitary_values['wcpimh_catnp'] = $input['wcpimh_catnp'];
-		}
-		// Other tab.
-		$sanitary_values['wcpimh_sync'] = ( isset( $wces_settings['wcpimh_sync'] ) ? $wces_settings['wcpimh_sync'] : 'no' );
-		$sanitary_values['wcpimh_sync_num'] = ( isset( $wces_settings['wcpimh_sync_num'] ) ? $wces_settings['wcpimh_sync_num'] : 5 );
-		$sanitary_values['wcpimh_sync_email'] = ( isset( $wces_settings['wcpimh_sync_email'] ) ? $wces_settings['wcpimh_sync_email'] : 'yes' );
 
 		return $sanitary_values;
 	}
-	
+
 	private function show_get_premium()
 	{
 		// Purchase notification.
@@ -216,345 +238,122 @@ class WCIMPH_Admin {
 	}
 
 	/**
-	 * Info for holded section.
-	 *
-	 * @return void
-	 */
-	public function wces_section_automate()
-	{
-		esc_html_e( 'Section only for Premium version', 'woocommerce-es' );
-		echo  $this->show_get_premium() ;
-	}
-	
-	/**
 	 * Info for holded automate section.
 	 *
 	 * @return void
 	 */
-	public function wces_section_info()
-	{
-        echo  sprintf( __( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App Holded API</a>. ', 'woocommerce-es' ), 'https://app.holded.com/api' ) ;
-        echo  $this->show_get_premium() ;
-    }
-    
-    public function wcpimh_api_callback()
-    {
-        printf( '<input class="regular-text" type="password" name="wces_settings[wcpimh_api]" id="wcpimh_api" value="%s">', ( isset( $this->imh_settings['wcpimh_api'] ) ? esc_attr( $this->imh_settings['wcpimh_api'] ) : '' ) );
-    }
-    
-    public function wcpimh_stock_callback()
-    {
-        ?>
-		<select name="wces_settings[wcpimh_stock]" id="wcpimh_stock">
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_stock'] ) && $this->imh_settings['wcpimh_stock'] === 'yes' ? 'selected' : '' );
-        ?>
-			<option value="yes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Yes', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_stock'] ) && $this->imh_settings['wcpimh_stock'] === 'no' ? 'selected' : '' );
-        ?>
-			<option value="no" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'No', 'woocommerce-es' );
-        ?></option>
-		</select>
-		<?php 
-    }
-    
-    public function wcpimh_prodst_callback()
-    {
-        ?>
-		<select name="wces_settings[wcpimh_prodst]" id="wcpimh_prodst">
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_prodst'] ) && 'draft' === $this->imh_settings['wcpimh_prodst'] ? 'selected' : '' );
-        ?>
-			<option value="draft" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Draft', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_prodst'] ) && 'publish' === $this->imh_settings['wcpimh_prodst'] ? 'selected' : '' );
-        ?>
-			<option value="publish" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Publish', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_prodst'] ) && 'pending' === $this->imh_settings['wcpimh_prodst'] ? 'selected' : '' );
-        ?>
-			<option value="pending" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Pending', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_prodst'] ) && 'private' === $this->imh_settings['wcpimh_prodst'] ? 'selected' : '' );
-        ?>
-			<option value="private" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Private', 'woocommerce-es' );
-        ?></option>
-		</select>
-		<?php 
-    }
-    
-    public function wcpimh_virtual_callback()
-    {
-        ?>
-		<select name="wces_settings[wcpimh_virtual]" id="wcpimh_virtual">
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_virtual'] ) && $this->imh_settings['wcpimh_virtual'] === 'no' ? 'selected' : '' );
-        ?>
-			<option value="no" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'No', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_virtual'] ) && $this->imh_settings['wcpimh_virtual'] === 'yes' ? 'selected' : '' );
-        ?>
-			<option value="yes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Yes', 'woocommerce-es' );
-        ?></option>
-		</select>
-		<?php 
-    }
-    
-    public function wcpimh_backorders_callback()
-    {
-        ?>
-		<select name="wces_settings[wcpimh_backorders]" id="wcpimh_backorders">
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_backorders'] ) && $this->imh_settings['wcpimh_backorders'] === 'no' ? 'selected' : '' );
-        ?>
-			<option value="no" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'No', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_backorders'] ) && $this->imh_settings['wcpimh_backorders'] === 'yes' ? 'selected' : '' );
-        ?>
-			<option value="yes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Yes', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_backorders'] ) && $this->imh_settings['wcpimh_backorders'] === 'notify' ? 'selected' : '' );
-        ?>
-			<option value="notify" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Notify', 'woocommerce-es' );
-        ?></option>
-		</select>
-		<?php 
-    }
-    
-    /**
-     * Call back for category separation
-     *
-     * @return void
-     */
-    public function wcpimh_catsep_callback()
-    {
-        printf( '<input class="regular-text" type="text" name="wces_settings[wcpimh_catsep]" id="wcpimh_catsep" value="%s">', ( isset( $this->imh_settings['wcpimh_catsep'] ) ? esc_attr( $this->imh_settings['wcpimh_catsep'] ) : '' ) );
-    }
-    
-    public function wcpimh_filter_callback()
-    {
-        printf( '<input class="regular-text" type="text" name="wces_settings[wcpimh_filter]" id="wcpimh_filter" value="%s">', ( isset( $this->imh_settings['wcpimh_filter'] ) ? esc_attr( $this->imh_settings['wcpimh_filter'] ) : '' ) );
-    }
-    
-    public function wcpimh_rates_callback()
-    {
-        $rates_options = $this->get_rates();
-        if ( false == $rates_options ) {
-            return false;
-        }
-        ?>
-		<select name="wces_settings[wcpimh_rates]" id="wcpimh_rates">
-			<?php 
-        foreach ( $rates_options as $value => $label ) {
-            $selected = ( isset( $this->imh_settings['wcpimh_rates'] ) && $this->imh_settings['wcpimh_rates'] === $value ? 'selected' : '' );
-            echo  '<option value="' . esc_html( $value ) . '" ' . esc_html( $selected ) . '>' . esc_html( $label ) . '</option>' ;
-        }
-        ?>
-		</select>
-		<?php 
-    }
-    
-    public function wcpimh_catnp_callback()
-    {
-        ?>
-		<select name="wces_settings[wcpimh_catnp]" id="wcpimh_catnp">
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_catnp'] ) && $this->imh_settings['wcpimh_catnp'] === 'yes' ? 'selected' : '' );
-        ?>
-			<option value="yes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Yes', 'woocommerce-es' );
-        ?></option>
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_catnp'] ) && $this->imh_settings['wcpimh_catnp'] === 'no' ? 'selected' : '' );
-        ?>
-			<option value="no" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'No', 'woocommerce-es' );
-        ?></option>
-		</select>
-		<?php 
-    }
-    
-    /**
-     * Callback sync field.
-     *
-     * @return void
-     */
-    public function wcpimh_sync_callback()
-    {
-        ?>
-		<select name="wces_settings[wcpimh_sync]" id="wcpimh_sync">
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'no' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="no" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'No', 'woocommerce-es' );
-        ?></option>
+	public function wces_section_info() {
+		echo sprintf( __( 'Put the connection API key settings in order to connect and sync products. You can go here <a href="%s" target = "_blank">App Holded API</a>. ', 'woocommerce-es' ), 'https://app.holded.com/api' ) ;
+      	echo $this->show_get_premium() ;
+	}
 
+	/**
+	 * Vat show setting
+	 *
+	 * @return void
+	 */
+	public function wces_vat_show_callback() {
+		?>
+		<select name="wces_settings[vat_show]" id="vat_show">
 			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_daily' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_daily" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every day', 'woocommerce-es' );
-        ?></option>
-
+			$selected = ( isset( $this->imh_settings['vat_show'] ) && $this->imh_settings['vat_show'] === 'no' ? 'selected' : '' );
+			?>
+			<option value="no" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_twelve_hours' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_twelve_hours" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every twelve hours', 'woocommerce-es' );
-        ?></option>
-
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_six_hours' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_six_hours" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every six hours', 'woocommerce-es' );
-        ?></option>
-
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_three_hours' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_three_hours" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every three hours', 'woocommerce-es' );
-        ?></option>
-
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_one_hour' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_one_hour" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every hour', 'woocommerce-es' );
-        ?></option>
-
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_thirty_minutes' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_thirty_minutes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every thirty minutes', 'woocommerce-es' );
-        ?></option>
-
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_fifteen_minutes' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_fifteen_minutes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every fifteen minutes', 'woocommerce-es' );
-        ?></option>
-
-			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync'] ) && 'wcpimh_cron_five_minutes' === $this->imh_settings['wcpimh_sync'] ? 'selected' : '' );
-        ?>
-			<option value="wcpimh_cron_five_minutes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Every five minutes', 'woocommerce-es' );
-        ?></option>
+			$selected = ( isset( $this->imh_settings['vat_show'] ) && $this->imh_settings['vat_show'] === 'yes' ? 'selected' : '' );
+			?>
+			<option value="yes" <?php echo  esc_html( $selected ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
-		<?php 
-    }
-    
-    /**
-     * Callback sync field.
-     *
-     * @return void
-     */
-    public function wcpimh_sync_num_callback()
-    {
-        printf( '<input class="regular-text" type="text" name="wces_settings[wcpimh_sync_num]" id="wcpimh_sync_num" value="%s">', ( isset( $this->imh_settings['wcpimh_sync_num'] ) ? esc_attr( $this->imh_settings['wcpimh_sync_num'] ) : 5 ) );
-    }
-    
-    public function wcpimh_sync_email_callback()
-    {
-        ?>
-		<select name="wces_settings[wcpimh_sync_email]" id="wcpimh_sync_email">
+		<?php
+	}
+
+	/**
+	 * Vat show mandatory setting
+	 *
+	 * @return void
+	 */
+	public function wces_vat_mandatory_callback() {
+		?>
+		<select name="wces_settings[vat_mandatory]" id="vat_mandatory">
 			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync_email'] ) && $this->imh_settings['wcpimh_sync_email'] === 'yes' ? 'selected' : '' );
-        ?>
-			<option value="yes" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'Yes', 'woocommerce-es' );
-        ?></option>
+			$selected = ( isset( $this->imh_settings['vat_mandatory'] ) && $this->imh_settings['vat_mandatory'] === 'no' ? 'selected' : '' );
+			?>
+			<option value="no" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 			<?php 
-        $selected = ( isset( $this->imh_settings['wcpimh_sync_email'] ) && $this->imh_settings['wcpimh_sync_email'] === 'no' ? 'selected' : '' );
-        ?>
-			<option value="no" <?php 
-        echo  esc_html( $selected ) ;
-        ?>><?php 
-        esc_html_e( 'No', 'woocommerce-es' );
-        ?></option>
+			$selected = ( isset( $this->imh_settings['vat_mandatory'] ) && $this->imh_settings['vat_mandatory'] === 'yes' ? 'selected' : '' );
+			?>
+			<option value="yes" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
-		<?php 
-    }
-    
-    /**
-     * Custom CSS for admin
-     *
-     * @return void
-     */
-    public function custom_css()
-    {
-        // Free Version.
-        echo  '
+		<?php
+	}
+
+	/**
+	 * Vat show company field
+	 *
+	 * @return void
+	 */
+	public function wces_company_field_callback() {
+		?>
+		<select name="wces_settings[company_field]" id="company_field">
+			<?php 
+			$selected = ( isset( $this->imh_settings['company_field'] ) && $this->imh_settings['company_field'] === 'no' ? 'selected' : '' );
+			?>
+			<option value="no" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<?php 
+			$selected = ( isset( $this->imh_settings['company_field'] ) && $this->imh_settings['company_field'] === 'yes' ? 'selected' : '' );
+			?>
+			<option value="yes" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Vat show term conditions
+	 *
+	 * @return void
+	 */
+	public function wces_terms_registration_callback() {
+		?>
+		<select name="wces_settings[terms_registration]" id="terms_registration">
+			<?php 
+			$selected = ( isset( $this->imh_settings['terms_registration'] ) && $this->imh_settings['terms_registration'] === 'no' ? 'selected' : '' );
+			?>
+			<option value="no" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<?php 
+			$selected = ( isset( $this->imh_settings['terms_registration'] ) && $this->imh_settings['terms_registration'] === 'yes' ? 'selected' : '' );
+			?>
+			<option value="yes" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Vat show free shipping
+	 *
+	 * @return void
+	 */
+	public function wces_remove_free_others_callback() {
+		?>
+		<select name="wces_settings[remove_free]" id="remove_free">
+			<?php 
+			$selected = ( isset( $this->imh_settings['remove_free'] ) && $this->imh_settings['remove_free'] === 'no' ? 'selected' : '' );
+			?>
+			<option value="no" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<?php 
+			$selected = ( isset( $this->imh_settings['remove_free'] ) && $this->imh_settings['remove_free'] === 'yes' ? 'selected' : '' );
+			?>
+			<option value="yes" <?php echo esc_html( $selected ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Custom CSS for admin
+	 *
+	 * @return void
+	 */
+	public function custom_css() {
+		echo '
 			<style>
 			.wp-admin .wcpimh-plugin span.wcpimh-premium{ 
 				color: #b4b9be;
@@ -567,23 +366,16 @@ class WCIMPH_Admin {
 			.wp-admin.wcpimh-plugin #wcpimh_sync_num {
 				width: 50px;
 			}
-			.wp-admin.wcpimh-plugin #wcpimh_prodst {
+			.wp-admin.wcpimh-plugin #wces_vat_mandatory {
 				width: 150px;
 			}
-			.wp-admin.wcpimh-plugin #wcpimh_api,
+			.wp-admin.wcpimh-plugin #wces_vat_show,
 			.wp-admin.wcpimh-plugin #wcpimh_taxinc {
 				width: 270px;
-			}' ;
-        // Not premium version.
-        if ( cmk_fs()->is_not_paying() ) {
-            echo  '.wp-admin.wcpimh-plugin #wcpimh_catsep, .wp-admin.wcpimh-plugin #wcpimh_filter, .wp-admin.wcpimh-plugin #wcpimh_sync  {
-				pointer-events:none;
-			}' ;
-        }
-        echo  '</style>' ;
-    }
+			}</style>';
+	}
 
 }
 if ( is_admin() ) {
-    $wces = new WCIMPH_Admin();
+	$wces = new WCIMPH_Admin();
 }
