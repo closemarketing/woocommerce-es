@@ -43,7 +43,10 @@ class WooCommerceESPlugin {
 		// Hide shipping rates when free shipping is available.
 		add_filter( 'woocommerce_package_rates', array( $this, 'shipping_when_free_is_available' ), 100 );
 
-		$op_checkout = get_option( 'wces_opt_checkout', 1 );
+
+		$wces_settings = get_option( 'wces_settings' );
+		$op_checkout   = isset( $wces_settings['opt_checkout'] ) ? $wces_settings['opt_checkout'] : 'no';
+
 		if ( 'yes' === $op_checkout ) {
 			add_action( 'woocommerce_before_checkout_form', array( $this, 'wces_style' ), 5 );
 		}
@@ -192,9 +195,10 @@ class WooCommerceESPlugin {
 	public function wces_add_billing_fields( $fields ) {
 		$fields['billing_company']['class'] = array( 'form-row-first' );
 		$fields['billing_company']['clear'] = false;
-		// $fields['billing_country']['clear'] = true;
-		$vatinfo_mandatory = get_option( 'wces_vat_mandatory', 1 );
-		$vatinfo_show      = get_option( 'wces_vat_show', 1 );
+
+		$wces_settings     = get_option( 'wces_settings' );
+		$vatinfo_mandatory = isset( $wces_settings['vat_mandatory'] ) ? $wces_settings['vat_mandatory'] : 'no';
+		$vatinfo_show      = isset( $wces_settings['vat_show'] ) ? $wces_settings['vat_show'] : 'no';
 
 		if ( $vatinfo_show != 'yes' ) {
 			return $fields;
@@ -222,7 +226,10 @@ class WooCommerceESPlugin {
 
 	// Our hooked in function - $fields is passed via the filter!
 	function custom_override_checkout_fields( $fields ) {
-		if ( get_option( 'wces_company', 1 ) != 'yes' ) {
+		$wces_settings = get_option( 'wces_settings' );
+		$company_field = isset( $wces_settings['company_field'] ) ? $wces_settings['company_field'] : 'no';
+
+		if ( $company_field != 'yes' ) {
 			unset( $fields['billing']['billing_company'] );
 		}
 

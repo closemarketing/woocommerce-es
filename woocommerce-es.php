@@ -64,6 +64,26 @@ if ( ! function_exists( 'wces_fs' ) ) {
 	do_action( 'wces_fs_loaded' );
 }
 
+add_action( 'plugins_loaded', 'wces_update_option_check' );
+/**
+ * Reload options
+ *
+ * @return void
+ */
+function wces_update_option_check() {
+	$array_options = array( 'wces_vat_show', 'wces_vat_mandatory', 'wces_opt_checkout', 'wces_company' );
+	foreach ( $array_options as $option ) {
+		$value_option = get_option( $option );
+		if ( $value_option ) {
+			$actual_options            = get_option( 'wces_settings' );
+			$actual_options[ $option ] = $value_option;
+			delete_option( $option );
+			update_option( 'wces_settings', $actual_options );
+		}
+	}
+}
+
+
 /**
  * Checks if the system requirements are met
  *
