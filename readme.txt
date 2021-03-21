@@ -13,9 +13,11 @@ Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and or
 
 == Description ==
 
-It adds VAT info in forms fields, Orders, and email notification.
-
-It gives you the option to activate optimization in the checkout. It changes the Checkout for better converstion. You can select in Wooocommerce options.
+Functionalities:
+* It adds VAT info in forms fields, Orders, and email notification.
+* Remove shipping methods when free is possible.
+* Adds Terms and conditions in registration page.
+* It gives you the option to activate optimization in the checkout. It changes the Checkout for better conversion.
 
 Furthermore, this plugin includes the Woocommerce Translation from some plugins that translate it.
 
@@ -26,6 +28,9 @@ Furthermore, this plugin includes the Woocommerce Translation from some plugins 
 *	<strong>[WooCommerce Subscriptions](https://www.closemarketing.es/likes/wces-woocommerce-subscriptions/)</strong>
 *	<strong>[WooCommerce Brands](https://www.closemarketing.es/likes/wces-woocommerce-brands/)</strong>
 *	<strong>[WooCommerce SEPA Direct](https://www.closemarketing.es/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
+
+And other as Addons (check in settings ):
+*	<strong>[WooCommerce Subscriptions 3.0](https://www.closemarketing.es/likes/wces-woocommerce-subscriptions/)</strong>
 
 > This plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce plugin</a>
 
@@ -40,8 +45,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
-= 1.7 =
-*	
+= 2.0 =
+*	New version with Language Addons!
+*     Remove free shipping
 
 = 1.6.1 =
 *	Tested versions and update readme.
