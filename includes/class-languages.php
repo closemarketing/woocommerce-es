@@ -38,7 +38,6 @@ class WooCommerceESPlugin {
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices' ) );
 
 		/* Options for the plugin */
-		add_filter( 'woocommerce_general_settings', array( $this, 'wces_add_opt_option' ) );
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
 
 		// Hide shipping rates when free shipping is available.
@@ -267,58 +266,6 @@ class WooCommerceESPlugin {
 
 	/* END EU VAT*/
 
-
-
-	/**
-	 * Add options for WooCommerce
-	 */
-
-	public function wces_add_opt_option( $settings ) {
-
-		$updated_settings = array();
-
-		foreach ( $settings as $section ) {
-			// at the bottom of the General Options section
-			if ( isset( $section['id'] ) && 'general_options' == $section['id'] &&
-			 isset( $section['type'] ) && 'sectionend' == $section['type'] ) {
-				$updated_settings[] = array(
-					'name'    => __( 'Ask for VAT in Checkout?', 'woocommerce-es' ),
-					'desc'    => __( 'This controls if VAT field will be shown in checkout.', 'woocommerce-es' ),
-					'id'      => 'wces_vat_show',
-					'std'     => 'yes', // WooCommerce < 2.0
-					'default' => 'yes', // WooCommerce >= 2.0
-					'type'    => 'checkbox',
-				);
-				$updated_settings[] = array(
-					'name'    => __( 'VAT info mandatory?', 'woocommerce-es' ),
-					'desc'    => __( 'This controls if VAT info would be mandatory in checkout.', 'woocommerce-es' ),
-					'id'      => 'wces_vat_mandatory',
-					'std'     => 'no', // WooCommerce < 2.0
-					'default' => 'no', // WooCommerce >= 2.0
-					'type'    => 'checkbox',
-				);
-				$updated_settings[] = array(
-					'name'    => __( 'Show Company field?', 'woocommerce-es' ),
-					'desc'    => __( 'This controls if company field will be shown', 'woocommerce-es' ),
-					'id'      => 'wces_company',
-					'std'     => 'no', // WooCommerce < 2.0
-					'default' => 'no', // WooCommerce >= 2.0
-					'type'    => 'checkbox',
-				);
-				$updated_settings[] = array(
-					'name'    => __( 'Optimize Checkout?', 'woocommerce-es' ),
-					'desc'    => __( 'Optimizes your checkout to better conversion.', 'woocommerce-es' ),
-					'id'      => 'wces_opt_checkout',
-					'std'     => 'no', // WooCommerce < 2.0
-					'default' => 'no', // WooCommerce >= 2.0
-					'type'    => 'checkbox',
-				);
-			}
-			$updated_settings[] = $section;
-		}
-		return $updated_settings;
-	}
-
 	function wces_style() {
 		echo '<style>@media (min-width: 993px) {
 			body .woocommerce .col2-set .col-1{width:100%;}
@@ -353,7 +300,4 @@ class WooCommerceESPlugin {
 } //from class
 
 global $wces_plugin;
-
-if ( in_array( 'woocommerce/woocommerce.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
-	$wces_plugin = new WooCommerceESPlugin( __FILE__ );
-}
+$wces_plugin = new WooCommerceESPlugin( __FILE__ );

@@ -20,9 +20,10 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
 */
 
-// Include files.
-require_once plugin_dir_path( __FILE__ ) . '/includes/class-languages.php';
-require_once plugin_dir_path( __FILE__ ) . '/includes/class-admin.php';
+define( 'WCES_NAME', 'WooCommerce Enhancements for Spanish Market' );
+define( 'WCES_REQUIRED_PHP_VERSION', '5.4' );
+define( 'WCES_REQUIRED_WP_VERSION', '4.6' );
+define( 'WCES_REQUIRED_WC_VERSION', '2.6' );
 
 if ( ! function_exists( 'wces_fs' ) ) {
 
@@ -61,4 +62,54 @@ if ( ! function_exists( 'wces_fs' ) ) {
 	wces_fs();
 	// Signal that SDK was initiated.
 	do_action( 'wces_fs_loaded' );
+}
+
+/**
+ * Checks if the system requirements are met
+ *
+ * @return bool True if system requirements are met, false if not
+ */
+function wces_requirements_met() {
+	global $wp_version;
+	require_once( ABSPATH . '/wp-admin/includes/plugin.php' );  // to get is_plugin_active() early
+
+	if ( version_compare( PHP_VERSION, WCES_REQUIRED_PHP_VERSION, '<' ) ) {
+		return false;
+	}
+
+	if ( version_compare( $wp_version, WCES_REQUIRED_WP_VERSION, '<' ) ) {
+		return false;
+	}
+
+	if ( ! is_plugin_active( 'woocommerce/woocommerce.php' ) ) {
+		return false;
+	}
+
+	$woocommer_data = get_plugin_data( WP_PLUGIN_DIR .'/woocommerce/woocommerce.php', false, false );
+
+	if ( version_compare($woocommer_data['Version'] , WCES_REQUIRED_WC_VERSION, '<' ) ) {
+		return false;
+	}
+
+	return true;
+}
+
+function wces_requirements_error () {
+	global $wp_version;
+	?>
+	<div class="notice notice-success is-dismissible">
+		<p>
+			<?php esc_html_e( 'You need to install WooCommerce in order to use the plugin:', 'woocommerce-es' ); ?>
+			<strong>WooCommerce Enhancements for Spanish Market</strong>
+		</p>
+	</div>
+	<?php
+}
+
+if ( wces_requirements_met() ) {
+	// Include files.
+	require_once plugin_dir_path( __FILE__ ) . '/includes/class-languages.php';
+	require_once plugin_dir_path( __FILE__ ) . '/includes/class-admin.php';
+} else {
+	add_action( 'admin_notices', 'wces_requirements_error' );
 }
