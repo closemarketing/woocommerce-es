@@ -23,6 +23,7 @@ class WooCommerceESPlugin {
 	 */
 	public function __construct( $file ) {
 		$this->file = $file;
+		$wces_settings = get_option( 'wces_settings' );
 
 		// Filters and actions.
 		add_action( 'plugins_loaded', array( $this, 'wces_plugins_loaded' ) );
@@ -40,15 +41,21 @@ class WooCommerceESPlugin {
 		/* Options for the plugin */
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
 
-		// Hide shipping rates when free shipping is available.
-		add_filter( 'woocommerce_package_rates', array( $this, 'shipping_when_free_is_available' ), 100 );
+		$remove_free = isset( $wces_settings['remove_free'] ) ? $wces_settings['remove_free'] : 'no';
+		if ( 'yes' === $remove_free ) {
+			// Hide shipping rates when free shipping is available.
+			add_filter( 'woocommerce_package_rates', array( $this, 'shipping_when_free_is_available' ), 100 );
+		}
 
-
-		$wces_settings = get_option( 'wces_settings' );
-		$op_checkout   = isset( $wces_settings['opt_checkout'] ) ? $wces_settings['opt_checkout'] : 'no';
-
+		$op_checkout = isset( $wces_settings['opt_checkout'] ) ? $wces_settings['opt_checkout'] : 'no';
 		if ( 'yes' === $op_checkout ) {
 			add_action( 'woocommerce_before_checkout_form', array( $this, 'wces_style' ), 5 );
+		}
+
+		$terms_registration = isset( $wces_settings['terms_registration'] ) ? $wces_settings['terms_registration'] : 'no';
+		if ( 'yes' === $terms_registration ) {
+			add_action( 'woocommerce_register_form', array( $this, 'add_terms_and_conditions_to_registration' ), 20 );
+			add_action( 'woocommerce_register_post', array( $this, 'terms_and_conditions_validation' ), 20, 3 );
 		}
 
 		/*
@@ -303,6 +310,42 @@ class WooCommerceESPlugin {
 		}
 		return ! empty( $free ) ? $free : $rates;
 	}
+
+	/**
+	 * Add terms and conditions in registration page
+	 *
+	 * @return void
+	 */
+	function add_terms_and_conditions_to_registration() {
+
+		if ( wc_get_page_id( 'terms' ) > 0 && is_account_page() ) {
+			?>
+			<p class="form-row terms wc-terms-and-conditions">
+				<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">
+				<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="terms" <?php checked( apply_filters( 'woocommerce_terms_is_checked_default', isset( $_POST['terms'] ) ), true ); ?> id="terms" /> <span><?php printf( __( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'woocommerce-es' ), esc_url( wc_get_page_permalink( 'terms' ) ) ); ?></span> <span class="required">*</span>
+				</label>
+				<input type="hidden" name="terms-field" value="1" />
+			</p>
+			<?php
+		}
+	}
+
+	/**
+	 * Validate required term and conditions check box
+	 *
+	 * @param string $username Username.
+	 * @param string $email Email.
+	 * @param object $validation_errors Object of validation errors.
+	 * @return object $validation_errors
+	 */
+	function terms_and_conditions_validation( $username, $email, $validation_errors ) {
+		if ( ! isset( $_POST['terms'] ) ) {
+			$validation_errors->add( 'terms_error', __( 'Terms and condition are not checked!', 'woocommerce-es' ) );
+		}
+
+		return $validation_errors;
+	}
+
 
 } //from class
 
