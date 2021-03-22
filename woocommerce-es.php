@@ -128,7 +128,7 @@ function wces_requirements_error () {
 
 if ( wces_requirements_met() ) {
 	// Include files.
-	require_once plugin_dir_path( __FILE__ ) . '/includes/class-languages.php';
+	require_once plugin_dir_path( __FILE__ ) . '/includes/class-public.php';
 	require_once plugin_dir_path( __FILE__ ) . '/includes/class-admin.php';
 } else {
 	add_action( 'admin_notices', 'wces_requirements_error' );

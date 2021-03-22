@@ -4,10 +4,10 @@ Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commer
 Donate link: https://www.closemarketing.es/go/donate/
 Requires at least: 3.0
 WC requires at least: 4.0
-WC tested up to: 4.1
-Tested up to: 5.5.3
-Stable tag: 1.7
-Version: 1.7
+WC tested up to: 5.1
+Tested up to: 5.7
+Stable tag: 2.0
+Version: 2.0
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, translations and optimization in checkout.
 
@@ -29,7 +29,7 @@ Furthermore, this plugin includes the Woocommerce Translation from some plugins 
 *	<strong>[WooCommerce Brands](https://www.closemarketing.es/likes/wces-woocommerce-brands/)</strong>
 *	<strong>[WooCommerce SEPA Direct](https://www.closemarketing.es/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
 
-And other as Addons (check in settings ):
+And other as Premium Addons (check in settings):
 *	<strong>[WooCommerce Subscriptions 3.0](https://www.closemarketing.es/likes/wces-woocommerce-subscriptions/)</strong>
 
 > This plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce plugin</a>
@@ -47,6 +47,7 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 == Changelog =
 = 2.0 =
 *	New version with Language Addons!
+*     New Settings Page.
 *     Remove free shipping
 
 = 1.6.1 =
