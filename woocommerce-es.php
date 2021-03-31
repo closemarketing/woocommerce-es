@@ -1,6 +1,6 @@
 <?php
 /*
- * Plugin Name: WooCommerce Enhancements for Spanish Market
+ * Plugin Name: WPSPA Spanish Enhacements for WooCommerce
  * Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
  * Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
  *
@@ -83,6 +83,16 @@ function wces_update_option_check() {
 	}
 }
 
+add_action( 'upgrader_process_complete', 'wp_upe_upgrade_completed', 10, 2 );
+/**
+ * This function runs when WordPress completes its upgrade process
+ * It iterates through each plugin updated to see if ours is included
+ * @param $upgrader_object Array
+ * @param $options Array
+ */
+function wp_upe_upgrade_completed( $upgrader_object, $options ) {
+	wces_update_option_check();
+}
 
 /**
  * Checks if the system requirements are met
