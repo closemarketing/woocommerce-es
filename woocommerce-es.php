@@ -35,7 +35,7 @@ if ( ! function_exists( 'wces_fs' ) ) {
 	 */
 	function wces_fs() {
 		global $wces_fs;
-  
+
 		if ( ! isset( $wces_fs ) ) {
 			// Include Freemius SDK.
 			require_once dirname( __FILE__ ) . '/vendor/freemius/wordpress-sdk/start.php';
@@ -53,12 +53,12 @@ if ( ! function_exists( 'wces_fs' ) ) {
 					'slug'           => 'wces',
 					'first-path'     => 'admin.php?page=wces',
 				),
-			));
+			) );
 		}
 
 		return $wces_fs;
 	}
-  
+
 	// Init Freemius.
 	wces_fs();
 	// Signal that SDK was initiated.
