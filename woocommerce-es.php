@@ -20,7 +20,7 @@
  * License URI: http://www.gnu.org/licenses/gpl-3.0.html
 */
 
-define( 'WCES_NAME', 'WooCommerce Enhancements for Spanish Market' );
+define( 'WCES_NAME', 'WPSPA Spanish Enhacements for WooCommerce' );
 define( 'WCES_REQUIRED_PHP_VERSION', '5.4' );
 define( 'WCES_REQUIRED_WP_VERSION', '4.6' );
 define( 'WCES_REQUIRED_WC_VERSION', '2.6' );
