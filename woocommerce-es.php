@@ -21,6 +21,7 @@
 */
 
 define( 'WCES_NAME', 'WPSPA Spanish Enhacements for WooCommerce' );
+define( 'WPSPA_VERSION', '2.0' );
 define( 'WCES_REQUIRED_PHP_VERSION', '5.4' );
 define( 'WCES_REQUIRED_WP_VERSION', '4.6' );
 define( 'WCES_REQUIRED_WC_VERSION', '2.6' );
@@ -64,25 +65,35 @@ if ( ! function_exists( 'wces_fs' ) ) {
 	do_action( 'wces_fs_loaded' );
 }
 
+add_action( 'init', 'wces_update_options_settings' );
 /**
- * Class for updater
+ * Update process
+ *
+ * @return void
  */
-class WCES_Updater {
-	public static function plugin_activated() {
-		$array_options = array( 'wces_vat_show', 'wces_vat_mandatory', 'wces_opt_checkout', 'wces_company' );
-		foreach ( $array_options as $option ) {
-			$value_option = get_option( $option );
-			if ( $value_option ) {
-				$actual_options            = get_option( 'wces_settings' );
-				$actual_options[ $option ] = $value_option;
-				delete_option( $option );
-				update_option( 'wces_settings', $actual_options );
-			}
+function wces_update_options_settings() {
+	$old_version = get_option( 'wces_plugin_version', '1.7' );
+
+	if ( ! ( version_compare( $old_version, WPSPA_VERSION ) < 0 ) ) {
+		return false;
+	}
+	$array_options = array(
+		'wces_vat_show'      => 'vat_show',
+		'wces_vat_mandatory' => 'vat_mandatory',
+		'wces_opt_checkout'  => 'opt_checkout',
+		'wces_company'       => 'company_field',
+	);
+	foreach ( $array_options as $key => $new_key ) {
+		$value_option = get_option( $key );
+		if ( $value_option ) {
+			$actual_options             = get_option( 'wces_settings' );
+			$actual_options[ $new_key ] = $value_option;
+			delete_option( $key );
+			update_option( 'wces_settings', $actual_options );
 		}
 	}
+	update_option( 'wpspa_plugin_version', WPSPA_VERSION );
 }
-
-register_activation_hook( __FILE__, array( 'WCES_Updater', 'plugin_activated' ) );
 
 /**
  * Checks if the system requirements are met
