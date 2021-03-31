@@ -178,27 +178,13 @@ class WCIMPH_Admin {
 		return $sanitary_values;
 	}
 
-	private function show_get_premium()
-	{
-		// Purchase notification.
-		$purchase_url = 'https://checkout.freemius.com/mode/dialog/plugin/5133/plan/8469/';
-		$get_pro = sprintf( wp_kses( __( '<a href="%s">Get Pro version</a> to enable', 'woocommerce-es' ), array(
-			'a' => array(
-			'href'   => array(),
-			'target' => array(),
-		),
-		) ), esc_url( $purchase_url ) );
-		return $get_pro;
-	}
-
 	/**
 	 * Info for holded automate section.
 	 *
 	 * @return void
 	 */
 	public function wces_section_info() {
-		echo sprintf( __( 'Put the connection API key settings in order to connect and sync products. You can go here <a href="%s" target = "_blank">App Holded API</a>. ', 'woocommerce-es' ), 'https://app.holded.com/api' ) ;
-      	echo $this->show_get_premium() ;
+		echo sprintf( __( 'Please select the following settings in order customize your eCommerce. Don\'t miss the <a href="%s">Addons</a> to improve the functionality. ', 'woocommerce-es' ), '/wp-admin/admin.php?page=wces-addons' ) ;
 	}
 
 	/**
