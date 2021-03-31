@@ -283,7 +283,7 @@ class WooCommerceESPlugin {
 	function wces_style() {
 		echo '<style>@media (min-width: 993px) {
 			body .woocommerce .col2-set .col-1{width:100%;}
-			.woocommerce .col2-set, .woocommerce-page .col2-set {width:48%;float:left;}
+			.woocommerce .col2-set, .woocommerce-page .col2-set {width:44%;float:left;margin-right:2%;}
 			.woocommerce .col2-set .col-2 { width:100%; clear:both; margin-top: 40px; }
 			#order_review_heading, .woocommerce #order_review, .woocommerce-page #order_review{float:left;width:48%;margin-left:2%;}
 			#billing_country_field { float:left; width:48%; }
