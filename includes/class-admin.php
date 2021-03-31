@@ -20,7 +20,7 @@ defined( 'ABSPATH' ) || exit;
  * @copyright  2019 Closemarketing
  * @version    0.1
  */
-class WCIMPH_Admin {
+class WPSPA_WCES_Admin {
 	/**
 	 * Settings
 	 *
@@ -51,6 +51,16 @@ class WCIMPH_Admin {
 			'dashicons-store',
 			99
 		);
+
+		add_submenu_page(
+			'woocommerce',
+			__( 'WPSPA', 'woocommerce-es' ),
+			__( 'WPSPA', 'woocommerce-es' ),
+			'manage_options',
+			'wces',
+			array( $this, 'create_admin_page' ),
+		); 
+
 	}
 
 	/**
@@ -309,5 +319,5 @@ class WCIMPH_Admin {
 	}
 }
 if ( is_admin() ) {
-	$wces = new WCIMPH_Admin();
+	$wces = new WPSPA_WCES_Admin();
 }

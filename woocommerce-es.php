@@ -64,35 +64,25 @@ if ( ! function_exists( 'wces_fs' ) ) {
 	do_action( 'wces_fs_loaded' );
 }
 
-add_action( 'plugins_loaded', 'wces_update_option_check' );
 /**
- * Reload options
- *
- * @return void
+ * Class for updater
  */
-function wces_update_option_check() {
-	$array_options = array( 'wces_vat_show', 'wces_vat_mandatory', 'wces_opt_checkout', 'wces_company' );
-	foreach ( $array_options as $option ) {
-		$value_option = get_option( $option );
-		if ( $value_option ) {
-			$actual_options            = get_option( 'wces_settings' );
-			$actual_options[ $option ] = $value_option;
-			delete_option( $option );
-			update_option( 'wces_settings', $actual_options );
+class WCES_Updater {
+	public static function plugin_activated() {
+		$array_options = array( 'wces_vat_show', 'wces_vat_mandatory', 'wces_opt_checkout', 'wces_company' );
+		foreach ( $array_options as $option ) {
+			$value_option = get_option( $option );
+			if ( $value_option ) {
+				$actual_options            = get_option( 'wces_settings' );
+				$actual_options[ $option ] = $value_option;
+				delete_option( $option );
+				update_option( 'wces_settings', $actual_options );
+			}
 		}
 	}
 }
 
-add_action( 'upgrader_process_complete', 'wp_upe_upgrade_completed', 10, 2 );
-/**
- * This function runs when WordPress completes its upgrade process
- * It iterates through each plugin updated to see if ours is included
- * @param $upgrader_object Array
- * @param $options Array
- */
-function wp_upe_upgrade_completed( $upgrader_object, $options ) {
-	wces_update_option_check();
-}
+register_activation_hook( __FILE__, array( 'WCES_Updater', 'plugin_activated' ) );
 
 /**
  * Checks if the system requirements are met
