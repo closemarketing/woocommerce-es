@@ -58,7 +58,7 @@ class WPSPA_WCES_Admin {
 			__( 'WPSPA', 'woocommerce-es' ),
 			'manage_options',
 			'wces',
-			array( $this, 'create_admin_page' ),
+			array( $this, 'create_admin_page' )
 		); 
 
 	}

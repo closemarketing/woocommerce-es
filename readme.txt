@@ -6,8 +6,8 @@ Requires at least: 3.0
 WC requires at least: 4.0
 WC tested up to: 5.1
 Tested up to: 5.7
-Stable tag: 2.0
-Version: 2.0
+Stable tag: 2.0.1
+Version: 2.0.1
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, terms and conditions, translations and optimization in checkout.
 
@@ -44,6 +44,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
+= 2.0.1 =
+*	Fixes bug.
+
 = 2.0 =
 *	New version with Language Addons!
 *     New Settings Page.
