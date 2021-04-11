@@ -194,7 +194,11 @@ class WPSPA_WCES_Admin {
 	 * @return void
 	 */
 	public function wces_section_info() {
-		echo sprintf( __( 'Please select the following settings in order customize your eCommerce. Don\'t miss the <a href="%s">Addons</a> to improve the functionality. ', 'woocommerce-es' ), '/wp-admin/admin.php?page=wces-addons' ) ;
+		echo sprintf(
+			/* translators: %s: url admin for addons */
+			__( 'Please select the following settings in order customize your eCommerce. Don\'t miss the <a href="%s">Addons</a> to improve the functionality. ', 'woocommerce-es' ),
+			get_admin_url() . 'admin.php?page=wces-addons' // phpcs:ignore
+		);
 	}
 
 	/**
