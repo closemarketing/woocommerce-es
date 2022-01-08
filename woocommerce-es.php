@@ -26,45 +26,6 @@ define( 'WCES_REQUIRED_PHP_VERSION', '5.4' );
 define( 'WCES_REQUIRED_WP_VERSION', '4.6' );
 define( 'WCES_REQUIRED_WC_VERSION', '2.6' );
 
-if ( ! function_exists( 'wces_fs' ) ) {
-
-	/**
-	 * Freemius Loader
-	 *
-	 * @return array
-	 */
-	function wces_fs() {
-		global $wces_fs;
-
-		if ( ! isset( $wces_fs ) ) {
-			// Include Freemius SDK.
-			require_once dirname( __FILE__ ) . '/vendor/freemius/wordpress-sdk/start.php';
-
-			$wces_fs = fs_dynamic_init(
-				array(
-					'id'             => '8034',
-					'slug'           => 'woocommerce-es',
-					'type'           => 'plugin',
-					'public_key'     => 'pk_a7641c2a1d3188ddea51542610085',
-					'is_premium'     => false,
-					'has_addons'     => true,
-					'has_paid_plans' => false,
-					'menu'           => array(
-					'slug'           => 'wces',
-					'first-path'     => 'admin.php?page=wces',
-				),
-			) );
-		}
-
-		return $wces_fs;
-	}
-
-	// Init Freemius.
-	wces_fs();
-	// Signal that SDK was initiated.
-	do_action( 'wces_fs_loaded' );
-}
-
 add_action( 'init', 'wces_update_options_settings' );
 /**
  * Update process
