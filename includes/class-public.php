@@ -138,14 +138,6 @@ class WooCommerceESPlugin {
 					'languages/wc_brands-es_ES.mo' => 'woocommerce-brands/wc_brands-es_ES.mo',
 				),
 
-				'woocommerce-memberships'          => array(
-					'languages/woocommerce-memberships-es_ES.mo'        => 'woocommerce-memberships/woocommerce-memberships-es_ES.mo',
-				),
-
-				'woocommerce-subscriptions'        => array(
-					'languages/woocommerce-subscriptions-es_ES.mo'        => 'woocommerce-subscriptions/woocommerce-subscriptions-es_ES.mo',
-				),
-
 				'woocommerce-brands'               => array(
 					'languages/woocommerce-brands-es_ES.mo' => 'woocommerce-brands/woocommerce-brands-es_ES.mo',
 				),

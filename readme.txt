@@ -23,13 +23,40 @@ Furthermore, this plugin includes the Woocommerce Translation from some plugins 
 *	<strong>[WooCommerce Email Cart](https://www.closemarketing.es/go/email-cart/)</strong> Send Carts by Email to users
 *	<strong>WooCommerce Product Enquiry Form</strong>
 *	<strong>WooCommerce Shipping Table Rate</strong>
-*	<strong>[WooCommerce Memberships](https://www.closemarketing.es/likes/wces-woocommerce-memberships/)</strong>
-*	<strong>[WooCommerce Subscriptions 2.0](https://www.closemarketing.es/likes/wces-woocommerce-subscriptions/)</strong>
 *	<strong>[WooCommerce Brands](https://www.closemarketing.es/likes/wces-woocommerce-brands/)</strong>
 *	<strong>[WooCommerce SEPA Direct](https://www.closemarketing.es/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
 
-And other as Premium Addons (check in settings):
-*	<strong>[WooCommerce Subscriptions & Memberships](https://www.closemarketing.es/likes/wces-woocommerce-subscriptions/)</strong>
+And you will find this plugins translated in premium version (check in settings):
+- Cart to Quote for WooCommerce v1.0.13 (61%)
+- Follow Up Emails v4.9.8 (54%)
+- Fooevents Express checkin v1.12.3 (100%)
+- Fooevents Tickets PDF v1.2.9 (100%)
+- FS WooCommerce Wallet v2.6.5 (44%)
+- Multi Order for WooCommerce PRO v (64%)
+- Recover Abandoned Cart WooCommerce v22.6 (58%)
+- Save & Share Cart for WooCommerce v2.0.5 (30%)
+- WCMP WooCommerce PDF Invoices v4.9.2 (7%)
+- WCMP WooCommerce Product Manager v3.1.5 (32%)
+- WooCommerce Advanced Quantity v3.0.2 (100%)
+- WooCommerce API Manager v2.3.5 (14%)
+- WooCommerce Brands v1.6.21 (100%)
+- WooCommerce Composite Products v7.1.2 (100%)
+- WooCommerce Dynamic Pricing & Discounts v2.3 (78%)
+- Fooevents v1.12.3 (32%)
+- WooCommerce Force Sells v1.1.27 (93%)
+- WooCommerce Google Product v9.3.2 (53%)
+- WooCommerce Memberships v1.19.2 (100%)
+- WooCommerce Min Max Quantities v2.4.20 (28%)
+- WooCommerce Product Addons v3.1.0 (98%)
+- WooCommerce Product Reviews PRO v1.16.2 (85%)
+- WooCommerce Products Filter v2.2.4 (45%)
+- WooCommerce Subscriptions v3.0.10 (98%)
+- WooCommerce Waitlist v2.2.2 (90%)
+- WooCommerce Wishlists v2.2.2 (100%)
+- WooCommerce Local PickUP Plus v2.9.2 (100%)
+- WooTour v3.2.5 (100%)
+- WooCommerce Deposits v1.5.2 (100%)
+- WooCommerce One Page Checkout v1.7.8 (100%)
 
 > This plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce plugin</a>
 
@@ -44,6 +71,10 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Changelog =
+= 2.1 =
+*	Updated list of premium plugins translated.
+*  Removed WooCommerce subscriptions Free.
+
 = 2.0.2 =
 *	Fixes admin url for addons.
 
