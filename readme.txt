@@ -26,7 +26,7 @@ Furthermore, this plugin includes the Woocommerce Translation from some plugins 
 *	<strong>[WooCommerce Brands](https://close.marketing/likes/wces-woocommerce-brands/)</strong>
 *	<strong>[WooCommerce SEPA Direct](https://close.marketing/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
 
-And you will find this plugins translated in premium version (check in settings):
+And you will find this plugins translated in premium version [WPSPA Translations](https://close.technology/wordpress-plugins/woocommerce-es-trans/):
 - Cart to Quote for WooCommerce v1.0.13 (61%)
 - Follow Up Emails v4.9.8 (54%)
 - Fooevents Express checkin v1.12.3 (100%)
@@ -57,9 +57,7 @@ And you will find this plugins translated in premium version (check in settings)
 - WooCommerce Deposits v1.5.2 (100%)
 - WooCommerce One Page Checkout v1.7.8 (100%)
 
-> This plugin requires the <a href="http://wordpress.org/extend/plugins/woocommerce/">WooCommerce plugin</a>
-
-This plugin is maintained by [Closemarketing](https://close.marketing/)
+> This plugin requires the [WooCommerce plugin](http://wordpress.org/extend/plugins/woocommerce/)
 
 == Installation ==
 
@@ -129,6 +127,7 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 == Links ==
 
 *	[Closemarketing](https://close.marketing/)
+*	[Close·technology WordPress Plugins](https://close.technology/)
 
 
 == Closemarketing plugins ==
