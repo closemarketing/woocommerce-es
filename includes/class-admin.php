@@ -42,16 +42,6 @@ class WPSPA_WCES_Admin {
 	 * @return void
 	 */
 	public function add_plugin_page() {
-		add_menu_page(
-			__( 'WPSPA eCommerce', 'woocommerce-es' ),
-			__( 'WPSPA eCommerce', 'woocommerce-es' ),
-			'manage_options',
-			'wces',
-			array( $this, 'create_admin_page' ),
-			'dashicons-store',
-			99
-		);
-
 		add_submenu_page(
 			'woocommerce',
 			__( 'WPSPA', 'woocommerce-es' ),
@@ -194,10 +184,11 @@ class WPSPA_WCES_Admin {
 	 * @return void
 	 */
 	public function wces_section_info() {
+		$source_shop = 'es' === strtok( get_locale(), '_' ) ? 'https://close.technology/' : 'https://en.close.technology/';
 		echo sprintf(
 			/* translators: %s: url admin for addons */
-			__( 'Please select the following settings in order customize your eCommerce. Don\'t miss the <a href="%s">Addons</a> to improve the functionality. ', 'woocommerce-es' ),
-			get_admin_url() . 'admin.php?page=wces-addons' // phpcs:ignore
+			esc_html__( 'Please select the following settings in order customize your eCommerce. Don\'t miss the <a href="%s">Premium Version</a> to add new translations. ', 'woocommerce-es' ),
+			$source_shop . 'wordpress-plugins/woocommerce-es-trans/' // phpcs:ignore
 		);
 	}
 

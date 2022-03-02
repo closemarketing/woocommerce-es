@@ -4,7 +4,7 @@
  * Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
  * Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
  *
- * Version: 2.0.2
+ * Version: 2.1
  * Requires at least: 5.0
  *
  * WC requires at least: 3.0
@@ -21,7 +21,7 @@
 */
 
 define( 'WCES_NAME', 'WPSPA Spanish Enhacements for WooCommerce' );
-define( 'WPSPA_VERSION', '2.0.2' );
+define( 'WPSPA_VERSION', '2.1' );
 define( 'WCES_REQUIRED_PHP_VERSION', '5.4' );
 define( 'WCES_REQUIRED_WP_VERSION', '4.6' );
 define( 'WCES_REQUIRED_WC_VERSION', '2.6' );

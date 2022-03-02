@@ -1,13 +1,13 @@
 === Spanish Market Enhancements for WooCommerce ===
 Contributors: closemarketing, davidperez, sacrajaimez
 Tags: woocommerce, translation, spanish, es, es_ES, webshop, ecommerce, e-commerce, commerce, woothemes
-Donate link: https://www.closemarketing.es/go/donate/
+Donate link: https://close.marketing/go/donate/
 Requires at least: 3.0
 WC requires at least: 4.0
 WC tested up to: 5.1
-Tested up to: 5.7
-Stable tag: 2.0.2
-Version: 2.0.2
+Tested up to: 5.9
+Stable tag: 2.1
+Version: 2.1
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, terms and conditions, translations and optimization in checkout.
 
@@ -20,11 +20,11 @@ Functionalities:
 * It gives you the option to activate optimization in the checkout. It changes the Checkout for better conversion.
 
 Furthermore, this plugin includes the Woocommerce Translation from some plugins that translate it.
-*	<strong>[WooCommerce Email Cart](https://www.closemarketing.es/go/email-cart/)</strong> Send Carts by Email to users
+*	<strong>[WooCommerce Email Cart](https://close.marketing/go/email-cart/)</strong> Send Carts by Email to users
 *	<strong>WooCommerce Product Enquiry Form</strong>
 *	<strong>WooCommerce Shipping Table Rate</strong>
-*	<strong>[WooCommerce Brands](https://www.closemarketing.es/likes/wces-woocommerce-brands/)</strong>
-*	<strong>[WooCommerce SEPA Direct](https://www.closemarketing.es/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
+*	<strong>[WooCommerce Brands](https://close.marketing/likes/wces-woocommerce-brands/)</strong>
+*	<strong>[WooCommerce SEPA Direct](https://close.marketing/likes/sepa/)</strong> Sell tickets in your WooCommerce store.
 
 And you will find this plugins translated in premium version (check in settings):
 - Cart to Quote for WooCommerce v1.0.13 (61%)
@@ -50,7 +50,6 @@ And you will find this plugins translated in premium version (check in settings)
 - WooCommerce Product Addons v3.1.0 (98%)
 - WooCommerce Product Reviews PRO v1.16.2 (85%)
 - WooCommerce Products Filter v2.2.4 (45%)
-- WooCommerce Subscriptions v3.0.10 (98%)
 - WooCommerce Waitlist v2.2.2 (90%)
 - WooCommerce Wishlists v2.2.2 (100%)
 - WooCommerce Local PickUP Plus v2.9.2 (100%)
@@ -68,12 +67,13 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 
 == Developers ==
-
+[GitHub](https://github.com/closemarketing/woocommerce-es)
 
 == Changelog =
 = 2.1 =
 *	Updated list of premium plugins translated.
 *  Removed WooCommerce subscriptions Free.
+*  Removed Freemius.
 
 = 2.0.2 =
 *	Fixes admin url for addons.
@@ -128,7 +128,7 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 == Links ==
 
-*	[Closemarketing](https://www.closemarketing.es/)
+*	[Closemarketing](https://close.marketing/)
 
 
 == Closemarketing plugins ==
