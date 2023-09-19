@@ -4,7 +4,7 @@
  * Plugin URI: http://www.closemarketing.es/portafolio/plugin-woocommerce-espanol/
  * Description: Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, and add-ons with the Spanish language.
  *
- * Version: 2.1
+ * Version: 2.1.1
  * Requires at least: 5.0
  *
  * WC requires at least: 3.0
@@ -21,7 +21,7 @@
 */
 
 define( 'WCES_NAME', 'WPSPA Spanish Enhacements for WooCommerce' );
-define( 'WPSPA_VERSION', '2.1' );
+define( 'WPSPA_VERSION', '2.1.1' );
 define( 'WCES_REQUIRED_PHP_VERSION', '5.4' );
 define( 'WCES_REQUIRED_WP_VERSION', '4.6' );
 define( 'WCES_REQUIRED_WC_VERSION', '2.6' );
@@ -30,7 +30,7 @@ add_action( 'init', 'wces_update_options_settings' );
 /**
  * Update process
  *
- * @return void
+ * @return boolean
  */
 function wces_update_options_settings() {
 	$old_version = get_option( 'wces_plugin_version', '1.7' );
@@ -77,9 +77,9 @@ function wces_requirements_met() {
 		return false;
 	}
 
-	$woocommer_data = get_plugin_data( WP_PLUGIN_DIR .'/woocommerce/woocommerce.php', false, false );
+	$woocommer_data = get_plugin_data( WP_PLUGIN_DIR . '/woocommerce/woocommerce.php', false, false );
 
-	if ( version_compare($woocommer_data['Version'] , WCES_REQUIRED_WC_VERSION, '<' ) ) {
+	if ( version_compare( $woocommer_data['Version'], WCES_REQUIRED_WC_VERSION, '<' ) ) {
 		return false;
 	}
 
@@ -87,7 +87,6 @@ function wces_requirements_met() {
 }
 
 function wces_requirements_error () {
-	global $wp_version;
 	?>
 	<div class="notice notice-success is-dismissible">
 		<p>
