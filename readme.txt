@@ -69,7 +69,7 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 
 == Changelog =
 = 2.1.1 =
-*	 Fix fatal error related with the VAT Number injection in PDF Invoices. Thanks to Yordan Soares.
+*	 Fix fatal error related with the VAT Number injection in PDF Invoices. Thanks to Yordan Soares and Alexandre.
 
 = 2.1.0 =
 *	 Updated list of premium plugins translated.
