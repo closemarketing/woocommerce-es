@@ -36,7 +36,7 @@ class WooCommerceESPlugin {
 		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'wces_add_billing_shipping_fields_admin' ) );
 		add_filter( 'woocommerce_load_order_data', array( $this, 'wces_add_var_load_order_data' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'woocommerce_email_key_notification' ), 10, 1 );
-		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices' ) );
+		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'wces_add_vat_invoices' ), 10, 2 );
 
 		/* Options for the plugin */
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
@@ -262,12 +262,11 @@ class WooCommerceESPlugin {
 	/**
 	 * Adds VAT info in WooCommerce PDF Invoices & Packing Slips
 	 */
-	public function wces_add_vat_invoices( $address ) {
-		global $wpo_wcpdf;
-
-		echo $address . '<p>';
-		$wpo_wcpdf->custom_field( 'billing_vat', __( 'VAT info:', 'woocommerce-es' ) );
-		echo '</p>';
+	public function wces_add_vat_invoices( $address, $document ) {
+		if ( ( $order = $document->order ) && ( $vat = $order->get_meta( '_billing_vat' ) ) ) {
+			$address .= sprintf( '<p>%1$s %2$s</p>', __( 'VAT info:', 'woocommerce-es' ), $vat );
+		}
+		return $address;
 	}
 
 	/* END EU VAT*/
