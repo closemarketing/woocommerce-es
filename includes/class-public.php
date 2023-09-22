@@ -263,8 +263,8 @@ class WooCommerceESPlugin {
 	 * Adds VAT info in WooCommerce PDF Invoices & Packing Slips
 	 */
 	public function wces_add_vat_invoices( $address, $document ) {
-		if ( ! empty( $document ) && is_callable( array( $document, 'custom_field' ) ) ) {
-			$address .= sprintf( '<p>%s</p>', $document->custom_field( 'billing_vat', __( 'VAT info:', 'woocommerce-es' ) ) );
+		if ( ! empty( $document ) && is_callable( array( $document, 'get_custom_field' ) ) ) {
+			$address .= sprintf( '<p>%s %s</p>', __( 'VAT info:', 'woocommerce-es' ), $document->get_custom_field( 'billing_vat' ) );
 		}
 		return $address;
 	}
