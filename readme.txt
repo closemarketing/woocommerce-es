@@ -6,8 +6,8 @@ Requires at least: 3.0
 WC requires at least: 4.0
 WC tested up to: 8.0
 Tested up to: 6.3.1
-Stable tag: 2.1.1
-Version: 2.1.1
+Stable tag: 2.1.2
+Version: 2.1.2
 
 Extends the WooCommerce plugin for Spanish needs: EU VAT included in form and order, terms and conditions, translations and optimization in checkout.
 
@@ -68,6 +68,9 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 [GitHub](https://github.com/closemarketing/woocommerce-es)
 
 == Changelog =
+= 2.1.2 =
+*	 Tweak: Improve the NIF value retrieval.
+
 = 2.1.1 =
 *	 Fix fatal error related with the VAT Number injection in PDF Invoices. Thanks to Yordan Soares and Alexandre.
 
