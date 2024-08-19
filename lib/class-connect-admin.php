@@ -111,7 +111,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'woocommerce',
 				__( 'Connect WooCommerce', 'connect-woocommerce' ) . $this->options['name'],
 				__( 'Connect ', 'connect-woocommerce' ) . $this->options['name'],
-				'manage_options',
+				'manage_woocommerce',
 				$this->options['slug'],
 				array( $this, 'create_admin_page' ),
 			);
