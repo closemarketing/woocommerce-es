@@ -32,6 +32,7 @@ require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/helpers/class-sync-cron.php'
 // Includes files.
 require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/class-connect-admin.php';
 require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/class-connect-public.php';
+require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/class-connect-public-myaccount.php';
 
 // Products sync.
 require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/class-connect-import.php';
@@ -63,6 +64,7 @@ if ( ! class_exists( 'Connect_WooCommerce' ) ) {
 			new Connect_WooCommerce_Orders( $options );
 			new Connect_WooCommerce_Import( $options );
 			new Connect_WooCommerce_Public( $options );
+			new Connect_WooCommerce_Public_MyAccount(  $options );
 			new Connect_WooCommerce_Product_Widget( $options );
 			new Connect_WooCommerce_Orders_Widget( $options );
 		}
