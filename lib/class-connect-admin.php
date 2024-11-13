@@ -365,6 +365,17 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				);
 			}
 
+			// Domain.
+			if ( in_array( 'domain', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_domain',
+					__( 'domain', 'connect-woocommerce' ),
+					array( $this, 'domain_callback' ),
+					$this->options['slug'] . '_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
 			// API Password.
 			if ( in_array( 'apipassword', $settings_fields, true ) ) {
 				add_settings_field(
@@ -601,7 +612,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			 * ## Public
 			 * --------------------------- */
 
-			 register_setting(
+			register_setting(
 				$this->options['slug'] . '_settings_public',
 				$this->options['slug'] . '_public',
 				array( $this, 'sanitize_fields_public' )
@@ -790,6 +801,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'username'       => '',
 				'password'       => '',
 				'company'        => '',
+				'domain'         => '',
 				'dbname'         => '',
 				'stock'          => 'no',
 				'prodst'         => 'draft',
@@ -889,7 +901,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			<span style="width:' . esc_html( $percentage ) . '%"></span>
 			<div class="progress-text">' . esc_html( $percentage ) . '%</div>
 			</div>';
-		}/**
+		}
+
+		/**
 		 * Info for holded automate section.
 		 *
 		 * @return void
@@ -902,44 +916,52 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				),
 			);
 			echo wp_kses( $this->options['settings_admin_message'], $arr );
-		}/**
+		}
+
+		/**
 		 * NEO ID Centre
 		 *
 		 * @return void
 		 */
 		public function idcentre_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . esc_html( $this->options['slug'] ) . '[idcentre]" id="wcpimh_idcentre" value="%s">',
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[idcentre]" id="wcpimh_idcentre" value="%s">',
 				isset( $this->settings['idcentre'] ) ? esc_attr( $this->settings['idcentre'] ) : ''
 			);
-		}/**
+		}
+
+		/**
 		 * URL input
 		 *
 		 * @return void
 		 */
 		public function url_callback() {
 			printf(
-				'<input class="regular-text" type="url" name="' . $this->options['slug'] . '[url]" id="wcpimh_url" value="%s">',
+				'<input class="regular-text" type="url" name="' . esc_attr( $this->options['slug'] ) . '[url]" id="wcpimh_url" value="%s">',
 				isset( $this->settings['url'] ) ? esc_attr( $this->settings['url'] ) : ''
 			);
-		}/**
+		}
+
+		/**
 		 * Username input
 		 *
 		 * @return void
 		 */
 		public function username_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[username]" id="wcpimh_username" value="%s">',
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[username]" id="wcpimh_username" value="%s">',
 				isset( $this->settings['username'] ) ? esc_attr( $this->settings['username'] ) : ''
 			);
-		}/**
+		}
+
+		/**
 		 * DB Name input
 		 *
 		 * @return void
 		 */
 		public function dbname_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[dbname]" id="wcpimh_dbname" value="%s">',
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[dbname]" id="wcpimh_dbname" value="%s">',
 				isset( $this->settings['dbname'] ) ? esc_attr( $this->settings['dbname'] ) : ''
 			);
 		}
@@ -951,8 +973,20 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		 */
 		public function password_callback() {
 			printf(
-				'<input class="regular-text" type="password" name="' . $this->options['slug'] . '[password]" id="wcpimh_password" value="%s">',
+				'<input class="regular-text" type="password" name="' . esc_attr( $this->options['slug'] ) . '[password]" id="wcpimh_password" value="%s">',
 				isset( $this->settings['password'] ) ? esc_attr( $this->settings['password'] ) : ''
+			);
+		}
+
+		/**
+		 * Domain input
+		 *
+		 * @return void
+		 */
+		public function domain_callback() {
+			printf(
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[domain]" id="wcpimh_domain" value="%s">',
+				isset( $this->settings['domain'] ) ? esc_attr( $this->settings['domain'] ) : ''
 			);
 		}
 
@@ -963,7 +997,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		 */
 		public function company_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[company]" id="wcpimh_company" value="%s">',
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[company]" id="wcpimh_company" value="%s">',
 				isset( $this->settings['company'] ) ? esc_attr( $this->settings['company'] ) : ''
 			);
 		}
@@ -979,7 +1013,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'<input class="regular-text" type="password" name="' . esc_html( $this->options['slug'] ) . '[api]" id="wcpimh_api" value="%s">',
 				isset( $this->settings['api'] ) ? esc_attr( $this->settings['api'] ) : ''
 			);
-		}/**
+		}
+
+		/**
 		 * Stock field
 		 *
 		 * @return void
@@ -992,7 +1028,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="no" <?php selected( $stock_option, 'no' ); ?>><?php esc_html_e( 'No', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Product status
 		 *
 		 * @return void
@@ -1007,7 +1045,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="private" <?php selected( $product_status, 'private' ); ?>><?php esc_html_e( 'Private', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Virtual products
 		 *
 		 * @return void
@@ -1015,12 +1055,14 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		public function virtual_callback() {
 			$virtual_option = isset( $this->settings['virtual'] ) ? $this->settings['virtual'] : 'no';
 			?>
-			<select name="<?php echo esc_html( $this->options['slug'] ); ?>[virtual]" id="wcpimh_virtual">
+			<select name="<?php echo esc_attr( $this->options['slug'] ); ?>[virtual]" id="wcpimh_virtual">
 				<option value="no" <?php selected( $virtual_option, 'no' ); ?>><?php esc_html_e( 'No', 'connect-woocommerce' ); ?></option>
 				<option value="yes" <?php selected( $virtual_option, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Back orders
 		 *
 		 * @return void
@@ -1034,17 +1076,21 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="notify" <?php selected( $backorders, 'notify' ); ?>><?php esc_html_e( 'Notify', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Call back for category separation
 		 *
 		 * @return void
 		 */
 		public function catsep_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[catsep]" id="wcpimh_catsep" value="%s">',
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[catsep]" id="wcpimh_catsep" value="%s">',
 				isset( $this->settings['catsep'] ) ? esc_attr( $this->settings['catsep'] ) : ''
 			);
-		}/**
+		}
+
+		/**
 		 * Get categories to use as attributes
 		 *
 		 * @return void
@@ -1075,7 +1121,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		 */
 		public function filter_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[filter]" id="wcpimh_filter" value="%s">',
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[filter]" id="wcpimh_filter" value="%s">',
 				isset( $this->settings['filter'] ) ? esc_attr( $this->settings['filter'] ) : ''
 			);
 		}
@@ -1093,7 +1139,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="no" <?php selected( $tax_price, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Rates option from API
 		 *
 		 * @return void
@@ -1114,7 +1162,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				?>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Rates option from API
 		 *
 		 * @return void
@@ -1279,17 +1329,21 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				?>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Callback sync field.
 		 *
 		 * @return void
 		 */
 		public function sync_num_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[sync_num]" id="wcpimh_sync_num" value="%s">',
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[sync_num]" id="wcpimh_sync_num" value="%s">',
 				isset( $this->settings['sync_num'] ) ? esc_attr( $this->settings['sync_num'] ) : 5
 			);
-		}/**
+		}
+
+		/**
 		 * Sync email options
 		 *
 		 * @return void
