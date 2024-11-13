@@ -369,7 +369,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			if ( in_array( 'domain', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_domain',
-					__( 'domain', 'connect-woocommerce' ),
+					__( 'Domain', 'connect-woocommerce' ),
 					array( $this, 'domain_callback' ),
 					$this->options['slug'] . '_admin',
 					'connect_woocommerce_setting_section'
