@@ -369,7 +369,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			if ( in_array( 'domain', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_domain',
-					__( 'Domain', 'connect-woocommerce' ),
+					__( 'domain', 'connect-woocommerce' ),
 					array( $this, 'domain_callback' ),
 					$this->options['slug'] . '_admin',
 					'connect_woocommerce_setting_section'
@@ -474,21 +474,22 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				);
 			}
 
+			if ( $this->options['order_series_number'] || 'Holded' === $this->options['name'] ) {
+				add_settings_field(
+					'wcpimh_serie_number',
+					__( 'Serie number', 'connect-woocommerce' ),
+					array( $this, 'serie_number_callback' ),
+					$this->options['slug'] . '_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
 			if ( 'Holded' === $this->options['name'] ) {
 				$name_docorder = __( 'Document to create after order completed?', 'connect-woocommerce' );
 				add_settings_field(
 					'wcpimh_doctype',
 					$name_docorder,
 					array( $this, 'doctype_callback' ),
-					$this->options['slug'] . '_admin',
-					'connect_woocommerce_setting_section'
-				);
-
-				$label_filter = __( 'Serie number', 'connect-woocommerce' );
-				add_settings_field(
-					'wcpimh_serie_number',
-					$label_filter,
-					array( $this, 'serie_number_callback' ),
 					$this->options['slug'] . '_admin',
 					'connect_woocommerce_setting_section'
 				);
@@ -710,12 +711,8 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'connwoo_settings_admin_license',
 				'connect_woocommerce_license',
 			);
-		}
-
-		/**
+		}/**
 		 * Page get Merge Product variables
-		 *
-		 * @param string $type Type of page.
 		 *
 		 * @return void
 		 */
@@ -724,33 +721,16 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			?>
 			<div class="connwoo-sync-engine">
 				<div class="sync-wrapper">
-					<h2>
-						<?php
-						sprintf(
-							/* translators: %s: Name of plugin */
-							esc_html__( 'Import Products from %s', 'connect-woocommerce' ),
-							esc_html( $this->options['name'] )
-						);
+					<h2><?php
+					sprintf(
+						esc_html__( 'Import Products from %s', 'connect-woocommerce' ),
+						esc_html( $this->options['name'] ) );
 						?>
 					</h2>
 					<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'connect-woocommerce' ); ?>
 					</p>
 					<br/>
-					<?php
-					$login_api = $this->connapi_erp->check_can_sync();
-					$can_sync  = true;
-					if ( is_array( $login_api ) ) {
-						$can_sync = isset( $login_api['status'] ) && 'ok' === $login_api['status'] ? true : false;
-						?>
-						<div class="error">
-							<p><?php echo esc_html( $login_api['message'] ); ?></p>
-						</div>
-						<?php
-					} else {
-						$can_sync = $login_api;
-					}
-					?>
-					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" <?php if ( false === $can_sync ) { echo ' disabled'; } ?>><?php esc_html_e( 'Start Import', 'connect-crm-realstate' ); ?></div>
+					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" <?php if ( false === $this->connapi_erp->check_can_sync() ) { echo ' disabled'; } ?>><?php esc_html_e( 'Start Import', 'connect-crm-realstate' ); ?></div>
 				</div>
 				<fieldset id="logwrapper">
 					<legend><?php esc_html_e( 'Log', 'connect-woocommerce' ); ?></legend>
@@ -1329,21 +1309,17 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				?>
 			</select>
 			<?php
-		}
-
-		/**
+		}/**
 		 * Callback sync field.
 		 *
 		 * @return void
 		 */
 		public function sync_num_callback() {
 			printf(
-				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[sync_num]" id="wcpimh_sync_num" value="%s">',
+				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[sync_num]" id="wcpimh_sync_num" value="%s">',
 				isset( $this->settings['sync_num'] ) ? esc_attr( $this->settings['sync_num'] ) : 5
 			);
-		}
-
-		/**
+		}/**
 		 * Sync email options
 		 *
 		 * @return void

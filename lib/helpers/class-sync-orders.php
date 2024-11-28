@@ -131,6 +131,7 @@ class ORDER {
 		 * ## Fields
 		 * --------------------------- */
 		$order_data = array(
+			'contactUserID'          => $order->get_user_id(),
 			'contactCode'            => $order->get_meta( '_billing_vat' ),
 			'contactName'            => $contact_name,
 			'contactFirstName'       => $order->get_billing_first_name(),
