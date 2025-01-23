@@ -143,6 +143,7 @@ class ORDER {
 			'woocommerceUrl'         => $url_test,
 			'woocommerceStore'       => get_bloginfo( 'name', 'display' ),
 			'contactEmail'           => $order->get_billing_email(),
+			'contactCompany'         => $order->get_billing_company(),
 			'contact_phone'          => $order->get_billing_phone(),
 			'contactAddress'         => $order->get_billing_address_1() . ',' . $order->get_billing_address_2(),
 			'contactCity'            => $order->get_billing_city(),
