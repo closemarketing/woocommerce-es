@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.9
+
+* Added: Make downloable the invoice in My account.
+* Added: Domain field.
+* Added: Series number.
+* Added: contact company.
+
 ## 1.5.8
 
 * Added: Added order tags.

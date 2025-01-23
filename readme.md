@@ -18,4 +18,4 @@ For questions and bug reports, please use the GitHub issues page.
 
 This program is distributed under the OSL License. For more information see the [./license.md](license.md) file.
 
-Copyright 2008-2023 by David Perez
+Copyright 2008-2025 by David Perez
