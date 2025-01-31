@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.10
+
+* Added: Filter by Producto SKU. 
+
 ## 1.5.9
 
 * Added: Make downloable the invoice in My account.

@@ -453,6 +453,14 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'connect_woocommerce_setting_section'
 			);
 
+			add_settings_field(
+				'wcpimh_filter_sku',
+				__( 'Filter products by SKU? Only the products that complies these formula (use * for formula)', 'connect-woocommerce' ),
+				array( $this, 'filter_sku_callback' ),
+				$this->options['slug'] . '_admin',
+				'connect_woocommerce_setting_section'
+			);
+
 			if ( $this->options['product_price_tax_option'] ) {
 				add_settings_field(
 					'wcpimh_tax_option',
@@ -790,6 +798,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'catsep'         => '',
 				'catattr'        => '',
 				'filter'         => '',
+				'filter_sku'     => '',
 				'tax_option'     => 'no',
 				'rates'          => 'default',
 				'catnp'          => 'yes',
@@ -1103,6 +1112,18 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			printf(
 				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[filter]" id="wcpimh_filter" value="%s">',
 				isset( $this->settings['filter'] ) ? esc_attr( $this->settings['filter'] ) : ''
+			);
+		}
+
+		/**
+		 * Filter products
+		 *
+		 * @return void
+		 */
+		public function filter_sku_callback() {
+			printf(
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[filter_sku]" id="wcpimh_filter_sku" value="%s">',
+				isset( $this->settings['filter_sku'] ) ? esc_attr( $this->settings['filter_sku'] ) : ''
 			);
 		}
 

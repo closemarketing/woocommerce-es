@@ -595,6 +595,15 @@ class PROD {
 			}
 		}
 
+		// Filter by sku.
+		$filter = isset( $settings['filter_sku'] ) ? $settings['filter_sku'] : '';
+		if ( ! empty( $filter ) && ! empty( $item['sku'] ) && fnmatch( $filter, $item['sku'] ) ) {
+			return false;
+		} elseif ( ! empty( $filter ) && ! empty( $item['sku'] ) && ! fnmatch( $filter, $item['sku'] ) ) {
+			return true;
+		}
+
+		// Filter by tags.
 		if ( empty( $settings['filter'] ) ) {
 			return false;
 		}
