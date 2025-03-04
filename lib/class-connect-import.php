@@ -205,6 +205,10 @@ if ( ! class_exists( 'Connect_WooCommerce_Import' ) ) {
 				$api_products = $_SESSION['api_products'];
 			}
 
+			if ( isset( $api_products['status'] ) && 'error' === $api_products['status'] ) {
+				wp_send_json_error( array( 'message' => $api_products['message'] ) );
+			}
+
 			if ( empty( $api_products ) ) {
 				wp_send_json_error( array( 'message' => 'No products' ) );
 			}
