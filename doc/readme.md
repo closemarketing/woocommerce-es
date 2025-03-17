@@ -32,7 +32,7 @@ $connwoo_options_erp = array(
 	'settings_logo'              => PREFIX_PLUGIN_URL . 'includes/assets/logo.svg',
 	'settings_admin_message'     => sprintf(
 		// translators: %s url of contact.
-		__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App ERP API</a>.', 'connect-woocommerce-erp' ),
+		__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = '%s' target = '_blank'>App ERP API</a>.', 'connect-woocommerce-erp' ),
 		'https://app.erp.com/api'
 	),
 	'settings_fields'            => array( 'url', 'username', 'apipassword', 'dbname' ),
@@ -90,4 +90,35 @@ require_once PREFIX_PLUGIN_PATH . 'includes/class-api-erp.php';
 require_once PREFIX_PLUGIN_PATH . 'vendor/closemarketing/connect-woocommerce-library/loader.php';
 
 new Connect_WooCommerce( $connwoo_options_erp );
+```
+
+## Send products from API to Library
+
+It needs this format:
+
+```
+$products = [
+	[
+		'id'     => ID of product internal
+		'kind'   => simple, variable, pack
+		'name'   => Name of the Product
+		'desc'   => Description of the product
+		'sku'    => Product SKU
+		'price'  => Normal price of the product without taxes
+		'weight' => Weight of the product (numerical)
+		'length' => Length of product
+		'width'  => Width of product
+		'height' => Heigth of product
+    'taxes' => [ 's_iva_21' ],
+    'total' => Price with taxes
+    'hasStock' => 1
+    'stock' => Number of units
+    'barcode' => GTIN code
+    'tags' => Array of tags
+		'attributes' => Array of attributes for Category
+    'categoryId' => 
+    'factoryCode' => 
+		'full_info'   => all information that brings API for IA.
+	]
+];
 ```

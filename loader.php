@@ -28,6 +28,7 @@ require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/helpers/class-sync-products.
 require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/helpers/class-sync-taxonomies.php';
 require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/helpers/class-sync-orders.php';
 require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/helpers/class-sync-cron.php';
+require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/helpers/class-ai-connector.php';
 
 // Includes files.
 require_once CONNECT_WOOCOMMERCE_PLUGIN_PATH . 'lib/class-connect-admin.php';

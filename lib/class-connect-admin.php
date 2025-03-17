@@ -13,6 +13,7 @@ defined( 'ABSPATH' ) || exit;
 use CLOSE\WooCommerce\Library\Helpers\PROD;
 use CLOSE\WooCommerce\Library\Helpers\TAX;
 use CLOSE\WooCommerce\Library\Helpers\HELPER;
+use CLOSE\WooCommerce\Library\Helpers\AI;
 
 /**
  * Library for WooCommerce Settings
@@ -73,11 +74,25 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		private $settings_slug;
 
 		/**
+		 * Settings AI
+		 *
+		 * @var string
+		 */
+		private $settings_ai;
+
+		/**
 		 * Settings slug
 		 *
 		 * @var string
 		 */
 		private $is_mergevars;
+
+		/**
+		 * Settings slug
+		 *
+		 * @var string
+		 */
+		private $is_disabled_orders;
 
 		/**
 		 * Construct of class
@@ -86,11 +101,12 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		 * @return void
 		 */
 		public function __construct( $options = array() ) {
-			$this->options       = $options;
-			$apiname             = 'Connect_WooCommerce_' . $this->options['name'];
-			$this->connapi_erp   = new $apiname( $options );
-			$this->settings_slug = $this->options['slug'] . '_settings';
-			$this->is_mergevars  = method_exists( $this->connapi_erp, 'get_product_attributes' ) ? true : false;
+			$this->options            = $options;
+			$apiname                  = 'Connect_WooCommerce_' . $this->options['name'];
+			$this->connapi_erp        = new $apiname( $options );
+			$this->settings_slug      = $this->options['slug'] . '_settings';
+			$this->is_mergevars       = method_exists( $this->connapi_erp, 'get_product_attributes' ) ? true : false;
+			$this->is_disabled_orders = isset( $this->options['disable_modules'] ) && in_array( 'order', $this->options['disable_modules'], true ) ? true : false;
 
 			add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 			add_action( 'admin_init', array( $this, 'page_init' ) );
@@ -126,6 +142,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			$this->settings                = get_option( $this->options['slug'] );
 			$this->settings_public         = get_option( $this->options['slug'] . '_public' );
 			$this->settings_prod_mergevars = get_option( $this->options['slug'] . '_prod_mergevars' );
+			$this->settings_ai             = get_option( $this->options['slug'] . '_ai' );
 			$special_tabs                  = ! empty( $this->options['settings_special_tabs'] ) ? $this->options['settings_special_tabs'] : array();
 			?>
 			<div class="header-wrap">
@@ -148,14 +165,22 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			<div class="wrap">
 				<?php settings_errors(); ?>
 
-				<?php $active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'sync_products'; ?>
+				<?php
+				$active_tab         = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'sync_products';
+				?>
 				<h2 class="nav-tab-wrapper">
 					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=sync_products" class="nav-tab <?php echo 'sync_products' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync products', 'connect-woocommerce' ); ?></a>
-					<?php if ( $this->is_mergevars ) { ?>
-					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=prod_mergevars" class="nav-tab <?php echo 'prod_mergevars' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'connect-woocommerce' ); ?></a>
-					<?php } ?>
-					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=sync_orders" class="nav-tab <?php echo 'sync_orders' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync Orders', 'connect-woocommerce' ); ?></a>
 					<?php
+					if ( $this->is_mergevars ) {
+						?>
+						<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=prod_mergevars" class="nav-tab <?php echo 'prod_mergevars' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'connect-woocommerce' ); ?></a>
+						<?php
+					}
+					if ( ! $this->is_disabled_orders ) {
+						?>
+						<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=sync_orders" class="nav-tab <?php echo 'sync_orders' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync Orders', 'connect-woocommerce' ); ?></a>
+						<?php
+					}
 					if ( in_array( 'subscriptions', $special_tabs, true ) ) {
 						?>
 						<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'connect-woocommerce' ); ?></a>
@@ -165,6 +190,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=automate" class="nav-tab <?php echo 'automate' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Automate', 'connect-woocommerce' ); ?></a>
 					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=settings" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'connect-woocommerce' ); ?></a>
 					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=public" class="nav-tab <?php echo 'public' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Frontend Settings', 'connect-woocommerce' ); ?></a>
+					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI', 'connect-woocommerce' ); ?></a>
 					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=license" class="nav-tab <?php echo 'license' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'License', 'connect-woocommerce' ); ?></a>
 				</h2>
 
@@ -224,6 +250,22 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 							__( 'Save merge', 'connect-woocommerce' ),
 							'primary',
 							'submit_prod_mergevars'
+						);
+						?>
+					</form>
+					<?php
+				}
+
+				if ( 'ai' === $active_tab ) {
+					?>
+					<form method="post" action="options.php">
+						<?php
+						settings_fields( $this->options['slug'] . '_settings_ai' );
+						do_settings_sections( $this->options['slug'] . '_ai' );
+						submit_button(
+							__( 'Save AI', 'connect-woocommerce' ),
+							'primary',
+							'submit_ai'
 						);
 						?>
 					</form>
@@ -596,7 +638,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			 * ## Merge Vars
 			 * --------------------------- */
 
-			 register_setting(
+			register_setting(
 				$this->options['slug'] . '_settings_prod_mergevars',
 				$this->options['slug'] . '_prod_mergevars',
 				array( $this, 'sanitize_fields_prod_mergevars' )
@@ -674,14 +716,56 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			);
 
 			/**
+			 * ## AI
+			 * --------------------------- */
+
+			register_setting(
+				$this->options['slug'] . '_settings_ai',
+				$this->options['slug'] . '_ai',
+				array( $this, 'sanitize_fields_ai' )
+			);
+
+			add_settings_section(
+				'imhset_ai_setting_section',
+				__( 'Options to Use AI generating description for products', 'connect-woocommerce' ),
+				array( $this, 'section_info_ai' ),
+				$this->options['slug'] . '_ai'
+			);
+
+			add_settings_field(
+				$this->options['slug'] . '_provider',
+				__( 'AI Provider', 'connect-woocommerce' ),
+				array( $this, 'ai_provider_callback' ),
+				$this->options['slug'] . '_ai',
+				'imhset_ai_setting_section'
+			);
+
+			add_settings_field(
+				$this->options['slug'] . '_apikey',
+				__( 'API Key', 'connect-woocommerce' ),
+				array( $this, 'token_ai_callback' ),
+				$this->options['slug'] . '_ai',
+				'imhset_ai_setting_section'
+			);
+
+			add_settings_field(
+				$this->options['slug'] . '_model',
+				__( 'Model (need login first)', 'connect-woocommerce' ),
+				array( $this, 'ai_model_callback' ),
+				$this->options['slug'] . '_ai',
+				'imhset_ai_setting_section'
+			);
+
+			/**
 			 * ## License
 			 * --------------------------- */
 
-			 register_setting(
+			register_setting(
 				'connect_woocommerce_license',
 				$this->options['slug'] . '_license',
 				array( $this, 'sanitize_fields_license' )
 			);
+
 			add_settings_section(
 				'connect_woocommerce_license',
 				'',
@@ -719,9 +803,12 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'connwoo_settings_admin_license',
 				'connect_woocommerce_license',
 			);
-		}/**
+		}
+
+		/**
 		 * Page get Merge Product variables
 		 *
+		 * @param string $type Type of page.
 		 * @return void
 		 */
 		public function page_get_sync( $type = 'sync_products' ) {
@@ -1189,7 +1276,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				?>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Category for new products
 		 *
 		 * @return void
@@ -1330,7 +1419,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				?>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Callback sync field.
 		 *
 		 * @return void
@@ -1340,7 +1431,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'<input class="regular-text" type="text" name="' . $this->options['slug'] . '[sync_num]" id="wcpimh_sync_num" value="%s">',
 				isset( $this->settings['sync_num'] ) ? esc_attr( $this->settings['sync_num'] ) : 5
 			);
-		}/**
+		}
+
+		/**
 		 * Sync email options
 		 *
 		 * @return void
@@ -1392,6 +1485,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		public function section_info_prod_mergevars() {
 			esc_html_e( 'Please select the following settings in order customize your eCommerce. ', 'connect-woocommerce' );
 		}
+
 		/**
 		 * Page get Merge Product variables
 		 *
@@ -1491,9 +1585,100 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				</div>
 			</div>
 			<?php
-		}/**
+		}
+
+		/**
+		 * ## AI
+		 * --------------------------- */
+
+		/**
+		 * Sanitize fiels before saves in DB
+		 *
+		 * @param array $input Input fields.
+		 * @return array
+		 */
+		public function sanitize_fields_ai( $input ) {
+			$sanitary_values = array();
+
+			$admin_settings = array(
+				'provider' => 'chatgpt',
+				'token'    => '',
+				'model'    => '',
+			);
+
+			foreach ( $admin_settings as $setting => $default_value ) {
+				if ( isset( $input[ $setting ] ) ) {
+					$sanitary_values[ $setting ] = sanitize_text_field( $input[ $setting ] );
+				} else {
+					$sanitary_values[ $setting ] = $default_value;
+				}
+			}
+
+			return $sanitary_values;
+		}
+
+		/**
+		 * Info for AI.
+		 *
+		 * @return void
+		 */
+		public function section_info_ai() {
+			esc_html_e( 'Select the provider and options for AI generating. ', 'connect-woocommerce' );
+		}
+
+		/**
+		 * Vat show setting
+		 *
+		 * @return void
+		 */
+		public function ai_provider_callback() {
+			$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
+			?>
+			<select name="<?php echo esc_html( $this->options['slug'] ); ?>_ai[provider]" id="provider">
+				<option value="chatgpt" <?php selected( $provider, 'chatgpt' ); ?>><?php esc_html_e( 'ChatGPT', 'connect-woocommerce' ); ?></option>
+			</select>
+			<?php
+		}
+
+		/**
+		 * Vat show setting
+		 *
+		 * @return void
+		 */
+		public function ai_model_callback() {
+			$model    = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
+			$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
+			$token    = isset( $this->settings_ai['token'] ) ? $this->settings_ai['token'] : '';
+			$options  = AI::get_models( $provider, $token );
+			?>
+
+			<select name="<?php echo esc_html( $this->options['slug'] ); ?>_ai[model]" id="cwc_ai_model">
+				<?php
+				foreach ( $options as $key => $label ) {
+					echo '<option value="' . esc_html( $key ) . '" ' . selected( $key, $model ) . ' >' . esc_html( $label ) . '</option>';
+				}
+				?>
+			</select>
+			<?php
+		}
+
+		/**
+		 * Callback sync field.
+		 *
+		 * @return void
+		 */
+		public function token_ai_callback() {
+			printf(
+				'<input class="regular-text" type="password" name="' . esc_html( $this->options['slug'] ) . '_ai[token]" id="wcpimh_token" value="%s">',
+				isset( $this->settings_ai['token'] ) ? esc_attr( $this->settings_ai['token'] ) : ''
+			);
+		}
+
+		/**
 		 * ## Public
-		 * --------------------------- *//**
+		 * --------------------------- */
+
+		/**
 		 * Sanitize fiels before saves in DB
 		 *
 		 * @param array $input Input fields.
@@ -1527,14 +1712,18 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			}
 
 			return $sanitary_values;
-		}/**
+		}
+
+		/**
 		 * Info for holded automate section.
 		 *
 		 * @return void
 		 */
 		public function section_info_public() {
 			esc_html_e( 'Please select the following settings in order customize your eCommerce. ', 'connect-woocommerce' );
-		}/**
+		}
+
+		/**
 		 * Vat show setting
 		 *
 		 * @return void
@@ -1546,7 +1735,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="no" <?php selected( $vat_show, 'no' ); ?>><?php esc_html_e( 'No', 'connect-woocommerce' ); ?></option>		<option value="yes" <?php selected( $vat_show, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Vat show mandatory setting
 		 *
 		 * @return void
@@ -1558,7 +1749,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="no" <?php selected( $vat_mandatory, 'no' ); ?>><?php esc_html_e( 'No', 'connect-woocommerce' ); ?></option>		<option value="yes" <?php selected( $vat_mandatory, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Vat show company field
 		 *
 		 * @return void
@@ -1570,7 +1763,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="no" <?php selected( $company_field, 'no' ); ?>><?php esc_html_e( 'No', 'connect-woocommerce' ); ?></option>		<option value="yes" <?php selected( $company_field, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Vat show term conditions
 		 *
 		 * @return void
@@ -1582,7 +1777,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="no" <?php selected( $terms_registration, 'no' ); ?>><?php esc_html_e( 'No', 'connect-woocommerce' ); ?></option>		<option value="yes" <?php selected( $terms_registration, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * Vat show free shipping
 		 *
 		 * @return void
@@ -1594,7 +1791,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				<option value="no" <?php selected( $remove_free, 'no' ); ?>><?php esc_html_e( 'No', 'connect-woocommerce' ); ?></option>		<option value="yes" <?php selected( $remove_free, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
-		}/**
+		}
+
+		/**
 		 * # Library Updater
 		 * ---------------------------------------------------------------------------------------------------- */
 		/**
@@ -1891,7 +2090,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		 */
 		public function create_software_api_url( $args ) {
 			return add_query_arg( 'wc-api', 'wc-am-api', $this->options['api_url'] ) . '&' . http_build_query( $args );
-		}/**
+		}
+
+		/**
 		 * Generate the default data.
 		 */
 		public function license_instance_activation() {
@@ -1931,7 +2132,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			$response = wp_remote_retrieve_body( $request );
 
 			return ! empty( $response ) ? $response : false;
-		}/**
+		}
+
+		/**
 		 * Check for updates against the remote server.
 		 *
 		 * @since  2.0
@@ -1982,7 +2185,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			}
 
 			return $transient;
-		}/**
+		}
+		
+		/**
 		 * API request for informatin.
 		 *
 		 * If `$action` is 'query_plugins' or 'plugin_information', an object MUST be passed.
