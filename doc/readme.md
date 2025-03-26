@@ -96,6 +96,8 @@ new Connect_WooCommerce( $connwoo_options_erp );
 
 It needs this format:
 
+Attributes need to have get_attributes with the same value of the id to import to category.
+
 ```
 $products = [
 	[
@@ -115,7 +117,13 @@ $products = [
     'stock' => Number of units
     'barcode' => GTIN code
     'tags' => Array of tags
-		'attributes' => Array of attributes for Category
+		'attributes' => [
+			[
+				'id'   => external ID of taxonomy
+				'name' => Name of Taxonomy ex. Tipo
+				'value' => Value of the term in Taxonomy
+			]
+		]
     'categoryId' => 
     'factoryCode' => 
 		'full_info'   => all information that brings API for IA.
