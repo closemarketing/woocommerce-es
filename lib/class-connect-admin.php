@@ -756,6 +756,14 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'imhset_ai_setting_section'
 			);
 
+			add_settings_field(
+				$this->options['slug'] . '_prompt',
+				__( 'Prompt', 'connect-woocommerce' ),
+				array( $this, 'ai_prompt_callback' ),
+				$this->options['slug'] . '_ai',
+				'imhset_ai_setting_section'
+			);
+
 			/**
 			 * ## License
 			 * --------------------------- */
@@ -1604,6 +1612,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'provider' => 'chatgpt',
 				'token'    => '',
 				'model'    => '',
+				'prompt'   => '',
 			);
 
 			foreach ( $admin_settings as $setting => $default_value ) {
@@ -1636,6 +1645,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 			?>
 			<select name="<?php echo esc_html( $this->options['slug'] ); ?>_ai[provider]" id="provider">
 				<option value="chatgpt" <?php selected( $provider, 'chatgpt' ); ?>><?php esc_html_e( 'ChatGPT', 'connect-woocommerce' ); ?></option>
+				<option value="deepseek" <?php selected( $provider, 'deepseek' ); ?>><?php esc_html_e( 'DeepSeek', 'connect-woocommerce' ); ?></option>
 			</select>
 			<?php
 		}
@@ -1672,6 +1682,19 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				'<input class="regular-text" type="password" name="' . esc_html( $this->options['slug'] ) . '_ai[token]" id="wcpimh_token" value="%s">',
 				isset( $this->settings_ai['token'] ) ? esc_attr( $this->settings_ai['token'] ) : ''
 			);
+		}
+
+		/**
+		 * Callback sync field.
+		 *
+		 * @return void
+		 */
+		public function ai_prompt_callback() {
+			$prompt = isset( $this->settings_ai['prompt'] ) ? $this->settings_ai['prompt'] : __( 'Here is the information about a product. I need you to write a description for an online store, highlighting the main features. Don\'t use prices in the description.', 'connect-woocommerce' );
+			?>
+			<textarea class="regular-text" rows="5" style="width: 100%;" name="<?php echo esc_html( $this->options['slug'] ); ?>_ai[prompt]" id="wcpimh_prompt"><?php echo esc_textarea( $prompt ); ?></textarea>
+			<p><?php esc_html_e( 'After prompt, we add the format to retrieve the contact', 'connect-woocommerce' ); ?></p>
+			<?php
 		}
 
 		/**

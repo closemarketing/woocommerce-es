@@ -31,6 +31,11 @@ class AI {
 			case 'chatgpt':
 				$models = self::get_models_chatgpt( $token );
 				break;
+			case 'deepseek':
+				$models = array(
+					'deepseek-chat' => 'DeepSeek Chat',
+				);
+				break;
 		}
 		return $models;
 	}
@@ -42,11 +47,9 @@ class AI {
 	 * @return array
 	 */
 	private static function get_models_chatgpt( $api_key = '' ) {
-		$models = get_transient( 'wpat_query_chatgpt_models' );
+		$models = get_transient( 'connwoo_query_chatgpt_models' );
 		if ( ! $models ) {
 			// Generate value for chatgpt_models.
-			$api_key = empty( $api_key ) ? get_site_option( 'wpat_chatgpt_token' ) : $api_key;
-
 			$args       = array(
 				'headers' => array(
 					'Content-Type'  => 'application/json',
@@ -66,57 +69,66 @@ class AI {
 					}
 				}
 			}
-			set_transient( 'wpat_query_chatgpt_models', $models, DAY_IN_SECONDS );
+			set_transient( 'connwoo_query_chatgpt_models', $models, DAY_IN_SECONDS );
 		}
 
 		return $models;
 	}
 
-	public static function generate_seo_post( $options_slug, $item ) {
-		$options  = get_option( $options_slug . '_ai' );
-		$provider = isset( $options['provider'] ) ? $options['provider'] : 'chatgpt';
-		$token    = isset( $options['token'] ) ? $options['token'] : '';
-		$model    = isset( $options['model'] ) ? $options['model'] : '';
+	/**
+	 * Generate SEO post
+	 *
+	 * @param array $settings Settings.
+	 * @param array $item Item.
+	 * @return array
+	 */
+	public static function generate_description( $settings, $item ) {
+		$provider     = isset( $settings['provider'] ) ? $settings['provider'] : 'chatgpt';
+		$prompt       = isset( $settings['prompt'] ) ? $settings['prompt'] : '';
+		$product_info = isset( $item['full_info'] ) ? $item['full_info'] : $item;
+		$message      = '';
+
+		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'connect-woocommerce' ) . wp_json_encode( $product_info );
+		$language = get_locale();
+		$content .= PHP_EOL . sprintf(
+			/* translators: %s: language */
+			__( 'Please respond in %s language.', 'connect-woocommerce' ),
+			$language
+		);
+		$content .= PHP_EOL . __( 'Generate a Title SEO and SEO description and export it in format JSON, with elements: body, seo_title, seo_description', 'connect-woocommerce' );
+
+		$token = isset( $settings['token'] ) ? $settings['token'] : '';
+
+		if ( empty( $token ) ) {
+			return array(
+				'status' => 'error',
+				'error'  => __( 'Error no credentials', 'connect-woocommerce' ),
+			);
+		}
 
 		switch ( $provider ) {
 			case 'chatgpt':
-				$post_info = self::generate_seo_post_chatgpt( $token );
+				$model   = isset( $settings['model'] ) ? $settings['model'] : 'gpt-3.5-turbo';
+				$api_url = 'https://api.openai.com/v1/chat/completions';
 				break;
-		}
-
-		return $post_info;
-	}
-
-	private static function generate_seo_post_chatgpt( $text, $type, $lang_from, $lang_to, $credentials ) {
-		$prompt = empty( $credentials['prompt'] ) ? 'Translate this ' . $type . ' from ' . $lang_from . ' to ' . $lang_to . ': ' : $credentials['prompt'];
-
-		$prompt = str_replace( '[source]', $lang_from, $prompt );
-		$prompt = str_replace( '[target]', $lang_to, $prompt );
-		$prompt = str_replace( '[type]', $type, $prompt );
-
-		if ( empty( $credentials['token'] ) ) {
-			return array(
-				'api'           => 'chatgpt',
-				'translation'   => $text,
-				'language_from' => $lang_from,
-				'language_to'   => $lang_to,
-				'status'        => 0,
-				'error'         => 'Error no credentials',
-			);
+			case 'deepseek':
+				$model   = isset( $settings['model'] ) ? $settings['model'] : 'deepseek-chat';
+				$api_url = 'https://api.deepseek.com/v1/chat/completions';
+				break;
 		}
 
 		$args = array(
 			'headers' => array(
 				'Content-Type'  => 'application/json',
-				'Authorization' => 'Bearer ' . $credentials['token'],
+				'Authorization' => 'Bearer ' . $token,
 			),
 			'body'    => wp_json_encode(
 				array(
-					'model'             => ! empty( $credentials['model'] ) ? $credentials['model'] : 'gpt-3.5-turbo',
+					'model'             => $model,
 					'messages'          => array(
 						array(
 							'role'    => 'user',
-							'content' => $prompt . $text,
+							'content' => $content,
 						),
 					),
 					'temperature'       => 1,
@@ -130,28 +142,31 @@ class AI {
 			),
 		);
 
-		$response      = wp_remote_post( 'https://api.openai.com/v1/chat/completions', $args );
+		$response      = wp_remote_post( $api_url, $args );
 		$response_code = wp_remote_retrieve_response_code( $response );
 		$response      = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( 200 !== $response_code ) {
 			return array(
-				'api'           => 'chatgpt',
-				'translation'   => $text,
-				'language_from' => $lang_from,
-				'language_to'   => $lang_to,
-				'status'        => 0,
-				'error'         => isset( $response['error']['message'] ) ? sanitize_text_field( $response['error']['message'] ) : __( 'Unknown error', 'wpautotranslate' ),
+				'status'  => 0,
+				'message' => isset( $response['error']['message'] ) ? sanitize_text_field( $response['error']['message'] ) : __( 'Unknown error', 'connect-woocommerce' ),
 			);
+		}
+		$content = array();
+		if ( isset( $response['choices'][0]['message']['content'] ) ) {
+			$content = str_replace( '```json', '', $response['choices'][0]['message']['content'] );
+			$content = str_replace( '```', '', $content );
+			$content = json_decode( $content, true );
+			if ( ! is_array( $content ) ) {
+				$content = array();
+			}
+			$message = __( 'Spent tokens: ', 'connect-woocommerce' ) . ( isset( $response['usage']['total_tokens'] ) ? $response['usage']['total_tokens'] : 0 );
 		}
 
 		return array(
-			'api'           => 'chatgpt',
-			'translation'   => isset( $response['choices'][0]['message']['content'] ) ? $response['choices'][0]['message']['content'] : $text,
-			'language_from' => $lang_from,
-			'language_to'   => $lang_to,
-			'status'        => 1,
-			'error'         => '',
+			'data'    => $content,
+			'status'  => 'ok',
+			'message' => $message,
 		);
 	}
 }

@@ -13,6 +13,7 @@ namespace CLOSE\WooCommerce\Library\Helpers;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\WooCommerce\Library\Helpers\TAX;
+use CLOSE\WooCommerce\Library\Helpers\AI;
 
 /**
  * Sync Products.
@@ -186,11 +187,11 @@ class PROD {
 		if ( $is_new_product ) {
 			$product_props_new = array(
 				'menu_order'         => 0,
-				'name'               => $item['name'],
+				'name'               => isset( $item['name'] ) ? $item['name'] : '',
 				'featured'           => false,
 				'catalog_visibility' => 'visible',
-				'description'        => $item['desc'],
 				'short_description'  => '',
+				'description'        => isset( $item['desc'] ) ? $item['desc'] : '',
 				'sale_price'         => '',
 				'date_on_sale_from'  => '',
 				'date_on_sale_to'    => '',
@@ -218,6 +219,7 @@ class PROD {
 				'status'             => $post_status,
 			);
 		}
+
 		$product_props = array_merge( $product_props, $product_props_new );
 		// Set properties and save.
 		$product->set_props( $product_props );
@@ -315,12 +317,36 @@ class PROD {
 		// Save ERP ID.
 		$product->update_meta_data( $option_prefix . '_id', $item['id'] );
 
+		if ( $is_new_product ) {
+			// Generate description with AI for product.
+			$settings_ai = get_option( $option_prefix . '_ai' );
+			if ( ! empty( $settings_ai['provider'] ) ) {
+				$result_ai = AI::generate_description( $settings_ai, $item );
+				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
+					if ( ! empty( $result_ai['data']['body'] ) ) {
+						$product_props['description'] = $result_ai['data']['body'];
+					}
+					if ( ! empty( $result_ai['data']['seo_description'] ) ) {
+						$product_props['short_description'] = $result_ai['data']['seo_description'];
+					}
+					$seo_title = ! empty( $result_ai['data']['seo_title'] ) ? sanitize_text_field( $result_ai['data']['seo_title'] ) : '';
+					$seo_desc  = ! empty( $result_ai['data']['seo_description'] ) ? sanitize_text_field( $result_ai['data']['seo_description'] ) : '';
+					self::update_product_seo( $product_id, $seo_title, $seo_desc );
+				} else {
+					$message .= '<span class="error">' . __( 'Error AI: ', 'connect-woocommerce' );
+					$message .= $result_ai['error'] ?? '';
+					$message .= '</span>';
+				}
+			}
+		}
+
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
 		if ( 'pack' === $type ) {
 			wp_set_object_terms( $product_id, 'woosb', 'product_type' );
 		}
+
 		return array(
 			'status'  => 'ok',
 			'message' => $message,
@@ -800,5 +826,79 @@ class PROD {
 			'prod|post_excerpt' => __( 'Product Short Description', 'connect-woocommerce' ),
 			'prod|post_status'  => __( 'Product Publish Status', 'connect-woocommerce' ),
 		);
+	}
+
+	/**
+	 * Update SEO for product
+	 *
+	 * @param int    $product_id Product ID.
+	 * @param string $seo_title Title SEO.
+	 * @param string $seo_desc Description SEO.
+	 */
+	private static function update_product_seo( $product_id, $seo_title, $seo_desc ) {
+		// Yoast.
+		if ( is_plugin_active( 'wordpress-seo/wp-seo.php' ) || is_plugin_active( 'wordpress-seo-premium/wp-seo-premium.php' ) ) {
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $product_id, '_yoast_wpseo_title', $seo_title );
+			}
+			if ( ! empty( $seo_desc ) ) {
+				update_post_meta( $product_id, '_yoast_wpseo_metadesc', $seo_desc );
+			}
+		}
+		// Rank Math.
+		if ( is_plugin_active( 'seo-by-rank-math/rank-math.php' ) ) {
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $product_id, 'rank_math_title', $seo_title );
+			}
+			if ( ! empty( $seo_desc ) ) {
+				update_post_meta( $product_id, 'rank_math_description', $seo_desc );
+			}
+		}
+		// SEOPress.
+		if ( is_plugin_active( 'seopress/seopress.php' ) ) {
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $product_id, '_seopress_titles_title', $seo_title );
+			}
+			if ( ! empty( $seo_desc ) ) {
+				update_post_meta( $product_id, '_seopress_titles_description', $seo_desc );
+			}
+		}
+		// All in one SEO.
+		if ( is_plugin_active( 'all-in-one-seo-pack/all_in_one_seo_pack.php' ) ) {
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $product_id, '_aioseop_title', $seo_title );
+			}
+			if ( ! empty( $seo_desc ) ) {
+				update_post_meta( $product_id, '_aioseop_description', $seo_desc );
+			}
+		}
+		// SEOPress.
+		if ( is_plugin_active( 'seopress-pro/seopress-pro.php' ) ) {
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $product_id, '_seopress_titles_title', $seo_title );
+			}
+			if ( ! empty( $seo_desc ) ) {
+				update_post_meta( $product_id, '_seopress_titles_description', $seo_desc );
+			}
+		}
+		// WP Meta SEO.
+		if ( is_plugin_active( 'wp-meta-seo/wp-meta-seo.php' ) ) {
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $product_id, '_wpseo_title', $seo_title );
+			}
+			if ( ! empty( $seo_desc ) ) {
+				update_post_meta( $product_id, '_wpseo_metadesc', $seo_desc );
+			}
+		}
+
+		// SEO Framework.
+		if ( is_plugin_active( 'autodescription/autodescription.php' ) ) {
+			if ( ! empty( $seo_title ) ) {
+				update_post_meta( $product_id, '_autodescription_title', $seo_title );
+			}
+			if ( ! empty( $seo_desc ) ) {
+				update_post_meta( $product_id, '_autodescription_description', $seo_desc );
+			}
+		}
 	}
 }
