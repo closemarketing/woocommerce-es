@@ -163,10 +163,11 @@ if ( ! class_exists( 'Connect_WooCommerce_Import' ) ) {
 		 */
 		public function sync_products() {
 			$sync_loop      = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
-			$product_erp_id = isset( $_POST['product_erp_id'] ) ? sanitize_text_field( $_POST['product_erp_id'] ) : '';
-			$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( $_POST['product_sku'] ) : '';
+			$product_erp_id = isset( $_POST['product_erp_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_erp_id'] ) ) : '';
+			$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( wp_unslash( $_POST['product_sku'] ) ) : '';
 			$message        = '';
 			$res_message    = '';
+			$generate_ai    = isset( $_POST['product_ai'] ) && (bool) $_POST['product_ai'] ? 1 : 0;
 			$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
 
 			if ( ! check_ajax_referer( 'manual_import_nonce', 'nonce' ) ) {
@@ -217,7 +218,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Import' ) ) {
 			$item                     = $api_products[ $sync_loop - ( $api_pagination * $page ) ];
 			$this->msg_error_products = array();
 
-			$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, $this->options['slug'] );
+			$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, $this->options['slug'], $generate_ai );
 			$post_id     = $result_sync['post_id'] ?? 0;
 			if ( 'error' === $result_sync['status'] ) {
 				$this->error_product_import[] = array(

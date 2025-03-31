@@ -76,8 +76,11 @@ if ( ! class_exists( 'Connect_WooCommerce_Product_Widget' ) ) {
 			echo 'this.id)">' . esc_html__( 'Sync', 'connect-woocommerce' ) . '</div>';
 			echo '</td>';
 			echo '</tr>';
-
 			echo '</table>';
+			echo '<input type="checkbox" name="connwoo-sync-product-ai" ';
+			echo 'id="' . esc_attr( $this->options['slug'] . '_ai' ) . '" ';
+			echo ' /><label for="' . esc_attr( $this->options['slug'] . '_ai' ) . '">';
+			echo esc_html__( 'Use AI to regenerate title, description and seo.', 'connect-woocommerce' ) . '</label>';
 		}
 	}
 }

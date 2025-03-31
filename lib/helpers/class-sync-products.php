@@ -28,9 +28,10 @@ class PROD {
 	 * @param array  $item Item from API.
 	 * @param object $api_erp API Object.
 	 * @param string $option_prefix Slug of the plugin.
+	 * @param bool   $generate_ai Force AI.
 	 * @return array
 	 */
-	public static function sync_product_item( $settings, $item, $api_erp, $option_prefix ) {
+	public static function sync_product_item( $settings, $item, $api_erp, $option_prefix, $generate_ai = false ) {
 		$post_id     = 0;
 		$status      = 'ok';
 		$message     = '';
@@ -134,6 +135,42 @@ class PROD {
 				'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
 				'message' => __( 'Product type not supported. Product not imported: ', 'connect-woocommerce' ) . $item['name'] . '(' . $item_kind . ')',
 			);
+		}
+
+		if ( $generate_ai && $post_id ) {
+			// Generate description with AI for product.
+			$settings_ai = get_option( $option_prefix . '_ai' );
+			if ( ! empty( $settings_ai['provider'] ) ) {
+				$result_ai = AI::generate_description( $settings_ai, $item );
+				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
+					$product_info = array(
+						'ID' => $post_id,
+					);
+					if ( ! empty( $result_ai['data']['title'] ) ) {
+						$product_info['post_title'] = $result_ai['data']['title'];
+					}
+					if ( ! empty( $result_ai['data']['body'] ) ) {
+						$product_info['post_content'] = $result_ai['data']['body'];
+					}
+					if ( ! empty( $result_ai['data']['seo_description'] ) ) {
+						$product_info['post_excerpt'] = $result_ai['data']['seo_description'];
+					}
+					// Update product.
+					wp_update_post(
+						$product_info,
+					);
+
+					$seo_title = ! empty( $result_ai['data']['seo_title'] ) ? sanitize_text_field( $result_ai['data']['seo_title'] ) : '';
+					$seo_desc  = ! empty( $result_ai['data']['seo_description'] ) ? sanitize_text_field( $result_ai['data']['seo_description'] ) : '';
+					self::update_product_seo( $post_id, $seo_title, $seo_desc );
+					$message .= __( 'Generated AI: ', 'connect-woocommerce' );
+					$message .= $result_ai['message'] ?? '';
+				} else {
+					$message .= '<span class="error">' . __( 'Error AI: ', 'connect-woocommerce' );
+					$message .= $result_ai['error'] ?? '';
+					$message .= '</span>';
+				}
+			}
 		}
 
 		return array(
@@ -316,29 +353,6 @@ class PROD {
 
 		// Save ERP ID.
 		$product->update_meta_data( $option_prefix . '_id', $item['id'] );
-
-		if ( $is_new_product ) {
-			// Generate description with AI for product.
-			$settings_ai = get_option( $option_prefix . '_ai' );
-			if ( ! empty( $settings_ai['provider'] ) ) {
-				$result_ai = AI::generate_description( $settings_ai, $item );
-				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
-					if ( ! empty( $result_ai['data']['body'] ) ) {
-						$product_props['description'] = $result_ai['data']['body'];
-					}
-					if ( ! empty( $result_ai['data']['seo_description'] ) ) {
-						$product_props['short_description'] = $result_ai['data']['seo_description'];
-					}
-					$seo_title = ! empty( $result_ai['data']['seo_title'] ) ? sanitize_text_field( $result_ai['data']['seo_title'] ) : '';
-					$seo_desc  = ! empty( $result_ai['data']['seo_description'] ) ? sanitize_text_field( $result_ai['data']['seo_description'] ) : '';
-					self::update_product_seo( $product_id, $seo_title, $seo_desc );
-				} else {
-					$message .= '<span class="error">' . __( 'Error AI: ', 'connect-woocommerce' );
-					$message .= $result_ai['error'] ?? '';
-					$message .= '</span>';
-				}
-			}
-		}
 
 		// Set properties and save.
 		$product->set_props( $product_props );

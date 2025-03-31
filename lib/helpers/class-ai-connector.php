@@ -95,14 +95,14 @@ class AI {
 			__( 'Please respond in %s language.', 'connect-woocommerce' ),
 			$language
 		);
-		$content .= PHP_EOL . __( 'Generate a Title SEO and SEO description and export it in format JSON, with elements: body, seo_title, seo_description', 'connect-woocommerce' );
+		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO and SEO description and export it in format JSON, with elements: title, body, seo_title, seo_description', 'connect-woocommerce' );
 
 		$token = isset( $settings['token'] ) ? $settings['token'] : '';
 
 		if ( empty( $token ) ) {
 			return array(
-				'status' => 'error',
-				'error'  => __( 'Error no credentials', 'connect-woocommerce' ),
+				'status'  => 'error',
+				'message' => __( 'Error no credentials', 'connect-woocommerce' ),
 			);
 		}
 

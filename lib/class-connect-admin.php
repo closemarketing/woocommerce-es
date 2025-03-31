@@ -524,7 +524,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 				);
 			}
 
-			if ( $this->options['order_series_number'] || 'Holded' === $this->options['name'] ) {
+			if ( ( isset( $this->options['order_series_number'] ) && $this->options['order_series_number'] ) || 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_serie_number',
 					__( 'Serie number', 'connect-woocommerce' ),
@@ -834,6 +834,10 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 					</p>
 					<br/>
 					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" <?php if ( false === $this->connapi_erp->check_can_sync() ) { echo ' disabled'; } ?>><?php esc_html_e( 'Start Import', 'connect-crm-realstate' ); ?></div>
+					<p>
+					<input type="checkbox" name="connwoo-sync-product-ai" id="<?php echo esc_attr( $this->options['slug'] . '_ai' ); ?>"/>
+					<label for="<?php echo esc_attr( $this->options['slug'] . '_ai' ); ?>"><?php esc_html_e( 'Use AI to generate product title, description and seo.', 'connect-woocommerce' ); ?></label>
+					</p>
 				</div>
 				<fieldset id="logwrapper">
 					<legend><?php esc_html_e( 'Log', 'connect-woocommerce' ); ?></legend>
