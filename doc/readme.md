@@ -91,3 +91,42 @@ require_once PREFIX_PLUGIN_PATH . 'vendor/closemarketing/connect-woocommerce-lib
 
 new Connect_WooCommerce( $connwoo_options_erp );
 ```
+
+## Send products from API to Library
+
+It needs this format:
+
+Attributes need to have get_attributes with the same value of the id to import to category.
+
+```
+$products = [
+	[
+		'id'     => ID of product internal
+		'kind'   => simple, variable, pack
+		'name'   => Name of the Product
+		'desc'   => Description of the product
+		'sku'    => Product SKU
+		'price'  => Normal price of the product without taxes
+		'weight' => Weight of the product (numerical)
+		'length' => Length of product
+		'width'  => Width of product
+		'height' => Heigth of product
+    'taxes' => [ 's_iva_21' ],
+    'total' => Price with taxes
+    'hasStock' => 1
+    'stock' => Number of units
+    'barcode' => GTIN code
+    'tags' => Array of tags
+		'attributes' => [
+			[
+				'id'    =>  slug of taxonomy that it will be filtered
+				'name'  => external ID of taxonomy
+				'value' => Value of the term in Taxonomy
+			]
+		]
+    'categoryId' => 
+    'factoryCode' => 
+		'full_info'   => all information that brings API for IA.
+	]
+];
+```
