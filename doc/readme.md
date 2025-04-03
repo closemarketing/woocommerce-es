@@ -119,8 +119,8 @@ $products = [
     'tags' => Array of tags
 		'attributes' => [
 			[
-				'id'   => external ID of taxonomy
-				'name' => Name of Taxonomy ex. Tipo
+				'id'    =>  slug of taxonomy that it will be filtered
+				'name'  => external ID of taxonomy
 				'value' => Value of the term in Taxonomy
 			]
 		]
