@@ -2,9 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.5.11
+
+* Added: Fix category separator.
+
 ## 1.5.10
 
-* Added: Filter by Producto SKU. 
+* Added: Filter by Producto SKU.
 
 ## 1.5.9
 

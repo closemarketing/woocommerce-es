@@ -1073,9 +1073,14 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		 * @return void
 		 */
 		public function catsep_callback() {
+			$prod_category_fixed = ! empty( $this->options['product_category_fixed'] ) ? $this->options['product_category_fixed'] : '';
+			if ( ! empty( $prod_category_fixed ) ) {
+				$this->settings['catsep'] = $this->options['product_category_fixed'];
+			}
 			printf(
-				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[catsep]" id="wcpimh_catsep" value="%s">',
-				isset( $this->settings['catsep'] ) ? esc_attr( $this->settings['catsep'] ) : ''
+				'<input class="regular-text" type="text" name="' . esc_attr( $this->options['slug'] ) . '[catsep]" id="wcpimh_catsep" value="%s" %s>',
+				isset( $this->settings['catsep'] ) ? esc_attr( $this->settings['catsep'] ) : '',
+				! empty( $prod_category_fixed ) ? ' readonly' : ''
 			);
 		}
 
