@@ -238,7 +238,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Import' ) ) {
 			}
 			$finish       = -1 === $sync_loop ? true : $finish;
 			$res_message .= '[' . date_i18n( 'H:i:s' ) . ']';
-			if ( 0 < $sync_loop ) {
+			if ( 0 <= $sync_loop ) {
 				$res_message .= '[' . $products_synced;
 				$res_message .= empty( $api_pagination ) ? '/' . $products_count : '';
 				$res_message .= '] ';
