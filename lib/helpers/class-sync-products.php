@@ -657,7 +657,7 @@ class PROD {
 		$tags_prod   = array_map( 'sanitize_text_field', $tags_prod );
 		$tags_prod   = array_filter( $tags_prod );
 
-		return empty( array_intersect( $tags_option, $tags_prod ) ) ? true : false;
+		return empty( array_intersect( $tags_option, $tags_prod ) ) ? false : true;
 	}
 
 	/**
