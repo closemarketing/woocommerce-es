@@ -649,12 +649,15 @@ class PROD {
 		}
 
 		// Filter by tags.
-		if ( empty( $settings['filter'] ) ) {
+		if ( empty( $settings['filter'] ) || empty( $item['tags'] ) ) {
 			return false;
 		}
 		$tags_option = explode( ',', $settings['filter'] );
+		$tags_prod   = array_map( 'trim', $item['tags'] );
+		$tags_prod   = array_map( 'sanitize_text_field', $tags_prod );
+		$tags_prod   = array_filter( $tags_prod );
 
-		return empty( array_intersect( $tags_option, $item ) ) ? true : false;
+		return empty( array_intersect( $tags_option, $tags_prod ) ) ? true : false;
 	}
 
 	/**
