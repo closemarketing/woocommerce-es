@@ -835,8 +835,12 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 					<br/>
 					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" <?php if ( false === $this->connapi_erp->check_can_sync() ) { echo ' disabled'; } ?>><?php esc_html_e( 'Start Import', 'connect-crm-realstate' ); ?></div>
 					<p>
-					<input type="checkbox" name="connwoo-sync-product-ai" id="<?php echo esc_attr( $this->options['slug'] . '_ai' ); ?>"/>
-					<label for="<?php echo esc_attr( $this->options['slug'] . '_ai' ); ?>"><?php esc_html_e( 'Use AI to generate product title, description and seo.', 'connect-woocommerce' ); ?></label>
+					<label for="<?php echo esc_attr( $this->options['slug'] . '_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'connect-woocommerce' ); ?></label>
+					<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( $this->options['slug'] . '_ai' ); ?>">
+						<option value="none"><?php esc_html_e( 'None', 'connect-woocommerce' ); ?></option>
+						<option value="new"><?php esc_html_e( 'NEW Products', 'connect-woocommerce' ); ?></option>
+						<option value="all"><?php esc_html_e( 'ALL Products', 'connect-woocommerce' ); ?></option>
+					</select>
 					</p>
 				</div>
 				<fieldset id="logwrapper">

@@ -32,11 +32,12 @@ class PROD {
 	 * @return array
 	 */
 	public static function sync_product_item( $settings, $item, $api_erp, $option_prefix, $generate_ai = false ) {
-		$post_id     = 0;
-		$status      = 'ok';
-		$message     = '';
-		$is_filtered = self::filter_product( $settings, $item, $option_prefix );
-		$item_kind   = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
+		$post_id        = 0;
+		$status         = 'ok';
+		$message        = '';
+		$is_filtered    = self::filter_product( $settings, $item, $option_prefix );
+		$item_kind      = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
+		$is_new_product = self::find_product( $item['sku'] ) ? true : false;
 
 		if ( in_array( 'woo-product-bundle/wpc-product-bundles.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 			$plugin_pack_active = true;
@@ -137,7 +138,7 @@ class PROD {
 			);
 		}
 
-		if ( $generate_ai && $post_id ) {
+		if ( ( 'all' === $generate_ai && $post_id ) || ( 'new' === $generate_ai && $is_new_product && $post_id ) ) {
 			// Generate description with AI for product.
 			$settings_ai = get_option( $option_prefix . '_ai' );
 			if ( ! empty( $settings_ai['provider'] ) ) {

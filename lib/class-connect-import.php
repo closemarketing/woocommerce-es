@@ -167,7 +167,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Import' ) ) {
 			$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( wp_unslash( $_POST['product_sku'] ) ) : '';
 			$message        = '';
 			$res_message    = '';
-			$generate_ai    = isset( $_POST['product_ai'] ) && (bool) $_POST['product_ai'] ? 1 : 0;
+			$generate_ai    = isset( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
 			$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
 
 			if ( ! check_ajax_referer( 'manual_import_nonce', 'nonce' ) ) {
