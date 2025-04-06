@@ -182,7 +182,7 @@ class PROD {
 			'status'  => $status,
 			'post_id' => (int) $post_id,
 			'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-			'message' => $message . '<br/>',
+			'message' => $message,
 		);
 	}
 
