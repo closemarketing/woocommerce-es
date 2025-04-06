@@ -447,7 +447,7 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 
 			add_settings_field(
 				'wcpimh_filter',
-				__( 'Filter products by tags? (separated by comma and no space)', 'connect-woocommerce' ),
+				__( 'Filter products by tags? Only import this tags (separated by comma and no space)', 'connect-woocommerce' ),
 				array( $this, 'filter_callback' ),
 				$this->options['slug'] . '_admin',
 				'connect_woocommerce_setting_section'
