@@ -116,10 +116,10 @@ class PROD {
 		} elseif ( ! $is_filtered && 'pack' === $item_kind && ! $plugin_pack_active ) {
 			$message .= '<span class="warning">' . __( 'Product needs Plugin to import: ', 'connect-woocommerce' );
 			$message .= '<a href="https://wordpress.org/plugins/woo-product-bundle/" target="_blank">WPC Product Bundles for WooCommerce</a> ';
-			$message .= '(' . $item_kind . ') </span></br>';
+			$message .= '(' . $item_kind . ') </span>';
 		} elseif ( $is_filtered ) {
 			// Product not synced without SKU.
-			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-woocommerce' ) . $item['name'] . '(' . $item_kind . ') </span></br>';
+			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-woocommerce' ) . $item['name'] . '(' . $item_kind . ') </span>';
 		} elseif ( '' === $item['sku'] && 'simple' === $item_kind ) {
 			// Product not synced without SKU.
 			return array(
@@ -174,11 +174,15 @@ class PROD {
 			}
 		}
 
+		$tags     = ! empty( $item['tags'] ) ? $item['tags'] : array();
+		$tags     = array_filter( $tags );
+		$tags     = array_map( 'sanitize_text_field', $tags );
+		$message .= ! empty( $item['tags'] ) ? ' ' . __( 'Tags: ', 'connect-woocommerce' ) . implode( ', ', $item['tags'] ) : '';
 		return array(
 			'status'  => $status,
 			'post_id' => (int) $post_id,
 			'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-			'message' => $message,
+			'message' => $message . '<br/>',
 		);
 	}
 
