@@ -13,6 +13,11 @@
 	},
 	"require": {
 	},
+	"autoload": {
+		"psr-4": {
+			"CLOSE\\ConnectEcommerce\\": "includes/"
+		}
+	},
 	"require-dev": {
 		"squizlabs/php_codesniffer": "^3",
 		"dealerdirect/phpcodesniffer-composer-installer": "^0.7",

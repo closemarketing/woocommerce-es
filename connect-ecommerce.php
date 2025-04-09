@@ -103,8 +103,6 @@ $conecom_options = apply_filters(
 	]
 );
 
-
-require_once CONECOM_PLUGIN_PATH . 'includes/loader.php';
 require_once CONECOM_PLUGIN_PATH . 'includes/connector/class-api-clientify.php';
 
-new Connect_WooCommerce( $conecom_options );
+new CLOSE\ConnectEcommerce\Base( $conecom_options );

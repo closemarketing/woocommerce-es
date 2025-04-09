@@ -8,6 +8,8 @@
  * @version    1.0.0
  */
 
+namespace CLOSE\ConnectEcommerce\Public;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -15,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 1.6.0
  */
-class Connect_WooCommerce_Public_MyAccount {
+class MyAccount {
 	/**
 	 * Options of plugin.
 	 *
