@@ -1,3 +1,10 @@
-/bin/
-/tests/credentials.php
+#Wordpress
+vendor/
+node_modules/
+# Numerous always-ignore extensions
+*.log
+*.zip
 .DS_Store
+
+# OS or Editor folders
+._*.cache
