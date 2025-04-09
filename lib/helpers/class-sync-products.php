@@ -619,12 +619,13 @@ class PROD {
 		update_post_meta( $product_id, $prod_key, $item['id'] );
 	}
 
-
 	/**
 	 * Filters product to not import to web
 	 *
-	 * @param array $settings Settings of the plugin.
-	 * @param array $item Tags of the product.
+	 * @param  array  $settings Settings of the plugin.
+	 * @param  array  $item Item product to filter.
+	 * @param  string $option_prefix Slug of the plugin.
+	 *
 	 * @return boolean True to not get the product, false to get it.
 	 */
 	public static function filter_product( $settings, $item, $option_prefix ) {

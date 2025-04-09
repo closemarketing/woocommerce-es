@@ -2,13 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.6.0
+## 1.6.0
 
 * Added AI Generate content for new products.
-* 
-
-## 1.5.10
-
 * Added: Filter by Producto SKU.
 
 ## 1.5.9
