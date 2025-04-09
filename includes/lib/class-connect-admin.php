@@ -95,13 +95,23 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		private $is_disabled_orders;
 
 		/**
+		 * Settings slug
+		 *
+		 * @var array
+		 */
+		private $all_options;
+
+		/**
 		 * Construct of class
 		 *
 		 * @param array $options Options.
 		 * @return void
 		 */
 		public function __construct( $options = array() ) {
-			$this->options            = $options;
+			$settings_base            = get_option( 'connect_ecommerce_settings_connector' );
+			$settings_base            = ! empty( $settings_base ) ? $settings_base : 'clientify';
+			$this->all_options        = $options;
+			$this->options            = $options[ $settings_base ];
 			$apiname                  = 'Connect_WooCommerce_' . $this->options['name'];
 			$this->connapi_erp        = new $apiname( $options );
 			$this->settings_slug      = $this->options['slug'] . '_settings';
@@ -125,8 +135,8 @@ if ( ! class_exists( 'Connect_WooCommerce_Admin' ) ) {
 		public function add_plugin_page() {
 			add_submenu_page(
 				'woocommerce',
-				__( 'Connect WooCommerce', 'connect-woocommerce' ) . $this->options['name'],
-				__( 'Connect ', 'connect-woocommerce' ) . $this->options['name'],
+				__( 'Connect Ecommerce', 'connect-woocommerce' ),
+				__( 'Connect Ecommerce', 'connect-woocommerce' ),
 				'manage_woocommerce',
 				$this->options['slug'],
 				array( $this, 'create_admin_page' ),

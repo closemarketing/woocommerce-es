@@ -1,11 +1,11 @@
-=== Connect WooCommerce Holded ===
-Contributors: closemarketing, davidperez, sacrajaimez, freemius
-Tags: holded, woocommerce, connect woocommerce
+=== Connect Ecommerce ===
+Contributors: closemarketing, davidperez, sacrajaimez
+Tags: connect, integrate, ecommerce, woocommerce, connect woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 4.0
 Requires PHP: 7.0
 
-Syncs Products and data from Holded software to WooCommerce.
+Connect Ecommerce with ERPs and CRMs. Products and Ordrs from ERP/CRM to WooCommerce.
 
 == Description ==
 
@@ -34,7 +34,7 @@ Extract the zip file and just drop the contents in the wp-content/plugins/ direc
 WordPress installation and then activate the Plugin from Plugins page.
 
 == Developers ==
-[Official Repository GitHub](https://github.com/closemarketing/import-holded-products-woocommerce)
+[Official Repository GitHub](https://github.com/closemarketing/connect-ecommerce)
 
 == Changelog ==
 

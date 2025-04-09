@@ -52,7 +52,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Orders' ) ) {
 		 * @param array $options Options of plugin.
 		 */
 		public function __construct( $options ) {
-			$this->options        = $options;
+			$settings_base        = get_option( 'connect_ecommerce_settings_connector' );
+			$settings_base        = ! empty( $settings_base ) ? $settings_base : 'clientify';
+			$this->options        = $options[ $settings_base ];
 			$this->settings       = get_option( $this->options['slug'] );
 			$apiname              = 'Connect_WooCommerce_' . $this->options['name'];
 			$this->connapi_erp    = new $apiname( $options );

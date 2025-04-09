@@ -26,14 +26,6 @@ if ( ! class_exists( 'Connect_WooCommerce_Import' ) ) {
 	 * @version    0.1
 	 */
 	class Connect_WooCommerce_Import {
-
-		/**
-		 * Ajax Message that shows while imports
-		 *
-		 * @var string
-		 */
-		private $message;
-
 		/**
 		 * Saves the products with errors to send after
 		 *
@@ -76,7 +68,9 @@ if ( ! class_exists( 'Connect_WooCommerce_Import' ) ) {
 		 * @return void
 		 */
 		public function __construct( $options ) {
-			$this->options     = $options;
+			$settings_base     = get_option( 'connect_ecommerce_settings_connector' );
+			$settings_base     = ! empty( $settings_base ) ? $settings_base : 'clientify';
+			$this->options     = $options[ $settings_base ];
 			$apiname           = 'Connect_WooCommerce_' . $this->options['name'];
 			$this->connapi_erp = new $apiname( $options );
 			$ajax_action       = $this->options['slug'] . '_sync_products';

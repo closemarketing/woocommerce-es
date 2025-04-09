@@ -1,0 +1,110 @@
+<?php
+/**
+ * Plugin Name: Connect Ecommerce
+ * Plugin URI: https://close.technology/wordpress-plugins/connect-ecommerce-test/
+ * Description: Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
+ * Author: Closetechnology
+ * Author URI: https://close.technology/
+ * Version: 3.0.0
+ *
+ * @package WordPress
+ * Text Domain: connect-ecommerce-test
+ * Domain Path: /languages
+ * License: GNU General Public License version 3.0
+ * License URI: http://www.gnu.org/licenses/gpl-3.0.html
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+define( 'CONECOM_VERSION', '3.0.0' );
+define( 'CONECOM_FILE', __FILE__ );
+define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
+
+/**
+ * Default values
+ */
+global $wpdb;
+
+$conecom_options = apply_filters(
+	'conecom_options_plugin',
+	[
+		'clientify' => [
+			'name'                       => 'Clientify',
+			'slug'                       => 'conecom-clientify',
+			'version'                    => CONECOM_VERSION,
+			'plugin_name'                => 'Connect WooCommerce Clientify',
+			'plugin_slug'                => 'connect-ecommerce-clientify',
+			'disable_modules'            => array( 'order', 'subscription' ),
+			'api_url'                    => CONECOM_SHOP_URL,
+			'product_price_tax_option'   => true,
+			'product_price_rate_option'  => true,
+			'product_option_stock'       => true,
+			'order_send_attachments'     => true,
+			'order_sync_partial'         => true,
+			'order_import_free_order'    => true,
+			'order_only_order_completed' => 'completed',
+			'settings_logo'              => CONECOM_PLUGIN_URL . 'includes/connector/assets/logo.svg',
+			'settings_admin_message'     => sprintf(
+				// translators: %s url of contact.
+				__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App Test API</a>.', 'connect-ecommerce-test' ),
+				'https://app.test.com/api'
+			),
+			'settings_special_tabs'      => array( 'subscriptions' ),
+			'settings_fields'            => array( 'apipassword' ),
+			'table_sync'                 => $wpdb->prefix . 'sync_conecom-clientify',
+			'file'                       => __FILE__,
+			'cron'                       => array(
+				array(
+					'key'      => 'every_five_minutes',
+					'interval' => 300,
+					'display'  => __( 'Every 5 minutes', 'connect-ecommerce' ),
+					'cron'     => 'conecom-clientify_sync_five_minutes',
+				),
+				array(
+					'key'      => 'every_fifteen_minutes',
+					'interval' => 900,
+					'display'  => __( 'Every 15 minutes', 'connect-ecommerce' ),
+					'cron'     => 'conecom-clientify_sync_fifteen_minutes',
+				),
+				array(
+					'key'      => 'every_thirty_minutes',
+					'interval' => 1800,
+					'display'  => __( 'Every 30 Minutes', 'connect-ecommerce' ),
+					'cron'     => 'conecom-clientify_sync_thirty_minutes',
+				),
+				array(
+					'key'      => 'every_one_hour',
+					'interval' => 3600,
+					'display'  => __( 'Every 1 Hour', 'connect-ecommerce' ),
+					'cron'     => 'conecom-clientify_sync_one_hour',
+				),
+				array(
+					'key'      => 'every_three_hours',
+					'interval' => 10800,
+					'display'  => __( 'Every 3 Hours', 'connect-ecommerce' ),
+					'cron'     => 'conecom-clientify_sync_three_hours',
+				),
+				array(
+					'key'      => 'every_six_hours',
+					'interval' => 21600,
+					'display'  => __( 'Every 6 Hours', 'connect-ecommerce' ),
+					'cron'     => 'conecom-clientify_sync_six_hours',
+				),
+				array(
+					'key'      => 'every_twelve_hours',
+					'interval' => 43200,
+					'display'  => __( 'Every 12 Hours', 'connect-ecommerce' ),
+					'cron'     => 'conecom-clientify_sync_twelve_hours',
+				),
+			),
+		],
+	]
+);
+
+
+require_once CONECOM_PLUGIN_PATH . 'includes/loader.php';
+require_once CONECOM_PLUGIN_PATH . 'includes/connector/class-api-clientify.php';
+
+new Connect_WooCommerce( $conecom_options );
