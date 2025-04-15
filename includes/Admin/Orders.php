@@ -56,7 +56,7 @@ class Orders {
 		$settings_base        = ! empty( $settings_base ) ? $settings_base : 'clientify';
 		$this->options        = $options[ $settings_base ];
 		$this->settings       = get_option( $this->options['slug'] );
-		$apiname              = 'Connect_WooCommerce_' . $this->options['name'];
+		$apiname              = 'Connect_Ecommerce_' . $this->options['name'];
 		$this->connapi_erp    = new $apiname( $options );
 		$ecstatus             = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
 		$this->meta_key_order = '_' . $this->options['slug'] . '_invoice_id';

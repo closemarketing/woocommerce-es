@@ -40,18 +40,18 @@ $conecom_options = apply_filters(
 			'api_url'                    => CONECOM_SHOP_URL,
 			'product_price_tax_option'   => true,
 			'product_price_rate_option'  => true,
-			'product_option_stock'       => true,
+			'product_option_stock'       => false,
 			'order_send_attachments'     => true,
 			'order_sync_partial'         => true,
 			'order_import_free_order'    => true,
 			'order_only_order_completed' => 'completed',
-			'settings_logo'              => CONECOM_PLUGIN_URL . 'includes/connector/assets/logo.svg',
+			'settings_logo'              => CONECOM_PLUGIN_URL . 'includes/Connector/assets/logo.svg',
 			'settings_admin_message'     => sprintf(
 				// translators: %s url of contact.
 				__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App Test API</a>.', 'connect-ecommerce-test' ),
 				'https://app.test.com/api'
 			),
-			'settings_special_tabs'      => array( 'subscriptions' ),
+			'settings_special_tabs'      => array(),
 			'settings_fields'            => array( 'apipassword' ),
 			'table_sync'                 => $wpdb->prefix . 'sync_conecom-clientify',
 			'file'                       => __FILE__,
@@ -103,6 +103,8 @@ $conecom_options = apply_filters(
 	]
 );
 
-require_once CONECOM_PLUGIN_PATH . 'includes/connector/class-api-clientify.php';
+require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
+require_once CONECOM_PLUGIN_PATH . 'includes/Plugin_Main.php';
+require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-clientify.php';
 
 new CLOSE\ConnectEcommerce\Base( $conecom_options );

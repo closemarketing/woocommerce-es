@@ -13,7 +13,12 @@ namespace CLOSE\ConnectEcommerce;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Admin\Settings;
-
+use CLOSE\ConnectEcommerce\Admin\Import_Products;
+use CLOSE\ConnectEcommerce\Admin\Widget_Order;
+use CLOSE\ConnectEcommerce\Admin\Widget_Product;
+use CLOSE\ConnectEcommerce\Admin\Orders;
+use CLOSE\ConnectEcommerce\Public\Checkout;
+use CLOSE\ConnectEcommerce\Public\MyAccount;
 /**
  * Class Wrapper.
  *
@@ -29,13 +34,13 @@ class Base {
 	public function __construct( $options = array() ) {
 		if ( is_admin() ) {
 			new Settings( $options );
+			new Import_Products( $options );
+			new Widget_Product( $options );
+			new Widget_Order( $options );
 		}
 
-		new Connect_WooCommerce_Orders( $options );
-		new Connect_WooCommerce_Import( $options );
-		new Connect_WooCommerce_Public( $options );
-		new Connect_WooCommerce_Public_MyAccount(  $options );
-		new Connect_WooCommerce_Product_Widget( $options );
-		new Connect_WooCommerce_Orders_Widget( $options );
+		new Orders( $options );
+		new Checkout( $options );
+		new MyAccount(  $options );
 	}
 }

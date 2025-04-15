@@ -91,7 +91,7 @@ class MyAccount {
 		$file_document_path = false;
 		if ( $api_doc_id ) {
 			$settings           = get_option( $this->options['slug'] );
-			$apiname            = 'Connect_WooCommerce_' . $this->options['name'];
+			$apiname            = 'Connect_Ecommerce_' . $this->options['name'];
 			$apikey             = isset( $settings['api'] ) ? $settings['api'] : '';
 			$connapi_erp        = new $apiname( $this->options );
 			$file_document_path = $connapi_erp->get_order_pdf( $apikey, $api_doc_type, $api_doc_id );

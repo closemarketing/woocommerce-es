@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 1.0
  */
-class Connect_WooCommerce_Clientify {
+class Connect_Ecommerce_Clientify {
 	/**
 	 * Options of plugin.
 	 *
@@ -38,7 +38,7 @@ class Connect_WooCommerce_Clientify {
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options ) {
-		$this->options  = $options;
+		$this->options  = $options['clientify'];
 		$this->settings = get_option( $this->options['slug'] );
 
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'clientify_cookie_checkout_field' ) );

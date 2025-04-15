@@ -96,7 +96,14 @@ class Settings {
 	private $is_disabled_orders;
 
 	/**
-	 * Settings slug
+	 * Connector
+	 *
+	 * @var string
+	 */
+	private $connector;
+
+	/**
+	 * All options
 	 *
 	 * @var array
 	 */
@@ -109,15 +116,17 @@ class Settings {
 	 * @return void
 	 */
 	public function __construct( $options = array() ) {
-		$settings_base            = get_option( 'connect_ecommerce_settings_connector' );
-		$settings_base            = ! empty( $settings_base ) ? $settings_base : 'clientify';
-		$this->all_options        = $options;
-		$this->options            = $options[ $settings_base ];
-		$apiname                  = 'Connect_WooCommerce_' . $this->options['name'];
-		$this->connapi_erp        = new $apiname( $options );
-		$this->settings_slug      = $this->options['slug'] . '_settings';
-		$this->is_mergevars       = method_exists( $this->connapi_erp, 'get_product_attributes' ) ? true : false;
-		$this->is_disabled_orders = isset( $this->options['disable_modules'] ) && in_array( 'order', $this->options['disable_modules'], true ) ? true : false;
+		$this->settings    = get_option( 'connect_ecommerce' );
+		$this->connector   = isset( $this->settings['connector'] ) ? $this->settings['connector'] : '';
+		$this->all_options = $options;
+
+		if ( ! empty( $this->connector ) ) {
+			$this->options            = $options[ $this->connector ];
+			$apiname                  = 'Connect_Ecommerce_' . $this->options['name'];
+			$this->connapi_erp        = new $apiname( $options );
+			$this->is_mergevars       = method_exists( $this->connapi_erp, 'get_product_attributes' ) ? true : false;
+			$this->is_disabled_orders = isset( $this->options['disable_modules'] ) && in_array( 'order', $this->options['disable_modules'], true ) ? true : false;
+		}
 
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
@@ -139,7 +148,7 @@ class Settings {
 			__( 'Connect Ecommerce', 'connect-woocommerce' ),
 			__( 'Connect Ecommerce', 'connect-woocommerce' ),
 			'manage_woocommerce',
-			$this->options['slug'],
+			'connect_ecommerce',
 			array( $this, 'create_admin_page' ),
 		);
 	}
@@ -150,11 +159,13 @@ class Settings {
 	 * @return void
 	 */
 	public function create_admin_page() {
-		$this->settings                = get_option( $this->options['slug'] );
-		$this->settings_public         = get_option( $this->options['slug'] . '_public' );
-		$this->settings_prod_mergevars = get_option( $this->options['slug'] . '_prod_mergevars' );
-		$this->settings_ai             = get_option( $this->options['slug'] . '_ai' );
-		$special_tabs                  = ! empty( $this->options['settings_special_tabs'] ) ? $this->options['settings_special_tabs'] : array();
+		if ( $this->connector ) {
+			$this->settings_public         = get_option( 'connect_ecommerce_public' );
+			$this->settings_prod_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
+			$this->settings_ai             = get_option( 'connect_ecommerce_ai' );
+			$special_tabs                  = ! empty( $this->options['settings_special_tabs'] ) ? $this->options['settings_special_tabs'] : array();
+		}
+		$plugin_logo = $this->options['settings_logo'] ?? CONECOM_PLUGIN_URL . 'includes/assets/logo.svg';
 		?>
 		<div class="header-wrap">
 			<div class="wrapper">
@@ -162,11 +173,10 @@ class Settings {
 				<div id="nag-container"></div>
 				<div class="header connwoo-header">
 					<div class="logo">
-						<img src="<?php echo esc_url( $this->options['settings_logo'] ); ?>" height="35" width="154"/>
+						<img src="<?php echo esc_url( $plugin_logo ); ?>" height="35" width="154"/>
 						<h2>
 							<?php
-							esc_html_e( 'WooCommerce Connection Settings with ', 'connect-woocommerce' );
-							echo esc_html( $this->options['name'] );
+							esc_html_e( 'WooCommerce Connection Settings ', 'connect-woocommerce' );
 							?>
 						</h2>
 					</div>
@@ -177,32 +187,46 @@ class Settings {
 			<?php settings_errors(); ?>
 
 			<?php
-			$active_tab         = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'sync_products';
+			$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'settings';
 			?>
 			<h2 class="nav-tab-wrapper">
-				<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=sync_products" class="nav-tab <?php echo 'sync_products' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync products', 'connect-woocommerce' ); ?></a>
 				<?php
-				if ( $this->is_mergevars ) {
+				if ( $this->connector ) {
 					?>
-					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=prod_mergevars" class="nav-tab <?php echo 'prod_mergevars' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'connect-woocommerce' ); ?></a>
+					<a href="?page=connect_ecommerce&tab=sync_products" class="nav-tab <?php echo 'sync_products' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync products', 'connect-woocommerce' ); ?></a>
 					<?php
 				}
-				if ( ! $this->is_disabled_orders ) {
+				if ( $this->connector && $this->is_mergevars ) {
 					?>
-					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=sync_orders" class="nav-tab <?php echo 'sync_orders' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync Orders', 'connect-woocommerce' ); ?></a>
+					<a href="?page=connect_ecommerce&tab=prod_mergevars" class="nav-tab <?php echo 'prod_mergevars' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'connect-woocommerce' ); ?></a>
 					<?php
 				}
-				if ( in_array( 'subscriptions', $special_tabs, true ) ) {
+				if ( ! $this->is_disabled_orders && $this->connector ) {
 					?>
-					<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'connect-woocommerce' ); ?></a>
+					<a href="?page=connect_ecommerce&tab=sync_orders" class="nav-tab <?php echo 'sync_orders' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync Orders', 'connect-woocommerce' ); ?></a>
+					<?php
+				}
+				if ( $this->connector && in_array( 'subscriptions', $special_tabs, true ) ) {
+					?>
+					<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'connect-woocommerce' ); ?></a>
+					<?php
+				}
+				if ( $this->connector ) {
+					?>
+					<a href="?page=connect_ecommerce&tab=automate" class="nav-tab <?php echo 'automate' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Automate', 'connect-woocommerce' ); ?></a>
 					<?php
 				}
 				?>
-				<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=automate" class="nav-tab <?php echo 'automate' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Automate', 'connect-woocommerce' ); ?></a>
-				<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=settings" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'connect-woocommerce' ); ?></a>
-				<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=public" class="nav-tab <?php echo 'public' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Frontend Settings', 'connect-woocommerce' ); ?></a>
-				<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI', 'connect-woocommerce' ); ?></a>
-				<a href="?page=<?php echo esc_html( $this->options['slug'] ); ?>&tab=license" class="nav-tab <?php echo 'license' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'License', 'connect-woocommerce' ); ?></a>
+				<a href="?page=connect_ecommerce&tab=settings" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'connect-woocommerce' ); ?></a>
+				<a href="?page=connect_ecommerce&tab=public" class="nav-tab <?php echo 'public' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Frontend Settings', 'connect-woocommerce' ); ?></a>
+				<?php
+				if ( $this->connector ) {
+					?>
+					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI', 'connect-woocommerce' ); ?></a>
+					<?php
+				}
+				?>
+				<a href="?page=connect_ecommerce&tab=license" class="nav-tab <?php echo 'license' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'License', 'connect-woocommerce' ); ?></a>
 			</h2>
 
 			<?php
@@ -213,8 +237,8 @@ class Settings {
 			if ( 'settings' === $active_tab ) { ?>
 				<form method="post" action="options.php">
 					<?php
-						settings_fields( $this->settings_slug );
-						do_settings_sections( $this->options['slug'] . '_admin' );
+						settings_fields( 'connect_ecommerce_settings' );
+						do_settings_sections( 'connect_ecommerce_admin' );
 						submit_button(
 							__( 'Save settings', 'connect-woocommerce' ),
 							'primary',
@@ -226,8 +250,8 @@ class Settings {
 			<?php	if ( 'automate' === $active_tab ) { ?>
 				<form method="post" action="options.php">
 					<?php
-					settings_fields( $this->settings_slug );
-					do_settings_sections( $this->options['slug'] . '_automate' );
+					settings_fields( 'connect_ecommerce_settings' );
+					do_settings_sections( 'connect_ecommerce_automate' );
 					submit_button(
 						__( 'Save automate', 'connect-woocommerce' ),
 						'primary',
@@ -341,8 +365,8 @@ class Settings {
 		$settings_fields = ! empty( $this->options['settings_fields'] ) ? $this->options['settings_fields'] : array();
 
 		register_setting(
-			$this->settings_slug,
-			$this->options['slug'],
+			'connect_ecommerce_settings',
+			'connect_ecommerce',
 			array( $this, 'sanitize_fields_settings' )
 		);
 
@@ -350,263 +374,279 @@ class Settings {
 			'connect_woocommerce_setting_section',
 			__( 'Settings for Importing in WooCommerce', 'connect-woocommerce' ),
 			array( $this, 'connect_woocommerce_section_info' ),
-			$this->options['slug'] . '_admin'
+			'connect_ecommerce_admin'
 		);
 
-		if ( 'connwoo_neo' === $this->options['slug'] ) {
-			add_settings_field(
-				'wcpimh_idcentre',
-				__( 'NEO ID Centre', 'connect-woocommerce' ),
-				array( $this, 'idcentre_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		// URL.
-		if ( in_array( 'url', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_url',
-				__( 'URL', 'connect-woocommerce' ),
-				array( $this, 'url_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		// DB Name.
-		if ( in_array( 'dbname', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_dbname',
-				__( 'DB Name', 'connect-woocommerce' ),
-				array( $this, 'dbname_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		// Username.
-		if ( in_array( 'username', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_username',
-				__( 'Username', 'connect-woocommerce' ),
-				array( $this, 'username_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		// Password.
-		if ( in_array( 'password', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_password',
-				__( 'Password', 'connect-woocommerce' ),
-				array( $this, 'password_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		// Company.
-		if ( in_array( 'company', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_company',
-				__( 'Company', 'connect-woocommerce' ),
-				array( $this, 'company_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		// Domain.
-		if ( in_array( 'domain', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_domain',
-				__( 'domain', 'connect-woocommerce' ),
-				array( $this, 'domain_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		// API Password.
-		if ( in_array( 'apipassword', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_api',
-				__( 'API Key', 'connect-woocommerce' ),
-				array( $this, 'api_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		if ( $this->options['product_option_stock'] ) {
-			add_settings_field(
-				'wcpimh_stock',
-				__( 'Import stock?', 'connect-woocommerce' ),
-				array( $this, 'stock_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		add_settings_field(
-			'wcpimh_prodst',
-			__( 'Default status for new products?', 'connect-woocommerce' ),
-			array( $this, 'prodst_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
+		add_settings_section(
+			'connect_woocommerce_setting_section',
+			__( 'Settings for Importing in WooCommerce', 'connect-woocommerce' ),
+			array( $this, 'connect_woocommerce_section_info' ),
+			'connect_ecommerce_admin'
 		);
 
 		add_settings_field(
-			'wcpimh_virtual',
-			__( 'Virtual products?', 'connect-woocommerce' ),
-			array( $this, 'virtual_callback' ),
-			$this->options['slug'] . '_admin',
+			'conecom_connector',
+			__( 'Connector', 'connect-woocommerce' ),
+			array( $this, 'connector_callback' ),
+			'connect_ecommerce_admin',
 			'connect_woocommerce_setting_section'
 		);
 
-		add_settings_field(
-			'wcpimh_backorders',
-			__( 'Allow backorders?', 'connect-woocommerce' ),
-			array( $this, 'backorders_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
+		if ( $this->connector ) {
+			if ( 'connwoo_neo' === $this->options['slug'] ) {
+				add_settings_field(
+					'wcpimh_idcentre',
+					__( 'NEO ID Centre', 'connect-woocommerce' ),
+					array( $this, 'idcentre_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		add_settings_field(
-			'wcpimh_catsep',
-			__( 'Category separator', 'connect-woocommerce' ),
-			array( $this, 'catsep_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
+			// URL.
+			if ( in_array( 'url', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_url',
+					__( 'URL', 'connect-woocommerce' ),
+					array( $this, 'url_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		add_settings_field(
-			'wcpimh_catattr',
-			__( 'Attribute to use as category', 'connect-woocommerce' ),
-			array( $this, 'catattr_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
+			// DB Name.
+			if ( in_array( 'dbname', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_dbname',
+					__( 'DB Name', 'connect-woocommerce' ),
+					array( $this, 'dbname_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		add_settings_field(
-			'wcpimh_catnp',
-			__( 'Import category only in new products?', 'connect-woocommerce' ),
-			array( $this, 'catnp_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
+			// Username.
+			if ( in_array( 'username', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_username',
+					__( 'Username', 'connect-woocommerce' ),
+					array( $this, 'username_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		add_settings_field(
-			'wcpimh_filter',
-			__( 'Filter products by tags? Only import this tags (separated by comma and no space)', 'connect-woocommerce' ),
-			array( $this, 'filter_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
+			// Password.
+			if ( in_array( 'password', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_password',
+					__( 'Password', 'connect-woocommerce' ),
+					array( $this, 'password_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		add_settings_field(
-			'wcpimh_filter_sku',
-			__( 'Filter products by SKU? Only the products that complies these formula (use * for formula)', 'connect-woocommerce' ),
-			array( $this, 'filter_sku_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
+			// Company.
+			if ( in_array( 'company', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_company',
+					__( 'Company', 'connect-woocommerce' ),
+					array( $this, 'company_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		if ( $this->options['product_price_tax_option'] ) {
+			// Domain.
+			if ( in_array( 'domain', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_domain',
+					__( 'domain', 'connect-woocommerce' ),
+					array( $this, 'domain_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			// API Password.
+			if ( in_array( 'apipassword', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_api',
+					__( 'API Key', 'connect-woocommerce' ),
+					array( $this, 'api_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			if ( $this->options['product_option_stock'] ) {
+				add_settings_field(
+					'wcpimh_stock',
+					__( 'Import stock?', 'connect-woocommerce' ),
+					array( $this, 'stock_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
 			add_settings_field(
-				'wcpimh_tax_option',
-				__( 'Get prices with Tax?', 'connect-woocommerce' ),
-				array( $this, 'tax_option_callback' ),
-				$this->options['slug'] . '_admin',
+				'wcpimh_prodst',
+				__( 'Default status for new products?', 'connect-woocommerce' ),
+				array( $this, 'prodst_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+
+			add_settings_field(
+				'wcpimh_virtual',
+				__( 'Virtual products?', 'connect-woocommerce' ),
+				array( $this, 'virtual_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+	
+			add_settings_field(
+				'wcpimh_backorders',
+				__( 'Allow backorders?', 'connect-woocommerce' ),
+				array( $this, 'backorders_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+	
+			add_settings_field(
+				'wcpimh_catsep',
+				__( 'Category separator', 'connect-woocommerce' ),
+				array( $this, 'catsep_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+	
+			add_settings_field(
+				'wcpimh_catattr',
+				__( 'Attribute to use as category', 'connect-woocommerce' ),
+				array( $this, 'catattr_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+	
+			add_settings_field(
+				'wcpimh_catnp',
+				__( 'Import category only in new products?', 'connect-woocommerce' ),
+				array( $this, 'catnp_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+	
+			add_settings_field(
+				'wcpimh_filter',
+				__( 'Filter products by tags? Only import this tags (separated by comma and no space)', 'connect-woocommerce' ),
+				array( $this, 'filter_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+	
+			add_settings_field(
+				'wcpimh_filter_sku',
+				__( 'Filter products by SKU? Only the products that complies these formula (use * for formula)', 'connect-woocommerce' ),
+				array( $this, 'filter_sku_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+	
+			if ( $this->options['product_price_tax_option'] ) {
+				add_settings_field(
+					'wcpimh_tax_option',
+					__( 'Get prices with Tax?', 'connect-woocommerce' ),
+					array( $this, 'tax_option_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			if ( $this->options['product_price_rate_option'] ) {
+				$desc_tip     = __( 'Copy and paste the ID of the rates for publishing in the web', 'connect-woocommerce' );
+				add_settings_field(
+					'wcpimh_rates',
+					__( 'Product price rate for this eCommerce', 'connect-woocommerce' ),
+					array( $this, 'rates_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			if ( ( isset( $this->options['order_series_number'] ) && $this->options['order_series_number'] ) || 'Holded' === $this->options['name'] ) {
+				add_settings_field(
+					'wcpimh_serie_number',
+					__( 'Serie number', 'connect-woocommerce' ),
+					array( $this, 'serie_number_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			if ( 'Holded' === $this->options['name'] ) {
+				$name_docorder = __( 'Document to create after order completed?', 'connect-woocommerce' );
+				add_settings_field(
+					'wcpimh_doctype',
+					$name_docorder,
+					array( $this, 'doctype_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+
+				add_settings_field(
+					'wcpimh_design_id',
+					__( 'ID Holded design for document', 'connect-woocommerce' ),
+					array( $this, 'wcpimh_design_id_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			add_settings_field(
+				'wcpimh_freeorder',
+				__( 'Create document for free Orders?', 'connect-woocommerce' ),
+				array( $this, 'freeorder_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+
+			add_settings_field(
+				'wcpimh_ecstatus',
+				__( 'Status to sync Orders?', 'connect-woocommerce' ),
+				array( $this, 'ecstatus_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+
+			if ( ! empty( $this->options['order_tags'] ) ) {
+				add_settings_field(
+					'wcpimh_order_tags',
+					__( 'Order Tag by default (separated by coma)?', 'connect-woocommerce' ),
+					array( $this, 'order_tags_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			if ( ! empty( $this->options['product_weight_equivalence'] ) ) {
+				add_settings_field(
+					'wcpimh_product_weight_equivalence',
+					__( 'Custom field for Equivalence with weight', 'connect-woocommerce' ),
+					array( $this, 'product_weight_equivalence_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+			add_settings_field(
+				'wcpimh_debug_log',
+				__( 'Debug Mode', 'connect-woocommerce' ),
+				array( $this, 'debug_log_callback' ),
+				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
 			);
 		}
-
-		if ( $this->options['product_price_rate_option'] ) {
-			$desc_tip     = __( 'Copy and paste the ID of the rates for publishing in the web', 'connect-woocommerce' );
-			add_settings_field(
-				'wcpimh_rates',
-				__( 'Product price rate for this eCommerce', 'connect-woocommerce' ),
-				array( $this, 'rates_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		if ( ( isset( $this->options['order_series_number'] ) && $this->options['order_series_number'] ) || 'Holded' === $this->options['name'] ) {
-			add_settings_field(
-				'wcpimh_serie_number',
-				__( 'Serie number', 'connect-woocommerce' ),
-				array( $this, 'serie_number_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		if ( 'Holded' === $this->options['name'] ) {
-			$name_docorder = __( 'Document to create after order completed?', 'connect-woocommerce' );
-			add_settings_field(
-				'wcpimh_doctype',
-				$name_docorder,
-				array( $this, 'doctype_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-
-			$name_nif = __( 'ID Holded design for document', 'connect-woocommerce' );
-			add_settings_field(
-				'wcpimh_design_id',
-				$name_nif,
-				array( $this, 'wcpimh_design_id_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		add_settings_field(
-			'wcpimh_freeorder',
-			__( 'Create document for free Orders?', 'connect-woocommerce' ),
-			array( $this, 'freeorder_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
-
-		add_settings_field(
-			'wcpimh_ecstatus',
-			__( 'Status to sync Orders?', 'connect-woocommerce' ),
-			array( $this, 'ecstatus_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
-
-		if ( ! empty( $this->options['order_tags'] ) ) {
-			add_settings_field(
-				'wcpimh_order_tags',
-				__( 'Order Tag by default (separated by coma)?', 'connect-woocommerce' ),
-				array( $this, 'order_tags_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-
-		if ( ! empty( $this->options['product_weight_equivalence'] ) ) {
-			add_settings_field(
-				'wcpimh_product_weight_equivalence',
-				__( 'Custom field for Equivalence with weight', 'connect-woocommerce' ),
-				array( $this, 'product_weight_equivalence_callback' ),
-				$this->options['slug'] . '_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
-		add_settings_field(
-			'wcpimh_debug_log',
-			__( 'Debug Mode', 'connect-woocommerce' ),
-			array( $this, 'debug_log_callback' ),
-			$this->options['slug'] . '_admin',
-			'connect_woocommerce_setting_section'
-		);
 
 		/**
 		 * ## Automate
@@ -616,7 +656,7 @@ class Settings {
 			'connect_woocommerce_setting_automate',
 			__( 'Automate', 'connect-woocommerce' ),
 			array( $this, 'section_automate' ),
-			$this->options['slug'] . '_automate'
+			'connect_ecommerce_automate'
 		);
 		$name_sync = __( 'When do you want to sync?', 'connect-woocommerce' );
 
@@ -624,7 +664,7 @@ class Settings {
 			'wcpimh_sync',
 			$name_sync,
 			array( $this, 'sync_callback' ),
-			$this->options['slug'] . '_automate',
+			'connect_ecommerce_automate',
 			'connect_woocommerce_setting_automate'
 		);
 
@@ -633,14 +673,14 @@ class Settings {
 				'wcpimh_sync_num',
 				__( 'How many products do you want to sync each time?', 'connect-woocommerce' ),
 				array( $this, 'sync_num_callback' ),
-				$this->options['slug'] . '_automate',
+				'connect_ecommerce_automate',
 				'connect_woocommerce_setting_automate'
 			);
 			add_settings_field(
 				'wcpimh_sync_email',
 				__( 'Do you want to receive an email when all products are synced?', 'connect-woocommerce' ),
 				array( $this, 'sync_email_callback' ),
-				$this->options['slug'] . '_automate',
+				'connect_ecommerce_automate',
 				'connect_woocommerce_setting_automate'
 			);
 		}
@@ -894,50 +934,54 @@ class Settings {
 	 */
 	public function sanitize_fields_settings( $input ) {
 		$sanitary_values = array();
-		$imh_settings    = get_option( $this->options['slug'] );
+		$imh_settings    = get_option( 'connect_ecommerce_settings' );
+		$connector       = isset( $input['connector'] ) ? $input['connector'] : '';
 
-		$admin_settings = array(
-			'api'            => '',
-			'idcentre'       => '',
-			'url'            => '',
-			'username'       => '',
-			'password'       => '',
-			'company'        => '',
-			'domain'         => '',
-			'dbname'         => '',
-			'stock'          => 'no',
-			'prodst'         => 'draft',
-			'virtual'        => 'no',
-			'backorders'     => 'no',
-			'catsep'         => '',
-			'catattr'        => '',
-			'filter'         => '',
-			'filter_sku'     => '',
-			'tax_option'     => 'no',
-			'rates'          => 'default',
-			'catnp'          => 'yes',
-			'doctype'        => 'invoice',
-			'series'         => '',
-			'freeorder'      => 'no',
-			'ecstatus'       => 'all',
-			'order_tags'     => '',
-			'design_id'      => '',
-			'sync'           => 'no',
-			'sync_num'       => 5,
-			'sync_email'     => 'yes',
-			'prod_weight_eq' => '',
-			'debug_log'      => 'no',
-		);
+		$admin_settings = [
+			$connector => [
+				'api'            => '',
+				'idcentre'       => '',
+				'url'            => '',
+				'username'       => '',
+				'password'       => '',
+				'company'        => '',
+				'domain'         => '',
+				'dbname'         => '',
+				'stock'          => 'no',
+				'prodst'         => 'draft',
+				'virtual'        => 'no',
+				'backorders'     => 'no',
+				'catsep'         => '',
+				'catattr'        => '',
+				'filter'         => '',
+				'filter_sku'     => '',
+				'tax_option'     => 'no',
+				'rates'          => 'default',
+				'catnp'          => 'yes',
+				'doctype'        => 'invoice',
+				'series'         => '',
+				'freeorder'      => 'no',
+				'ecstatus'       => 'all',
+				'order_tags'     => '',
+				'design_id'      => '',
+				'sync'           => 'no',
+				'sync_num'       => 5,
+				'sync_email'     => 'yes',
+				'prod_weight_eq' => '',
+				'debug_log'      => 'no',
+			],
+		];
 
-		foreach ( $admin_settings as $setting => $default_value ) {
+		foreach ( $admin_settings[ $connector ] as $setting => $default_value ) {
 			if ( isset( $input[ $setting ] ) ) {
-				$sanitary_values[ $setting ] = sanitize_text_field( $input[ $setting ] );
+				$sanitary_values[ $connector ][ $setting ] = sanitize_text_field( $input[ $setting ] );
 			} elseif ( isset( $imh_settings[ $setting ] ) ) {
-				$sanitary_values[ $setting ] = $imh_settings[ $setting ];
+				$sanitary_values[ $connector ][ $setting ] = $imh_settings[ $setting ];
 			} else {
-				$sanitary_values[ $setting ] = $default_value;
+				$sanitary_values[ $connector ][ $setting ] = $default_value;
 			}
 		}
+		$sanitary_values['connector'] = $connector;
 
 		return $sanitary_values;
 	}
@@ -1019,6 +1063,27 @@ class Settings {
 			),
 		);
 		echo wp_kses( $this->options['settings_admin_message'], $arr );
+	}
+
+	/**
+	 * Connector type
+	 *
+	 * @return void
+	 */
+	public function connector_callback() {
+		$connector = isset( $this->settings['connector'] ) ? $this->settings['connector'] : '';
+		?>
+		<select name="connect_ecommerce[connector]" id="wcpimh_connector">
+			<option value="" <?php selected( $connector, '' ); ?>><?php esc_html_e( 'Select the ERP/CRM that you wish to connect', 'connect-woocommerce' ); ?></option>
+			<?php
+			foreach ( $this->all_options as $key => $option ) {
+				?>
+				<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $connector, $key ); ?>><?php echo esc_html( $option['name'] ); ?></option>
+				<?php
+			}
+			?>
+		</select>
+		<?php
 	}
 
 	/**
