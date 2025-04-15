@@ -96,21 +96,20 @@ class Connect_Ecommerce_Clientify {
 	 * @return array Products converted to manage internally.
 	 */
 	private function convert_products( $products_original ) {
-		$products_converted = array();
-		$i                  = 0;
+		$products = array();
 
 		foreach ( $products_original as $product ) {
-			$products_converted[ $i ] = array(
-				'id'    => ! empty( $product['id'] ) ? $product['id'] : 0,
-				'name'  => ! empty( $product['name'] ) ? $product['name'] : '',
-				'desc'  => ! empty( $product['description'] ) ? $product['description'] : '',
-				'sku'   => ! empty( $product['sku'] ) ? $product['sku'] : '',
-				'price' => ! empty( $product['price'] ) ? $product['price'] : 0,
-				'kind'  => 'simple',
+			$products[] = array(
+				'id'        => ! empty( $product['id'] ) ? $product['id'] : 0,
+				'name'      => ! empty( $product['name'] ) ? $product['name'] : '',
+				'desc'      => ! empty( $product['description'] ) ? $product['description'] : '',
+				'sku'       => ! empty( $product['sku'] ) ? $product['sku'] : '',
+				'price'     => ! empty( $product['price'] ) ? $product['price'] : 0,
+				'kind'      => 'simple',
+				'full_info' => $product,
 			);
-			$i++;
 		}
-		return $products_converted;
+		return $products;
 	}
 
 	/**

@@ -36,7 +36,7 @@ $conecom_options = apply_filters(
 			'version'                    => CONECOM_VERSION,
 			'plugin_name'                => 'Connect WooCommerce Clientify',
 			'plugin_slug'                => 'connect-ecommerce-clientify',
-			'disable_modules'            => array( 'order', 'subscription' ),
+			'disable_modules'            => array( 'subscription' ),
 			'api_url'                    => CONECOM_SHOP_URL,
 			'api_pagination'             => 100,
 			'product_price_tax_option'   => true,
@@ -109,3 +109,4 @@ require_once CONECOM_PLUGIN_PATH . 'includes/Plugin_Main.php';
 require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-clientify.php';
 
 new CLOSE\ConnectEcommerce\Base( $conecom_options );
+new CLOSE\ConnectEcommerce\Admin\License();

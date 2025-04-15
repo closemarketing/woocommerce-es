@@ -58,7 +58,7 @@ class Orders {
 		}
 		$connector            = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
 		$this->options        = $options[ $connector ];
-		$this->settings       = get_option( $this->options['slug'] );
+		$this->settings       = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
 		$apiname              = 'Connect_Ecommerce_' . $this->options['name'];
 		$this->connapi_erp    = new $apiname( $options );
 		$ecstatus             = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
