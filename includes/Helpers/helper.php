@@ -8,7 +8,7 @@
  * @version    1.0
  */
 
-namespace CLOSE\WooCommerce\Library\Helpers;
+namespace CLOSE\ConnectEcommerce\Helpers;
 
 defined( 'ABSPATH' ) || exit;
 

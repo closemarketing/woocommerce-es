@@ -38,6 +38,7 @@ $conecom_options = apply_filters(
 			'plugin_slug'                => 'connect-ecommerce-clientify',
 			'disable_modules'            => array( 'order', 'subscription' ),
 			'api_url'                    => CONECOM_SHOP_URL,
+			'api_pagination'             => 100,
 			'product_price_tax_option'   => true,
 			'product_price_rate_option'  => false,
 			'product_option_stock'       => false,

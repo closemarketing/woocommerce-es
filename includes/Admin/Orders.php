@@ -12,7 +12,7 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use CLOSE\WooCommerce\Library\Helpers\ORDER;
+use CLOSE\ConnectEcommerce\Helpers\ORDER;
 
 /**
  * Class Orders integration
@@ -52,9 +52,12 @@ class Orders {
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options ) {
-		$settings_base        = get_option( 'connect_ecommerce_settings_connector' );
-		$settings_base        = ! empty( $settings_base ) ? $settings_base : 'clientify';
-		$this->options        = $options[ $settings_base ];
+		$settings_base = get_option( 'connect_ecommerce' );
+		if ( empty( $settings_base ) ) {
+			return;
+		}
+		$connector            = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
+		$this->options        = $options[ $connector ];
 		$this->settings       = get_option( $this->options['slug'] );
 		$apiname              = 'Connect_Ecommerce_' . $this->options['name'];
 		$this->connapi_erp    = new $apiname( $options );

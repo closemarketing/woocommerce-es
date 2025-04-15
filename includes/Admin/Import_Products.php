@@ -12,9 +12,9 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use CLOSE\WooCommerce\Library\Helpers\PROD;
-use CLOSE\WooCommerce\Library\Helpers\HELPER;
-use CLOSE\WooCommerce\Library\Helpers\CRON;
+use CLOSE\ConnectEcommerce\Helpers\PROD;
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\CRON;
 
 /**
  * Library for WooCommerce Settings
@@ -63,27 +63,33 @@ class Import_Products {
 	private $connapi_erp;
 
 	/**
+	 * Message of error products
+	 *
+	 * @var object
+	 */
+	private $msg_error_products;
+
+	/**
 	 * Constructs of class
 	 *
 	 * @param array $options Options of plugin.
 	 * @return void
 	 */
 	public function __construct( $options ) {
-		$settings_base = get_option( 'connect_ecommerce_settings_connector' );
+		$settings_base = get_option( 'connect_ecommerce' );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		if ( empty( $settings_base ) ) {
 			return;
 		}
-		$settings_base     = ! empty( $settings_base ) ? $settings_base : 'clientify';
-		$this->options     = $options[ $settings_base ];
+		$connector         = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
+		$this->options     = $options[ $connector ];
 		$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
 		$this->connapi_erp = new $apiname( $options );
-		$ajax_action       = $this->options['slug'] . '_sync_products';
 		$this->settings    = get_option( $this->options['slug'] );
 		$this->sync_period = isset( $this->settings['sync'] ) ? strval( $this->settings['sync'] ) : 'no';
 
 		// Admin Styles.
-		add_action( 'wp_ajax_' . $ajax_action, array( $this, 'sync_products' ) );
+		add_action( 'wp_ajax_connect_ecommerce_sync_products', array( $this, 'sync_products' ) );
 
 		// Schedule.
 		if ( $this->sync_period && 'no' !== $this->sync_period ) {
@@ -201,7 +207,7 @@ class Import_Products {
 			$_SESSION['api_products'] = $api_products;
 			$res_message             .= __( 'Connecting with API...', 'connect-woocommerce' ) . '<br/>';
 		} elseif ( 0 < $sync_loop ) {
-			$api_products = $_SESSION['api_products'];
+			$api_products = $_SESSION['api_products'] ?? array();
 		}
 
 		if ( isset( $api_products['status'] ) && 'error' === $api_products['status'] ) {

@@ -8,12 +8,12 @@
  * @version    1.0
  */
 
-namespace CLOSE\WooCommerce\Library\Helpers;
+namespace CLOSE\ConnectEcommerce\Helpers;
 
 defined( 'ABSPATH' ) || exit;
 
-use CLOSE\WooCommerce\Library\Helpers\TAX;
-use CLOSE\WooCommerce\Library\Helpers\AI;
+use CLOSE\ConnectEcommerce\Helpers\TAX;
+use CLOSE\ConnectEcommerce\Helpers\AI;
 
 /**
  * Sync Products.

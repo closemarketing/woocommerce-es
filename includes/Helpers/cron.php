@@ -8,11 +8,11 @@
  * @version    1.0
  */
 
-namespace CLOSE\WooCommerce\Library\Helpers;
+namespace CLOSE\ConnectEcommerce\Helpers;
 
 defined( 'ABSPATH' ) || exit;
 
-use CLOSE\WooCommerce\Library\Helpers\PROD;
+use CLOSE\ConnectEcommerce\Helpers\PROD;
 
 /**
  * Sync Products.

@@ -39,7 +39,7 @@ class Connect_Ecommerce_Clientify {
 	 */
 	public function __construct( $options ) {
 		$this->options  = $options['clientify'];
-		$this->settings = get_option( $this->options['slug'] );
+		$this->settings = get_option( 'connect_ecommerce' )['clientify'] ?? array();
 
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'clientify_cookie_checkout_field' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
@@ -53,6 +53,10 @@ class Connect_Ecommerce_Clientify {
 	 */
 	public function check_can_sync() {
 		if ( ! isset( $this->settings['api'] ) ) {
+			return false;
+		}
+		$result_login = $this->api( 'settings/my-account/', $this->settings['api'] );
+		if ( 'error' === $result_login['status'] ) {
 			return false;
 		}
 		return true;
@@ -121,7 +125,6 @@ class Connect_Ecommerce_Clientify {
 	 * @return array
 	 */
 	private function api( $endpoint, $apikey, $method = 'GET', $query = array(), $type = 'simple' ) {
-		$apikey = isset( $this->settings['api'] ) ? $this->settings['api'] : '';
 		if ( ! $apikey ) {
 			return array(
 				'status' => 'error',
@@ -140,6 +143,9 @@ class Connect_Ecommerce_Clientify {
 			$json         = wp_json_encode( $query );
 			$json         = str_replace( '&amp;', '&', $json );
 			$args['body'] = $json;
+		}
+		if ( 'GET' === $method ) {
+			$endpoint .= '?page_size=' . $this->options['api_pagination'];
 		}
 		// Loop.
 		$next          = true;
@@ -195,10 +201,17 @@ class Connect_Ecommerce_Clientify {
 	 * @return array Array of products imported via API.
 	 */
 	public function get_products( $id = null, $period = null ) {
-		$api_key  = ! empty( $settings['api'] ) ? $settings['api'] : '';
-		$products = $this->api( 'products/', $api_key, 'GET', array(), 'all' );
+		$api_key  = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
+		$products = $this->api( 'products/', $api_key, 'GET' );
 
-		return $this->convert_products( $products['data'] );
+		if ( 'error' === $products['status'] ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'Error getting products from Clientify', 'connect-woocommerce-clientify' ),
+			);
+		}
+
+		return $this->convert_products( $products['data']['results'] );
 	}
 
 	/**
@@ -368,9 +381,9 @@ class Connect_Ecommerce_Clientify {
 	public function enqueue_scripts() {
 		wp_register_script(
 			'connectwoo-clientify-field',
-			CONCLI_PLUGIN_URL . 'includes/assets/clientify-field.js',
+			CONECOM_PLUGIN_URL . 'includes/assets/clientify-field.js',
 			array(),
-			CONCLI_VERSION,
+			CONECOM_VERSION,
 			true
 		);
 	}
