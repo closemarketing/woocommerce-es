@@ -934,7 +934,7 @@ class Settings {
 	 */
 	public function sanitize_fields_settings( $input ) {
 		$sanitary_values = array();
-		$imh_settings    = get_option( 'connect_ecommerce_settings' );
+		$imh_settings    = get_option( 'connect_ecommerce' );
 		$connector       = isset( $input['connector'] ) ? $input['connector'] : '';
 
 		$admin_settings = [
