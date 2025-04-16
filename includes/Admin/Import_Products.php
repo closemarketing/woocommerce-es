@@ -78,10 +78,10 @@ class Import_Products {
 	public function __construct( $options ) {
 		$settings_base = get_option( 'connect_ecommerce' );
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
-		if ( empty( $settings_base ) ) {
+		$connector         = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
+		if ( empty( $connector ) ) {
 			return;
 		}
-		$connector         = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
 		$this->options     = $options[ $connector ];
 		$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
 		$this->connapi_erp = new $apiname( $options );

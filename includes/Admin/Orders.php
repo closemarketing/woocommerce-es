@@ -53,10 +53,10 @@ class Orders {
 	 */
 	public function __construct( $options ) {
 		$settings_base = get_option( 'connect_ecommerce' );
-		if ( empty( $settings_base ) ) {
+		$connector            = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
+		if ( empty( $connector ) ) {
 			return;
 		}
-		$connector            = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
 		$this->options        = $options[ $connector ];
 		$this->settings       = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
 		$apiname              = 'Connect_Ecommerce_' . $this->options['name'];

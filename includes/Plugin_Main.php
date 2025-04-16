@@ -41,6 +41,6 @@ class Base {
 
 		new Orders( $options );
 		new Checkout( $options );
-		new MyAccount(  $options );
+		new MyAccount( $options );
 	}
 }

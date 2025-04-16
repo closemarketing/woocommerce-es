@@ -2,8 +2,14 @@
 Contributors: closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, ecommerce, woocommerce, connect woocommerce
 Donate link: https://close.marketing/go/donate/
-Requires at least: 4.0
+Requires at least: 5.0
 Requires PHP: 7.0
+Tested up to: 6.8
+Stable tag: 3.0.0
+Version: 3.0.0
+License: GPL2
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
+
 
 Connect Ecommerce with ERPs and CRMs. Products and Ordrs from ERP/CRM to WooCommerce.
 

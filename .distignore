@@ -6,6 +6,9 @@
 circle.yml
 .DS_Store
 .github
-composer.json
 composer.lock
 .wordpress-org
+includes/Admin/License.php
+doc/
+phpcs.xml.dist
+changelog.md
