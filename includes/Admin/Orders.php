@@ -53,7 +53,7 @@ class Orders {
 	 */
 	public function __construct( $options ) {
 		$settings_base = get_option( 'connect_ecommerce' );
-		$connector            = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
+		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
 		if ( empty( $connector ) ) {
 			return;
 		}

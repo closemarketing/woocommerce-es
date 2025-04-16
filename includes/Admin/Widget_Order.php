@@ -28,10 +28,26 @@ class Widget_Order {
 	private $options;
 
 	/**
+	 * API Object
+	 *
+	 * @var object
+	 */
+	private $connapi_erp;
+
+	/**
 	 * Construct of Class
+	 *
+	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options = array() ) {
-		$this->options = $options;
+		$settings_base = get_option( 'connect_ecommerce' );
+		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
+		if ( empty( $connector ) ) {
+			return;
+		}
+		$this->options     = $options[ $connector ];
+		$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
+		$this->connapi_erp = new $apiname( $options );
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_orders' ) );
 	}
@@ -69,7 +85,16 @@ class Widget_Order {
 		$order_key  = '_' . $this->options['slug'] . '_invoice_id';
 		$invoice_id = $order->get_meta( $order_key, true );
 		echo '<td>Web: #' . esc_html( $order_id ) . '<br/>';
-		echo 'ERP: ' . esc_html( $invoice_id );
+		echo 'ERP: ';
+
+		$edit_url = $this->connapi_erp->get_url_link_api( $order );
+		if ( $edit_url ) {
+			echo '<a href="' . esc_url( $edit_url ) . '" target="_blank">';
+		}
+		echo esc_html( $invoice_id );
+		if ( $edit_url ) {
+			echo '</a>';
+		}
 
 		$label = $invoice_id ? __( 'Update to ERP', 'connect-woocommerce' ) : __( 'Send to ERP', 'connect-woocommerce' );
 

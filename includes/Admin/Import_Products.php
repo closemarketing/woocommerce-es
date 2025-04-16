@@ -142,7 +142,7 @@ class Import_Products {
 		// AJAX Pedidos.
 		wp_enqueue_script(
 			'cw-sync-order-widget',
-			CONECOM_PLUGIN_URL . 'includes/sync-order-widget.js',
+			CONECOM_PLUGIN_URL . 'includes/assets/sync-order-widget.js',
 			array(),
 			CONECOM_VERSION,
 			true
