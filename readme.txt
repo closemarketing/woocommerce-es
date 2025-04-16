@@ -10,39 +10,67 @@ Version: 3.0.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-
 Connect Ecommerce with ERPs and CRMs. Products and Ordrs from ERP/CRM to WooCommerce.
 
 == Description ==
 
-This plugin allows you to import simple products from Holded to WooCommerce. 
+This plugin allows you to products from Clientify to WooCommerce. 
 
-It creates a new menu in WooCommerce > Connect Holded.
+You can import products, and it will create new products if it does not find the SKU code from your WooCommerce. If the SKU exists, it will import all data except title and description from the product. The stock will be imported as well.
 
-You can import simple products, and it will create new products if it does not find the SKU code from your WooCommerce. If the SKU exists, it will import all data except title and description from the product. The stock will be imported as well.
-
-¡We have a Premium version!
 These are the features:
-- Import categories from Holded.
+- Import categories from CRM/ERP.
 - Import attributes as brands or others.
 - Import variable products.
 - Automate the syncronization.
-- Send Orders to Holded.
-- Send generated Holded Document attached in WooCommerce notifications.
-- Option to select the Design of the generated Holded document.
-- Import pack products from Holded.
+- Send Orders to CRM/ERP.
+- Send generated CRM/ERP Document attached in WooCommerce notifications.
+- Option to select the Design of the generated CRM/ERP document.
+- Import pack products from CRM/ERP.
 
-[You could buy it here](https://en.close.technology/connect-woocommerce-holded/)
+At this time, Connect Ecommerce supports in free version:
+- [Clientify](https://close.marketing/likes/clientify/)
+
+And you will find, that there are Premium Addons to support:
+- [Holded CRM](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+- [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
+- [NEO TPV](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
+
 
 == Installation ==
 
-Extract the zip file and just drop the contents in the wp-content/plugins/ directory of your
+- Extract the zip file and just drop the contents in the wp-content/plugins/ directory of your
 WordPress installation and then activate the Plugin from Plugins page.
+- Go to WooCommerce > Connect Ecommerce for the configuration.
 
 == Developers ==
 [Official Repository GitHub](https://github.com/closemarketing/connect-ecommerce)
 
 == Changelog ==
+
+= 3.0.0 =
+* Added AI Generate content for new products.
+* Added: Fix category separator.
+* Added: Filter by Producto SKU.
+* Added: Make downloable the invoice in My account.
+* Added: Domain field.
+* Added: Series number.
+* Added: contact company.
+* Added: Added order tags.
+* Added: Company Field option.
+* Added: Publish status in Merge Vars.
+* Added: Split Categories in merge vars.
+* Products widgets allow search product by SKU.
+* Added: Sync with APIs with modified date.
+* Added: Support to Paginated APIs.
+* Added: Coupons sends to the API.
+* Fixed: Taxes calculation in order.
+* Added: Option to send orders to ERP when it's paid.
+* Fixed: error calculating taxes from order products.
+* Added: Option to log problems in WooCommerce logs.
+* Fixed: error while updating order with shipping items.
+* Fix: Required parameter $option_prefix follows optional.
+* Minor fixes.
 
 = 2.3.1 =
 * Fixed: Added support to import billing vat from other plugins.
