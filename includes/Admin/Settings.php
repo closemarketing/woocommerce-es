@@ -991,7 +991,7 @@ class Settings {
 	public function connector_callback() {
 		$connector = isset( $this->connector ) ? $this->connector : '';
 		?>
-		<select name="connect_ecommerce[connector]" id="wcpimh_connector">
+		<select name="connect_ecommerce[connector]" id="wcpimh_connector" onchange="this.form.submit();">
 			<option value="" <?php selected( $connector, '' ); ?>><?php esc_html_e( 'Select the ERP/CRM that you wish to connect', 'connect-woocommerce' ); ?></option>
 			<?php
 			foreach ( $this->all_options as $key => $option ) {
