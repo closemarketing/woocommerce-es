@@ -37,7 +37,7 @@ class Checkout {
 	 */
 	public function __construct( $options = array() ) {
 		$this->options          = $options;
-		$this->setttings_public = get_option( $this->options['slug'] . '_public' );
+		$this->setttings_public = get_option( 'connect_ecommerce_public' );
 
 		// EU VAT.
 		add_filter( 'woocommerce_billing_fields', array( $this, 'add_billing_fields' ) );

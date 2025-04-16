@@ -20,7 +20,6 @@ use CLOSE\ConnectEcommerce\Helpers\HELPER;
  * @since 1.0.0
  */
 class License {
-
 	/**
 	 * License key.
 	 *
