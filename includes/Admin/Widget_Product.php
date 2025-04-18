@@ -45,7 +45,7 @@ class Widget_Product {
 	public function metabox_products() {
 		add_meta_box(
 			$this->options['slug'] . '-product-checker',
-			__( 'Connect with ', 'connect-woocommerce' ) . $this->options['name'],
+			__( 'Connect with ', 'connect-ecommerce' ) . $this->options['name'],
 			array( $this, 'metabox_show_product' ),
 			'product',
 			'side',
@@ -66,20 +66,20 @@ class Widget_Product {
 
 		echo '<table>';
 		// Send Product.
-		echo '<tr><td><strong>' . esc_html__( 'Product:', 'connect-woocommerce' ) . '</strong></td>';
+		echo '<tr><td><strong>' . esc_html__( 'Product:', 'connect-ecommerce' ) . '</strong></td>';
 		echo '<td>';
 		echo '<div name="connwoo-sync-product" id="sync-erp-products-' . esc_html( $product_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncProductERP(this,\'';
 		echo esc_html( $this->options['slug'] ) . '_sync_products\',';
 		echo '\'' . esc_html( $product_erp_id ) . '\',';
 		echo '\'' . esc_html( $product->get_sku() ) . '\',';
-		echo 'this.id)">' . esc_html__( 'Sync', 'connect-woocommerce' ) . '</div>';
+		echo 'this.id)">' . esc_html__( 'Sync', 'connect-ecommerce' ) . '</div>';
 		echo '</td>';
 		echo '</tr>';
 		echo '</table>';
 		echo '<input type="checkbox" name="connwoo-sync-product-ai" ';
 		echo 'id="' . esc_attr( $this->options['slug'] . '_ai' ) . '" ';
 		echo ' /><label for="' . esc_attr( $this->options['slug'] . '_ai' ) . '">';
-		echo esc_html__( 'Use AI to regenerate title, description and seo.', 'connect-woocommerce' ) . '</label>';
+		echo esc_html__( 'Use AI to regenerate title, description and seo.', 'connect-ecommerce' ) . '</label>';
 	}
 }

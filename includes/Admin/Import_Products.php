@@ -105,14 +105,14 @@ class Import_Products {
 	 */
 	public function admin_enqueues() {
 		wp_enqueue_style(
-			'connect-woocommerce',
+			'connect-ecommerce',
 			CONECOM_PLUGIN_URL . 'includes/assets/admin.css',
 			array(),
 			CONECOM_VERSION
 		);
 
 		wp_enqueue_script(
-			'connect-woocommerce-repeat',
+			'connect-ecommerce-repeat',
 			CONECOM_PLUGIN_URL . 'includes/assets/repeatable-fields.js',
 			array(),
 			CONECOM_VERSION,
@@ -132,10 +132,10 @@ class Import_Products {
 			'ajaxAction',
 			array(
 				'url'                 => admin_url( 'admin-ajax.php' ),
-				'label_sync'          => __( 'Sync', 'connect-woocommerce' ),
-				'label_syncing'       => __( 'Syncing', 'connect-woocommerce' ),
-				'label_sync_complete' => __( 'Finished', 'connect-woocommerce' ),
-				'nonce'               => wp_create_nonce( 'manual_import_nonce' ),
+				'label_sync'          => __( 'Sync', 'connect-ecommerce' ),
+				'label_syncing'       => __( 'Syncing', 'connect-ecommerce' ),
+				'label_sync_complete' => __( 'Finished', 'connect-ecommerce' ),
+				'nonce'               => wp_create_nonce( 'conecom_manual_import_nonce' ),
 			)
 		);
 
@@ -153,8 +153,8 @@ class Import_Products {
 			'ajaxActionOrder',
 			array(
 				'url'           => admin_url( 'admin-ajax.php' ),
-				'label_syncing' => __( 'Syncing', 'connect-woocommerce' ),
-				'label_synced'  => __( 'Synced', 'connect-woocommerce' ),
+				'label_syncing' => __( 'Syncing', 'connect-ecommerce' ),
+				'label_synced'  => __( 'Synced', 'connect-ecommerce' ),
 				'nonce'         => wp_create_nonce( 'sync_erp_order_nonce' ),
 			)
 		);
@@ -174,7 +174,7 @@ class Import_Products {
 		$generate_ai    = isset( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
 		$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
 
-		if ( ! check_ajax_referer( 'manual_import_nonce', 'nonce' ) ) {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce' ) ) {
 			wp_send_json_error( array( 'message' => 'Error' ) );
 		}
 
@@ -205,7 +205,7 @@ class Import_Products {
 		if ( 0 === $sync_loop || ( $api_pagination && 0 === $loop_page ) ) {
 			$api_products             = $this->connapi_erp->get_products( null, $sync_loop );
 			$_SESSION['api_products'] = $api_products;
-			$res_message             .= __( 'Connecting with API...', 'connect-woocommerce' ) . '<br/>';
+			$res_message             .= __( 'Connecting with API...', 'connect-ecommerce' ) . '<br/>';
 		} elseif ( 0 < $sync_loop ) {
 			$api_products = $_SESSION['api_products'] ?? array();
 		}
@@ -253,17 +253,17 @@ class Import_Products {
 			// Get taxonomies from post_id.
 			$term_list = wp_get_post_terms( $post_id, 'product_cat', array( 'fields' => 'names' ) );
 			if ( ! empty( $term_list ) && is_array( $term_list ) ) {
-				$res_message .= ' <span class="taxonomies">' . __( 'Categories: ', 'connect-woocommerce' );
+				$res_message .= ' <span class="taxonomies">' . __( 'Categories: ', 'connect-ecommerce' );
 				$res_message .= implode( ', ', $term_list ) . '</span>';
 			}
 
 			// Get link to product.
 			if ( 0 < $sync_loop ) {
-				$res_message .= ' <a href="' . get_edit_post_link( $post_id ) . '" target="_blank">' . __( 'View', 'connect-woocommerce' ) . '</a>';
+				$res_message .= ' <a href="' . get_edit_post_link( $post_id ) . '" target="_blank">' . __( 'View', 'connect-ecommerce' ) . '</a>';
 			}
 		}
 		if ( $finish ) {
-			$res_message .= '<p class="finish">' . __( 'All caught up!', 'connect-woocommerce' ) . '</p>';
+			$res_message .= '<p class="finish">' . __( 'All caught up!', 'connect-ecommerce' ) . '</p>';
 		}
 
 		$args = array(

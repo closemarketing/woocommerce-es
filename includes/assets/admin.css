@@ -78,15 +78,47 @@
 }
 
 .repeater-section .product-mergevars {
-	display: grid;
-	grid-template-columns: 3fr 1fr 3fr 1fr;
+  display: grid;
+  grid-template-columns: 3fr 1fr 3fr 1fr;
 }
 
 .repeater-section .dashicons {
-	padding-top: 4px;
-	padding-right: 5px;
+  padding-top: 4px;
+  padding-right: 5px;
 }
 
 .repeater-section .dashicons.dashicons-arrow-right-alt2 {
-	padding-top: 7px;
+  padding-top: 7px;
+}
+
+.progress-bar {
+  background-color: #1a1a1a;
+  height: 16px;
+  padding: 5px;
+  width: 100%;
+  margin: 5px 0;
+  border-radius: 5px;
+  box-shadow: 0 1px 5px #000 inset, 0 1px 0 #444;
+}
+
+.progress-bar span {
+  display: inline-block;
+  float: left;
+  height: 100%;
+  border-radius: 3px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, .5) inset;
+  transition: width .4s ease-in-out;
+}
+
+.blue span {
+  background-color: #2271b1;
+}
+
+.progress-text {
+  text-align: right;
+  color: white;
+  margin: 0;
+  font-size: 18px;
+  position: absolute;
+  right: 18px;
 }

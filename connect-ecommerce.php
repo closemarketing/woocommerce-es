@@ -1,11 +1,11 @@
 <?php
 /**
  * Plugin Name: Connect Ecommerce
- * Plugin URI: https://close.technology/wordpress-plugins/connect-ecommerce-test/
+ * Plugin URI: https://close.technology/wordpress-plugins/connect-ecommerce/
  * Description: Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
  * Author: Closetechnology
  * Author URI: https://close.technology/
- * Version: 3.0.0-beta.1
+ * Version: 3.0.0
  *
  * @package WordPress
  * Text Domain: connect-ecommerce
@@ -15,7 +15,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.0.0-beta.1' );
+define( 'CONECOM_VERSION', '3.0.0' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -58,7 +58,7 @@ function conecom_loads() {
 				'settings_logo'              => CONECOM_PLUGIN_URL . 'includes/Connector/assets/logo.svg',
 				'settings_admin_message'     => sprintf(
 					// translators: %s url of contact.
-					__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App Test API</a>.', 'connect-ecommerce-test' ),
+					__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App Test API</a>.', 'connect-ecommerce' ),
 					'https://app.test.com/api'
 				),
 				'settings_special_tabs'      => array(),

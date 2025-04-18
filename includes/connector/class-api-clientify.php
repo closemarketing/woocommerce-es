@@ -206,7 +206,7 @@ class Connect_Ecommerce_Clientify {
 		if ( 'error' === $products['status'] ) {
 			return array(
 				'status'  => 'error',
-				'message' => __( 'Error getting products from Clientify', 'connect-woocommerce-clientify' ),
+				'message' => __( 'Error getting products from Clientify', 'connect-ecommerce' ),
 			);
 		}
 
@@ -239,7 +239,7 @@ class Connect_Ecommerce_Clientify {
 		if ( empty( $order_woo ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => $order_id . ' ' . __( 'Error order not found in WooCommerce.', 'connect-woocommerce-clientify' ),
+				'message' => $order_id . ' ' . __( 'Error order not found in WooCommerce.', 'connect-ecommerce' ),
 			);
 		}
 
@@ -318,14 +318,14 @@ class Connect_Ecommerce_Clientify {
 		if ( empty( $order_clientify['items'] ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => $order_id . ' ' . __( 'Error items not valid in the order.', 'connect-woocommerce-clientify' ),
+				'message' => $order_id . ' ' . __( 'Error items not valid in the order.', 'connect-ecommerce' ),
 			);
 		}
 
 		// Create sales order.
 		$result_clientify = $this->api( 'contacts/', $api_key, 'POST', $clientify_contact );
 		if ( 'error' === $result_clientify['status'] || ! isset( $result_clientify['data']['url'] ) ) {
-			$order_msg = __( 'Error creating the contact in Clientify', 'connect-woocommerce-clientify' );
+			$order_msg = __( 'Error creating the contact in Clientify', 'connect-ecommerce' );
 			$order_woo->add_order_note( $order_msg );
 			return array(
 				'status'  => 'error',
@@ -339,13 +339,13 @@ class Connect_Ecommerce_Clientify {
 			$clientify_sale_id = isset( $result_order['data']['id'] ) ? $result_order['data']['id'] : 0;
 			return array(
 				'status'      => 'ok',
-				'message'     => __( 'The order was created correctly in Clientify', 'connect-woocommerce-clientify' ) . $clientify_sale_id,
+				'message'     => __( 'The order was created correctly in Clientify', 'connect-ecommerce' ) . $clientify_sale_id,
 				'document_id' => $clientify_sale_id,
 				'invoice_id'  => $clientify_sale_id,
 			);
 		} else {
 			$message_data = is_array( $result_order['data'] ) ? implode( ' ', $result_order['data'] ) : $result_order['data'];
-			$order_msg    = __( 'Order error syncing with Clientify. Error: ', 'connect-woocommerce-clientify' ) . $message_data;
+			$order_msg    = __( 'Order error syncing with Clientify. Error: ', 'connect-ecommerce' ) . $message_data;
 
 			// Log Error and return.
 			return array(

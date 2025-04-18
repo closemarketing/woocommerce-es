@@ -112,8 +112,8 @@ class Checkout {
 
 		$field = array(
 			'billing_vat' => array(
-				'label'       => apply_filters( 'vatssn_label', __( 'VAT No', 'import-holded-products-woocommerce' ) ),
-				'placeholder' => apply_filters( 'vatssn_label_x', __( 'VAT No', 'import-holded-products-woocommerce' ) ),
+				'label'       => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
+				'placeholder' => apply_filters( 'conecom_vatssn_label_x', __( 'VAT No', 'connect-ecommerce' ) ),
 				'required'    => $mandatory,
 				'class'       => array( 'form-row-last' ),
 				'clear'       => true,
@@ -137,7 +137,7 @@ class Checkout {
 
 	public function add_billing_shipping_fields_admin( $fields ) {
 		$fields['vat'] = array(
-			'label' => apply_filters( 'vatssn_label', __( 'VAT No', 'import-holded-products-woocommerce' ) ),
+			'label' => apply_filters( 'vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
 		);
 
 		return $fields;
@@ -155,18 +155,21 @@ class Checkout {
 	 * @return void
 	 */
 	public function email_key_notification( $order ) {
-		echo '<p><strong>' . __( 'VAT No', 'import-holded-products-woocommerce' ) .':</strong> ';
+		echo '<p><strong>' . esc_html__( 'VAT No', 'connect-ecommerce' ) . ':</strong> ';
 		echo esc_html( get_post_meta( $order->get_id(), '_billing_vat', true ) ) . '</p>';
 	}
 
 	/**
 	 * Adds VAT info in WooCommerce PDF Invoices & Packing Slips
+	 *
+	 * @param string $address Address.
+	 * @return void
 	 */
 	public function add_vat_invoices( $address ) {
 		global $wpo_wcpdf;
 
-		echo $address . '<p>';
-		$wpo_wcpdf->custom_field( 'billing_vat', __( 'VAT info:', 'import-holded-products-woocommerce' ) );
+		echo $address . '<p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		$wpo_wcpdf->custom_field( 'billing_vat', __( 'VAT info:', 'connect-ecommerce' ) );
 		echo '</p>';
 	}
 
@@ -229,7 +232,15 @@ class Checkout {
 			?>
 			<p class="form-row terms wc-terms-and-conditions">
 				<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">
-				<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="terms" <?php checked( apply_filters( 'woocommerce_terms_is_checked_default', isset( $_POST['terms'] ) ), true ); ?> id="terms" /> <span><?php printf( __( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'import-holded-products-woocommerce' ), esc_url( wc_get_page_permalink( 'terms' ) ) ); ?></span> <span class="required">*</span>
+					<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="terms" <?php checked( apply_filters( 'woocommerce_terms_is_checked_default', isset( $_POST['terms'] ) ), true ); ?> id="terms" /> <span>
+					<?php
+					printf(
+						/* translators: 1: Terms and conditions page link */
+						esc_html__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'connect-ecommerce' ),
+						esc_url( wc_get_page_permalink( 'terms' ) )
+					);
+					?>
+					</span> <span class="required">*</span>
 				</label>
 				<input type="hidden" name="terms-field" value="1" />
 			</p>
@@ -247,7 +258,7 @@ class Checkout {
 	 */
 	public function terms_and_conditions_validation( $username, $email, $validation_errors ) {
 		if ( ! isset( $_POST['terms'] ) ) {
-			$validation_errors->add( 'terms_error', __( 'Terms and condition are not checked!', 'import-holded-products-woocommerce' ) );
+			$validation_errors->add( 'terms_error', __( 'Terms and condition are not checked!', 'connect-ecommerce' ) );
 		}
 
 		return $validation_errors;

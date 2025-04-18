@@ -61,7 +61,7 @@ class Widget_Order {
 
 		add_meta_box(
 			'cw-order-checker',
-			__( 'Connect with ', 'connect-woocommerce' ) . $this->options['name'],
+			__( 'Connect with ', 'connect-ecommerce' ) . $this->options['name'],
 			array( $this, 'metabox_show_order' ),
 			$screen,
 			'side',
@@ -81,7 +81,7 @@ class Widget_Order {
 
 		echo '<table>';
 		// Send Order.
-		echo '<tr><td><strong>' . esc_html__( 'Order', 'connect-woocommerce' ) . '</strong></td>';
+		echo '<tr><td><strong>' . esc_html__( 'Order', 'connect-ecommerce' ) . '</strong></td>';
 		$order_key  = '_' . $this->options['slug'] . '_invoice_id';
 		$invoice_id = $order->get_meta( $order_key, true );
 		echo '<td>Web: #' . esc_html( $order_id ) . '<br/>';
@@ -96,7 +96,7 @@ class Widget_Order {
 			echo '</a>';
 		}
 
-		$label = $invoice_id ? __( 'Update to ERP', 'connect-woocommerce' ) : __( 'Send to ERP', 'connect-woocommerce' );
+		$label = $invoice_id ? __( 'Update to ERP', 'connect-ecommerce' ) : __( 'Send to ERP', 'connect-ecommerce' );
 
 		echo '<br/><br/><div name="grao-sync-order" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncOrderERP(' . esc_html( $order_id );

@@ -46,8 +46,8 @@ class PROD {
 		}
 
 		// Translations.
-		$msg_product_created = __( 'Product created: ', 'connect-woocommerce' );
-		$msg_product_synced  = __( 'Product synced: ', 'connect-woocommerce' );
+		$msg_product_created = __( 'Product created: ', 'connect-ecommerce' );
+		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
 		if ( ! $is_filtered && $item['sku'] && 'simple' === $item_kind ) {
 			$result_post = self::sync_product_simple( $settings, $item, $option_prefix, $api_erp );
@@ -73,7 +73,7 @@ class PROD {
 				}
 			}
 			if ( false === $any_variant_sku ) {
-				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-woocommerce' ) . $item['name'] . '(' . $item_kind . ') <br/>';
+				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') <br/>';
 			} else {
 				// Update meta for product.
 				$result_prod = self::sync_product( $settings, $item, $option_prefix, $api_erp, $post_parent, 'variable', null );
@@ -109,24 +109,24 @@ class PROD {
 				return array(
 					'status'  => 'error',
 					'post_id' => $post_id,
-					'message' => __( 'There was an error while inserting new product!', 'connect-woocommerce' ) . ' ' . $item['name'],
+					'message' => __( 'There was an error while inserting new product!', 'connect-ecommerce' ) . ' ' . $item['name'],
 				);
 			}
 			$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item_kind . ')' . $result_prod['message'] ?? '';
 		} elseif ( ! $is_filtered && 'pack' === $item_kind && ! $plugin_pack_active ) {
-			$message .= '<span class="warning">' . __( 'Product needs Plugin to import: ', 'connect-woocommerce' );
+			$message .= '<span class="warning">' . __( 'Product needs Plugin to import: ', 'connect-ecommerce' );
 			$message .= '<a href="https://wordpress.org/plugins/woo-product-bundle/" target="_blank">WPC Product Bundles for WooCommerce</a> ';
 			$message .= '(' . $item_kind . ') </span>';
 		} elseif ( $is_filtered ) {
 			// Product not synced without SKU.
-			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-woocommerce' ) . $item['name'] . '(' . $item_kind . ') </span>';
+			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') </span>';
 		} elseif ( '' === $item['sku'] && 'simple' === $item_kind ) {
 			// Product not synced without SKU.
 			return array(
 				'status'  => 'error',
 				'post_id' => (int) $post_id,
 				'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-woocommerce' ) . $item['name'] . '(' . $item_kind . ')</br>',
+				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ')</br>',
 			);
 		} elseif ( 'simple' !== $item_kind ) {
 			// Product not synced type not supported.
@@ -134,7 +134,7 @@ class PROD {
 				'status'  => 'error',
 				'post_id' => (int) $post_id,
 				'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-				'message' => __( 'Product type not supported. Product not imported: ', 'connect-woocommerce' ) . $item['name'] . '(' . $item_kind . ')',
+				'message' => __( 'Product type not supported. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ')',
 			);
 		}
 
@@ -164,10 +164,10 @@ class PROD {
 					$seo_title = ! empty( $result_ai['data']['seo_title'] ) ? sanitize_text_field( $result_ai['data']['seo_title'] ) : '';
 					$seo_desc  = ! empty( $result_ai['data']['seo_description'] ) ? sanitize_text_field( $result_ai['data']['seo_description'] ) : '';
 					self::update_product_seo( $post_id, $seo_title, $seo_desc );
-					$message .= __( 'Generated AI: ', 'connect-woocommerce' );
+					$message .= __( 'Generated AI: ', 'connect-ecommerce' );
 					$message .= $result_ai['message'] ?? '';
 				} else {
-					$message .= '<span class="error">' . __( 'Error AI: ', 'connect-woocommerce' );
+					$message .= '<span class="error">' . __( 'Error AI: ', 'connect-ecommerce' );
 					$message .= $result_ai['error'] ?? '';
 					$message .= '</span>';
 				}
@@ -177,7 +177,7 @@ class PROD {
 		$tags     = ! empty( $item['tags'] ) ? $item['tags'] : array();
 		$tags     = array_filter( $tags );
 		$tags     = array_map( 'sanitize_text_field', $tags );
-		$message .= ! empty( $item['tags'] ) ? ' ' . __( 'Tags: ', 'connect-woocommerce' ) . implode( ', ', $item['tags'] ) : '';
+		$message .= ! empty( $item['tags'] ) ? ' ' . __( 'Tags: ', 'connect-ecommerce' ) . implode( ', ', $item['tags'] ) : '';
 		return array(
 			'status'  => $status,
 			'post_id' => (int) $post_id,
@@ -353,7 +353,7 @@ class PROD {
 
 		// Equivalence weight.
 		if ( ! empty( $settings['prod_weight_eq'] ) && ! empty( $item[ $settings['prod_weight_eq'] ] ) ) {
-			$product->update_meta_data( 'prod_weight_eq', $item[ $settings['prod_weight_eq'] ] );
+			$product->update_meta_data( 'conecom_prod_weight_eq', $item[ $settings['prod_weight_eq'] ] );
 		}
 
 		// Save ERP ID.
@@ -400,15 +400,15 @@ class PROD {
 		if ( $from_pack ) {
 			$message .= '<br/>';
 			if ( ! $post_id ) {
-				$message .= __( 'Subproduct created: ', 'connect-woocommerce' );
+				$message .= __( 'Subproduct created: ', 'connect-ecommerce' );
 			} else {
-				$message .= __( 'Subproduct synced: ', 'connect-woocommerce' );
+				$message .= __( 'Subproduct synced: ', 'connect-ecommerce' );
 			}
 		} else {
 			if ( ! $post_id ) {
-				$message .= __( 'Product created: ', 'connect-woocommerce' );
+				$message .= __( 'Product created: ', 'connect-ecommerce' );
 			} else {
-				$message .= __( 'Product synced: ', 'connect-woocommerce' );
+				$message .= __( 'Product synced: ', 'connect-ecommerce' );
 			}
 		}
 		$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item['kind'] . ')' . $result_prod['message'] ?? '';
@@ -469,7 +469,7 @@ class PROD {
 			}
 
 			if ( ! isset( $variant['categoryFields'] ) ) {
-				$message .= '<span class="error">' . __( 'Variation has no attributes: ', 'connect-woocommerce' ) . $item['name'] . '. Variant SKU: ' . $variant['sku'] . '(' . $item['kind'] . ') </span>';
+				$message .= '<span class="error">' . __( 'Variation has no attributes: ', 'connect-ecommerce' ) . $item['name'] . '. Variant SKU: ' . $variant['sku'] . '(' . $item['kind'] . ') </span>';
 				continue;
 			}
 			// Get all Attributes for the product.
@@ -528,7 +528,7 @@ class PROD {
 			if ( ! empty( $variation_prevent_id ) ) {
 				$message .= sprintf(
 					/* translators: %s: SKU */
-					__( 'Duplicated SKU: %s (not imported) ', 'connect-woocommerce' ),
+					__( 'Duplicated SKU: %s (not imported) ', 'connect-ecommerce' ),
 					$variant['sku']
 				);
 				continue;
@@ -805,7 +805,7 @@ class PROD {
 			add_post_meta( $product_id, '_thumbnail_id', $attach_id, true );
 
 			if ( isset( $body_response['errors'] ) ) {
-				$message = isset( $body_response['errors'][0]['message'] ) ? $body_response['errors'][0]['message'] : __( 'There was an error while inserting new product!', 'connect-woocommerce' );
+				$message = isset( $body_response['errors'][0]['message'] ) ? $body_response['errors'][0]['message'] : __( 'There was an error while inserting new product!', 'connect-ecommerce' );
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
@@ -847,10 +847,10 @@ class PROD {
 	 */
 	public static function get_all_product_fields() {
 		return array(
-			'prod|post_title'   => __( 'Product Title', 'connect-woocommerce' ),
-			'prod|post_content' => __( 'Product Description', 'connect-woocommerce' ),
-			'prod|post_excerpt' => __( 'Product Short Description', 'connect-woocommerce' ),
-			'prod|post_status'  => __( 'Product Publish Status', 'connect-woocommerce' ),
+			'prod|post_title'   => __( 'Product Title', 'connect-ecommerce' ),
+			'prod|post_content' => __( 'Product Description', 'connect-ecommerce' ),
+			'prod|post_excerpt' => __( 'Product Short Description', 'connect-ecommerce' ),
+			'prod|post_status'  => __( 'Product Publish Status', 'connect-ecommerce' ),
 		);
 	}
 

@@ -55,7 +55,7 @@ class License {
 	 */
 	public function add_settings_tab( $active_tab ) {
 		?>
-		<a href="?page=connect_ecommerce&tab=license" class="nav-tab <?php echo 'license' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'License', 'connect-woocommerce' ); ?></a>
+		<a href="?page=connect_ecommerce&tab=license" class="nav-tab <?php echo 'license' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'License', 'connect-ecommerce' ); ?></a>
 		<?php
 	}
 
@@ -76,7 +76,7 @@ class License {
 		do_settings_sections( 'connwoo_settings_admin_license' );
 		wp_nonce_field( 'Update_CONN_License_Options', 'wpauto_nonce' );
 		submit_button(
-			__( 'Save', 'connect-woocommerce' ),
+			__( 'Save', 'connect-ecommerce' ),
 			'primary',
 			'submit_license'
 		);
@@ -84,27 +84,27 @@ class License {
 
 		echo '</div>';
 		echo '<div class="settings">';
-		echo '<h2>' . esc_html__( 'What is the license for?', 'connect-woocommerce' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'What is the license for?', 'connect-ecommerce' ) . '</h2>';
 		echo '<p>';
 		$plugin_url = 'https://www.close.technology/wordpress-plugins/connect-woocommerce-' . strtolower( $this->options['name'] ) . '/';
 		echo sprintf(
 			// translators: %1$s Plugin URL %2$s Name of plugin.
-			__( 'With the <a href="%1$s" target="_blank">Connect WooCommerce for %2$s</a> license, you\'ll have updates and automatic fixes to what\'s new or change in your system, so you\'ll always have the latest functionalities for the plugin.', 'connect-woocommerce' ),
+			__( 'With the <a href="%1$s" target="_blank">Connect WooCommerce for %2$s</a> license, you\'ll have updates and automatic fixes to what\'s new or change in your system, so you\'ll always have the latest functionalities for the plugin.', 'connect-ecommerce' ),
 			esc_url( $plugin_url ),
 			esc_html( $this->options['name'] )
 		);
 		echo '</p>';
 		echo '</div><div class="help">';
-		echo '<h2>' . esc_html__( 'How do I get a license?', 'connect-woocommerce' ) . '</h2>';
+		echo '<h2>' . esc_html__( 'How do I get a license?', 'connect-ecommerce' ) . '</h2>';
 		echo '<p>';
 		echo sprintf(
 			// translators: %1$s Plugin URL %2$s Name of plugin.
-			__( 'Visit the <a href="%1$s" target="_blank">Connect WooCommerce for %2$s</a> page and purchase the licenses you need, depending on the number of WordPress MultiSites you\'re using.', 'connect-woocommerce' ),
+			__( 'Visit the <a href="%1$s" target="_blank">Connect WooCommerce for %2$s</a> page and purchase the licenses you need, depending on the number of WordPress MultiSites you\'re using.', 'connect-ecommerce' ),
 			esc_url( $plugin_url ),
 			esc_html( $this->options['name'] )
 		);
 		echo '</p>';
-		echo '<p style="color:#50575e;">' . esc_html__( 'Instance:', 'connect-woocommerce' ) . ' ' . esc_html( get_option( $this->options['slug'] . '_license_instance' ) ) . '</p>';
+		echo '<p style="color:#50575e;">' . esc_html__( 'Instance:', 'connect-ecommerce' ) . ' ' . esc_html( get_option( $this->options['slug'] . '_license_instance' ) ) . '</p>';
 		echo '</div></div>';
 	}
 
@@ -132,7 +132,7 @@ class License {
 		);
 		add_settings_field(
 			'connect_ecommerce_license_apikey',
-			__( 'License API Key', 'connect-woocommerce' ),
+			__( 'License API Key', 'connect-ecommerce' ),
 			array( $this, 'license_apikey_callback' ),
 			'connwoo_settings_admin_license',
 			'connect_woocommerce_license',
@@ -140,7 +140,7 @@ class License {
 
 		add_settings_field(
 			'connect_ecommerce_license_product_id',
-			__( 'License Product ID', 'connect-woocommerce' ),
+			__( 'License Product ID', 'connect-ecommerce' ),
 			array( $this, 'license_product_id_callback' ),
 			'connwoo_settings_admin_license',
 			'connect_woocommerce_license',
@@ -148,7 +148,7 @@ class License {
 
 		add_settings_field(
 			'connect_ecommerce_license_status',
-			__( 'License Status', 'connect-woocommerce' ),
+			__( 'License Status', 'connect-ecommerce' ),
 			array( $this, 'license_status_callback' ),
 			'connwoo_settings_admin_license',
 			'connect_woocommerce_license',
@@ -156,7 +156,7 @@ class License {
 
 		add_settings_field(
 			'connect_ecommerce_license_deactivate',
-			__( 'Deactivate License', 'connect-woocommerce' ),
+			__( 'Deactivate License', 'connect-ecommerce' ),
 			array( $this, 'license_deactivate_callback' ),
 			'connwoo_settings_admin_license',
 			'connect_woocommerce_license',
@@ -205,11 +205,11 @@ class License {
 		*/
 	public function license_status_callback() {
 		if ( $this->get_api_key_status( true ) ) {
-			$license_status_check = esc_html__( 'Activated', 'connect-woocommerce' );
+			$license_status_check = esc_html__( 'Activated', 'connect-ecommerce' );
 			update_option( $this->options['slug'] . '_license_activated', 'Activated' );
 			update_option( $this->options['slug'] . '_license_deactivate_checkbox', 'off' );
 		} else {
-			$license_status_check = esc_html__( 'Deactivated', 'connect-woocommerce' );
+			$license_status_check = esc_html__( 'Deactivated', 'connect-ecommerce' );
 		}
 
 		echo esc_attr( $license_status_check );
@@ -223,7 +223,7 @@ class License {
 		echo checked( get_option( $this->options['slug'] . '_license_deactivate_checkbox' ), 'on' );
 		echo '/>';
 		echo '<span class="description">';
-		esc_html_e( 'Deactivates License so it can be used on another site.', 'connect-woocommerce' );
+		esc_html_e( 'Deactivates License so it can be used on another site.', 'connect-ecommerce' );
 		echo '</span>';
 	}
 	/**
@@ -257,7 +257,7 @@ class License {
 					update_option( $this->options['slug'] . '_license_activated', 'Deactivated' );
 					update_option( $this->options['slug'] . '_license_apikey', '' );
 					update_option( $this->options['slug'] . '_license_product_id', '' );
-					add_settings_error( 'wc_am_deactivate_text', 'deactivate_msg', esc_html__( 'License Connect WooCommerce deactivated. ', 'connect-woocommerce' ) . esc_attr( "{$deactivation_result['activations_remaining']}." ), 'updated' );
+					add_settings_error( 'wc_am_deactivate_text', 'deactivate_msg', esc_html__( 'License Connect WooCommerce deactivated. ', 'connect-ecommerce' ) . esc_attr( "{$deactivation_result['activations_remaining']}." ), 'updated' );
 		
 					return;
 				}
@@ -285,7 +285,7 @@ class License {
 				$activate_results = json_decode( $activation_result, true );
 	
 				if ( true === $activate_results['success'] && true === $activate_results['activated'] ) {
-					add_settings_error( 'activate_text', 'activate_msg', __( 'Connect WooCommerce activated. ', 'connect-woocommerce' ) . esc_attr( "{$activate_results['message']}." ), 'updated' );
+					add_settings_error( 'activate_text', 'activate_msg', __( 'Connect WooCommerce activated. ', 'connect-ecommerce' ) . esc_attr( "{$activate_results['message']}." ), 'updated' );
 		
 					update_option( $this->options['slug'] . '_license_apikey', $api_key );
 					update_option( $this->options['slug'] . '_license_activated', 'Activated' );
@@ -293,7 +293,7 @@ class License {
 				}
 	
 				if ( false == $activate_results && ! empty( get_option( $this->options['slug'] . '_license_activated' ) ) ) {
-					add_settings_error( 'api_key_check_text', 'api_key_check_error', esc_html__( 'Connection failed to the License Key API server. Try again later. There may be a problem on your server preventing outgoing requests, or the store is blocking your request to activate the plugin/theme.', 'connect-woocommerce' ), 'error' );
+					add_settings_error( 'api_key_check_text', 'api_key_check_error', esc_html__( 'Connection failed to the License Key API server. Try again later. There may be a problem on your server preventing outgoing requests, or the store is blocking your request to activate the plugin/theme.', 'connect-ecommerce' ), 'error' );
 					update_option( $this->options['slug'] . '_license_activated', 'Deactivated' );
 				}
 	
@@ -302,7 +302,7 @@ class License {
 					update_option( $this->options['slug'] . '_license_activated', 'Deactivated' );
 				}
 			} else {
-				add_settings_error( 'not_activated_empty_response_text', 'not_activated_empty_response_error', esc_html__( 'The API Key activation could not be commpleted due to an unknown error possibly on the store server The activation results were empty.', 'connect-woocommerce' ), 'updated' );
+				add_settings_error( 'not_activated_empty_response_text', 'not_activated_empty_response_error', esc_html__( 'The API Key activation could not be commpleted due to an unknown error possibly on the store server The activation results were empty.', 'connect-ecommerce' ), 'updated' );
 			}
 		} // End Plugin Activation
 	}
@@ -315,7 +315,7 @@ class License {
 	 */
 	public function license_activate( $api_key ) {
 		if ( empty( $api_key ) ) {
-			add_settings_error( 'not_activated_text', 'not_activated_error', esc_html__( 'The API Key is missing from the deactivation request.', 'connect-woocommerce' ), 'updated' );		return '';
+			add_settings_error( 'not_activated_text', 'not_activated_error', esc_html__( 'The API Key is missing from the deactivation request.', 'connect-ecommerce' ), 'updated' );		return '';
 		}
 
 		$defaults            = $this->get_license_defaults( 'activate', true );
@@ -338,7 +338,7 @@ class License {
 		*/
 	public function license_deactivate( $args ) {
 		if ( empty( $args ) ) {
-			add_settings_error( 'not_deactivated_text', 'not_deactivated_error', esc_html__( 'The API Key is missing from the deactivation request.', 'connect-woocommerce' ), 'updated' );		return '';
+			add_settings_error( 'not_deactivated_text', 'not_deactivated_error', esc_html__( 'The API Key is missing from the deactivation request.', 'connect-ecommerce' ), 'updated' );		return '';
 		}
 
 		$defaults   = $this->get_license_defaults( 'deactivate' );
@@ -618,7 +618,7 @@ class License {
 						<?php
 						printf(
 							// translators: %1$s Name of library %2$s host %3$s Accesible hosts.
-							esc_html__( '<b>Warning!</b> You\'re blocking external requests which means you won\'t be able to get %1$s updates. Please add %2$s to %3$s.', 'connect-woocommerce' ),
+							esc_html__( '<b>Warning!</b> You\'re blocking external requests which means you won\'t be able to get %1$s updates. Please add %2$s to %3$s.', 'connect-ecommerce' ),
 							'Connect WooCommerce',
 							'<strong>' . esc_html( $host ) . '</strong>',
 							'<code>WP_ACCESSIBLE_HOSTS</code>'

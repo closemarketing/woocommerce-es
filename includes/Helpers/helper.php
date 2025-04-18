@@ -36,28 +36,28 @@ class HELPER {
 			return;
 		}
 		foreach ( $product_errors as $error ) {
-			$error_prod  = ' ' . __( 'Error:', 'connect-woocommerce' ) . $error['error'];
-			$error_prod .= ' ' . __( 'SKU:', 'connect-woocommerce' ) . $error['sku'];
-			$error_prod .= ' ' . __( 'Name:', 'connect-woocommerce' ) . $error['name'];
+			$error_prod  = ' ' . __( 'Error:', 'connect-ecommerce' ) . $error['error'];
+			$error_prod .= ' ' . __( 'SKU:', 'connect-ecommerce' ) . $error['sku'];
+			$error_prod .= ' ' . __( 'Name:', 'connect-ecommerce' ) . $error['name'];
 
 			if ( 'holded' === $option_name ) {
 				$error_prod .= ' <a href="https://app.holded.com/products/' . $error['prod_id'] . '">';
-				$error_prod .= __( 'Edit:', 'connect-woocommerce' ) . '</a>';
+				$error_prod .= __( 'Edit:', 'connect-ecommerce' ) . '</a>';
 			} else {
-				$error_prod .= ' ' . __( 'Prod ID:', 'connect-woocommerce' ) . $error['prod_id'];
+				$error_prod .= ' ' . __( 'Prod ID:', 'connect-ecommerce' ) . $error['prod_id'];
 			}
 			// Sends to WooCommerce Log.
 			$logger->warning(
 				$error_prod,
 				array(
-					'source' => 'connect-woocommerce',
+					'source' => 'connect-ecommerce',
 				),
 			);
 			$error_content .= $error_prod . '<br/>';
 		}
 		// Sends an email to admin.
 		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-		wp_mail( get_option( 'admin_email' ), __( 'Error in Products Synced in', 'connect-woocommerce' ) . ' ' . get_option( 'blogname' ), $error_content, $headers );
+		wp_mail( get_option( 'admin_email' ), __( 'Error in Products Synced in', 'connect-ecommerce' ) . ' ' . get_option( 'blogname' ), $error_content, $headers );
 	}
 	/**
 	 * Sends errors to admin

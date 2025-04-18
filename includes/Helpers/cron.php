@@ -107,7 +107,14 @@ class CRON {
 		global $wpdb;
 		$limit = isset( $settings['sync_num'] ) ? $settings['sync_num'] : 5;
 
-		$results = $wpdb->get_results( "SELECT prod_id FROM $table_sync WHERE synced = 0 LIMIT $limit", ARRAY_A );
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT prod_id FROM %i WHERE synced = 0 LIMIT %s',
+				$table_sync,
+				$limit
+			),
+			ARRAY_A
+		);
 
 		if ( ! empty( $results ) ) {
 			return $results;
@@ -129,7 +136,9 @@ class CRON {
 		if ( ! isset( $gid ) ) {
 			return false;
 		}
-		$results = $wpdb->get_row( "SELECT prod_id FROM $table_sync WHERE prod_id = '$gid'" );
+		$results = $wpdb->get_row(
+			$wpdb->prepare( 'SELECT prod_id FROM %i WHERE prod_id = %s', $table_sync, $gid )
+		);
 
 		if ( $results ) {
 			return true;
@@ -197,41 +206,41 @@ class CRON {
 		$total_count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync WHERE synced = 1" );
 
 		if ( $total_count > 0 && 'yes' === $send_email ) {
-			$subject = __( 'All products synced with ', 'connect-woocommerce' ) . $option_name;
+			$subject = __( 'All products synced with ', 'connect-ecommerce' ) . $option_name;
 			$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-			$body    = '<h2>' . __( 'All products synced with ', 'connect-woocommerce' ) . $option_name . '</h2> ';
-			$body   .= '<br/><strong>' . __( 'Total products:', 'connect-woocommerce' ) . '</strong> ';
+			$body    = '<h2>' . __( 'All products synced with ', 'connect-ecommerce' ) . $option_name . '</h2> ';
+			$body   .= '<br/><strong>' . __( 'Total products:', 'connect-ecommerce' ) . '</strong> ';
 			$body   .= $total_count;
 
 			$total_api_products = (int) get_option( $option_prefix . '_total_api_products' );
 			if ( $total_api_products || $total_count !== $total_api_products ) {
-				$body .= ' ' . esc_html__( 'filtered', 'connect-woocommerce' );
-				$body .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'connect-woocommerce' ) . ' )';
+				$body .= ' ' . esc_html__( 'filtered', 'connect-ecommerce' );
+				$body .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'connect-ecommerce' ) . ' )';
 			}
 
-			$body .= '<br/><strong>' . __( 'Time:', 'connect-woocommerce' ) . '</strong> ';
+			$body .= '<br/><strong>' . __( 'Time:', 'connect-ecommerce' ) . '</strong> ';
 			$body .= date_i18n( 'Y-m-d H:i', current_time( 'timestamp' ) );
 
 			$start_time = get_option( $option_prefix . '_sync_start_time' );
 			if ( $start_time ) {
-				$body .= '<br/><strong>' . __( 'Total Time:', 'connect-woocommerce' ) . '</strong> ';
+				$body .= '<br/><strong>' . __( 'Total Time:', 'connect-ecommerce' ) . '</strong> ';
 				$body .= round( ( strtotime( 'now' ) - $start_time ) / 60 / 60, 1 );
 				$body .= 'h';
 			}
 
 			$products_errors = get_option( $option_prefix . '_sync_errors' );
 			if ( false !== $products_errors && ! empty( $products_errors ) ) {
-				$body .= '<h2>' . __( 'Errors founded', 'connect-woocommerce' ) . '</h2>';
+				$body .= '<h2>' . __( 'Errors founded', 'connect-ecommerce' ) . '</h2>';
 
 				foreach ( $products_errors as $error ) {
 					$body .= '<br/><strong>' . $error['error'] . '</strong>';
-					$body .= '<br/><strong>' . __( 'Product id: ', 'connect-woocommerce' ) . '</strong>' . $error['id'];
+					$body .= '<br/><strong>' . __( 'Product id: ', 'connect-ecommerce' ) . '</strong>' . $error['id'];
 
 					if ( 'Holded' === $option_name ) {
-						$body .= ' <a href="https://app.holded.com/products/' . $error['id'] . '">' . __( 'View in Holded', 'connect-woocommerce' ) . '</a>';
+						$body .= ' <a href="https://app.holded.com/products/' . $error['id'] . '">' . __( 'View in Holded', 'connect-ecommerce' ) . '</a>';
 					}
-					$body .= '<br/><strong>' . __( 'Product name: ', 'connect-woocommerce' ) . '</strong>' . $error['name'];
-					$body .= '<br/><strong>' . __( 'Product sku: ', 'connect-woocommerce' ) . '</strong>' . $error['sku'];
+					$body .= '<br/><strong>' . __( 'Product name: ', 'connect-ecommerce' ) . '</strong>' . $error['name'];
+					$body .= '<br/><strong>' . __( 'Product sku: ', 'connect-ecommerce' ) . '</strong>' . $error['sku'];
 					$body .= '<br/>';
 				}
 			}

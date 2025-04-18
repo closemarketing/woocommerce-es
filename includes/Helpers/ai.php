@@ -88,21 +88,21 @@ class AI {
 		$product_info = isset( $item['full_info'] ) ? $item['full_info'] : $item;
 		$message      = '';
 
-		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'connect-woocommerce' ) . wp_json_encode( $product_info );
+		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'connect-ecommerce' ) . wp_json_encode( $product_info );
 		$language = get_locale();
 		$content .= PHP_EOL . sprintf(
 			/* translators: %s: language */
-			__( 'Please respond in %s language.', 'connect-woocommerce' ),
+			__( 'Please respond in %s language.', 'connect-ecommerce' ),
 			$language
 		);
-		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO and SEO description and export it in format JSON, with elements: title, body, seo_title, seo_description', 'connect-woocommerce' );
+		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO and SEO description and export it in format JSON, with elements: title, body, seo_title, seo_description', 'connect-ecommerce' );
 
 		$token = isset( $settings['token'] ) ? $settings['token'] : '';
 
 		if ( empty( $token ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => __( 'Error no credentials', 'connect-woocommerce' ),
+				'message' => __( 'Error no credentials', 'connect-ecommerce' ),
 			);
 		}
 
@@ -149,7 +149,7 @@ class AI {
 		if ( 200 !== $response_code ) {
 			return array(
 				'status'  => 0,
-				'message' => isset( $response['error']['message'] ) ? sanitize_text_field( $response['error']['message'] ) : __( 'Unknown error', 'connect-woocommerce' ),
+				'message' => isset( $response['error']['message'] ) ? sanitize_text_field( $response['error']['message'] ) : __( 'Unknown error', 'connect-ecommerce' ),
 			);
 		}
 		$content = array();
@@ -160,7 +160,7 @@ class AI {
 			if ( ! is_array( $content ) ) {
 				$content = array();
 			}
-			$message = __( 'Spent tokens: ', 'connect-woocommerce' ) . ( isset( $response['usage']['total_tokens'] ) ? $response['usage']['total_tokens'] : 0 );
+			$message = __( 'Spent tokens: ', 'connect-ecommerce' ) . ( isset( $response['usage']['total_tokens'] ) ? $response['usage']['total_tokens'] : 0 );
 		}
 
 		return array(

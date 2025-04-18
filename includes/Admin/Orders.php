@@ -63,9 +63,8 @@ class Orders {
 		$this->connapi_erp    = new $apiname( $options );
 		$ecstatus             = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
 		$this->meta_key_order = '_' . $this->options['slug'] . '_invoice_id';
-		$ajax_action          = $this->options['slug'] . '_sync_orders';
 
-		add_action( 'wp_ajax_' . $ajax_action, array( $this, 'sync_orders' ) );
+		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
 
 		if ( 'all' === $ecstatus ) {
 			add_action( 'woocommerce_order_status_pending', array( $this, 'send_order_erp' ) );
@@ -172,23 +171,23 @@ class Orders {
 					if ( $doing_ajax ) {
 						wp_send_json_error(
 							array(
-								'msg' => __( 'No orders to import', 'connect-woocommerce' ),
+								'msg' => __( 'No orders to import', 'connect-ecocommerce' ),
 							)
 						);
 					} else {
-						die( esc_html( __( 'No orders to import', 'connect-woocommerce' ) ) );
+						die( esc_html( __( 'No orders to import', 'connect-ecommerce' ) ) );
 					}
 				} else {
 					$ec_invoice_id = $order->get_meta( $this->meta_key_order );
 
 					if ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
-						$message .= __( 'Order already exported to API ID:', 'connect-woocommerce' ) . $ec_invoice_id;
+						$message .= __( 'Order already exported to API ID:', 'connect-ecommerce' ) . $ec_invoice_id;
 					} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
-						$message .= __( 'Free order not exported', 'connect-woocommerce' );
+						$message .= __( 'Free order not exported', 'connect-ecommerce' );
 					} else {
 						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
 
-						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'connect-woocommerce' ) : __( 'Order not created.', 'connect-woocommerce' );
+						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'connect-ecommerce' ) : __( 'Order not created.', 'connect-ecommerce' );
 						$message .= ' ' . $result['message'];
 					}
 				}
@@ -198,13 +197,13 @@ class Orders {
 
 					if ( $orders_synced <= $orders_count ) {
 						$order_date = gmdate( 'd-m-Y H:m', strtotime( $order->get_date_created() ) );
-						$message    = '[' . date_i18n( 'H:i:s' ) . '] ' . $orders_synced . '/' . $orders_count . ' ' . __( 'orders. ', 'connect-woocommerce' ) . ' ' . __( 'Created:', 'connect-woocommerce' ) . ' ' . $order_date . ' ' . $message;
+						$message    = '[' . date_i18n( 'H:i:s' ) . '] ' . $orders_synced . '/' . $orders_count . ' ' . __( 'orders. ', 'connect-ecommerce' ) . ' ' . __( 'Created:', 'connect-ecommerce' ) . ' ' . $order_date . ' ' . $message;
 						if ( $ec_invoice_id ) {
 							$link     = get_bloginfo( 'wpurl' ) . '/wp-admin/admin.php?page=wc-orders&id=' . $item['id'] . '&action=edit';
-							$message .= ' <a href="' . $link . '" target="_blank">' . __( 'View', 'connect-woocommerce' ) . '</a>';
+							$message .= ' <a href="' . $link . '" target="_blank">' . __( 'View', 'connect-ecommerce' ) . '</a>';
 						}
 						if ( $orders_synced == $orders_count ) {
-							$message .= '<p class="finish">' . __( 'All caught up!', 'connect-woocommerce' ) . '</p>';
+							$message .= '<p class="finish">' . __( 'All caught up!', 'connect-ecommerce' ) . '</p>';
 						}
 
 						$args = array(
@@ -219,11 +218,6 @@ class Orders {
 						} elseif ( $not_sapi_cli && $orders_synced < $orders_count ) {
 							$url  = home_url() . '/?sync=true';
 							$url .= '&syncLoop=' . ( $sync_loop + 1 );
-							?>
-							<script>
-								window.location.href = '<?php echo esc_url( $url ); ?>';
-							</script>
-							<?php
 							echo esc_html( $args['msg'] );
 							die( 0 );
 						}
@@ -231,9 +225,9 @@ class Orders {
 				}
 			} else {
 				if ( $doing_ajax ) {
-					wp_send_json_error( array( 'msg' => __( 'No orders to import', 'connect-woocommerce' ) ) );
+					wp_send_json_error( array( 'msg' => __( 'No orders to import', 'connect-ecommerce' ) ) );
 				} else {
-					die( esc_html( __( 'No orders to import', 'connect-woocommerce' ) ) );
+					die( esc_html( __( 'No orders to import', 'connect-ecommerce' ) ) );
 				}
 			}
 		}

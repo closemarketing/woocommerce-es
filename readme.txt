@@ -1,5 +1,5 @@
 === Connect Ecommerce ===
-Contributors: closemarketing, davidperez, sacrajaimez
+Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, ecommerce, woocommerce, connect woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
@@ -45,6 +45,17 @@ WordPress installation and then activate the Plugin from Plugins page.
 
 == Developers ==
 [Official Repository GitHub](https://github.com/closemarketing/connect-ecommerce)
+
+== External services ==
+
+This plugin connects to an API to make AI SEO descriptions and product information.
+
+It send the product information to the API and it returns the SEO description and product information.
+Services:
+- OpenAI: [Terms of use](https://openai.com/policies/row-terms-of-use/) and [Privact policy](https://openai.com/policies/row-privacy-policy/)
+- DeepSeek: [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-terms-of-use.html) and [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html)
+
+The connector base is to connect Clientify, an CRM Marketing Automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
 == Changelog ==
 
