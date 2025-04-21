@@ -53,7 +53,7 @@ class PROD {
 			$result_post = self::sync_product_simple( $settings, $item, $option_prefix, $api_erp );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
-		} elseif ( ! $is_filtered && 'variants' === $item_kind ) {
+		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
 			// Variable product.
 			// Check if any variants exists.
 			$post_parent = 0;

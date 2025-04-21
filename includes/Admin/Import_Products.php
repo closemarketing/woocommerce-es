@@ -258,7 +258,7 @@ class Import_Products {
 			}
 
 			// Get link to product.
-			if ( 0 < $sync_loop ) {
+			if ( 0 <= $sync_loop ) {
 				$res_message .= ' <a href="' . get_edit_post_link( $post_id ) . '" target="_blank">' . __( 'View', 'connect-ecommerce' ) . '</a>';
 			}
 		}
