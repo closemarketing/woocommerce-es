@@ -130,3 +130,26 @@ $products = [
 	]
 ];
 ```
+
+Variants:
+````
+$products['variants'][] = array(
+	'id'                    => ! empty( $item['codigo'] ) ? $item['codigo'] : '',
+	'name'                  => ! empty( $item['nombre'] ) ? $item['nombre'] : '',
+	'barcode'               => ! empty( $item['ean'] ) ? $item['ean'] : '',
+	'sku'                   => ! empty( $item['codigo'] ) ? $item['codigo'] : '',
+	'cf|accinox_codigo_a10' => ! empty( $item['codigo_a10'] ) ? $item['codigo_a10'] : '',
+	'categoryFields'        => [
+		[
+			'name'  => 'Acabado',
+			'value' => ! empty( $item['acabado'] ) ? $item['acabado'] : '',
+			'field' => ! empty( $item['acabado'] ) ? $item['acabado'] : '',
+		],
+		[
+			'name'  => 'Tamaño tubo',
+			'field' => ! empty( $item['tamano_tubo'] ) ? $item['tamano_tubo'] : '',
+			'value' => ! empty( $item['tamano_tubo'] ) ? $item['tamano_tubo'] : '',
+		],
+	],
+);
+```
