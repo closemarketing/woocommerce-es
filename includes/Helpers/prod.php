@@ -27,15 +27,14 @@ class PROD {
 	 * @param array  $settings Settings of the plugin.
 	 * @param array  $item Item from API.
 	 * @param object $api_erp API Object.
-	 * @param string $option_prefix Slug of the plugin.
 	 * @param bool   $generate_ai Force AI.
 	 * @return array
 	 */
-	public static function sync_product_item( $settings, $item, $api_erp, $option_prefix, $generate_ai = false ) {
+	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false ) {
 		$post_id        = 0;
 		$status         = 'ok';
 		$message        = '';
-		$is_filtered    = self::filter_product( $settings, $item, $option_prefix );
+		$is_filtered    = self::filter_product( $settings, $item );
 		$item_kind      = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
 		$is_new_product = self::find_product( $item['sku'] ) ? true : false;
 
@@ -50,7 +49,7 @@ class PROD {
 		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
 		if ( ! $is_filtered && $item['sku'] && 'simple' === $item_kind ) {
-			$result_post = self::sync_product_simple( $settings, $item, $option_prefix, $api_erp );
+			$result_post = self::sync_product_simple( $settings, $item, $api_erp );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
 		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
@@ -76,7 +75,7 @@ class PROD {
 				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') <br/>';
 			} else {
 				// Update meta for product.
-				$result_prod = self::sync_product( $settings, $item, $option_prefix, $api_erp, $post_parent, 'variable', null );
+				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_parent, 'variable', null );
 				$post_id     = $result_prod['prod_id'] ?? 0;
 				$message    .= 0 === $post_parent || false === $post_parent ? $msg_product_created : $msg_product_synced;
 				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item_kind . ') ' . $result_prod['message'] ?? '';
@@ -94,7 +93,7 @@ class PROD {
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
 					foreach ( $item['packItems'] as $pack_item ) {
 						$item_simple     = $api_erp->get_products( $pack_item['pid'] );
-						$product_pack_id = self::sync_product_simple( $settings, $item_simple, $option_prefix, $api_erp, true );
+						$product_pack_id = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
 						$pack_items     .= $product_pack_id . '/' . $pack_item['u'] . ',';
 						$message        .= ' x ' . $pack_item['u'];
 					}
@@ -103,7 +102,7 @@ class PROD {
 				}
 
 				// Update meta for product.
-				$result_prod = self::sync_product( $settings, $item, $option_prefix, $api_erp, $post_id, 'pack', $pack_items );
+				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'pack', $pack_items );
 				$post_id     = $result_prod['prod_id'] ?? 0;
 			} else {
 				return array(
@@ -140,7 +139,7 @@ class PROD {
 
 		if ( ( 'all' === $generate_ai && $post_id ) || ( 'new' === $generate_ai && $is_new_product && $post_id ) ) {
 			// Generate description with AI for product.
-			$settings_ai = get_option( $option_prefix . '_ai' );
+			$settings_ai = get_option( 'connect_ecommerce_ai' );
 			if ( ! empty( $settings_ai['provider'] ) ) {
 				$result_ai = AI::generate_description( $settings_ai, $item );
 				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
@@ -193,7 +192,6 @@ class PROD {
 	 *
 	 * @param object $settings Product settings.
 	 * @param object $item Item Object from ERP.
-	 * @param string $option_prefix Slug of the plugin.
 	 * @param object $api_erp API Object.
 	 * @param string $product_id Product ID. If is null, is new product.
 	 * @param string $type Type of the product.
@@ -201,7 +199,7 @@ class PROD {
 	 *
 	 * @return int $product_id Product ID.
 	 */
-	public static function sync_product( $settings, $item, $option_prefix, $api_erp, $product_id = 0, $type = 'simple', $pack_items = null ) {
+	public static function sync_product( $settings, $item, $api_erp, $product_id = 0, $type = 'simple', $pack_items = null ) {
 		$import_stock     = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
 		$is_virtual       = ! empty( $settings['virtual'] ) && 'yes' === $settings['virtual'] ? true : false;
 		$allow_backorders = ! empty( $settings['backorders'] ) ? $settings['backorders'] : 'yes';
@@ -303,12 +301,12 @@ class PROD {
 				}
 				break;
 			case 'variable':
-				$result_var    = self::sync_product_variable( $settings, $product, $item, $is_new_product, $rate_id, $option_prefix );
+				$result_var    = self::sync_product_variable( $settings, $product, $item, $is_new_product, $rate_id );
 				$product_props = ! empty( $result_var['props'] ) ? $result_var['props'] : array();
 				$message      .= ! empty( $result_var['message'] ) ? $result_var['message'] : '';
 				break;
 			case 'pack':
-				$product_props = self::sync_product_pack( $settings, $product, $item, $pack_items, $option_prefix );
+				$product_props = self::sync_product_pack( $settings, $product, $item, $pack_items );
 				break;
 		}
 
@@ -326,7 +324,7 @@ class PROD {
 		self::put_product_image( $settings, $item['id'], $product_id, $api_erp );
 
 		// Adds custom fields.
-		$settings_mergevars = get_option( $option_prefix . '_prod_mergevars' );
+		$settings_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
 		if ( ! empty( $settings_mergevars['prod_mergevars'] ) ) {
 			$product_info = array();
 			foreach ( $settings_mergevars['prod_mergevars'] as $custom_field ) {
@@ -357,7 +355,7 @@ class PROD {
 		}
 
 		// Save ERP ID.
-		$product->update_meta_data( $option_prefix . '_id', $item['id'] );
+		$product->update_meta_data( 'connect_ecommerce_id', $item['id'] );
 
 		// Set properties and save.
 		$product->set_props( $product_props );
@@ -378,13 +376,12 @@ class PROD {
 	 *
 	 * @param object  $settings Product settings.
 	 * @param array   $item Item from ERP.
-	 * @param string  $option_prefix Slug of the plugin.
 	 * @param object  $api_erp API Object.
 	 * @param boolean $from_pack Item is a pack.
 	 *
 	 * @return array
 	 */
-	private static function sync_product_simple( $settings, $item, $option_prefix, $api_erp, $from_pack = false ) {
+	private static function sync_product_simple( $settings, $item, $api_erp, $from_pack = false ) {
 		$message = '';
 		$post_id = self::find_product( $item['sku'] );
 		if ( ! $post_id ) {
@@ -394,7 +391,7 @@ class PROD {
 			wp_set_object_terms( $post_id, 'simple', 'product_type' );
 
 			// Update meta for product.
-			$result_prod = self::sync_product( $settings, $item, $option_prefix, $api_erp, $post_id, 'simple', null );
+			$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
 			$post_id     = $result_prod['prod_id'] ?? 0;
 		}
 		if ( $from_pack ) {
@@ -427,11 +424,10 @@ class PROD {
 	 * @param array   $item Item from API.
 	 * @param boolean $is_new_product Is new product?.
 	 * @param int     $rate_id Rate ID.
-	 * @param string  $option_prefix Slug of the plugin.
 	 *
 	 * @return array
 	 */
-	public static function sync_product_variable( $settings, $product, $item, $is_new_product, $rate_id, $option_prefix ) {
+	public static function sync_product_variable( $settings, $product, $item, $is_new_product, $rate_id ) {
 		$attributes      = array();
 		$attributes_prod = array();
 		$parent_sku      = $product->get_sku();
@@ -537,8 +533,7 @@ class PROD {
 				$variation->set_sku( $variant['sku'] );
 			}
 			$variation->save();
-			$key = '_' . $option_prefix . '_productid';
-			update_post_meta( $variation_id, $key, $variant['id'] );
+			update_post_meta( $variation_id, '_connect_ecommerce_productid', $variant['id'] );
 		}
 		$var_prop   = TAX::make_attributes( $attributes, true );
 		$data_store = $product->get_data_store();
@@ -590,11 +585,10 @@ class PROD {
 	 * @param object $product Product WooCommerce.
 	 * @param array  $item Item API.
 	 * @param string $pack_items String with ids.
-	 * @param string $option_prefix Slug of the plugin.
 	 *
 	 * @return void
 	 */
-	public static function sync_product_pack( $product, $item, $pack_items, $option_prefix ) {
+	public static function sync_product_pack( $product, $item, $pack_items ) {
 		$product_id = $product->get_id();
 
 		$wosb_metas = array(
@@ -615,8 +609,7 @@ class PROD {
 		foreach ( $wosb_metas as $key => $value ) {
 			update_post_meta( $product_id, $key, $value );
 		}
-		$prod_key = '_' . $option_prefix . '_productid';
-		update_post_meta( $product_id, $prod_key, $item['id'] );
+		update_post_meta( $product_id, '_connect_ecommerce_productid', $item['id'] );
 	}
 
 	/**
@@ -624,13 +617,12 @@ class PROD {
 	 *
 	 * @param  array  $settings Settings of the plugin.
 	 * @param  array  $item Item product to filter.
-	 * @param  string $option_prefix Slug of the plugin.
 	 *
 	 * @return boolean True to not get the product, false to get it.
 	 */
-	public static function filter_product( $settings, $item, $option_prefix ) {
+	public static function filter_product( $settings, $item ) {
 		// Filters by Merge vars.
-		$settings_mergevars = get_option( $option_prefix . '_prod_mergevars' );
+		$settings_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
 		if ( ! empty( $settings_mergevars['prod_mergevars'] ) ) {
 			$key = array_search( 'prod|post_status', $settings_mergevars['prod_mergevars'] );
 			if ( false !== $key ) {
