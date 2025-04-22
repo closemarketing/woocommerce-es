@@ -568,21 +568,23 @@ class Settings {
 				);
 			}
 
-			add_settings_field(
-				'wcpimh_freeorder',
-				__( 'Create document for free Orders?', 'connect-ecommerce' ),
-				array( $this, 'freeorder_callback' ),
-				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
-			);
+			if ( ! $this->is_disabled_orders ) {
+				add_settings_field(
+					'wcpimh_freeorder',
+					__( 'Create document for free Orders?', 'connect-ecommerce' ),
+					array( $this, 'freeorder_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
 
-			add_settings_field(
-				'wcpimh_ecstatus',
-				__( 'Status to sync Orders?', 'connect-ecommerce' ),
-				array( $this, 'ecstatus_callback' ),
-				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
-			);
+				add_settings_field(
+					'wcpimh_ecstatus',
+					__( 'Status to sync Orders?', 'connect-ecommerce' ),
+					array( $this, 'ecstatus_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
 			if ( ! empty( $this->options['order_tags'] ) ) {
 				add_settings_field(
