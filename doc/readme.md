@@ -121,7 +121,7 @@ $products = [
 			[
 				'id'    =>  slug of taxonomy that it will be filtered
 				'name'  => external ID of taxonomy
-				'value' => Value of the term in Taxonomy
+				'value' => Value of the term in Taxonomy (has to be unique)
 			]
 		]
     'categoryId' => 
@@ -134,21 +134,16 @@ $products = [
 Variants:
 ````
 $products['variants'][] = array(
-	'id'                    => ! empty( $item['codigo'] ) ? $item['codigo'] : '',
-	'name'                  => ! empty( $item['nombre'] ) ? $item['nombre'] : '',
-	'barcode'               => ! empty( $item['ean'] ) ? $item['ean'] : '',
-	'sku'                   => ! empty( $item['codigo'] ) ? $item['codigo'] : '',
-	'cf|accinox_codigo_a10' => ! empty( $item['codigo_a10'] ) ? $item['codigo_a10'] : '',
+	'id'                    => Internal ID
+	'name'                  => Name of the variation
+	'barcode'               => EAN Code
+	'sku'                   => SKU Name
+	'cf|namefield' => Name of field
 	'categoryFields'        => [
 		[
-			'name'  => 'Acabado',
-			'value' => ! empty( $item['acabado'] ) ? $item['acabado'] : '',
-			'field' => ! empty( $item['acabado'] ) ? $item['acabado'] : '',
-		],
-		[
-			'name'  => 'Tamaño tubo',
-			'field' => ! empty( $item['tamano_tubo'] ) ? $item['tamano_tubo'] : '',
-			'value' => ! empty( $item['tamano_tubo'] ) ? $item['tamano_tubo'] : '',
+			/* IMPORTANT THEY DON'T HAVE TO BE IN ATTRIBUTES */
+			'field' => Value of the variation
+			'name'  => Name of the term of variation
 		],
 	],
 );
