@@ -624,11 +624,10 @@ class Settings {
 			array( $this, 'section_automate' ),
 			'connect_ecommerce_automate'
 		);
-		$name_sync = __( 'When do you want to sync?', 'connect-ecommerce' );
 
 		add_settings_field(
 			'wcpimh_sync',
-			$name_sync,
+			__( 'When do you want to sync?', 'connect-ecommerce' ),
 			array( $this, 'sync_callback' ),
 			'connect_ecommerce_automate',
 			'connect_woocommerce_setting_automate'
@@ -912,6 +911,12 @@ class Settings {
 	 * @return void
 	 */
 	public function section_automate() {
+		?>
+		<input type="hidden" name="connect_ecommerce[connector]" value="<?php echo esc_attr( $this->connector ); ?>" />
+		<?php
+		if ( empty( $this->options['table_sync'] ) ) {
+			return;
+		}
 		global $wpdb;
 		$table_sync = $this->options['table_sync'];
 		HELPER::check_table_sync( $table_sync );
@@ -919,7 +924,7 @@ class Settings {
 		$total_count  = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync" );
 		$count_return = $count . ' / ' . $total_count;
 
-		$total_api_products = (int) get_option( $this->options['slug'] . '_total_api_products' );
+		$total_api_products = (int) get_option( 'connect_ecommerce_total_api_products' );
 		if ( $total_api_products || $total_count !== $total_api_products ) {
 			$count_return .= ' ' . esc_html__( 'filtered', 'connect-ecommerce' );
 			$count_return .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'connect-ecommerce' ) . ' )';
