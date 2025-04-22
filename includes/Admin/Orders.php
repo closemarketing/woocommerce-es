@@ -171,7 +171,7 @@ class Orders {
 					if ( $doing_ajax ) {
 						wp_send_json_error(
 							array(
-								'msg' => __( 'No orders to import', 'connect-ecocommerce' ),
+								'msg' => __( 'No orders to import', 'connect-ecommerce' ),
 							)
 						);
 					} else {

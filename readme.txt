@@ -10,7 +10,7 @@ Version: 3.0.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect Ecommerce with ERPs and CRMs. Products and Ordrs from ERP/CRM to WooCommerce.
+Connect Ecommerce with ERPs and CRMs. Products and Orders from ERP/CRM to WooCommerce.
 
 == Description ==
 
