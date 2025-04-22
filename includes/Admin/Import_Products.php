@@ -85,7 +85,7 @@ class Import_Products {
 		$this->options     = $options[ $connector ];
 		$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
 		$this->connapi_erp = new $apiname( $options );
-		$this->settings    = get_option( $this->options['slug'] );
+		$this->settings    = $settings_base[ $connector ] ?? array();
 		$this->sync_period = isset( $this->settings['sync'] ) ? strval( $this->settings['sync'] ) : 'no';
 
 		// Admin Styles.
