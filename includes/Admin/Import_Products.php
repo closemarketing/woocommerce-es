@@ -197,6 +197,7 @@ class Import_Products {
 		if ( ! session_id() ) {
 			session_start();
 		}
+		$page = 1;
 		if ( $api_pagination ) {
 			$loop_page = $sync_loop % $api_pagination;
 			$page      = intval( $sync_loop / $api_pagination, 0 );
