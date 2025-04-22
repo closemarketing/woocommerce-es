@@ -219,9 +219,12 @@ class PROD {
 		}
 		// Common and default properties.
 		$product_props     = array(
-			'stock_status'  => 'instock',
-			'backorders'    => $allow_backorders,
-			'regular_price' => isset( $item['price'] ) ? $item['price'] : null,
+			'stock_status'     => 'instock',
+			'backorders'       => $allow_backorders,
+			'regular_price'    => isset( $item['price'] ) ? $item['price'] : null,
+			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
+			'width'            => isset( $item['width'] ) ? $item['width'] : '',
+			'height'           => isset( $item['height'] ) ? $item['height'] : '',
 		);
 		$product_props_new = array();
 		if ( $is_new_product ) {
@@ -242,10 +245,6 @@ class PROD {
 				'stock_quantity'     => null,
 				'sold_individually'  => false,
 				'weight'             => $is_virtual ? '' : $item['weight'],
-				'length'             => isset( $item['lenght'] ) ? $item['lenght'] : '',
-				'width'              => isset( $item['width'] ) ? $item['width'] : '',
-				'height'             => isset( $item['height'] ) ? $item['height'] : '',
-				'barcode'            => isset( $item['barcode'] ) ? $item['barcode'] : '',
 				'upsell_ids'         => '',
 				'cross_sell_ids'     => '',
 				'parent_id'          => 0,
@@ -258,6 +257,10 @@ class PROD {
 				'gallery_image_ids'  => '',
 				'status'             => $post_status,
 			);
+		}
+
+		if ( isset( $item['barcode'] ) ) {
+			$product->set_global_unique_id( $item['barcode'] );
 		}
 
 		$product_props = array_merge( $product_props, $product_props_new );

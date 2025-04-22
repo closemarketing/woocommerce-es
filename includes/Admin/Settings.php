@@ -266,7 +266,7 @@ class Settings {
 			<?php	if ( 'public' === $active_tab ) { ?>
 				<form method="post" action="options.php">
 					<?php
-					settings_fields( $this->options['slug'] . '_settings_public' );
+					settings_fields( 'connect_ecommerce_settings_public' );
 					do_settings_sections( 'connect_ecommerce_public' );
 					submit_button(
 						__( 'Save public', 'connect-ecommerce' ),
@@ -298,7 +298,7 @@ class Settings {
 				?>
 				<form method="post" action="options.php">
 					<?php
-					settings_fields( $this->options['slug'] . '_settings_ai' );
+					settings_fields( 'connect_ecommerce_settings_ai' );
 					do_settings_sections( 'connect_ecommerce_ai' );
 					submit_button(
 						__( 'Save AI', 'connect-ecommerce' ),
