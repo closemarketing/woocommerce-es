@@ -117,6 +117,7 @@ $products = [
     'stock' => Number of units
     'barcode' => GTIN code
     'tags' => Array of tags
+		'cf|custom_namefield' => Custom Name of field
 		'attributes' => [
 			[
 				'id'    =>  slug of taxonomy that it will be filtered
@@ -138,7 +139,6 @@ $products['variants'][] = array(
 	'name'                  => Name of the variation
 	'barcode'               => EAN Code
 	'sku'                   => SKU Name
-	'cf|namefield' => Name of field
 	'categoryFields'        => [
 		[
 			/* IMPORTANT THEY DON'T HAVE TO BE IN ATTRIBUTES */

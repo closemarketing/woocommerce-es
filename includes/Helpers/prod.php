@@ -349,6 +349,13 @@ class PROD {
 			}
 		}
 
+		$custom_fields = self::get_item_custom_fields( $item );
+		if ( ! empty( $custom_fields ) ) {
+			foreach ( $custom_fields as $key => $value ) {
+				$product->update_meta_data( $key, $value );
+			}
+		}
+
 		// Equivalence weight.
 		if ( ! empty( $settings['prod_weight_eq'] ) && ! empty( $item[ $settings['prod_weight_eq'] ] ) ) {
 			$product->update_meta_data( 'conecom_prod_weight_eq', $item[ $settings['prod_weight_eq'] ] );
@@ -532,6 +539,14 @@ class PROD {
 			if ( $is_new_product ) {
 				$variation->set_sku( $variant['sku'] );
 			}
+
+			// Custom fields for variations.
+			$custom_fields = self::get_item_custom_fields( $variant );
+			if ( ! empty( $custom_fields ) ) {
+				foreach ( $custom_fields as $key => $value ) {
+					$variation->update_meta_data( $key, $value );
+				}
+			}
 			$variation->save();
 			update_post_meta( $variation_id, '_connect_ecommerce_productid', $variant['id'] );
 		}
@@ -676,6 +691,24 @@ class PROD {
 		}
 
 		return $post_id;
+	}
+
+	/**
+	 * Checks if product has custom fields.
+	 *
+	 * @param array $item Item from API.
+	 * @return array
+	 */
+	public static function get_item_custom_fields( $item ) {
+		$custom_fields = array();
+		foreach ( $item as $key => $value ) {
+			if ( 0 === strpos( $key, 'cf|' ) && ! empty( $value ) ) {
+				$custom_key                   = str_replace( 'cf|', '', $key );
+				$custom_key                   = sanitize_text_field( $custom_key );
+				$custom_fields[ $custom_key ] = $value;
+			}
+		}
+		return $custom_fields;
 	}
 
 	/**
