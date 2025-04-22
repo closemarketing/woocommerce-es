@@ -61,6 +61,7 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 = 3.0.0 =
 * Added AI Generate content for new products.
+* Added: Import EAN new WooCommerce code.
 * Added: Fix category separator.
 * Added: Filter by Producto SKU.
 * Added: Make downloable the invoice in My account.
