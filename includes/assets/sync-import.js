@@ -1,20 +1,20 @@
 function syncManualItems( element, action, loop = 0 ) {
 	element.classList.add('disabled');
-	element.innerHTML = ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
+	element.innerHTML = ConEcom_ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
 	const productAI = document.querySelector('select[name="connwoo-sync-product-ai"]')?.value || '';
 
 	const isOdd = number => number % 2 !== 0;
 	class_task = isOdd(loop) ? 'odd' : 'even';
 	
 	// AJAX request.
-	fetch( ajaxAction.url, {
+	fetch( ConEcom_ajaxAction.url, {
 		method: 'POST',
 		credentials: 'same-origin',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
 			'Cache-Control': 'no-cache',
 		},
-		body: 'action=' + action + '&nonce=' + ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI,
+		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI,
 	})
 	.then( (resp) => resp.json() )
 	.then( function(results) {
@@ -23,12 +23,12 @@ function syncManualItems( element, action, loop = 0 ) {
 				syncManualItems(element, action, results.data.loop );
 			} else {
 				element.classList.remove('disabled');
-				element.innerHTML = ajaxAction.label_sync;
-				results.data.message = results.data.message + ajaxAction.label_sync_complete;
+				element.innerHTML = ConEcom_ajaxAction.label_sync;
+				results.data.message = results.data.message + ConEcom_ajaxAction.label_sync_complete;
 			}
 		} else {
 			element.classList.remove('disabled');
-			element.innerHTML = ajaxAction.label_sync;
+			element.innerHTML = ConEcom_ajaxAction.label_sync;
 		}
 		// Message.
 		if ( results.data.message != undefined ){
@@ -45,24 +45,24 @@ function syncManualItems( element, action, loop = 0 ) {
 
 function syncProductERP( element, action, product_erp_id = 0, product_sku = '' ) {
 	element.classList.add('disabled');
-	element.innerHTML = ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
+	element.innerHTML = ConEcom_ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
 	const productAI = document.querySelector('input[name="connwoo-sync-product-ai"]')?.checked || '';
 
 	loop = -1;
 	// AJAX request.
-	fetch( ajaxAction.url, {
+	fetch( ConEcom_ajaxAction.url, {
 		method: 'POST',
 		credentials: 'same-origin',
 		headers: {
 			'Content-Type': 'application/x-www-form-urlencoded',
 			'Cache-Control': 'no-cache',
 		},
-		body: 'action=' + action + '&nonce=' + ajaxAction.nonce + '&loop=' + loop + '&product_erp_id=' + product_erp_id + '&product_sku=' + product_sku + '&product_ai=' + productAI,
+		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_erp_id=' + product_erp_id + '&product_sku=' + product_sku + '&product_ai=' + productAI,
 	})
 	.then( (resp) => resp.json() )
 	.then( function(results) {
 		element.classList.remove('disabled');
-		element.innerHTML = ajaxAction.label_sync;
+		element.innerHTML = ConEcom_ajaxAction.label_sync;
 
 		// Refresh the page
 		location.reload();

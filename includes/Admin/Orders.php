@@ -13,6 +13,7 @@ namespace CLOSE\ConnectEcommerce\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Helpers\ORDER;
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
 
 /**
  * Class Orders integration
@@ -122,6 +123,10 @@ class Orders {
 	 * @return void
 	 */
 	public function sync_orders() {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
 		$not_sapi_cli = substr( php_sapi_name(), 0, 3 ) !== 'cli' ? true : false;
 		$doing_ajax   = defined( 'DOING_AJAX' ) && DOING_AJAX;
 		$sync_loop    = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
@@ -149,6 +154,7 @@ class Orders {
 					);
 				}
 			}
+			$sync_orders = HELPER::sanitize_array_recursive( $sync_orders );
 			$_SESSION['sync_orders'] = $sync_orders;
 		} else {
 			$sync_orders = $_SESSION['sync_orders'];
@@ -322,22 +328,21 @@ class Orders {
 	 * @return void
 	 */
 	public function sync_erp_order() {
+		if ( ! check_ajax_referer( 'sync_erp_order_nonce', 'nonce' ) ) {
+			wp_send_json_error( array( 'error' => 'Error' ) );
+		}
 		$order_id = isset( $_POST['order_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['order_id'] ) ) : 0;
 		$type     = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
 
-		if ( check_ajax_referer( 'sync_erp_order_nonce', 'nonce' ) ) {
-			if ( 'erp-post' === $type ) {
-				$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true );
-			}
-			wp_send_json_success(
-				array(
-					'message'  => $result['message'],
-					'order_id' => $order_id,
-				)
-			);
-		} else {
-			wp_send_json_error( array( 'error' => 'Error' ) );
+		if ( 'erp-post' === $type ) {
+			$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true );
 		}
+		wp_send_json_success(
+			array(
+				'message'  => $result['message'],
+				'order_id' => $order_id,
+			)
+		);
 	}
 }
 

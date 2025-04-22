@@ -56,8 +56,6 @@ class Checkout {
 			add_filter( 'woocommerce_package_rates', array( $this, 'shipping_when_free_is_available' ), 100 );
 		}
 
-		add_action( 'woocommerce_before_checkout_form', array( $this, 'style' ), 5 );
-
 		$terms_registration = isset( $this->setttings_public['terms_registration'] ) ? $this->setttings_public['terms_registration'] : 'no';
 		if ( 'yes' === $terms_registration ) {
 			add_action( 'woocommerce_register_form', array( $this, 'add_terms_and_conditions_to_registration' ), 20 );
@@ -137,7 +135,7 @@ class Checkout {
 
 	public function add_billing_shipping_fields_admin( $fields ) {
 		$fields['vat'] = array(
-			'label' => apply_filters( 'vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
+			'label' => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
 		);
 
 		return $fields;
@@ -168,40 +166,18 @@ class Checkout {
 	public function add_vat_invoices( $address ) {
 		global $wpo_wcpdf;
 
-		echo $address . '<p>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		echo wp_kses( $address, array(
+			'p' => array(),
+			'strong' => array(),
+			'br' => array(),
+			'span' => array('class' => array()),
+			'div' => array('class' => array()),
+		) ) . '<p>';
 		$wpo_wcpdf->custom_field( 'billing_vat', __( 'VAT info:', 'connect-ecommerce' ) );
 		echo '</p>';
 	}
 
 	/* END EU VAT*/
-
-	function style() {
-		echo '<style>@media (min-width: 993px) {
-			/* WooCommerce */
-
-			.woocommerce-billing-fields #billing_company_field {
-				width: 100%;
-			}
-			.woocommerce-billing-fields #billing_phone_field,
-			.woocommerce-billing-fields #billing_country_field,
-			.woocommerce-billing-fields #billing_postcode_field {
-				float: left;
-				width: 49%;
-				clear: none;
-			}
-			.woocommerce-billing-fields #billing_city_field,
-			.woocommerce-billing-fields #billing_state_field {
-				float: right;
-				width: 48%;
-				clear: none;
-			}
-			.woocommerce-billing-fields .address-field .select2-selection {
-				padding: 10px 0;
-				height: 48px;
-			}
-		}</style>';
-	}
-
 
 	/**
 	 * Hide shipping rates when free shipping is available.
@@ -263,6 +239,4 @@ class Checkout {
 
 		return $validation_errors;
 	}
-
-
-} //from class
+}

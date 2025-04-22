@@ -189,7 +189,10 @@ class Settings {
 			<?php settings_errors(); ?>
 
 			<?php
-			$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'settings';
+			$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'sync_products';
+			if ( ! $this->connector ) {
+				$active_tab = 'settings';
+			}
 			?>
 			<h2 class="nav-tab-wrapper">
 				<?php
@@ -1679,7 +1682,7 @@ class Settings {
 	public function ai_prompt_callback() {
 		$prompt = isset( $this->settings_ai['prompt'] ) ? $this->settings_ai['prompt'] : __( 'Here is the information about a product. I need you to write a description for an online store, highlighting the main features. Don\'t use prices in the description.', 'connect-ecommerce' );
 		?>
-		<textarea class="regular-text" rows="5" style="width: 100%;" name="<?php echo esc_html( $this->options['slug'] ); ?>_ai[prompt]" id="wcpimh_prompt"><?php echo esc_textarea( $prompt ); ?></textarea>
+		<textarea class="regular-text" rows="5" style="width: 100%;" name="connect_ecommerce_ai[prompt]" id="wcpimh_prompt"><?php echo esc_textarea( $prompt ); ?></textarea>
 		<p><?php esc_html_e( 'After prompt, we add the format to retrieve the contact', 'connect-ecommerce' ); ?></p>
 		<?php
 	}
@@ -1741,7 +1744,7 @@ class Settings {
 	public function vat_show_callback() {
 		$vat_show = isset( $this->settings_public['vat_show'] ) ? $this->settings_public['vat_show'] : 'yes';
 		?>
-		<select name="<?php echo esc_html( $this->options['slug'] ); ?>_public[vat_show]" id="vat_show">
+		<select name="connect_ecommerce_public[vat_show]" id="vat_show">
 			<option value="no" <?php selected( $vat_show, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>		<option value="yes" <?php selected( $vat_show, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
@@ -1755,7 +1758,7 @@ class Settings {
 	public function vat_mandatory_callback() {
 		$vat_mandatory = isset( $this->settings_public['vat_mandatory'] ) ? $this->settings_public['vat_mandatory'] : 'no';
 		?>
-		<select name="<?php echo esc_html( $this->options['slug'] ); ?>_public[vat_mandatory]" id="vat_mandatory">
+		<select name="connect_ecommerce_public[vat_mandatory]" id="vat_mandatory">
 			<option value="no" <?php selected( $vat_mandatory, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>		<option value="yes" <?php selected( $vat_mandatory, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
@@ -1769,7 +1772,7 @@ class Settings {
 	public function company_field_callback() {
 		$company_field = isset( $this->settings_public['company_field'] ) ? $this->settings_public['company_field'] : 'no';
 		?>
-		<select name="<?php echo esc_html( $this->options['slug'] ); ?>_public[company_field]" id="company_field">
+		<select name="connect_ecommerce_public[company_field]" id="company_field">
 			<option value="no" <?php selected( $company_field, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>		<option value="yes" <?php selected( $company_field, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
@@ -1783,7 +1786,7 @@ class Settings {
 	public function terms_registration_callback() {
 		$terms_registration = isset( $this->settings_public['terms_registration'] ) ? $this->settings_public['terms_registration'] : 'no';
 		?>
-		<select name="<?php echo esc_html( $this->options['slug'] ); ?>_public[terms_registration]" id="terms_registration">
+		<select name="connect_ecommerce_public[terms_registration]" id="terms_registration">
 			<option value="no" <?php selected( $terms_registration, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>		<option value="yes" <?php selected( $terms_registration, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
@@ -1797,7 +1800,7 @@ class Settings {
 	public function remove_free_others_callback() {
 		$remove_free = isset( $this->settings_public['remove_free'] ) ? $this->settings_public['remove_free'] : 'yes';
 		?>
-		<select name="<?php echo esc_html( $this->options['slug'] ); ?>_public[remove_free]" id="remove_free">
+		<select name="connect_ecommerce_public[remove_free]" id="remove_free">
 			<option value="no" <?php selected( $remove_free, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>		<option value="yes" <?php selected( $remove_free, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php

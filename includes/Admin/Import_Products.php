@@ -120,7 +120,7 @@ class Import_Products {
 		);
 
 		wp_enqueue_script(
-			'connect-woocommerce-import',
+			'connect-ecommerce-import',
 			CONECOM_PLUGIN_URL . 'includes/assets/sync-import.js',
 			array(),
 			CONECOM_VERSION,
@@ -128,8 +128,8 @@ class Import_Products {
 		);
 
 		wp_localize_script(
-			'connect-woocommerce-import',
-			'ajaxAction',
+			'connect-ecommerce-import',
+			'ConEcom_ajaxAction',
 			array(
 				'url'                 => admin_url( 'admin-ajax.php' ),
 				'label_sync'          => __( 'Sync', 'connect-ecommerce' ),
@@ -150,7 +150,7 @@ class Import_Products {
 
 		wp_localize_script(
 			'cw-sync-order-widget',
-			'ajaxActionOrder',
+			'ConEcom_ajaxActionOrder',
 			array(
 				'url'           => admin_url( 'admin-ajax.php' ),
 				'label_syncing' => __( 'Syncing', 'connect-ecommerce' ),
@@ -166,6 +166,10 @@ class Import_Products {
 	 * @return void
 	 */
 	public function sync_products() {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
 		$sync_loop      = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$product_erp_id = isset( $_POST['product_erp_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_erp_id'] ) ) : '';
 		$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( wp_unslash( $_POST['product_sku'] ) ) : '';
@@ -173,10 +177,6 @@ class Import_Products {
 		$res_message    = '';
 		$generate_ai    = isset( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
 		$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
-
-		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce' ) ) {
-			wp_send_json_error( array( 'message' => 'Error' ) );
-		}
 
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {
@@ -205,6 +205,7 @@ class Import_Products {
 
 		if ( 0 === $sync_loop || ( $api_pagination && 0 === $loop_page ) ) {
 			$api_products             = $this->connapi_erp->get_products( null, $sync_loop );
+			$api_products             = HELPER::sanitize_array_recursive( $api_products );
 			$_SESSION['api_products'] = $api_products;
 			$res_message             .= __( 'Connecting with API...', 'connect-ecommerce' ) . '<br/>';
 		} elseif ( 0 < $sync_loop ) {

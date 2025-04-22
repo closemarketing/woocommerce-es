@@ -90,6 +90,26 @@ class HELPER {
 	}
 
 	/**
+	 * Sanitize array recursively
+	 *
+	 * @param array $array Array to sanitize.
+	 * @return array
+	 */
+	public static function sanitize_array_recursive( $array ) {
+		if ( ! is_array( $array ) ) {
+			return sanitize_text_field( $array );
+		}
+		foreach ( $array as $key => $value ) {
+			if ( is_array( $value ) ) {
+				$array[ $key ] = self::sanitize_array_recursive( $value );
+			} else {
+				$array[ $key ] = sanitize_text_field( $value );
+			}
+		}
+		return $array;
+	}
+
+	/**
 	 * Saves log in WooCommerce
 	 *
 	 * @param string $action Action to save.
