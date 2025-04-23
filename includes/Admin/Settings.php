@@ -117,6 +117,13 @@ class Settings {
 	private $settings_all;
 
 	/**
+	 * Settings slug
+	 *
+	 * @var string
+	 */
+	private $is_disabled_ai;
+
+	/**
 	 * Construct of class
 	 *
 	 * @param array $options Options.
@@ -130,10 +137,16 @@ class Settings {
 
 		if ( ! empty( $this->connector ) ) {
 			$this->options            = $options[ $this->connector ];
+			if ( empty( $this->options['name'] ) ) {
+				$this->settings_all['connector'] = '';
+				update_option( 'connect_ecommerce', $this->settings_all );
+				return;
+			}
 			$apiname                  = 'Connect_Ecommerce_' . $this->options['name'];
 			$this->connapi_erp        = new $apiname( $options );
 			$this->is_mergevars       = method_exists( $this->connapi_erp, 'get_product_attributes' ) ? true : false;
 			$this->is_disabled_orders = isset( $this->options['disable_modules'] ) && in_array( 'order', $this->options['disable_modules'], true ) ? true : false;
+			$this->is_disabled_ai     = isset( $this->options['disable_modules'] ) && in_array( 'ai', $this->options['disable_modules'], true ) ? true : false;
 		}
 
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
@@ -225,7 +238,7 @@ class Settings {
 				<a href="?page=connect_ecommerce&tab=settings" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'connect-ecommerce' ); ?></a>
 				<a href="?page=connect_ecommerce&tab=public" class="nav-tab <?php echo 'public' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Frontend Settings', 'connect-ecommerce' ); ?></a>
 				<?php
-				if ( $this->connector ) {
+				if ( ! $this->is_disabled_ai && $this->connector ) {
 					?>
 					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI', 'connect-ecommerce' ); ?></a>
 					<?php
@@ -807,14 +820,16 @@ class Settings {
 				</p>
 				<br/>
 				<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" <?php if ( false === $this->connapi_erp->check_can_sync() ) { echo ' disabled'; } ?>><?php esc_html_e( 'Start Import', 'connect-ecommerce' ); ?></div>
-				<p>
-				<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'connect-ecommerce' ); ?></label>
-				<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
-					<option value="none"><?php esc_html_e( 'None', 'connect-ecommerce' ); ?></option>
-					<option value="new"><?php esc_html_e( 'NEW Products', 'connect-ecommerce' ); ?></option>
-					<option value="all"><?php esc_html_e( 'ALL Products', 'connect-ecommerce' ); ?></option>
-				</select>
-				</p>
+				<?php if ( ! $this->is_disabled_ai ) { ?>
+					<p>
+					<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'connect-ecommerce' ); ?></label>
+					<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
+						<option value="none"><?php esc_html_e( 'None', 'connect-ecommerce' ); ?></option>
+						<option value="new"><?php esc_html_e( 'NEW Products', 'connect-ecommerce' ); ?></option>
+						<option value="all"><?php esc_html_e( 'ALL Products', 'connect-ecommerce' ); ?></option>
+					</select>
+					</p>
+				<?php } ?>
 			</div>
 			<fieldset id="logwrapper">
 				<legend><?php esc_html_e( 'Log', 'connect-ecommerce' ); ?></legend>
