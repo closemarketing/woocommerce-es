@@ -8,7 +8,6 @@ circle.yml
 .github
 composer.lock
 .wordpress-org
-includes/Admin/License.php
 doc/
 phpcs.xml.dist
 changelog.md
