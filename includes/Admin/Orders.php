@@ -154,10 +154,9 @@ class Orders {
 					);
 				}
 			}
-			$sync_orders = HELPER::sanitize_array_recursive( $sync_orders );
-			$_SESSION['sync_orders'] = $sync_orders;
+			$_SESSION['conecom_sync_orders'] = HELPER::sanitize_array_recursive( $sync_orders );
 		} else {
-			$sync_orders = $_SESSION['sync_orders'];
+			$sync_orders = HELPER::sanitize_array_recursive( $_SESSION['conecom_sync_orders'] );
 		}
 
 		if ( false === $sync_orders ) {
