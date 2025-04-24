@@ -613,13 +613,16 @@ class Settings {
 			}
 
 			if ( ! empty( $this->options['product_weight_equivalence'] ) ) {
-				add_settings_field(
-					'wcpimh_product_weight_equivalence',
-					__( 'Custom field for Equivalence with weight', 'connect-ecommerce' ),
-					array( $this, 'product_weight_equivalence_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-				);
+				$attribute_fields = $this->connapi_erp->get_product_attributes();
+				if ( ! empty( $attribute_fields ) ) {
+					add_settings_field(
+						'wcpimh_product_weight_equivalence',
+						__( 'Custom field for Equivalence with weight', 'connect-ecommerce' ),
+						array( $this, 'product_weight_equivalence_callback' ),
+						'connect_ecommerce_admin',
+						'connect_woocommerce_setting_section'
+					);
+				}
 			}
 			add_settings_field(
 				'wcpimh_debug_log',
@@ -810,31 +813,43 @@ class Settings {
 			<div class="sync-wrapper">
 				<h2>
 				<?php
-				sprintf(
+				echo sprintf(
 					esc_html__( 'Import Products from %s', 'connect-ecommerce' ),
 					esc_html( $this->options['name'] )
 				);
 				?>
 				</h2>
-				<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'connect-ecommerce' ); ?>
-				</p>
-				<br/>
-				<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" <?php if ( false === $this->connapi_erp->check_can_sync() ) { echo ' disabled'; } ?>><?php esc_html_e( 'Start Import', 'connect-ecommerce' ); ?></div>
-				<?php if ( ! $this->is_disabled_ai ) { ?>
+				<?php 
+				if ( empty( $this->connapi_erp->check_can_sync() ) ) {
+					?>
 					<p>
-					<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'connect-ecommerce' ); ?></label>
-					<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
-						<option value="none"><?php esc_html_e( 'None', 'connect-ecommerce' ); ?></option>
-						<option value="new"><?php esc_html_e( 'NEW Products', 'connect-ecommerce' ); ?></option>
-						<option value="all"><?php esc_html_e( 'ALL Products', 'connect-ecommerce' ); ?></option>
-					</select>
+						<?php esc_html_e( 'You need to set the API settings before importing products.', 'connect-ecommerce' ); ?>
 					</p>
-				<?php } ?>
-			</div>
-			<fieldset id="logwrapper">
-				<legend><?php esc_html_e( 'Log', 'connect-ecommerce' ); ?></legend>
-				<div id="loglist"></div>
-			</fieldset>
+					<?php
+				} else {
+				?>
+					<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'connect-ecommerce' ); ?>
+					</p>
+					<br/>
+					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" ><?php esc_html_e( 'Start Import', 'connect-ecommerce' ); ?></div>
+					<?php if ( ! $this->is_disabled_ai ) { ?>
+						<p>
+						<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'connect-ecommerce' ); ?></label>
+						<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
+							<option value="none"><?php esc_html_e( 'None', 'connect-ecommerce' ); ?></option>
+							<option value="new"><?php esc_html_e( 'NEW Products', 'connect-ecommerce' ); ?></option>
+							<option value="all"><?php esc_html_e( 'ALL Products', 'connect-ecommerce' ); ?></option>
+						</select>
+						</p>
+					<?php } ?>
+				</div>
+				<fieldset id="logwrapper">
+					<legend><?php esc_html_e( 'Log', 'connect-ecommerce' ); ?></legend>
+					<div id="loglist"></div>
+				</fieldset>
+				<?php
+				}
+				?>
 		</div>
 		<?php
 	}
