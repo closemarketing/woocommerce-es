@@ -206,10 +206,10 @@ class Import_Products {
 		if ( 0 === $sync_loop || ( $api_pagination && 0 === $loop_page ) ) {
 			$api_products             = $this->connapi_erp->get_products( null, $sync_loop );
 			$api_products             = HELPER::sanitize_array_recursive( $api_products );
-			$_SESSION['api_products'] = $api_products;
+			$_SESSION['conecom_api_products'] = $api_products;
 			$res_message             .= __( 'Connecting with API...', 'connect-ecommerce' ) . '<br/>';
 		} elseif ( 0 < $sync_loop ) {
-			$api_products = $_SESSION['api_products'] ?? array();
+			$api_products = $_SESSION['conecom_api_products'] ?? array();
 		}
 
 		if ( isset( $api_products['status'] ) && 'error' === $api_products['status'] ) {

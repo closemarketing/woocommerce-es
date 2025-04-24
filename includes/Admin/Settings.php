@@ -808,26 +808,39 @@ class Settings {
 	 */
 	public function page_get_sync( $type = 'sync_products' ) {
 		$ajax_action = 'connect_ecommerce_' . $type;
+		$login_api   = $this->connapi_erp->check_can_sync();
+		$can_sync    = false;
+		if ( is_array( $login_api ) ) {
+			$message  = $login_api['message'] ?? '';
+			$can_sync = 'ok' === $login_api['status'] ? true : false;
+		} else {
+			$can_sync = $login_api;
+			$message = $login_api ? '' : __( 'We couln\'t connect to the API', 'connect-ecommerce' );
+		}
 		?>
 		<div class="connwoo-sync-engine">
 			<div class="sync-wrapper">
-				<h2>
-				<?php
-				echo sprintf(
-					esc_html__( 'Import Products from %s', 'connect-ecommerce' ),
-					esc_html( $this->options['name'] )
-				);
-				?>
-				</h2>
 				<?php 
-				if ( empty( $this->connapi_erp->check_can_sync() ) ) {
+				if ( empty( $can_sync ) ) {
 					?>
-					<p>
-						<?php esc_html_e( 'You need to set the API settings before importing products.', 'connect-ecommerce' ); ?>
-					</p>
+					<div class="error notice">
+						<p>
+							<?php esc_html_e( 'You need to set the API settings before importing products.', 'connect-ecommerce' ); ?>
+							<br/>
+							<?php echo esc_html( $message ); ?>
+						</p>
+					</div>
 					<?php
 				} else {
 				?>
+					<h2>
+						<?php
+						echo sprintf(
+							esc_html__( 'Import Products from %s', 'connect-ecommerce' ),
+							esc_html( $this->options['name'] )
+						);
+						?>
+					</h2>
 					<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'connect-ecommerce' ); ?>
 					</p>
 					<br/>
