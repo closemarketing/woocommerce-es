@@ -203,7 +203,7 @@ class Settings {
 
 			<?php
 			$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'sync_products';
-			if ( ! $this->connector ) {
+			if ( ! isset( $_GET['tab'] ) && ! $this->connector ) {
 				$active_tab = 'settings';
 			}
 			?>
