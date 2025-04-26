@@ -1,4 +1,4 @@
-=== Connect Ecommerce ===
+=== Connect Ecommerce - Connect WooCommerce Shop to ERP/CRM ===
 Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, ecommerce, woocommerce, connect woocommerce
 Donate link: https://close.marketing/go/donate/
