@@ -124,8 +124,8 @@ class ORDER {
 		// State and Country.
 		$billing_country_code = $order->get_billing_country();
 		$billing_state_code   = $order->get_billing_state();
-		$billing_state        = WC()->countries->get_states( $billing_country_code )[ $billing_state_code ];
 		$order_description    = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
+		$billing_state        = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) ? WC()->countries->get_states( $billing_country_code )[ $billing_state_code ] : '';
 
 		/**
 		 * ## Fields
