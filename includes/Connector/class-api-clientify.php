@@ -153,6 +153,12 @@ class Connect_Ecommerce_Clientify {
 
 		while ( $next ) {
 			$result_api = wp_remote_request( $url, $args );
+			if ( is_wp_error( $result_api ) ) {
+				return [
+					'status' => 'error',
+					'data'   => null,
+				];
+			}
 			$results    = json_decode( wp_remote_retrieve_body( $result_api ), true );
 			$code       = isset( $result_api['response']['code'] ) ? (int) round( $result_api['response']['code'] / 100, 0 ) : 0;
 
