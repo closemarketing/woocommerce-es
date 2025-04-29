@@ -59,6 +59,11 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 == Changelog ==
 
+= 3.0.1 =
+* Minor fixes.
+* Added support different Vat order variables: _billing_vat, _billing_vat_number, _billing_nif.
+* Added suppport to [WC – APG Campo NIF/CIF/NIE](https://es.wordpress.org/plugins/wc-apg-nifcifnie-field/)
+
 = 3.0.0 =
 * Added AI Generate content for new products.
 * Added: Import EAN new WooCommerce code.

@@ -127,12 +127,20 @@ class ORDER {
 		$order_description    = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
 		$billing_state        = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) ? WC()->countries->get_states( $billing_country_code )[ $billing_state_code ] : '';
 
+		$contact_code = $order->get_meta( '_billing_vat' );
+		if ( empty( $contact_code ) ) {
+			$contact_code = $order->get_meta( '_billing_nif' );
+		}
+		if ( empty( $contact_code ) ) {
+			$contact_code = $order->get_meta( '_billing_vat_number' );
+		}
+
 		/**
 		 * ## Fields
 		 * --------------------------- */
 		$order_data = array(
 			'contactUserID'          => $order->get_user_id(),
-			'contactCode'            => $order->get_meta( '_billing_vat' ),
+			'contactCode'            => $contact_code,
 			'contactName'            => $contact_name,
 			'contactFirstName'       => $order->get_billing_first_name(),
 			'contactLastName'        => $order->get_billing_last_name(),
