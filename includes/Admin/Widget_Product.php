@@ -28,12 +28,25 @@ class Widget_Product {
 	private $options;
 
 	/**
+	 * Settings slug
+	 *
+	 * @var string
+	 */
+	private $is_disabled_ai;
+
+	/**
 	 * Construct of Class
 	 *
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options = array() ) {
-		$this->options = $options;
+		$settings_base = get_option( 'connect_ecommerce' );
+		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
+		if ( empty( $connector ) ) {
+			return;
+		}
+		$this->options        = $options[ $connector ];
+		$this->is_disabled_ai = isset( $this->options['disable_modules'] ) && in_array( 'ai', $this->options['disable_modules'], true ) ? true : false;
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_products' ) );
 	}
@@ -44,7 +57,7 @@ class Widget_Product {
 	 */
 	public function metabox_products() {
 		add_meta_box(
-			$this->options['slug'] . '-product-checker',
+			'connect-ecommerce-product-checker',
 			__( 'Connect with ', 'connect-ecommerce' ) . $this->options['name'],
 			array( $this, 'metabox_show_product' ),
 			'product',
@@ -77,9 +90,11 @@ class Widget_Product {
 		echo '</td>';
 		echo '</tr>';
 		echo '</table>';
-		echo '<input type="checkbox" name="connwoo-sync-product-ai" ';
-		echo 'id="connect_ecommerce_ai" ';
-		echo ' /><label for="connect_ecommerce_ai">';
-		echo esc_html__( 'Use AI to regenerate title, description and seo.', 'connect-ecommerce' ) . '</label>';
+		if ( ! $this->is_disabled_ai ) {
+			echo '<input type="checkbox" name="connwoo-sync-product-ai" ';
+			echo 'id="connect_ecommerce_ai" ';
+			echo ' /><label for="connect_ecommerce_ai">';
+			echo esc_html__( 'Use AI to regenerate title, description and seo.', 'connect-ecommerce' ) . '</label>';
+		}
 	}
 }
