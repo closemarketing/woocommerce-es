@@ -237,15 +237,13 @@ class Connect_Ecommerce_Clientify {
 	 *
 	 * @return array
 	 */
-	public function create_order( $order, $meta_key ) {
+	public function create_order( $order, $doc_id, $invoice_id, $force ) {
 		$api_key   = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
-		$order_id  = $order['woocommerceOrderId'] ?? 0;
-		$order_woo = wc_get_order( $order_id );
 
-		if ( empty( $order_woo ) ) {
+		if ( empty( $order ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => $order_id . ' ' . __( 'Error order not found in WooCommerce.', 'connect-ecommerce' ),
+				'message' => __( 'Error order not found in WooCommerce.', 'connect-ecommerce' ),
 			);
 		}
 
@@ -265,10 +263,10 @@ class Connect_Ecommerce_Clientify {
 					'type'        => 1,
 				),
 			),
-			'visitor_key' => $order_woo->get_meta( 'clientify_vk' ) ?? '',
+			'visitor_key' => $order['clientify_vk'] ?? '',
 		);
-		if ( $order_woo->get_billing_company() ) {
-			$clientify_contact['company'] = $order_woo->get_billing_company();
+		if ( ! empty( $order['contactCompany'] ) ) {
+			$clientify_contact['company'] = $order['contactCompany'];
 		}
 
 		if ( ! empty( $this->settings['order_tags'] ) ) {
@@ -277,21 +275,14 @@ class Connect_Ecommerce_Clientify {
 			$clientify_contact['tags'] = array();
 		}
 
-		// Calculates Prefix.
-		$shop_url  = get_bloginfo( 'url' );
-		$shop_host = parse_url( $shop_url, PHP_URL_HOST );
-		$shop_host = str_replace( 'www.', '', $shop_host );
-		$shop_tld  = end( explode( '.', $shop_host ) );
-		$prefix    = strtoupper( substr( $shop_host, 0, 3 ) . $shop_tld ) . '_';
-
 		// Order Clientify.
 		$order_clientify = array(
 			'status'     => 'ordered',
-			'order_date' => isset( $order['date'] ) ? gmdate( 'c', $order['date s'] ) : gmdate( 'c' ),
-			'order_id'   => $prefix . $order_id,
+			'order_date' => isset( $order['date'] ) ? gmdate( 'c', $order['date'] ) : gmdate( 'c' ),
+			'order_id'   => $order['woocommerceReference'] ?? $order['woocommerceOrderId'],
 			'ecommerce'  => 'WooCommerce',
 			'shop_name'  => get_bloginfo( 'name' ),
-			'order_url'  => $order_woo->get_edit_order_url(),
+			'order_url'  => $order['woocommerceOrderEdit'] ?? '',
 			'currency'   => $order['currency'] ?? 'EUR',
 		);
 
@@ -306,7 +297,7 @@ class Connect_Ecommerce_Clientify {
 				'image_url'   => $item['image_url'] ?? '',
 				'item_url'    => $item['permalink'] ?? '',
 				'price'       => $item['subtotal'] ?? 0,
-				'quantity'    => $order['units'] ?? 0,
+				'quantity'    => $item['units'] ?? 0,
 				'discount'    => 0,
 			);
 
@@ -324,7 +315,7 @@ class Connect_Ecommerce_Clientify {
 		if ( empty( $order_clientify['items'] ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => $order_id . ' ' . __( 'Error items not valid in the order.', 'connect-ecommerce' ),
+				'message' => $order['woocommerceOrderId'] . ' ' . __( 'Error items not valid in the order.', 'connect-ecommerce' ),
 			);
 		}
 
@@ -332,7 +323,6 @@ class Connect_Ecommerce_Clientify {
 		$result_clientify = $this->api( 'contacts/', $api_key, 'POST', $clientify_contact );
 		if ( 'error' === $result_clientify['status'] || ! isset( $result_clientify['data']['url'] ) ) {
 			$order_msg = __( 'Error creating the contact in Clientify', 'connect-ecommerce' );
-			$order_woo->add_order_note( $order_msg );
 			return array(
 				'status'  => 'error',
 				'message' => $order_msg,
