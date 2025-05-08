@@ -113,7 +113,7 @@ class ORDER {
 	private static function generate_order_data( $setttings, $order, $option_prefix ) {
 		$order_label_id = is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order->get_id() : $order->get_id();
 		$doclang        = $order->get_billing_country() !== 'ES' ? 'en' : 'es';
-		$url_test       = wc_get_endpoint_url( 'shop' );
+		$shop_url       = wc_get_endpoint_url( 'shop' );
 
 		if ( empty( $order->get_billing_company() ) ) {
 			$contact_name = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
@@ -124,15 +124,28 @@ class ORDER {
 		// State and Country.
 		$billing_country_code = $order->get_billing_country();
 		$billing_state_code   = $order->get_billing_state();
-		$billing_state        = WC()->countries->get_states( $billing_country_code )[ $billing_state_code ];
 		$order_description    = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
+		$billing_state        = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) ? WC()->countries->get_states( $billing_country_code )[ $billing_state_code ] : '';
+
+		$contact_code = $order->get_meta( '_billing_vat' );
+		if ( empty( $contact_code ) ) {
+			$contact_code = $order->get_meta( '_billing_nif' );
+		}
+		if ( empty( $contact_code ) ) {
+			$contact_code = $order->get_meta( '_billing_vat_number' );
+		}
+
+		// Order Reference.
+		$base_domain = basename( sanitize_text_field( $_SERVER['HTTP_HOST'] ) );
+		$base_domain = str_replace( 'www.', '', $base_domain );
+		$prefix      = $base_domain . '_';
 
 		/**
 		 * ## Fields
 		 * --------------------------- */
 		$order_data = array(
 			'contactUserID'          => $order->get_user_id(),
-			'contactCode'            => $order->get_meta( '_billing_vat' ),
+			'contactCode'            => $contact_code,
 			'contactName'            => $contact_name,
 			'contactFirstName'       => $order->get_billing_first_name(),
 			'contactLastName'        => $order->get_billing_last_name(),
@@ -140,7 +153,9 @@ class ORDER {
 			'marketplace'            => 'woocommerce',
 			'woocommerceOrderStatus' => $order->get_status(),
 			'woocommerceOrderId'     => $order_label_id,
-			'woocommerceUrl'         => $url_test,
+			'woocommerceReference'   => $prefix . $order_label_id,
+			'woocommerceUrl'         => $shop_url,
+			'woocommerceOrderEdit'   => $order->get_edit_order_url(),
 			'woocommerceStore'       => get_bloginfo( 'name', 'display' ),
 			'contactEmail'           => $order->get_billing_email(),
 			'contactCompany'         => $order->get_billing_company(),
@@ -159,11 +174,6 @@ class ORDER {
 			'language'               => $doclang,
 			'pmtype'                 => null,
 			'items'                  => array(),
-			'shippingAddress'        => $order->get_shipping_address_1() ? $order->get_shipping_address_1() . ',' . $order->get_shipping_address_2() : '',
-			'shippingPostalCode'     => $order->get_shipping_postcode(),
-			'shippingCity'           => $order->get_shipping_city(),
-			'shippingProvince'       => $order->get_shipping_state(),
-			'shippingCountry'        => $order->get_shipping_country(),
 		);
 
 		// DesignID.
@@ -176,6 +186,12 @@ class ORDER {
 		$series_number = isset( $setttings['series'] ) ? $setttings['series'] : '';
 		if ( ! empty( $series_number ) && 'default' !== $series_number ) {
 			$order_data['numSerieId'] = $series_number;
+		}
+
+		// Visitor Key.
+		$visitor_key = isset( $setttings['clientify_vk'] ) ? $setttings['clientify_vk'] : '';
+		if ( ! empty( $visitor_key ) ) {
+			$order_data['clientify_vk'] = $visitor_key;
 		}
 
 		$wc_payment_method    = $order->get_payment_method();
@@ -197,7 +213,22 @@ class ORDER {
 				$order_data['notes'] .= __( 'Paid by', 'connect-ecommerce' ) . ' ' . (string) $wc_payment_method;
 				break;
 		}
-		$order_data['items'] = self::review_items( $order, $option_prefix );
+		$result_items = self::review_items( $order, $option_prefix );
+		$order_data['items'] = $result_items['items'];
+
+		// Add shipping if products not virtual.
+		if ( ! $result_items['has_virtual'] ) {
+			$order_data = array_merge(
+				$order_data,
+				array(
+					'shippingAddress'    => $order->get_shipping_address_1() ? $order->get_shipping_address_1() . ',' . $order->get_shipping_address_2() : '',
+					'shippingPostalCode' => $order->get_shipping_postcode(),
+					'shippingCity'       => $order->get_shipping_city(),
+					'shippingProvince'   => $order->get_shipping_state(),
+					'shippingCountry'    => $order->get_shipping_country(),
+				)
+			);
+		}
 
 		return $order_data;
 	}
@@ -215,6 +246,7 @@ class ORDER {
 		$fields_items = array();
 		$index        = 0;
 		$index_bund   = 0;
+		$has_virtual	= true;
 		$tax          = new \WC_Tax();
 
 		$coupons         = $order->get_items( 'coupon' );
@@ -235,6 +267,10 @@ class ORDER {
 		foreach ( $order->get_items() as $item_id => $item ) {
 			$product    = $item->get_product();
 			$product_id = ! empty( $product ) ? $product->get_id() : 0;
+
+			if ( $product && ! $product->is_virtual() ) {
+				$has_virtual = false;
+			}
 
 			if ( ! empty( $product ) && $product->is_type( 'woosb' ) ) {
 				$woosb_ids   = get_post_meta( $item['product_id'], 'woosb_ids', true );
@@ -277,7 +313,6 @@ class ORDER {
 					$fields_items[ $index_bund ]['tax']      = round( $vat_per, 0 );
 				}
 			} else {
-				$product    = $item->get_product();
 				$item_qty   = (int) $item->get_quantity();
 				$price_line = $item->get_subtotal() / $item_qty;
 
@@ -355,6 +390,9 @@ class ORDER {
 			}
 		}
 
-		return $fields_items;
+		return [
+			'items'      => $fields_items,
+			'has_virtual' => $has_virtual,
+		];
 	}
 }

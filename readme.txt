@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.0
 Tested up to: 6.8
-Stable tag: 3.0.0
-Version: 3.0.0
+Stable tag: 3.0.1
+Version: 3.0.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,13 @@ Services:
 The connector base is to connect Clientify, an CRM Marketing Automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
 == Changelog ==
+
+= 3.0.1 =
+* Minor fixes.
+* Fixed: Some errors in Clientify connector.
+* Fixed: Don't add shipping details if all products are virtual.
+* Added support different Vat order variables: _billing_vat, _billing_vat_number, _billing_nif.
+* Added suppport to [WC – APG Campo NIF/CIF/NIE](https://es.wordpress.org/plugins/wc-apg-nifcifnie-field/)
 
 = 3.0.0 =
 * Added AI Generate content for new products.
