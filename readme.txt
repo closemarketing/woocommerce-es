@@ -46,6 +46,11 @@ WordPress installation and then activate the Plugin from Plugins page.
 == Developers ==
 [Official Repository GitHub](https://github.com/closemarketing/connect-ecommerce)
 
+You can use WP CLI to import products from the command line. The command is:
+```
+wp conecom products --update --ai=none,new,all
+```
+
 == External services ==
 
 This plugin connects to an API to make AI SEO descriptions and product information.
@@ -58,6 +63,9 @@ Services:
 The connector base is to connect Clientify, an CRM Marketing Automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
 == Changelog ==
+
+= 3.1.0 =
+* Added: WP CLI command to import products.
 
 = 3.0.1 =
 * Minor fixes.
