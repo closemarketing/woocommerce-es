@@ -25,19 +25,13 @@ define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
 
-add_action( 'init', 'conecom_loads' );
-/**
- * Connect WooCommerce loads.
- *
- * @return void
- */
-function conecom_loads() {
-	/**
+function conecom_get_options() {
+		/**
 	 * Default values
 	 */
 	global $wpdb;
 
-	$conecom_options = apply_filters(
+	return apply_filters(
 		'conecom_options_plugin',
 		[
 			'clientify' => [
@@ -113,9 +107,36 @@ function conecom_loads() {
 			],
 		]
 	);
+}
 
+
+
+add_action( 'init', 'conecom_loads' );
+/**
+ * Connect WooCommerce loads.
+ *
+ * @return void
+ */
+function conecom_loads() {
 	require_once CONECOM_PLUGIN_PATH . 'includes/Plugin_Main.php';
 	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-clientify.php';
 
+	$conecom_options = conecom_get_options();
 	new CLOSE\ConnectEcommerce\Base( $conecom_options );
+}
+
+if ( defined( 'WP_CLI' ) && WP_CLI ) {
+	require_once CONECOM_PLUGIN_PATH . 'includes/CLI/Import_Products_Command.php';
+
+	/**
+	 * Registers our command when cli get's initialized.
+	 *
+	 * @since  1.0.0
+	 * @author David Perez
+	 */
+	function conecom_import_products_register_commands() {
+		WP_CLI::add_command('conecom', 'Import_Products_Command' );
+	}
+
+	add_action( 'cli_init', 'conecom_import_products_register_commands', 20 );
 }
