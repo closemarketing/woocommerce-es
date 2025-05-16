@@ -96,7 +96,7 @@ class ORDER {
 			);
 		}
 		if ( $is_debug_log ) {
-			HELPER::save_log( 'create_order', $order_data, $result, $option_prefix );
+			HELPER::save_log( 'create_order', $order_data, $result );
 		}
 		return $result;
 	}

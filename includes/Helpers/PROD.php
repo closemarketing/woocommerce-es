@@ -328,7 +328,7 @@ class PROD {
 		}
 
 		// Imports image.
-		self::put_product_image( $settings, $item['id'], $product_id, $api_erp );
+		self::put_product_images( $settings, $item, $product_id, $api_erp );
 
 		// Adds custom fields.
 		$settings_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
@@ -819,38 +819,63 @@ class PROD {
 	/**
 	 * Gets image from API products
 	 *
-	 * @param string $item_id Id of API to get information.
+	 * @param string $item Item of API to get information.
 	 * @param string $product_id Id of product to get information.
 	 * @param object $api_erp API Object.
 	 *
-	 * @return array Array of products imported via API.
+	 * @return void
 	 */
-	public static function put_product_image( $settings, $item_id, $product_id, $api_erp ) {
+	public static function put_product_images( $settings, $item, $product_id, $api_erp ) {
 		// Don't import if there is thumbnail.
 		if ( has_post_thumbnail( $product_id ) ) {
 			return false;
 		}
 
-		$result_api = $api_erp->get_image_product( $settings, $item_id, $product_id );
-
-		if ( isset( $result_api['upload']['url'] ) ) {
-			$attachment = array(
-				'guid'           => $result_api['upload']['url'],
-				'post_mime_type' => $result_api['content_type'],
-				'post_title'     => get_the_title( $product_id ),
-				'post_content'   => '',
-				'post_status'    => 'inherit',
-			);
-			$attach_id  = wp_insert_attachment( $attachment, $result_api['upload']['file'], 0 );
-			add_post_meta( $product_id, '_thumbnail_id', $attach_id, true );
+		$images = array();
+		if ( ! empty( $item['images'] ) ) {
+			$images = $item['images'] ?? array();
+		} else {
+			// Ask API for image.
+			$result_api = $api_erp->get_image_product( $settings, $item['id'], $product_id );
 
 			if ( isset( $body_response['errors'] ) ) {
 				$message = isset( $body_response['errors'][0]['message'] ) ? $body_response['errors'][0]['message'] : __( 'There was an error while inserting new product!', 'connect-ecommerce' );
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
+			if ( isset( $result_api['upload']['url'] ) ){
+				$images[] = [
+					'url'          => $result_api['upload']['url'],
+					'content_type' => $result_api['content_type'],
+				];
+			}
+		}
 
-			return $attach_id;
+		if ( empty( $images ) ) {
+			return;
+		}
+
+		$first_image = true;
+		foreach ( $images as $image ) {
+			$attachment = array(
+				'guid'           => $image['url'] ?? '',
+				'post_mime_type' => $image['content_type'] ?? '',
+				'post_title'     => $image['title'] ?? get_the_title( $product_id ),
+				'post_content'   => $image['content'] ?? '',
+				'post_status'    => 'inherit',
+			);
+			$attach_id  = wp_insert_attachment( $attachment, $result_api['upload']['file'], 0 );
+
+			if ( $first_image ) {
+				$first_image = false;
+				// Set the product image.
+				add_post_meta( $product_id, '_thumbnail_id', $attach_id, true );
+			} else {
+				// Add the image to the product gallery.
+				$gallery = get_post_meta( $product_id, '_product_image_gallery', true );
+				$gallery = $gallery ? $gallery . ',' . $attach_id : $attach_id;
+				update_post_meta( $product_id, '_product_image_gallery', $gallery );
+			}
 		}
 	}
 

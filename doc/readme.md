@@ -128,6 +128,13 @@ $products = [
     'categoryId' => 
     'factoryCode' => 
 		'full_info'   => all information that brings API for IA.
+		'images' => [
+			[
+				'url' => URL of the image,
+				'title'   => Title of image,
+				'content' => Content of image,
+				'content_type' => Content type from image,
+			],
 	]
 ];
 ```
@@ -146,5 +153,11 @@ $products['variants'][] = array(
 			'name'  => Name of the term of variation
 		],
 	],
+	'image' => [
+		'url' => URL of the image,
+		'title'   => Title of image,
+		'content' => Content of image,
+		'content_type' => Content type from image,
+	]
 );
 ```

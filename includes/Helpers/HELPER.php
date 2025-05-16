@@ -115,18 +115,17 @@ class HELPER {
 	 * @param string $action Action to save.
 	 * @param array  $source_data Source data.
 	 * @param array  $result Result of action.
-	 * @param string $option_prefix Prefix of option.
 	 *
 	 * @return void
 	 */
-	public static function save_log( $action, $source_data, $result, $option_prefix ) {
+	public static function save_log( $action, $source_data, $result ) {
 		$logger      = wc_get_logger();
 		$source_data = is_array( $source_data ) ? $source_data : array( $source_data );
 		$result      = is_array( $result ) ? $result : array( $result );
 		$message     = $action . ': ' . wp_json_encode( $source_data );
 		$message_res = 'result: ' . wp_json_encode( $result );
-		$logger->debug( $message, array( 'source' => $option_prefix ) );
-		$logger->debug( $message_res, array( 'source' => $option_prefix ) );
+		$logger->debug( $message, array( 'source' => 'connect_ecommerce' ) );
+		$logger->debug( $message_res, array( 'source' => 'connect_ecommerce' ) );
 	}
 
 	/**
