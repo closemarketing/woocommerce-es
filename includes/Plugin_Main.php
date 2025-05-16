@@ -27,11 +27,19 @@ use CLOSE\ConnectEcommerce\Public\MyAccount;
 class Base {
 
 	/**
+	 * Options of plugin.
+	 *
+	 * @var array
+	 */
+	private $options = array();
+
+	/**
 	 * Construct of class
 	 *
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options = array() ) {
+		$this->options = $options;
 		if ( is_admin() ) {
 			new Settings( $options );
 			new Import_Products( $options );
@@ -42,5 +50,14 @@ class Base {
 		new Orders( $options );
 		new Checkout( $options );
 		new MyAccount( $options );
+	}
+
+	/**
+	 * Get options of plugin.
+	 *
+	 * @return array
+	 */
+	public function get_options( ) {
+		return $this->options;
 	}
 }
