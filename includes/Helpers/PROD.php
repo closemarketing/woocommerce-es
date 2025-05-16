@@ -259,7 +259,7 @@ class PROD {
 			);
 		}
 
-		if ( isset( $item['barcode'] ) ) {
+		if ( ! empty( $item['barcode'] ) ) {
 			$product->set_global_unique_id( $item['barcode'] );
 		}
 
@@ -521,6 +521,9 @@ class PROD {
 				$variation_props     = array_merge( $variation_props, $variation_props_new );
 			}
 			$variation = new \WC_Product_Variation( $variation_id );
+			if ( ! empty( $variant['barcode'] ) ) {
+				$variation->set_global_unique_id( $variant['barcode'] );
+			}
 			$variation->set_props( $variation_props );
 			// Stock.
 			if ( ! empty( $variant['stock'] ) ) {
