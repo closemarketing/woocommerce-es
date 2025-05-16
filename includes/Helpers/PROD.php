@@ -226,6 +226,10 @@ class PROD {
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
 		);
+		$price_sale = self::get_sale_price( $item, $settings );
+		if ( ! empty( $price_sale ) ) {
+			$product_props['sale_price'] = $price_sale;
+		}
 		$product_props_new = array();
 		if ( $is_new_product ) {
 			$product_props_new = array(
@@ -505,6 +509,11 @@ class PROD {
 				'attributes'    => $attributes_prod,
 				'regular_price' => $variation_price,
 			);
+
+			$price_sale = self::get_sale_price( $variant, $settings );
+			if ( ! empty( $price_sale ) ) {
+				$variation_props['sale_price'] = $price_sale;
+			}
 			if ( 0 === $variation_id ) {
 				// New variation.
 				$variation_props_new = array(
@@ -956,6 +965,27 @@ class PROD {
 			if ( ! empty( $seo_desc ) ) {
 				update_post_meta( $product_id, '_autodescription_description', $seo_desc );
 			}
+		}
+	}
+
+	/**
+	 * Get sale price from item
+	 *
+	 * @param array $item Item from API.
+	 * @param array $settings Settings of the plugin.
+	 *
+	 * @return string
+	 */
+	private static function get_sale_price( $item, $settings ) {
+		$pricesale_discount = (float) $settings['pricesale_discount'] ?? 0;
+		if ( empty( $pricesale_discount ) || empty( $item['price'] ) ) {
+			return '';
+		}
+		$price_sale = $item['price'] - ( $item['price'] * ( $pricesale_discount / 100 ) );
+		if ( $price_sale > 0 ) {
+			return number_format( $price_sale, 2, '.', '' );
+		} else {
+			return '';
 		}
 	}
 }
