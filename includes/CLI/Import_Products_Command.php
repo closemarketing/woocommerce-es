@@ -88,7 +88,7 @@ class Import_Products_Command {
 				$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $options['slug'], $generate_ai );
 
 				$sync_loop   = $page * $api_pagination + $key;
-				$message = '[' . $sync_loop . '/' . $products_count . '/' . $page . '] ';
+				$message = '[' . $sync_loop + 1 . '/' . $products_count . '/' . $page . '] ';
 				$message .= $result_sync['status'] . ' ';
 				$message .= wp_strip_all_tags($result_sync['message']);
 				$message .= ! empty( $result_sync['post_id'] ) ? ' POSTID: ' . $result_sync['post_id'] : '';
