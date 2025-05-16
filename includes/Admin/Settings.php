@@ -544,6 +544,14 @@ class Settings {
 				);
 			}
 
+			add_settings_field(
+				'wcpimh_tax_option',
+				__( 'Percentage to Make a discount from prices and save in sale price?', 'connect-ecommerce' ),
+				array( $this, 'pricesale_discount_option_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+
 			if ( $this->options['product_price_rate_option'] ) {
 				$desc_tip     = __( 'Copy and paste the ID of the rates for publishing in the web', 'connect-ecommerce' );
 				add_settings_field(
@@ -919,6 +927,7 @@ class Settings {
 				'catsep'         => '',
 				'catattr'        => '',
 				'filter'         => '',
+				'pricesale_discount' => '',
 				'filter_sku'     => '',
 				'tax_option'     => 'no',
 				'rates'          => 'default',
@@ -1264,6 +1273,18 @@ class Settings {
 			<option value="no" <?php selected( $tax_price, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
+	}
+
+	/**
+	 * Percentage price discount
+	 *
+	 * @return void
+	 */
+	public function pricesale_discount_option_callback() {
+		printf(
+			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][pricesale_discount]" id="wcpimh_pricesale_discount" value="%s" style="width:60px">%%',
+			isset( $this->settings['pricesale_discount'] ) ? esc_attr( $this->settings['pricesale_discount'] ) : ''
+		);
 	}
 
 	/**
