@@ -83,11 +83,11 @@ function syncProductERP( element, action, product_erp_id = 0, product_sku = '', 
 			}
 		}
 
-		// Reload the page after 10 seconds if the sync was successful
+		// Reload the page after 8 seconds if the sync was successful
 		if (results.success) {
 			setTimeout(() => {
 				window.location.reload();
-			}, 10000);
+			}, 8000);
 		}
 	})
 	.catch(err => console.log(err));
