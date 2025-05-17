@@ -227,8 +227,8 @@ class TAX {
 		$term_level_index = 1;
 
 		foreach ( $terms as $term ) {
-			$term = self::sanitize_text( $term );
-			$search_term   = term_exists( $term, $taxonomy_slug );
+			$term        = self::sanitize_text( $term );
+			$search_term = term_exists( $term, $taxonomy_slug );
 
 			if ( 0 === $search_term || null === $search_term ) {
 				// Creates taxonomy.
@@ -244,12 +244,15 @@ class TAX {
 					$args_term
 				);
 			}
-			if ( $term_level_index === $term_levels ) {
-				wp_set_object_terms( $post_id, (int) $search_term['term_id'], $taxonomy_slug );
+			
+			// Check if term was found or created successfully
+			if ( ! is_wp_error( $search_term ) && $term_level_index === $term_levels ) {
+				$term_id = isset( $search_term['term_id'] ) ? (int) $search_term['term_id'] : (int) $search_term;
+				wp_set_object_terms( $post_id, $term_id, $taxonomy_slug );
 			}
 
 			// Next iteration for child.
-			$parent_term = $search_term['term_id'];
+			$parent_term = (int) $search_term['term_id'];
 			$term_level_index++;
 		}
 	}
@@ -262,7 +265,7 @@ class TAX {
 	 */
 	private static function sanitize_text( $text ) {
 		$text = str_replace( '>', '&gt;', $text );
-		return $text;
+		return sanitize_text_field( $text );
 	}
 
 	/**
