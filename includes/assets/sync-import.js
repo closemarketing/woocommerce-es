@@ -64,8 +64,31 @@ function syncProductERP( element, action, product_erp_id = 0, product_sku = '', 
 		element.classList.remove('disabled');
 		element.innerHTML = ConEcom_ajaxAction.label_sync;
 
-		// Refresh the page
-		location.reload();
+		console.log(results.data);
+		// Message handling
+		if (results.data.message !== undefined) {
+			const aiInput = document.querySelector('#connect_ecommerce_ai');
+			if (aiInput) {
+				const aiLabel = aiInput.closest('label');
+				const aiMessage = document.createElement('div');
+				aiMessage.className = 'ai-message';
+				aiMessage.innerHTML = results.data.message;
+				
+				const targetElement = aiLabel || aiInput;
+				if (targetElement.nextSibling) {
+					targetElement.parentNode.insertBefore(aiMessage, targetElement.nextSibling);
+				} else {
+					targetElement.parentNode.appendChild(aiMessage);
+				}
+			}
+		}
+
+		// Reload the page after 10 seconds if the sync was successful
+		if (results.success) {
+			setTimeout(() => {
+				window.location.reload();
+			}, 10000);
+		}
 	})
 	.catch(err => console.log(err));
 }

@@ -177,6 +177,7 @@ class Import_Products {
 		$message        = '';
 		$res_message    = '';
 		$generate_ai    = ! empty( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
+		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
 		$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
 
 		// Action for one product.

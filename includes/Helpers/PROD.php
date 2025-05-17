@@ -173,7 +173,7 @@ class PROD {
 					$message .= $result_ai['message'] ?? '';
 				} else {
 					$message .= '<span class="error">' . __( 'Error AI: ', 'connect-ecommerce' );
-					$message .= $result_ai['error'] ?? '';
+					$message .= $result_ai['message'] ?? '';
 					$message .= '</span>';
 				}
 			}
