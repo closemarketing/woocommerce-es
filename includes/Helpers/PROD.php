@@ -769,7 +769,6 @@ class PROD {
 	 */
 	public static function find_parent_product( $sku ) {
 		$post_id_var = self::find_product( $sku, 'product_variation' );
-		$post_id = wc_get_product_id_by_sku( $sku );
 
 		if ( $post_id_var ) {
 			$post_parent = wp_get_post_parent_id( (int) $post_id_var );
