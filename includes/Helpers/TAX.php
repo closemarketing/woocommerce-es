@@ -217,28 +217,29 @@ class TAX {
 	 *
 	 * @param string $post_id Post id of actual post id.
 	 * @param array  $taxonomy_slug Slug of taxonomy.
-	 * @param array  $category_array Array of category.
+	 * @param array|string  $terms Array of terms.
 	 * @return void
 	 */
-	private static function assign_product_term( $post_id, $taxonomy_slug, $category_array ) {
+	public static function assign_product_term( $post_id, $taxonomy_slug, $terms ) {
 		$parent_term      = '';
-		$term_levels      = count( $category_array );
+		$terms						= is_array( $terms ) ? $terms : array( $terms );
+		$term_levels      = count( $terms );
 		$term_level_index = 1;
 
-		foreach ( $category_array as $category_name ) {
-			$category_name = self::sanitize_text( $category_name );
-			$search_term   = term_exists( $category_name, $taxonomy_slug );
+		foreach ( $terms as $term ) {
+			$term = self::sanitize_text( $term );
+			$search_term   = term_exists( $term, $taxonomy_slug );
 
 			if ( 0 === $search_term || null === $search_term ) {
 				// Creates taxonomy.
 				$args_term = array(
-					'slug' => sanitize_title( $category_name ),
+					'slug' => sanitize_title( $term ),
 				);
 				if ( $parent_term ) {
 					$args_term['parent'] = $parent_term;
 				}
 				$search_term = wp_insert_term(
-					$category_name,
+					$term,
 					$taxonomy_slug,
 					$args_term
 				);

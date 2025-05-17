@@ -317,13 +317,23 @@ class PROD {
 				break;
 		}
 
-		// Set categories.
+		// Set attributes.
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
 		$item_type  = array_search( $attribute_cat_id, array_column( $attributes, 'id', 'value' ) );
 		if ( $item_type ) {
 			$categories_ids = TAX::get_categories_ids( $settings, $item_type, $is_new_product );
 			if ( ! empty( $categories_ids ) ) {
 				$product_props['category_ids'] = $categories_ids;
+			}
+		}
+
+		// Set taxonomies.
+		if ( ! empty( $item['taxonomies'] ) && is_array( $item['taxonomies'] ) ) {
+			foreach ( $item['taxonomies'] as $taxonomy ) {
+				if ( empty( $taxonomy['id'] ) || empty( $taxonomy['value'] ) ) {
+					continue;
+				}
+				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'] );
 			}
 		}
 

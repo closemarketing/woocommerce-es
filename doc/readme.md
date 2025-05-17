@@ -125,6 +125,12 @@ $products = [
 				'value' => Value of the term in Taxonomy (has to be unique)
 			]
 		]
+		'taxonomies' => [
+			[
+				'name'  => slug of taxonomy that it will be attached
+				'value' => Value of the term in Taxonomy (has to be unique)
+			]
+		]
     'categoryId' => 
     'factoryCode' => 
 		'full_info'   => all information that brings API for IA.
