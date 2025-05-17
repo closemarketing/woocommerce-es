@@ -28,15 +28,19 @@ class PROD {
 	 * @param array  $item Item from API.
 	 * @param object $api_erp API Object.
 	 * @param bool   $generate_ai Force AI.
+	 * @param int    $post_id Post ID when it comes forced.
 	 * @return array
 	 */
-	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false ) {
-		$post_id        = 0;
+	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
 		$status         = 'ok';
 		$message        = '';
 		$is_filtered    = self::filter_product( $settings, $item );
 		$item_kind      = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
-		$is_new_product = self::find_product( $item['sku'] ) ? true : false;
+		$is_new_product = $post_id ? false : true;
+
+		if ( empty( $post_id ) ) {
+			$is_new_product = self::find_product( $item['sku'] ) ? true : false;
+		}
 
 		if ( in_array( 'woo-product-bundle/wpc-product-bundles.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
 			$plugin_pack_active = true;
@@ -49,39 +53,41 @@ class PROD {
 		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
 		if ( ! $is_filtered && $item['sku'] && 'simple' === $item_kind ) {
-			$result_post = self::sync_product_simple( $settings, $item, $api_erp );
+			$result_post = self::sync_product_simple( $settings, $item, $api_erp, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
 		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
 			// Variable product.
 			// Check if any variants exists.
-			$post_parent = 0;
-			// Activar para buscar un archivo.
-			$any_variant_sku = false;
-
-			foreach ( $item['variants'] as $variant ) {
-				if ( ! $variant['sku'] ) {
-					break;
-				} else {
-					$any_variant_sku = true;
-				}
-				$post_parent = self::find_parent_product( $variant['sku'] );
-				if ( $post_parent ) {
-					// Do not iterate if it's find it.
-					break;
+			if ( ! $post_id ) {
+				$post_id = 0;
+				// Activar para buscar un archivo.
+				$any_variant_sku = false;
+	
+				foreach ( $item['variants'] as $variant ) {
+					if ( ! $variant['sku'] ) {
+						break;
+					} else {
+						$any_variant_sku = true;
+					}
+					$post_id = self::find_parent_product( $variant['sku'] );
+					if ( $post_id ) {
+						// Do not iterate if it's find it.
+						break;
+					}
 				}
 			}
 			if ( false === $any_variant_sku ) {
 				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') <br/>';
 			} else {
 				// Update meta for product.
-				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_parent, 'variable', null );
+				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'variable', null );
 				$post_id     = $result_prod['prod_id'] ?? 0;
-				$message    .= 0 === $post_parent || false === $post_parent ? $msg_product_created : $msg_product_synced;
+				$message    .= 0 === $post_id || false === $post_id ? $msg_product_created : $msg_product_synced;
 				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item_kind . ') ' . $result_prod['message'] ?? '';
 			}
 		} elseif ( ! $is_filtered && 'pack' === $item_kind && $plugin_pack_active ) {
-			$post_id = self::find_product( $item['sku'] );
+			$post_id = ! empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
 
 			if ( ! $post_id ) {
 				$post_id = self::create_product_post( $settings, $item );
@@ -264,7 +270,11 @@ class PROD {
 		}
 
 		if ( ! empty( $item['barcode'] ) ) {
-			$product->set_global_unique_id( $item['barcode'] );
+			try {
+				$product->set_global_unique_id( $item['barcode'] );
+			} catch ( \Exception $e ) {
+				// Error.
+			}
 		}
 
 		$product_props = array_merge( $product_props, $product_props_new );
@@ -324,16 +334,6 @@ class PROD {
 			$categories_ids = TAX::get_categories_ids( $settings, $item_type, $is_new_product );
 			if ( ! empty( $categories_ids ) ) {
 				$product_props['category_ids'] = $categories_ids;
-			}
-		}
-
-		// Set taxonomies.
-		if ( ! empty( $item['taxonomies'] ) && is_array( $item['taxonomies'] ) ) {
-			foreach ( $item['taxonomies'] as $taxonomy ) {
-				if ( empty( $taxonomy['id'] ) || empty( $taxonomy['value'] ) ) {
-					continue;
-				}
-				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'] );
 			}
 		}
 
@@ -402,12 +402,13 @@ class PROD {
 	 * @param array   $item Item from ERP.
 	 * @param object  $api_erp API Object.
 	 * @param boolean $from_pack Item is a pack.
+	 * @param integer $post_id Post ID.
 	 *
 	 * @return array
 	 */
-	private static function sync_product_simple( $settings, $item, $api_erp, $from_pack = false ) {
+	private static function sync_product_simple( $settings, $item, $api_erp, $from_pack = false, $post_id = 0 ) {
 		$message = '';
-		$post_id = self::find_product( $item['sku'] );
+		$post_id = empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
 		if ( ! $post_id ) {
 			$post_id = self::create_product_post( $settings, $item );
 		}
@@ -417,6 +418,9 @@ class PROD {
 			// Update meta for product.
 			$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
 			$post_id     = $result_prod['prod_id'] ?? 0;
+
+			// Add custom taxonomies.
+			self::add_custom_taxonomies( $post_id, $item );
 		}
 		if ( $from_pack ) {
 			$message .= '<br/>';
@@ -469,6 +473,9 @@ class PROD {
 				$variations_item[ $child_id ] = $variation_children->get_sku();
 			}
 		}
+
+		// Add custom taxonomies.
+		self::add_custom_taxonomies( $product_id, $item );
 
 		// Remove variations without SKU blank.
 		if ( ! empty( $variations_item ) ) {
@@ -541,7 +548,11 @@ class PROD {
 			}
 			$variation = new \WC_Product_Variation( $variation_id );
 			if ( ! empty( $variant['barcode'] ) ) {
-				$variation->set_global_unique_id( $variant['barcode'] );
+				try {
+					$variation->set_global_unique_id( $item['barcode'] );
+				} catch ( \Exception $e ) {
+					// Error.
+				}
 			}
 			$variation->set_props( $variation_props );
 			// Stock.
@@ -742,9 +753,8 @@ class PROD {
 	 * @param string $sku SKU of product.
 	 * @return string $product_id Products id.
 	 */
-	public static function find_product( $sku ) {
+	public static function find_product( $sku, $post_type = 'product' ) {
 		global $wpdb;
-		$post_type    = 'product';
 		$meta_key     = '_sku';
 		$result_query = $wpdb->get_var( $wpdb->prepare( "SELECT P.ID FROM $wpdb->posts AS P LEFT JOIN $wpdb->postmeta AS PM ON PM.post_id = P.ID WHERE P.post_type = '$post_type' AND PM.meta_key='$meta_key' AND PM.meta_value=%s AND P.post_status != 'trash' LIMIT 1", $sku ) );
 
@@ -758,11 +768,11 @@ class PROD {
 	 * @return string $product_id Products id.
 	 */
 	public static function find_parent_product( $sku ) {
-		global $wpdb;
-		$post_id_var = $wpdb->get_var( $wpdb->prepare( "SELECT post_id FROM $wpdb->postmeta WHERE meta_key='_sku' AND meta_value=%s LIMIT 1", $sku ) );
+		$post_id_var = self::find_product( $sku, 'product_variation' );
+		$post_id = wc_get_product_id_by_sku( $sku );
 
 		if ( $post_id_var ) {
-			$post_parent = wp_get_post_parent_id( $post_id_var );
+			$post_parent = wp_get_post_parent_id( (int) $post_id_var );
 			return $post_parent;
 		}
 		return false;
@@ -1021,6 +1031,26 @@ class PROD {
 			return number_format( $price_sale, 2, '.', '' );
 		} else {
 			return '';
+		}
+	}
+
+	/**
+	 * Add custom taxonomies to product
+	 *
+	 * @param int   $product_id Product ID.
+	 * @param array $item Item from API.
+	 *
+	 * @return void
+	 */
+	private static function add_custom_taxonomies( $product_id, $item ) {
+		// Set taxonomies.
+		if ( ! empty( $item['taxonomies'] ) && is_array( $item['taxonomies'] ) ) {
+			foreach ( $item['taxonomies'] as $taxonomy ) {
+				if ( empty( $taxonomy['id'] ) || empty( $taxonomy['value'] ) ) {
+					continue;
+				}
+				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'], true );
+			}
 		}
 	}
 }

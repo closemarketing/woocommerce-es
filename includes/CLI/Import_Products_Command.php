@@ -85,7 +85,7 @@ class Import_Products_Command {
 			foreach ( $api_products as $key => $item ) {
 				$item        = HELPER::sanitize_array_recursive( $item );
 				$page        = intval( $sync_loop / $api_pagination, 0 );
-				$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $options['slug'], $generate_ai );
+				$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $generate_ai );
 
 				$sync_loop   = $page * $api_pagination + $key;
 				$message = '[' . $sync_loop + 1 . '/' . $products_count . '/' . $page . '] ';
