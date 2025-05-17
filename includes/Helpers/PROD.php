@@ -59,6 +59,7 @@ class PROD {
 		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
 			// Variable product.
 			// Check if any variants exists.
+			$any_variant_sku = true;
 			if ( ! $post_id ) {
 				$post_id = 0;
 				// Activar para buscar un archivo.
@@ -149,18 +150,26 @@ class PROD {
 			if ( ! empty( $settings_ai['provider'] ) ) {
 				$result_ai = AI::generate_description( $settings_ai, $item );
 				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
+					$message      = '';
 					$product_info = array(
 						'ID' => $post_id,
 					);
 					if ( ! empty( $result_ai['data']['title'] ) ) {
 						$product_info['post_title'] = $result_ai['data']['title'];
+					} else {
+						$message .=  __( 'Title not generated. ', 'connect-ecommerce' );
 					}
 					if ( ! empty( $result_ai['data']['body'] ) ) {
 						$product_info['post_content'] = $result_ai['data']['body'];
+					} else {
+						$message .=  __( 'Post content not generated. ', 'connect-ecommerce' );
 					}
 					if ( ! empty( $result_ai['data']['seo_description'] ) ) {
 						$product_info['post_excerpt'] = $result_ai['data']['seo_description'];
+					} else {
+						$message .=  __( 'Post excerpt not generated. ', 'connect-ecommerce' );
 					}
+
 					// Update product.
 					wp_update_post(
 						$product_info,
