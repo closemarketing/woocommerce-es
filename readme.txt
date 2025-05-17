@@ -69,6 +69,7 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 * Fully support to import EAN to WooCommerce.
 * Added: Import image products with different method.
 * Added: Result API import in widget product.
+* Fixed: AI connection not working in some cases.
 * Fixed: Some errors getting products from shop to syncronize.
 
 = 3.0.1 =
