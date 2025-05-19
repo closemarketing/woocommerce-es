@@ -71,6 +71,7 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 * Added: Result API import in widget product.
 * Fixed: AI connection not working in some cases.
 * Fixed: Some errors getting products from shop to syncronize.
+* Fixed: Not getting prices rates from API.
 
 = 3.0.1 =
 * Minor fixes.

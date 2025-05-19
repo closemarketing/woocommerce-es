@@ -236,7 +236,7 @@ class PROD {
 		$product_props     = array(
 			'stock_status'     => 'instock',
 			'backorders'       => $allow_backorders,
-			'regular_price'    => isset( $item['price'] ) ? $item['price'] : null,
+			'regular_price'    => self::get_rate_price( $item, $rate_id ),
 			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
@@ -520,16 +520,7 @@ class PROD {
 				}
 			}
 			// Make Variations.
-			if ( 'default' === $rate_id || '' === $rate_id ) {
-				if ( isset( $variant['price'] ) && $variant['price'] ) {
-					$variation_price = $variant['price'];
-				} else {
-					$variation_price = 0;
-				}
-			} else {
-				$variant_price_key = array_search( $rate_id, array_column( $variant['rates'], 'id' ) );
-				$variation_price   = $variant['rates'][ $variant_price_key ]['subtotal'];
-			}
+			$variation_price   = self::get_rate_price( $variant, $rate_id );
 			$variation_props = array(
 				'parent_id'     => $product_id,
 				'attributes'    => $attributes_prod,
@@ -1039,6 +1030,22 @@ class PROD {
 			return number_format( $price_sale, 2, '.', '' );
 		} else {
 			return '';
+		}
+	}
+
+	/**
+	 * Get attribute category ID
+	 *
+	 * @param array $item Item from API.
+	 *
+	 * @return int
+	 */
+	private static function get_rate_price( $item, $rate_id ) {
+		if ( 'default' === $rate_id || '' === $rate_id ) {
+			return isset( $item['price'] ) ? $item['price'] : null;
+		} else {
+			$price_key = array_search( $rate_id, array_column( $item['rates'], 'id' ) );
+			return isset( $item['rates'][ $price_key ]['subtotal'] ) ? $item['rates'][ $price_key ]['subtotal'] : null;
 		}
 	}
 
