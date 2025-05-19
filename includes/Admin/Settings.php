@@ -68,13 +68,6 @@ class Settings {
 	private $connapi_erp;
 
 	/**
-	 * Settings slug
-	 *
-	 * @var string
-	 */
-	private $settings_slug;
-
-	/**
 	 * Settings AI
 	 *
 	 * @var string
