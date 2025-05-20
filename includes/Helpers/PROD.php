@@ -1041,7 +1041,10 @@ class PROD {
 	 * @return int
 	 */
 	private static function get_rate_price( $item, $rate_id ) {
-		if ( 'default' === $rate_id || '' === $rate_id ) {
+		if ( empty( $item ) ) {
+			return null;
+		}
+		if ( 'default' === $rate_id || '' === $rate_id || empty( $item['rates'] ) || ! is_array( $item['rates'] ) ) {
 			return isset( $item['price'] ) ? $item['price'] : null;
 		} else {
 			$price_key = array_search( $rate_id, array_column( $item['rates'], 'id' ) );
