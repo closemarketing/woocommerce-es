@@ -88,6 +88,7 @@ class PROD {
 						$parent_product->save();
 					} catch ( \Exception $e ) {}
 				}
+				unset( $parent_product );
 			}
 
 			if ( false === $any_variant_sku ) {
