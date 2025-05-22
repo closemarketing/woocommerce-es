@@ -78,6 +78,18 @@ class PROD {
 					}
 				}
 			}
+
+			// Fix Parent product without SKU.
+			if ( $post_id ) {
+				$parent_product = wc_get_product( $post_id );
+				if ( ! $parent_product->get_sku() && ! empty( $item['sku'] ) ) {
+					try {
+						$parent_product->set_sku( $item['sku'] );
+						$parent_product->save();
+					} catch ( \Exception $e ) {}
+				}
+			}
+
 			if ( false === $any_variant_sku ) {
 				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') <br/>';
 			} else {
