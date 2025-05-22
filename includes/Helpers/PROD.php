@@ -878,6 +878,7 @@ class PROD {
 			if ( isset( $result_api['upload']['url'] ) ){
 				$images[] = [
 					'url'          => $result_api['upload']['url'],
+					'file'         => $result_api['upload']['file'],
 					'content_type' => $result_api['content_type'],
 				];
 			}
@@ -896,7 +897,37 @@ class PROD {
 				'post_content'   => $image['content'] ?? '',
 				'post_status'    => 'inherit',
 			);
-			$attach_id  = wp_insert_attachment( $attachment, $result_api['upload']['file'], 0 );
+
+			if ( empty( $image['file'] ) ) { 
+				// Download image to server
+				$image_url = $image['url'] ?? '';
+				if (empty($image_url)) {
+					continue;
+				}
+
+				$file_array = [];
+				$file_array['name'] = basename( $image_url );
+				$file_array['tmp_name'] = download_url( $image_url );
+
+				// Check for download errors
+				if ( is_wp_error( $file_array['tmp_name'] ) ) {
+					continue;
+				}
+
+				$attach_id = media_handle_sideload( $file_array, $product_id, $attachment['post_title'], $attachment );
+
+				// Check for attachment errors
+				if (is_wp_error($attach_id)) {
+					@unlink($file_array['tmp_name']);
+					continue;
+				}
+			} else {
+				if ( ! file_exists( $image['file'] ) ) {
+					continue;
+				}
+
+				$attach_id  = wp_insert_attachment( $attachment, $image['file'], 0 );
+			}
 
 			if ( $first_image ) {
 				$first_image = false;
