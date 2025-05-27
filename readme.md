@@ -1,9 +1,8 @@
-# Connect WooCommerce Library Documentation
-
+# Connect Ecommerce Documentation
 
 ## Documentation
 
-* How to install
+* This is a base plugin
 * Usage
 
 ## Usage
