@@ -73,6 +73,7 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 * Fixed: AI connection not working in some cases.
 * Fixed: Some errors getting products from shop to syncronize.
 * Fixed: Not getting prices rates from API.
+* Fixed: Prevent error when WooCommerce does not load the product.
 
 = 3.0.1 =
 * Minor fixes.
