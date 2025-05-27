@@ -82,7 +82,7 @@ class PROD {
 			// Fix Parent product without SKU.
 			if ( $post_id ) {
 				$parent_product = wc_get_product( $post_id );
-				if ( ! $parent_product->get_sku() && ! empty( $item['sku'] ) ) {
+				if ( $parent_product && ! $parent_product->get_sku() && ! empty( $item['sku'] ) ) {
 					try {
 						$parent_product->set_sku( $item['sku'] );
 						$parent_product->save();
