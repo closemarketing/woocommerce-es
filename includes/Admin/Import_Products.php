@@ -173,9 +173,11 @@ class Import_Products {
 		$sync_loop      = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$product_erp_id = isset( $_POST['product_erp_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_erp_id'] ) ) : '';
 		$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( wp_unslash( $_POST['product_sku'] ) ) : '';
+		$product_id     = isset( $_POST['product_id'] ) ? (int) $_POST['product_id'] : '';
 		$message        = '';
 		$res_message    = '';
-		$generate_ai    = isset( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
+		$generate_ai    = ! empty( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
+		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
 		$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
 
 		// Action for one product.
@@ -223,7 +225,7 @@ class Import_Products {
 		$item                     = $api_products[ $sync_loop - ( $api_pagination * $page ) ];
 		$this->msg_error_products = array();
 
-		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, $this->options['slug'], $generate_ai );
+		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, $generate_ai, $product_id );
 		$post_id     = $result_sync['post_id'] ?? 0;
 		if ( 'error' === $result_sync['status'] ) {
 			$this->error_product_import[] = array(
@@ -320,7 +322,7 @@ class Import_Products {
 				$product_id = isset( $product_sync['prod_id'] ) ? $product_sync['prod_id'] : $product_sync;
 
 				$product_api = $this->connapi_erp->get_products( $product_id );
-				$result      = PROD::sync_product_item( $this->settings, $product_api, $this->connapi_erp, $this->options['slug'] );
+				$result      = PROD::sync_product_item( $this->settings, $product_api, $this->connapi_erp );
 				if ( $is_table_sync ) {
 					CRON::save_product_sync( $this->options['table_sync'], $result['prod_id'], $this->options['slug'] );
 				}

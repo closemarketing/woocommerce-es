@@ -96,6 +96,7 @@ class AI {
 			$language
 		);
 		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO and SEO description and export it in format JSON, with elements: title, body, seo_title, seo_description', 'connect-ecommerce' );
+		$content .= PHP_EOL . __( 'Return only a valid and complete JSON object. If the content is too long, split it into multiple parts and clearly indicate when to continue. Do not include any text outside of the JSON.', 'connect-ecommerce' );
 
 		$token = isset( $settings['token'] ) ? $settings['token'] : '';
 
@@ -122,6 +123,7 @@ class AI {
 				'Content-Type'  => 'application/json',
 				'Authorization' => 'Bearer ' . $token,
 			),
+			'timeout' => 90,
 			'body'    => wp_json_encode(
 				array(
 					'model'             => $model,
@@ -135,7 +137,7 @@ class AI {
 					'top_p'             => 1,
 					'n'                 => 1,
 					'stream'            => false,
-					'max_tokens'        => 250,
+					'max_tokens'        => 1024,
 					'presence_penalty'  => 0,
 					'frequency_penalty' => 0,
 				)
@@ -144,23 +146,35 @@ class AI {
 
 		$response      = wp_remote_post( $api_url, $args );
 		$response_code = wp_remote_retrieve_response_code( $response );
-		$response      = json_decode( wp_remote_retrieve_body( $response ), true );
+		$body          = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( 200 !== $response_code ) {
+			$message .= sanitize_text_field( $response['error']['message'] ) ?? '';
+			$message .= sanitize_text_field( $response['errors']['http_request_failed'] ) ?? '';
+			$message .= $message ?? __( 'Unknown error', 'connect-ecommerce' );
+
 			return array(
-				'status'  => 0,
-				'message' => isset( $response['error']['message'] ) ? sanitize_text_field( $response['error']['message'] ) : __( 'Unknown error', 'connect-ecommerce' ),
+				'status'  => 'error',
+				'message' => $message,
 			);
 		}
 		$content = array();
-		if ( isset( $response['choices'][0]['message']['content'] ) ) {
-			$content = str_replace( '```json', '', $response['choices'][0]['message']['content'] );
-			$content = str_replace( '```', '', $content );
+		if ( isset( $body['choices'][0]['message']['content'] ) ) {
+			error_log( '$content: ' . print_r( $body['choices'][0]['message']['content'], true ) );
+			$content = str_replace( '```json', '', $body['choices'][0]['message']['content'] );
+			$content = preg_replace( '/```[\w]*\s*/', '', $content );
+			$content = trim( $content );
 			$content = json_decode( $content, true );
+			if ( json_last_error() !== JSON_ERROR_NONE ) {
+				return array(
+					'status'  => 'error',
+					'message' => __( 'Error decoding JSON', 'connect-ecommerce' ) . ': ' . json_last_error_msg(),
+				);
+			}
 			if ( ! is_array( $content ) ) {
 				$content = array();
 			}
-			$message = __( 'Spent tokens: ', 'connect-ecommerce' ) . ( isset( $response['usage']['total_tokens'] ) ? $response['usage']['total_tokens'] : 0 );
+			$message = __( 'Spent tokens: ', 'connect-ecommerce' ) . ( isset( $body['usage']['total_tokens'] ) ? $body['usage']['total_tokens'] : 0 );
 		}
 
 		return array(

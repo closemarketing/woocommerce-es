@@ -86,7 +86,8 @@ class Widget_Product {
 		echo 'connect_ecommerce_sync_products\',';
 		echo '\'' . esc_html( $product_erp_id ) . '\',';
 		echo '\'' . esc_html( $product->get_sku() ) . '\',';
-		echo 'this.id)">' . esc_html__( 'Sync', 'connect-ecommerce' ) . '</div>';
+		echo '\'' . esc_html( $product_id ) . '\',';
+		echo ')">' . esc_html__( 'Sync', 'connect-ecommerce' ) . '</div>';
 		echo '</td>';
 		echo '</tr>';
 		echo '</table>';

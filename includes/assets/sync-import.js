@@ -43,7 +43,7 @@ function syncManualItems( element, action, loop = 0 ) {
 	.catch(err => console.log(err));
 }
 
-function syncProductERP( element, action, product_erp_id = 0, product_sku = '' ) {
+function syncProductERP( element, action, product_erp_id = 0, product_sku = '', product_id = 0 ) {
 	element.classList.add('disabled');
 	element.innerHTML = ConEcom_ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
 	const productAI = document.querySelector('input[name="connwoo-sync-product-ai"]')?.checked || '';
@@ -57,15 +57,38 @@ function syncProductERP( element, action, product_erp_id = 0, product_sku = '' )
 			'Content-Type': 'application/x-www-form-urlencoded',
 			'Cache-Control': 'no-cache',
 		},
-		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_erp_id=' + product_erp_id + '&product_sku=' + product_sku + '&product_ai=' + productAI,
+		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_erp_id=' + product_erp_id + '&product_sku=' + product_sku + '&product_id=' + product_id + '&product_ai=' + productAI,
 	})
 	.then( (resp) => resp.json() )
 	.then( function(results) {
 		element.classList.remove('disabled');
 		element.innerHTML = ConEcom_ajaxAction.label_sync;
 
-		// Refresh the page
-		location.reload();
+		console.log(results.data);
+		// Message handling
+		if (results.data.message !== undefined) {
+			const aiInput = document.querySelector('#connect_ecommerce_ai');
+			if (aiInput) {
+				const aiLabel = aiInput.closest('label');
+				const aiMessage = document.createElement('div');
+				aiMessage.className = 'ai-message';
+				aiMessage.innerHTML = results.data.message;
+				
+				const targetElement = aiLabel || aiInput;
+				if (targetElement.nextSibling) {
+					targetElement.parentNode.insertBefore(aiMessage, targetElement.nextSibling);
+				} else {
+					targetElement.parentNode.appendChild(aiMessage);
+				}
+			}
+		}
+
+		// Reload the page after 8 seconds if the sync was successful
+		if (results.success) {
+			setTimeout(() => {
+				window.location.reload();
+			}, 8000);
+		}
 	})
 	.catch(err => console.log(err));
 }

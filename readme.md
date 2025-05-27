@@ -1,9 +1,8 @@
-# Connect WooCommerce Library Documentation
-
+# Connect Ecommerce Documentation
 
 ## Documentation
 
-* How to install
+* This is a base plugin
 * Usage
 
 ## Usage
@@ -125,9 +124,28 @@ $products = [
 				'value' => Value of the term in Taxonomy (has to be unique)
 			]
 		]
+		'taxonomies' => [
+			[
+				'name'  => slug of taxonomy that it will be attached
+				'value' => Value of the term in Taxonomy (has to be unique)
+			]
+		]
     'categoryId' => 
     'factoryCode' => 
 		'full_info'   => all information that brings API for IA.
+		'images' => [
+			[
+				'url' => URL of the image,
+				'title'   => Title of image,
+				'content' => Content of image,
+				'content_type' => Content type from image,
+			],
+		rates: array(4)
+			0: array(3)
+			id: "65f40aaf178216df3a054762"
+			subtotal: 35
+			taxes: array(1)
+			0: "s_iva_21"
 	]
 ];
 ```
@@ -146,5 +164,11 @@ $products['variants'][] = array(
 			'name'  => Name of the term of variation
 		],
 	],
+	'image' => [
+		'url' => URL of the image,
+		'title'   => Title of image,
+		'content' => Content of image,
+		'content_type' => Content type from image,
+	]
 );
 ```

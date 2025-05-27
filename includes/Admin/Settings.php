@@ -68,13 +68,6 @@ class Settings {
 	private $connapi_erp;
 
 	/**
-	 * Settings slug
-	 *
-	 * @var string
-	 */
-	private $settings_slug;
-
-	/**
 	 * Settings AI
 	 *
 	 * @var string
@@ -545,7 +538,7 @@ class Settings {
 			}
 
 			add_settings_field(
-				'wcpimh_tax_option',
+				'wcpimh_make_discount',
 				__( 'Percentage to Make a discount from prices and save in sale price?', 'connect-ecommerce' ),
 				array( $this, 'pricesale_discount_option_callback' ),
 				'connect_ecommerce_admin',
