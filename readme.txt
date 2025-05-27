@@ -70,6 +70,7 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 * Added: Import image products with different method.
 * Added: Result API import in widget product.
 * Added: Save parent SKU in product if does not exist.
+* Added: Check if image product file exists before import.
 * Fixed: AI connection not working in some cases.
 * Fixed: Some errors getting products from shop to syncronize.
 * Fixed: Not getting prices rates from API.

@@ -867,8 +867,7 @@ class PROD {
 	 * @return void
 	 */
 	public static function put_product_images( $settings, $item, $product_id, $api_erp ) {
-		// Don't import if there is thumbnail.
-		if ( has_post_thumbnail( $product_id ) ) {
+		if ( self::has_valid_thumbnail( $product_id ) ) {
 			return false;
 		}
 
@@ -910,7 +909,7 @@ class PROD {
 			if ( empty( $image['file'] ) ) { 
 				// Download image to server
 				$image_url = $image['url'] ?? '';
-				if (empty($image_url)) {
+				if ( empty( $image_url ) ) {
 					continue;
 				}
 
@@ -1123,5 +1122,27 @@ class PROD {
 				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'], true );
 			}
 		}
+	}
+
+	/**
+	 * Checks if product has a valid thumbnail.
+	 *
+	 * @param int $product_id Product ID.
+	 * @return bool
+	 */
+	private static function has_valid_thumbnail( $product_id ) {
+		$thumbnail_id = get_post_thumbnail_id( $product_id );
+		if ( ! $thumbnail_id ) {
+			return false;
+		}
+		$image_path = get_attached_file( $thumbnail_id );
+		if ( ! $image_path || ! file_exists( $image_path ) ) {
+			return false;
+		}
+		$image_url = wp_get_attachment_url( $thumbnail_id );
+		if ( ! $image_url ) {
+			return false;
+		}
+		return true;
 	}
 }
