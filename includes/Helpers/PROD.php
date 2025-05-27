@@ -210,13 +210,22 @@ class PROD {
 		$message          = '';
 
 		// Start.
-		if ( 'simple' === $type ) {
-			$product = new \WC_Product( $product_id );
-		} elseif ( 'variable' === $type ) {
-			$product = new \WC_Product_Variable( $product_id );
-		} elseif ( 'pack' === $type ) {
-			$product = new \WC_Product( $product_id );
+		try {
+			if ( 'simple' === $type ) {
+				$product = new \WC_Product( $product_id );
+			} elseif ( 'variable' === $type ) {
+				$product = new \WC_Product_Variable( $product_id );
+			} elseif ( 'pack' === $type ) {
+				$product = new \WC_Product( $product_id );
+			}
+		} catch ( \Exception $e ) {
+			return array(
+				'status'  => 'error',
+				'props'   => [],
+				'message' => __( 'Error creating variable product: ', 'connect-ecommerce' ) . $e->getMessage(),
+			);
 		}
+
 		// Common and default properties.
 		$product_props     = array(
 			'stock_status'     => 'instock',
