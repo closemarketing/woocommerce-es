@@ -684,14 +684,14 @@ class Settings {
 			'imhset_prod_mergevars_setting_section',
 			__( 'Merge variables from product attributes to custom fields', 'connect-ecommerce' ),
 			array( $this, 'section_info_prod_mergevars' ),
-			'connect_ecommerce_settings_prod_mergevars'
+			'connect_ecommerce_prod_mergevars'
 		);
 
 		add_settings_field(
 			'wcpimh_prod_mergevars',
 			__( 'Merge fields with product', 'connect-ecommerce' ),
 			array( $this, 'prod_mergevars_callback' ),
-			'connect_ecommerce_settings_prod_mergevars',
+			'connect_ecommerce_prod_mergevars',
 			'imhset_prod_mergevars_setting_section'
 		);
 
