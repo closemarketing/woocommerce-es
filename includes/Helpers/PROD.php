@@ -225,14 +225,14 @@ class PROD {
 	 * @return int $product_id Product ID.
 	 */
 	public static function sync_product( $settings, $item, $api_erp, $product_id = 0, $type = 'simple', $pack_items = null ) {
-		$import_stock     = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
-		$is_virtual       = ! empty( $settings['virtual'] ) && 'yes' === $settings['virtual'] ? true : false;
-		$allow_backorders = ! empty( $settings['backorders'] ) ? $settings['backorders'] : 'yes';
-		$rate_id          = ! empty( $settings['rates'] ) ? $settings['rates'] : 'default';
-		$post_status      = ! empty( $settings['prodst'] ) ? $settings['prodst'] : 'draft';
-		$attribute_cat_id = ! empty( $settings['catattr'] ) ? $settings['catattr'] : '';
-		$is_new_product   = ( 0 === $product_id || false === $product_id ) ? true : false;
-		$message          = '';
+		$import_stock       = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
+		$is_virtual         = ! empty( $settings['virtual'] ) && 'yes' === $settings['virtual'] ? true : false;
+		$allow_backorders   = ! empty( $settings['backorders'] ) ? $settings['backorders'] : 'yes';
+		$rate_id            = ! empty( $settings['rates'] ) ? $settings['rates'] : 'default';
+		$post_status        = ! empty( $settings['prodst'] ) ? $settings['prodst'] : 'draft';
+		$is_new_product     = ( 0 === $product_id || false === $product_id ) ? true : false;
+		$settings_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
+		$message            = '';
 
 		// Start.
 		try {
@@ -357,22 +357,18 @@ class PROD {
 
 		// Set attributes.
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
-		$item_type  = array_search( $attribute_cat_id, array_column( $attributes, 'id', 'value' ) );
-		if ( $item_type ) {
-			$categories_ids = TAX::get_categories_ids( $settings, $item_type, $is_new_product );
-			if ( ! empty( $categories_ids ) ) {
-				$product_props['category_ids'] = $categories_ids;
-			}
+		$categories_ids = TAX::assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product = true );
+		if ( ! empty( $categories_ids ) ) {
+			$product_props['category_ids'] = $categories_ids;
 		}
 
 		// Imports image.
 		self::put_product_images( $settings, $item, $product_id, $api_erp );
 
-		// Adds custom fields.
-		$settings_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
+		// Adds custom fields and custom cats.
 		if ( ! empty( $settings_mergevars['prod_mergevars'] ) ) {
 			$product_info = array();
-			foreach ( $settings_mergevars['prod_mergevars'] as $custom_field ) {
+			foreach ( $settings_mergevars['prod_mergevars'] as $source_key => $custom_field ) {
 				$field_key  = explode( '|', $custom_field );
 				$field_type = isset( $field_key[0] ) ? $field_key[0] : 'cf';
 				$field_slug = isset( $field_key[1] ) ? $field_key[1] : $field_key;

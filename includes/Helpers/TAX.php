@@ -183,6 +183,53 @@ class TAX {
 	}
 
 	/**
+	 * Assign product categories, based on the item data and merge vars.
+	 *
+	 * @param array  $item Item data.
+	 * @param array  $attributes Attributes of the product.
+	 * @param array  $settings_mergevars Settings merge variables.
+	 * @return array
+	 */
+	public static function assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product = true ) {
+		$attribute_cat_id = ! empty( $settings['catattr'] ) ? $settings['catattr'] : '';
+		$categories_ids   = array();
+		$item_cat_value   = array_search( $attribute_cat_id, array_column( $attributes, 'id', 'value' ) );
+
+		if ( empty( $item_cat_value ) ) {
+			return array();
+		}
+
+		// Custom merge categories.
+		if ( ! empty( $settings_mergevars['prod_mergevars'] ) ){
+			foreach ( $settings_mergevars['prod_mergevars'] as $source => $target ) {
+				$target_cat      = explode( '|', $target );
+				$source_cat      = explode( '|', $source );
+				$target_cat_type = isset( $target_cat[0] ) ? $target_cat[0] : '';
+				$source_cat_type = isset( $source_cat[0] ) ? $source_cat[0] : '';
+
+				if ( $target_cat_type !== $source_cat_type ) {
+					continue;
+				}
+				$source_cat_name = isset( $source_cat[1] ) ? sanitize_text_field( $source_cat[1] ) : '';
+				$target_cat_id   = isset( $target_cat[1] ) ? (int) $target_cat[1] : 0;
+
+				if ( $item_cat_value === $source_cat_name ) {
+					$categories_ids[] = $target_cat_id;
+				}
+			}
+			if ( ! empty( $categories_ids ) ) {
+				$categories_ids = array_unique( $categories_ids );
+				return $categories_ids;
+			}
+		}
+
+		// Default mode.
+		$categories_ids = self::get_categories_ids( $settings, $item_cat_value, $is_new_product );
+
+		return $categories_ids;
+	}
+
+	/**
 	 * Split categories name
 	 *
 	 * @param array  $settings   Settings of the plugin.
