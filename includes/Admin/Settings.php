@@ -1543,6 +1543,7 @@ class Settings {
 		$product_fields    = PROD::get_all_product_fields();
 		$custom_fields     = PROD::get_all_custom_fields();
 		$custom_taxonomies = TAX::get_all_custom_taxonomies();
+		$product_cat_terms = TAX::get_terms_product_cat();
 		$attribute_fields  = $this->connapi_erp->get_product_attributes();
 
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
@@ -1579,7 +1580,7 @@ class Settings {
 										foreach ( $attribute['elements'] as $value ) {
 											$option_id = $attribute['id'] . '|' . $value;
 											echo '<option value="' . esc_html( $option_id ) . '" ';
-											selected( $value, $attrprod );
+											selected( $option_id, $attrprod );
 											echo '>' . esc_html( $value ) . '</option>';
 										}
 										?>
@@ -1593,7 +1594,7 @@ class Settings {
 						<div class="save-item">
 							<?php 
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
-							$all_fields = array_merge( $product_fields, $custom_taxonomies, $custom_fields );
+							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
 								$custom_fields[] = $saved_custom_field;
 							}
@@ -1611,17 +1612,10 @@ class Settings {
 								</optgroup>
 								<optgroup label="<?php esc_html_e( 'Product Category values', 'connect-ecommerce' ); ?>">
 									<?php
-									$terms = get_terms( array(
-										'taxonomy'   => 'product_cat',
-										'hide_empty' => false,
-									) );
-									if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
-										foreach ( $terms as $term ) {
-											$key = 'product_cat|' . $term->term_id;
-											echo '<option value="' . esc_attr( $key ) . '" ';
-											selected( $key, $saved_custom_field );
-											echo '>' . esc_html( $term->name ) . '</option>';
-										}
+									foreach ( $product_cat_terms as $key => $value ) {
+										echo '<option value="' . esc_attr( $key ) . '" ';
+										selected( $key, $saved_custom_field );
+										echo '>' . esc_html( $value ) . '</option>';
 									}
 									?>
 								</optgroup>

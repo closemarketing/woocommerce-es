@@ -212,6 +212,25 @@ class TAX {
 		return $categories_name;
 	}
 
+	public static function get_terms_product_cat() {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'product_cat',
+				'hide_empty' => false,
+			)
+		);
+
+		if ( is_wp_error( $terms ) ) {
+			return array();
+		}
+		$terms_wp = wp_list_pluck( $terms, 'name', 'term_id' );
+		$terms    = array();
+		foreach ( $terms_wp as $term_id => $term_name ) {
+			$terms[ 'product_cat|' . $term_id ] = $term_name;
+		}
+		return $terms;
+	}
+
 	/**
 	 * Assigns the array to a taxonomy, and creates missing term
 	 *
