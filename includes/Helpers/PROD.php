@@ -39,7 +39,8 @@ class PROD {
 		$is_new_product = $post_id ? false : true;
 
 		if ( empty( $post_id ) ) {
-			$is_new_product = self::find_product( $item['sku'] ) ? true : false;
+			$post_id        = self::find_product( $item['sku'] );
+			$is_new_product = empty( $post_id ) ? true : false;
 		}
 
 		if ( in_array( 'woo-product-bundle/wpc-product-bundles.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
@@ -794,7 +795,12 @@ class PROD {
 
 		if ( $post_id_var ) {
 			$post_parent = wp_get_post_parent_id( (int) $post_id_var );
-			return $post_parent;
+			if ( $post_parent && 'product' === get_post_type( $post_parent ) ) {
+				return $post_parent;
+			} else {
+				// Remove orphaned variation.
+				wp_delete_post( $post_id_var, true );
+			}
 		}
 		return false;
 	}
