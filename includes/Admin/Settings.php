@@ -350,13 +350,6 @@ class Settings {
 			'connect_ecommerce_admin'
 		);
 
-		add_settings_section(
-			'connect_woocommerce_setting_section',
-			__( 'Settings for Importing in WooCommerce', 'connect-ecommerce' ),
-			array( $this, 'connect_woocommerce_section_info' ),
-			'connect_ecommerce_admin'
-		);
-
 		add_settings_field(
 			'conecom_connector',
 			__( 'Connector', 'connect-ecommerce' ),
@@ -681,7 +674,7 @@ class Settings {
 		);
 
 		add_settings_section(
-			'imhset_prod_mergevars_setting_section',
+			'connect_ecommerce_prod_mergevars_section',
 			__( 'Merge variables from product attributes to custom fields', 'connect-ecommerce' ),
 			array( $this, 'section_info_prod_mergevars' ),
 			'connect_ecommerce_prod_mergevars'
@@ -692,7 +685,7 @@ class Settings {
 			__( 'Merge fields with product', 'connect-ecommerce' ),
 			array( $this, 'prod_mergevars_callback' ),
 			'connect_ecommerce_prod_mergevars',
-			'imhset_prod_mergevars_setting_section'
+			'connect_ecommerce_prod_mergevars_section'
 		);
 
 		/**
