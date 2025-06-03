@@ -65,6 +65,7 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 == Changelog ==
 
 = 3.1.1 =
+* Added: Merge categories from API to WooCommerce. You select the equivalence in the settings.
 * Fixed: Error in orphaned variations to prevent SKU errors.
 
 = 3.1.0 =
