@@ -39,21 +39,18 @@ class PROD {
 		$is_new_product = $post_id ? false : true;
 
 		if ( empty( $post_id ) ) {
-			$is_new_product = self::find_product( $item['sku'] ) ? true : false;
+			$post_id        = self::find_product( $item['sku'] );
+			$is_new_product = empty( $post_id ) ? true : false;
 		}
 
-		if ( in_array( 'woo-product-bundle/wpc-product-bundles.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
-			$plugin_pack_active = true;
-		} else {
-			$plugin_pack_active = false;
-		}
+		$plugin_pack_active = in_array( 'woo-product-bundle/wpc-product-bundles.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ? true : false;
 
 		// Translations.
 		$msg_product_created = __( 'Product created: ', 'connect-ecommerce' );
 		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
 		if ( ! $is_filtered && $item['sku'] && 'simple' === $item_kind ) {
-			$result_post = self::sync_product_simple( $settings, $item, $api_erp, $post_id );
+			$result_post = self::sync_product_simple( $settings, $item, $api_erp, false, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
 		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
@@ -794,7 +791,12 @@ class PROD {
 
 		if ( $post_id_var ) {
 			$post_parent = wp_get_post_parent_id( (int) $post_id_var );
-			return $post_parent;
+			if ( $post_parent && 'product' === get_post_type( $post_parent ) ) {
+				return $post_parent;
+			} else {
+				// Remove orphaned variation.
+				wp_delete_post( $post_id_var, true );
+			}
 		}
 		return false;
 	}
