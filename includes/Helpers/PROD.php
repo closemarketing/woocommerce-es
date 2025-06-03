@@ -43,18 +43,14 @@ class PROD {
 			$is_new_product = empty( $post_id ) ? true : false;
 		}
 
-		if ( in_array( 'woo-product-bundle/wpc-product-bundles.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ) {
-			$plugin_pack_active = true;
-		} else {
-			$plugin_pack_active = false;
-		}
+		$plugin_pack_active = in_array( 'woo-product-bundle/wpc-product-bundles.php', apply_filters( 'active_plugins', get_option( 'active_plugins' ) ) ) ? true : false;
 
 		// Translations.
 		$msg_product_created = __( 'Product created: ', 'connect-ecommerce' );
 		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
 		if ( ! $is_filtered && $item['sku'] && 'simple' === $item_kind ) {
-			$result_post = self::sync_product_simple( $settings, $item, $api_erp, $post_id );
+			$result_post = self::sync_product_simple( $settings, $item, $api_erp, false, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
 		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
