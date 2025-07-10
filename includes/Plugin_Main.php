@@ -17,8 +17,8 @@ use CLOSE\ConnectEcommerce\Admin\Import_Products;
 use CLOSE\ConnectEcommerce\Admin\Widget_Order;
 use CLOSE\ConnectEcommerce\Admin\Widget_Product;
 use CLOSE\ConnectEcommerce\Admin\Orders;
-use CLOSE\ConnectEcommerce\Frontend\Checkout;
-use CLOSE\ConnectEcommerce\Frontend\MyAccount;
+use CLOSE\ConnectEcommerce\Public\Checkout;
+use CLOSE\ConnectEcommerce\Public\MyAccount;
 /**
  * Class Wrapper.
  *
