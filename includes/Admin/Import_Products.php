@@ -93,7 +93,7 @@ class Import_Products {
 
 		// Schedule.
 		if ( $this->sync_period && 'no' !== $this->sync_period ) {
-			add_action( 'init', array( $this, 'cron_products' ) );
+			$this->cron_products();
 			add_action( $this->sync_period, array( $this, 'cron_sync_products' ) );
 		}
 	}
