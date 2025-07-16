@@ -66,6 +66,7 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 = 3.1.1 =
 * Fixed: Error in orphaned variations to prevent SKU errors.
+* Fixed: Fatal error in PHP 7.4.
 
 = 3.1.0 =
 * Added: WP CLI command to import products.
