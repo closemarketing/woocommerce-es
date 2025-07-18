@@ -64,6 +64,9 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 == Changelog ==
 
+= 3.1.2 =
+* Fixed: Getting prices rates from variation products.
+
 = 3.1.1 =
 * Fixed: Error in orphaned variations to prevent SKU errors.
 * Fixed: Cron not running properly.
