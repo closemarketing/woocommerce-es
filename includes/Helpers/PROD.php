@@ -575,10 +575,11 @@ class PROD {
 			}
 			$variation->set_props( $variation_props );
 			// Stock.
-			if ( ! empty( $variant['stock'] ) ) {
-				$variation->set_stock_quantity( $variant['stock'] );
+			if ( isset( $variant['stock'] ) ) {
+				$stock_status = 0 === (int) $variant['stock'] ? 'outofstock' : 'instock';
+				$variation->set_stock_quantity( (int) $variant['stock'] );
 				$variation->set_manage_stock( true );
-				$variation->set_stock_status( 'instock' );
+				$variation->set_stock_status( $stock_status );
 			} else {
 				$variation->set_manage_stock( false );
 			}
