@@ -64,9 +64,13 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 == Changelog ==
 
+= 3.1.2 =
+* Fixed: Getting prices rates from variation products.
+
 = 3.1.1 =
 * Fixed: Error in orphaned variations to prevent SKU errors.
-* Fixed: Getting prices rates from variation products.
+* Fixed: Cron not running properly.
+* Fixed: Fatal error in PHP 7.4.
 
 = 3.1.0 =
 * Added: WP CLI command to import products.
