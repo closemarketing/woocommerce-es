@@ -291,10 +291,7 @@ class Import_Products {
 		if ( ! function_exists( 'as_has_scheduled_action' ) ) {
 			return;
 		}
-		$pos = array_search( $this->sync_period, array_column( $this->options['cron'], 'cron' ), true );
-		if ( false !== $pos ) {
-			$cron_option = $this->options['cron'][ $pos ];
-		}
+		$cron_option = CRON::get_active_period( $this->sync_period );
 
 		if ( isset( $cron_option['cron'] ) && false === as_has_scheduled_action( $cron_option['cron'] ) ) {
 			as_schedule_recurring_action( time(), $cron_option['interval'], $cron_option['cron'] );
@@ -321,7 +318,7 @@ class Import_Products {
 		$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
 		if ( empty( $products_sync ) && $is_table_sync ) {
 			CRON::send_sync_ended_products( $this->settings, $this->options['table_sync'], $this->options['name'], $this->options['slug'] );
-			CRON::fill_table_sync( $this->settings, $this->options['table_sync'], $this->connapi_erp, $this->options['slug'] );
+			CRON::fill_table_sync( $this->settings, $this->options, $this->connapi_erp );
 			$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
 		}
 		if ( ! empty( $products_sync ) ) {
