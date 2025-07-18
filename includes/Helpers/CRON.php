@@ -105,11 +105,11 @@ class CRON {
 		}
 		// Method with table sync.
 		global $wpdb;
-		$limit = isset( $settings['sync_num'] ) ? $settings['sync_num'] : 5;
+		$limit = isset( $settings['sync_num'] ) ? (int) $settings['sync_num'] : 50;
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT prod_id FROM %i WHERE synced = 0 LIMIT %s',
+				'SELECT prod_id FROM %i WHERE synced = 0 LIMIT %d',
 				$table_sync,
 				$limit
 			),

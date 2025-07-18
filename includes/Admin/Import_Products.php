@@ -308,16 +308,23 @@ class Import_Products {
 	 */
 	public function cron_sync_products() {
 		$is_table_sync = ! empty( $this->options['table_sync'] ) ? true : false;
-		$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
-
 		if ( $is_table_sync ) {
 			HELPER::check_table_sync( $this->options['table_sync'] );
+		} else {
+			// Check if the API method exists.
+			if ( ! method_exists( $this->connapi_erp, 'get_products_ids_since' ) ) {
+				return;
+			}
 		}
 
+		// Get products to sync.
+		$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
 		if ( empty( $products_sync ) && $is_table_sync ) {
 			CRON::send_sync_ended_products( $this->settings, $this->options['table_sync'], $this->options['name'], $this->options['slug'] );
 			CRON::fill_table_sync( $this->settings, $this->options['table_sync'], $this->connapi_erp, $this->options['slug'] );
-		} elseif ( ! empty( $products_sync ) ) {
+			$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
+		}
+		if ( ! empty( $products_sync ) ) {
 			foreach ( $products_sync as $product_sync ) {
 				$product_id = isset( $product_sync['prod_id'] ) ? $product_sync['prod_id'] : $product_sync;
 
