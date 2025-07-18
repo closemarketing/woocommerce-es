@@ -5,7 +5,7 @@
  * Description: Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
  * Author: Closetechnology
  * Author URI: https://close.technology/
- * Version: 3.1.1
+ * Version: 3.1.2
  *
  * @package WordPress
  * Text Domain: connect-ecommerce
