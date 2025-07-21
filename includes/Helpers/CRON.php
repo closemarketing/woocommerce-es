@@ -47,19 +47,42 @@ class CRON {
 	 *
 	 * @return boolean
 	 */
-	public static function fill_table_sync( $settings, $table_sync, $api_erp, $option_prefix ) {
+	public static function fill_table_sync( $settings, $options, $api_erp ) {
 		global $wpdb;
+		$table_sync = isset( $options['table_sync'] ) ? $options['table_sync'] : '';
+		if ( empty( $table_sync ) ) {
+			return false;
+		}
 		$wpdb->query( "TRUNCATE TABLE $table_sync;" );
 
-		// Get products from API.
-		$products = $api_erp->get_products();
+		// Get ALL products from API.
+		$products       = array();
+		$api_pagination = ! empty( $options['api_pagination'] ) ? (int) $options['api_pagination'] : false;
+		if ( $api_pagination ) {
+			$sync_loop = 0;
+
+			do {
+				$loop_page    = $sync_loop * $api_pagination;
+				$api_products = $api_erp->get_products( null, $loop_page );
+				if ( empty( $api_products ) ) {
+					break;
+				}
+				$sync_loop++;
+				$count_products = count( $api_products );
+				$products       = array_merge( $products, $api_products );
+			} while ( $count_products === $api_pagination );
+
+		} else {
+			$products = $api_erp->get_products();
+		}
+			
 		if ( ! is_array( $products ) ) {
 			return;
 		}
 
-		update_option( $option_prefix . '_total_api_products', count( $products ) );
-		update_option( $option_prefix . '_sync_start_time', strtotime( 'now' ) );
-		update_option( $option_prefix . '_sync_errors', array() );
+		update_option( 'conecom_total_api_products', count( $products ) );
+		update_option( 'conecom_sync_start_time', strtotime( 'now' ) );
+		update_option( 'conecom_sync_errors', array() );
 
 		foreach ( $products as $product ) {
 			$is_filtered_product = ! empty( $product['tags'] ) ? PROD::filter_product( $settings, $product['tags'] ) : false;
@@ -92,12 +115,8 @@ class CRON {
 		$table_sync = isset( $options['table_sync'] ) ? $options['table_sync'] : '';
 		// Method with modified products.
 		if ( empty( $table_sync ) ) {
-			$sync_period = isset( $settings['sync'] ) ? strval( $settings['sync'] ) : 'no';
-			$pos         = array_search( $sync_period, array_column( $options['cron'], 'cron' ), true );
-			if ( false !== $pos ) {
-				$cron_option = $options['cron'][ $pos ];
-			}
-			$modified_since_date = isset( $cron_option['interval'] ) ? strtotime( '-' . $cron_option['interval'] . ' seconds' ) : strtotime( '-1 day' );
+			$period              = self::get_active_period( $settings );
+			$modified_since_date = isset( $period['interval'] ) ? strtotime( '-' . $period['interval'] . ' seconds' ) : strtotime( '-1 day' );
 			if ( ! method_exists( $connapi_erp, 'get_products_ids_since' ) ) {
 				return false;
 			}
@@ -105,11 +124,11 @@ class CRON {
 		}
 		// Method with table sync.
 		global $wpdb;
-		$limit = isset( $settings['sync_num'] ) ? $settings['sync_num'] : 5;
+		$limit = isset( $settings['sync_num'] ) ? (int) $settings['sync_num'] : 50;
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				'SELECT prod_id FROM %i WHERE synced = 0 LIMIT %s',
+				'SELECT prod_id FROM %i WHERE synced = 0 LIMIT %d',
 				$table_sync,
 				$limit
 			),
@@ -246,5 +265,76 @@ class CRON {
 			}
 			wp_mail( get_option( 'admin_email' ), $subject, $body, $headers );
 		}
+	}
+
+	/**
+	 * Returns the active period for sync.
+	 *
+	 * @param array $settings|value Settings of plugin or period.
+	 *
+	 * @return array|false
+	 */
+	public static function get_active_period( $sync_period ) {
+		$sync_period = is_array( $sync_period ) ? $sync_period['sync'] : $sync_period;
+
+		if ( 'no' === $sync_period ) {
+			return false;
+		}
+		$periods     = self::get_cron_periods();
+		$pos         = array_search( $sync_period, array_column( $periods, 'cron' ), true );
+
+		return false !== $pos ? $periods[ $pos ] : end( $periods );
+	}
+
+	/**
+	 * Returns the cron periods.
+	 *
+	 * @return array
+	 */
+	public static function get_cron_periods() {
+		return array(
+			array(
+				'key'      => 'every_five_minutes',
+				'interval' => 300,
+				'display'  => __( 'Every 5 minutes', 'connect-ecommerce' ),
+				'cron'     => 'conecom_sync_five_minutes',
+			),
+			array(
+				'key'      => 'every_fifteen_minutes',
+				'interval' => 900,
+				'display'  => __( 'Every 15 minutes', 'connect-ecommerce' ),
+				'cron'     => 'conecom_sync_fifteen_minutes',
+			),
+			array(
+				'key'      => 'every_thirty_minutes',
+				'interval' => 1800,
+				'display'  => __( 'Every 30 Minutes', 'connect-ecommerce' ),
+				'cron'     => 'conecom_sync_thirty_minutes',
+			),
+			array(
+				'key'      => 'every_one_hour',
+				'interval' => 3600,
+				'display'  => __( 'Every 1 Hour', 'connect-ecommerce' ),
+				'cron'     => 'conecom_sync_one_hour',
+			),
+			array(
+				'key'      => 'every_three_hours',
+				'interval' => 10800,
+				'display'  => __( 'Every 3 Hours', 'connect-ecommerce' ),
+				'cron'     => 'conecom_sync_three_hours',
+			),
+			array(
+				'key'      => 'every_six_hours',
+				'interval' => 21600,
+				'display'  => __( 'Every 6 Hours', 'connect-ecommerce' ),
+				'cron'     => 'conecom_sync_six_hours',
+			),
+			array(
+				'key'      => 'every_twelve_hours',
+				'interval' => 43200,
+				'display'  => __( 'Every 12 Hours', 'connect-ecommerce' ),
+				'cron'     => 'conecom_sync_twelve_hours',
+			),
+		);
 	}
 }

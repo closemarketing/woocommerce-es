@@ -37,50 +37,6 @@ $connwoo_options_erp = array(
 	'settings_fields'            => array( 'url', 'username', 'apipassword', 'dbname' ),
 	'table_sync'                 => $wpdb->prefix . 'sync_connwoo_erp',
 	'file'                       => __FILE__,
-	'cron'                       => array(
-		array(
-			'key'      => 'every_five_minutes',
-			'interval' => 300,
-			'display'  => __( 'Every 5 minutes', 'connect-ecommerce' ),
-			'cron'     => 'connwoo_erp_sync_five_minutes',
-		),
-		array(
-			'key'      => 'every_fifteen_minutes',
-			'interval' => 900,
-			'display'  => __( 'Every 15 minutes', 'connect-ecommerce' ),
-			'cron'     => 'connwoo_erp_sync_fifteen_minutes',
-		),
-		array(
-			'key'      => 'every_thirty_minutes',
-			'interval' => 1800,
-			'display'  => __( 'Every 30 Minutes', 'connect-ecommerce' ),
-			'cron'     => 'connwoo_erp_sync_thirty_minutes',
-		),
-		array(
-			'key'      => 'every_one_hour',
-			'interval' => 3600,
-			'display'  => __( 'Every 1 Hour', 'connect-ecommerce' ),
-			'cron'     => 'connwoo_erp_sync_one_hour',
-		),
-		array(
-			'key'      => 'every_three_hours',
-			'interval' => 10800,
-			'display'  => __( 'Every 3 Hours', 'connect-ecommerce' ),
-			'cron'     => 'connwoo_erp_sync_three_hours',
-		),
-		array(
-			'key'      => 'every_six_hours',
-			'interval' => 21600,
-			'display'  => __( 'Every 6 Hours', 'connect-ecommerce' ),
-			'cron'     => 'connwoo_erp_sync_six_hours',
-		),
-		array(
-			'key'      => 'every_twelve_hours',
-			'interval' => 43200,
-			'display'  => __( 'Every 12 Hours', 'connect-ecommerce' ),
-			'cron'     => 'connwoo_erp_sync_twelve_hours',
-		),
-	),
 );
 
 require_once PREFIX_PLUGIN_PATH . 'includes/class-api-erp.php';
