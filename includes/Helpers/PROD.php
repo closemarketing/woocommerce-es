@@ -571,10 +571,11 @@ class PROD {
 			}
 			$variation->set_props( $variation_props );
 			// Stock.
-			if ( ! empty( $variant['stock'] ) ) {
-				$variation->set_stock_quantity( $variant['stock'] );
+			if ( isset( $variant['stock'] ) ) {
+				$stock_status = 0 === (int) $variant['stock'] ? 'outofstock' : 'instock';
+				$variation->set_stock_quantity( (int) $variant['stock'] );
 				$variation->set_manage_stock( true );
-				$variation->set_stock_status( 'instock' );
+				$variation->set_stock_status( $stock_status );
 			} else {
 				$variation->set_manage_stock( false );
 			}
@@ -1083,6 +1084,8 @@ class PROD {
 		}
 	}
 
+
+
 	/**
 	 * Get attribute category ID
 	 *
@@ -1091,15 +1094,20 @@ class PROD {
 	 * @return int
 	 */
 	private static function get_rate_price( $item, $rate_id ) {
+		$price = null;
+
 		if ( empty( $item ) ) {
-			return null;
+			return $price;
 		}
+
 		if ( 'default' === $rate_id || '' === $rate_id || empty( $item['rates'] ) || ! is_array( $item['rates'] ) ) {
-			return isset( $item['price'] ) ? $item['price'] : null;
+			$price = isset( $item['price'] ) ? $item['price'] : null;
 		} else {
 			$price_key = array_search( $rate_id, array_column( $item['rates'], 'id' ) );
-			return isset( $item['rates'][ $price_key ]['subtotal'] ) ? $item['rates'][ $price_key ]['subtotal'] : null;
+			$price     = isset( $item['rates'][ $price_key ]['subtotal'] ) ? $item['rates'][ $price_key ]['subtotal'] : null;
+			$price     = empty( $price ) && isset( $item['rates'][ $rate_id ]['subtotal'] ) ? $item['rates'][ $rate_id ]['subtotal'] : $price;
 		}
+		return (float) $price;
 	}
 
 	/**

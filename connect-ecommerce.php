@@ -5,7 +5,7 @@
  * Description: Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
  * Author: Closetechnology
  * Author URI: https://close.technology/
- * Version: 3.1.1-beta.3
+ * Version: 3.1.3-beta.1
  *
  * @package WordPress
  * Text Domain: connect-ecommerce
@@ -16,7 +16,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.1.1-beta.3' );
+define( 'CONECOM_VERSION', '3.1.3-beta.1' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -60,50 +60,6 @@ function conecom_get_options() {
 				'settings_fields'            => array( 'apipassword' ),
 				'table_sync'                 => $wpdb->prefix . 'sync_conecom-clientify',
 				'file'                       => __FILE__,
-				'cron'                       => array(
-					array(
-						'key'      => 'every_five_minutes',
-						'interval' => 300,
-						'display'  => __( 'Every 5 minutes', 'connect-ecommerce' ),
-						'cron'     => 'conecom-clientify_sync_five_minutes',
-					),
-					array(
-						'key'      => 'every_fifteen_minutes',
-						'interval' => 900,
-						'display'  => __( 'Every 15 minutes', 'connect-ecommerce' ),
-						'cron'     => 'conecom-clientify_sync_fifteen_minutes',
-					),
-					array(
-						'key'      => 'every_thirty_minutes',
-						'interval' => 1800,
-						'display'  => __( 'Every 30 Minutes', 'connect-ecommerce' ),
-						'cron'     => 'conecom-clientify_sync_thirty_minutes',
-					),
-					array(
-						'key'      => 'every_one_hour',
-						'interval' => 3600,
-						'display'  => __( 'Every 1 Hour', 'connect-ecommerce' ),
-						'cron'     => 'conecom-clientify_sync_one_hour',
-					),
-					array(
-						'key'      => 'every_three_hours',
-						'interval' => 10800,
-						'display'  => __( 'Every 3 Hours', 'connect-ecommerce' ),
-						'cron'     => 'conecom-clientify_sync_three_hours',
-					),
-					array(
-						'key'      => 'every_six_hours',
-						'interval' => 21600,
-						'display'  => __( 'Every 6 Hours', 'connect-ecommerce' ),
-						'cron'     => 'conecom-clientify_sync_six_hours',
-					),
-					array(
-						'key'      => 'every_twelve_hours',
-						'interval' => 43200,
-						'display'  => __( 'Every 12 Hours', 'connect-ecommerce' ),
-						'cron'     => 'conecom-clientify_sync_twelve_hours',
-					),
-				),
 			],
 		]
 	);

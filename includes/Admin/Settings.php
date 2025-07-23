@@ -16,6 +16,7 @@ use CLOSE\ConnectEcommerce\Helpers\PROD;
 use CLOSE\ConnectEcommerce\Helpers\TAX;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
 use CLOSE\ConnectEcommerce\Helpers\AI;
+use CLOSE\ConnectEcommerce\Helpers\CRON;
 
 /**
  * Library for WooCommerce Settings
@@ -1457,11 +1458,12 @@ class Settings {
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][sync]" id="wcpimh_sync">
 			<option value="no" <?php selected( $sync, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
 			<?php
-			if ( ! empty( $this->options['cron'] ) ) {
-				foreach ( $this->options['cron'] as $cron_option ) {
-					echo '<option value="' . esc_html( $cron_option['cron'] ) . '" ';
-					selected( $sync, $cron_option['cron'] );
-					echo '>' . esc_html( $cron_option['display'] ) . '</option>';
+			$periods = CRON::get_cron_periods();
+			if ( ! empty( $periods ) ) {
+				foreach ( $periods as $period ) {
+					echo '<option value="' . esc_html( $period['cron'] ) . '" ';
+					selected( $sync, $period['cron'] );
+					echo '>' . esc_html( $period['display'] ) . '</option>';
 				}
 			}
 			?>

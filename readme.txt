@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.0
 Tested up to: 6.8
-Stable tag: 3.1.1
-Version: 3.1.1
+Stable tag: 3.1.2
+Version: 3.1.2
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -36,6 +36,18 @@ And you will find, that there are Premium Addons to support:
 - [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
 - [NEO TPV](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
 
+== Frequently Asked Questions ==
+
+= What does this plugin do? =
+Connect Ecommerce allows you to import products from a ERP/CRM via API with your WooCommerce store.
+
+= How are products and orders synchronized? =
+Products are synchronized from the ERP/CRM to WooCommerce. This is because the ERP should always contain the most up-to-date information about your business. It is the correct source for managing products, pricing, and commercial data.
+
+Orders are synchronized from WooCommerce to the ERP/CRM. This ensures that every time a customer places an order, it is sent to your ERP for proper order and invoice management.
+
+= What happens when a simple product is out of stock? =
+The default behavior is that the product disappears from the store catalog, but it remains visible to search engines. This is intentional and matches the expected behavior of the shop.
 
 == Installation ==
 
@@ -64,9 +76,16 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 == Changelog ==
 
+= 3.1.2 =
+* Fixed: Getting prices rates from variation products.
+* Fixed: Zero stock in variation products was giving not manage stock.
+* Fixed: Automated products sync not working properly.
+
 = 3.1.1 =
 * Added: Merge categories from API to WooCommerce. You select the equivalence in the settings.
 * Fixed: Error in orphaned variations to prevent SKU errors.
+* Fixed: Cron not running properly.
+* Fixed: Fatal error in PHP 7.4.
 
 = 3.1.0 =
 * Added: WP CLI command to import products.
