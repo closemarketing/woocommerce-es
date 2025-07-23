@@ -76,6 +76,9 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 == Changelog ==
 
+= 3.1.3 =
+* Enhaced: Added support to merge categories from API to WooCommerce.
+
 = 3.1.2 =
 * Fixed: Getting prices rates from variation products.
 * Fixed: Zero stock in variation products was giving not manage stock.
