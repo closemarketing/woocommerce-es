@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<phpunit
+	bootstrap="tests/bootstrap.php"
+	backupGlobals="false"
+	colors="true"
+	convertErrorsToExceptions="true"
+	convertWarningsToExceptions="true"
+	convertNoticesToExceptions="true"
+	convertDeprecationsToExceptions="true"
+	>
+	<testsuites>
+		<testsuite name="testing">
+			<directory prefix="test-" suffix=".php">./tests/Unit/</directory>
+		</testsuite>
+		<testsuite name="woocommerce">
+			<directory prefix="test-" suffix=".php">./tests/Unit/</directory>
+		</testsuite>
+	</testsuites>
+	<groups>
+		<include>
+			<group>woocommerce</group>
+		</include>
+	</groups>
+	<php>
+		<env name="WP_TESTS_ACTIVATE_PLUGINS" value="woocommerce/woocommerce.php" />
+		<env name="WP_TESTS_DIR" value="/tmp/wordpress-tests-lib" />
+		<env name="WP_DEVELOP_DIR" value="/tmp/wordpress-develop" />
+		<env name="WP_TESTS_DOMAIN" value="example.org" />
+		<env name="WP_TESTS_EMAIL" value="admin@example.org" />
+		<env name="WP_TESTS_TITLE" value="Test Blog" />
+	</php>
+	<filter>
+		<whitelist processUncoveredFilesFromWhitelist="true">
+			<directory suffix=".php">./includes</directory>
+			<exclude>
+				<directory suffix=".php">./vendor</directory>
+				<directory suffix=".php">./tests</directory>
+			</exclude>
+		</whitelist>
+	</filter>
+</phpunit>

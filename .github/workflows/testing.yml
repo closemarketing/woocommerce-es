@@ -3,7 +3,8 @@ name: Testing
 on:
   pull_request:
     branches:
-      - trunk
+      - main
+      - master
 
 jobs:
   phpunit:
