@@ -31,11 +31,41 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		parent::setUp();
 
 		$this->settings = [
-			'test_mode' => true,
+			'api'            => '',
+			'idcentre'       => '',
+			'url'            => '',
+			'username'       => '',
+			'password'       => '',
+			'company'        => '',
+			'domain'         => '',
+			'dbname'         => '',
+			'stock'          => 'no',
+			'prodst'         => 'draft',
+			'virtual'        => 'no',
+			'backorders'     => 'no',
+			'catsep'         => '',
+			'catattr'        => '',
+			'filter'         => '',
+			'filter_sku'     => '',
+			'tax_option'     => 'no',
+			'rates'          => 'default',
+			'catnp'          => 'yes',
+			'doctype'        => 'invoice',
+			'series'         => '',
+			'freeorder'      => 'no',
+			'ecstatus'       => 'all',
+			'order_tags'     => '',
+			'design_id'      => '',
+			'sync'           => 'no',
+			'sync_num'       => 5,
+			'sync_email'     => 'yes',
+			'prod_weight_eq' => '',
+			'debug_log'      => 'no',
 		];
 		
 		// Mock API connection
-		$this->connapi_erp = null;
+		$options           = conecom_get_options();
+		$this->connapi_erp = new Connect_Ecommerce_Clientify( $options['clientify'] );
 	}
 
 	/**
