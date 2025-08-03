@@ -6,7 +6,7 @@
  */
 
 
-define( 'TESTS_PLUGIN_DIR', dirname( __DIR__, 2 ) );
+define( 'TESTS_PLUGIN_DIR', dirname( __DIR__ ) );
 define( 'UNIT_TESTS_DATA_PLUGIN_DIR', TESTS_PLUGIN_DIR . '/tests/Data/' );
 
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
