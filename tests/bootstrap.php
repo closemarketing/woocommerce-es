@@ -5,6 +5,10 @@
  * @package Connect_Ecommerce
  */
 
+
+define( 'TESTS_PLUGIN_DIR', dirname( __DIR__, 2 ) );
+define( 'UNIT_TESTS_DATA_PLUGIN_DIR', TESTS_PLUGIN_DIR . '/tests/Data/' );
+
 $_tests_dir = getenv( 'WP_TESTS_DIR' );
 
 if ( ! $_tests_dir ) {
