@@ -8,7 +8,7 @@
  * @version    1.0.0
  */
 
-namespace CLOSE\ConnectEcommerce\Public;
+namespace CLOSE\ConnectEcommerce\Frontend;
 
 defined( 'ABSPATH' ) || exit;
 
