@@ -35,6 +35,13 @@ require_once "{$_tests_dir}/includes/functions.php";
 function _manually_load_plugin() {
 	global $wpdb;
 	
+	// Make sure WordPress core functions are available
+	// This ensures functions like wp_get_current_user() are loaded
+	if ( !function_exists('wp_get_current_user') ) {
+		// Load WordPress core functions if not available
+		require_once ABSPATH . WPINC . '/pluggable.php';
+	}
+	
 	// Load WooCommerce first
 	$woocommerce_path = '';
 	
@@ -63,6 +70,11 @@ function _manually_load_plugin() {
 			error_log( 'PHP version: ' . PHP_VERSION );
 		}
 		
+		// Verify WordPress core functions are available
+		if ( !function_exists('wp_get_current_user') ) {
+			error_log('WordPress core functions are not fully loaded. This may cause issues with WooCommerce installation.');
+		}
+		
 		// Try to install WooCommerce tables safely
 		try {
 			// Method 1: Try direct install() method if available
@@ -87,18 +99,63 @@ function _manually_load_plugin() {
 				add_option( 'woocommerce_db_version', WC()->version );
 			}
 			
-			// Additional compatibility for specific errors with webhook tables
+			// Create essential WooCommerce tables directly
 			global $wpdb;
-			$webhook_table = $wpdb->prefix . 'wc_webhooks';
-			if ( $wpdb->get_var( "SHOW TABLES LIKE '$webhook_table'" ) != $webhook_table ) {
-				// If webhook table doesn't exist, create a minimal version to avoid errors
-				$wpdb->query(
-					"CREATE TABLE IF NOT EXISTS {$wpdb->prefix}wc_webhooks (
+			
+			// List of essential tables for tests
+			$tables = [
+				'wc_webhooks' => "
+					CREATE TABLE IF NOT EXISTS {$wpdb->prefix}wc_webhooks (
 					  webhook_id bigint(20) NOT NULL AUTO_INCREMENT,
 					  status varchar(200) NOT NULL,
+					  name text NOT NULL,
+					  delivery_url text NOT NULL,
+					  secret text NOT NULL,
+					  topic varchar(200) NOT NULL,
+					  date_created datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+					  date_created_gmt datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
+					  api_version smallint(4) NOT NULL,
 					  PRIMARY KEY (webhook_id)
-					) {$wpdb->get_charset_collate()};"
-				);
+					) {$wpdb->get_charset_collate()};
+				",
+				'woocommerce_attribute_taxonomies' => "
+					CREATE TABLE IF NOT EXISTS {$wpdb->prefix}woocommerce_attribute_taxonomies (
+					  attribute_id bigint(20) NOT NULL AUTO_INCREMENT,
+					  attribute_name varchar(200) NOT NULL,
+					  attribute_label varchar(200) NULL,
+					  attribute_type varchar(20) NOT NULL,
+					  attribute_orderby varchar(20) NOT NULL,
+					  attribute_public int(1) NOT NULL DEFAULT 1,
+					  PRIMARY KEY (attribute_id)
+					) {$wpdb->get_charset_collate()};
+				",
+				'woocommerce_order_items' => "
+					CREATE TABLE IF NOT EXISTS {$wpdb->prefix}woocommerce_order_items (
+					  order_item_id bigint(20) NOT NULL AUTO_INCREMENT,
+					  order_item_name text NOT NULL,
+					  order_item_type varchar(200) NOT NULL DEFAULT '',
+					  order_id bigint(20) NOT NULL,
+					  PRIMARY KEY (order_item_id)
+					) {$wpdb->get_charset_collate()};
+				",
+				'woocommerce_order_itemmeta' => "
+					CREATE TABLE IF NOT EXISTS {$wpdb->prefix}woocommerce_order_itemmeta (
+					  meta_id bigint(20) NOT NULL AUTO_INCREMENT,
+					  order_item_id bigint(20) NOT NULL,
+					  meta_key varchar(255) default NULL,
+					  meta_value longtext NULL,
+					  PRIMARY KEY (meta_id)
+					) {$wpdb->get_charset_collate()};
+				"
+			];
+			
+			// Create each table if it doesn't exist
+			foreach ( $tables as $table_name => $table_query ) {
+				$full_table_name = $wpdb->prefix . $table_name;
+				if ( $wpdb->get_var( "SHOW TABLES LIKE '$full_table_name'" ) != $full_table_name ) {
+					// Create the table
+					$wpdb->query( $table_query );
+				}
 			}
 			
 		} catch ( Exception $e ) {
