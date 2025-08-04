@@ -1,18 +1,19 @@
 <?php
 /**
- * Plugin Name: Connect Ecommerce
- * Plugin URI: https://close.technology/wordpress-plugins/connect-ecommerce/
- * Description: Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
- * Author: Closetechnology
- * Author URI: https://close.technology/
- * Version: 3.1.2
+ * Plugin Name:       Connect Ecommerce
+ * Plugin URI:        https://close.technology/wordpress-plugins/connect-ecommerce/
+ * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
+ * Author:            Closetechnology
+ * Author URI:        https://close.technology/
+ * Version:           3.1.2
+ * Requires PHP:      7.4
+ * Requires at least: 6.3
+ * Text Domain:       connect-ecommerce
+ * Requires Plugins:  woocommerce
+ * License:           GPL-2.0+
+ * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  *
  * @package WordPress
- * Text Domain: connect-ecommerce
- * Requires PHP: 7.4
- * Requires Plugins: woocommerce
- * License:     GPL-2.0+
- * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
 defined( 'ABSPATH' ) || exit;
