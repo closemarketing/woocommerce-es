@@ -57,21 +57,30 @@ function _manually_load_plugin() {
 	
 	// Ensure WooCommerce tables are created correctly
 	if ( isset( $GLOBALS['woocommerce'] ) && is_object( $GLOBALS['woocommerce'] ) ) {
-		// Create WooCommerce tables
-		$GLOBALS['woocommerce']->install();
-		
-		// If we're on PHP 8.0 or earlier, run some additional actions
-		// to avoid compatibility issues
-		if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
+		// Use WooCommerce install method if it exists, otherwise use alternative approach
+		if ( method_exists( $GLOBALS['woocommerce'], 'install' ) ) {
+			// Create WooCommerce tables using the install method
+			$GLOBALS['woocommerce']->install();
+		} else {
+			// Alternative approach: manually include and run the install script
+			// This handles different WooCommerce versions and PHP compatibility
+			if ( file_exists( WP_PLUGIN_DIR . '/woocommerce/includes/class-wc-install.php' ) ) {
+				require_once WP_PLUGIN_DIR . '/woocommerce/includes/class-wc-install.php';
+				if ( class_exists( 'WC_Install' ) ) {
+					WC_Install::install();
+				}
+			}
+			
+			// Set database version option if needed
 			if ( ! get_option( 'woocommerce_db_version' ) ) {
 				add_option( 'woocommerce_db_version', WC()->version );
 			}
-			
-			// Enable logging for debugging
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( 'WooCommerce version: ' . WC()->version );
-				error_log( 'PHP version: ' . PHP_VERSION );
-			}
+		}
+		
+		// Enable logging for debugging
+		if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+			error_log( 'WooCommerce version: ' . WC()->version );
+			error_log( 'PHP version: ' . PHP_VERSION );
 		}
 	}
 
