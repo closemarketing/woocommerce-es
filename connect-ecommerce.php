@@ -9,6 +9,7 @@
  *
  * @package WordPress
  * Text Domain: connect-ecommerce
+ * Requires PHP: 7.4
  * Requires Plugins: woocommerce
  * License:     GPL-2.0+
  * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
