@@ -33,25 +33,47 @@ require_once "{$_tests_dir}/includes/functions.php";
  * Manually load the plugin being tested and its dependencies.
  */
 function _manually_load_plugin() {
+	global $wpdb;
+	
 	// Load WooCommerce first
 	$woocommerce_path = '';
 	
-	// En GitHub Actions
+	// In GitHub Actions
 	if ( getenv( 'GITHUB_WORKSPACE' ) ) {
 		$woocommerce_path = dirname( getenv( 'GITHUB_WORKSPACE' ) ) . '/woocommerce/woocommerce.php';
 	} 
-	// En entorno local
+	// In local environment
 	else {
 		$woocommerce_path = '../woocommerce/woocommerce.php';
 	}
 	
-	// Verificar si existe el archivo
+	// Check if the file exists
 	if ( !file_exists( $woocommerce_path ) ) {
-		echo "WooCommerce no encontrado en {$woocommerce_path}. Verifica la instalación." . PHP_EOL;
+		echo "WooCommerce not found at {$woocommerce_path}. Please verify the installation." . PHP_EOL;
 		exit( 1 );
 	}
 	
 	require_once $woocommerce_path;
+	
+	// Ensure WooCommerce tables are created correctly
+	if ( isset( $GLOBALS['woocommerce'] ) && is_object( $GLOBALS['woocommerce'] ) ) {
+		// Create WooCommerce tables
+		$GLOBALS['woocommerce']->install();
+		
+		// If we're on PHP 8.0 or earlier, run some additional actions
+		// to avoid compatibility issues
+		if ( version_compare( PHP_VERSION, '8.1', '<' ) ) {
+			if ( ! get_option( 'woocommerce_db_version' ) ) {
+				add_option( 'woocommerce_db_version', WC()->version );
+			}
+			
+			// Enable logging for debugging
+			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+				error_log( 'WooCommerce version: ' . WC()->version );
+				error_log( 'PHP version: ' . PHP_VERSION );
+			}
+		}
+	}
 
 	// Load our plugin after WooCommerce
 	require dirname( dirname( __FILE__ ) ) . '/connect-ecommerce.php';

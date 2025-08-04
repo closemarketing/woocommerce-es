@@ -44,8 +44,14 @@ jobs:
       - name: Install WooCommerce
         run: |
           cd $GITHUB_WORKSPACE/../
-          curl -L -O https://downloads.wordpress.org/plugin/woocommerce.zip
-          unzip -q woocommerce.zip
+          # For PHP 7.4 and 8.0, we use an older version of WooCommerce
+          if [[ "${{ matrix.php-version }}" == "7.4" || "${{ matrix.php-version }}" == "8.0" ]]; then
+            curl -L -O https://downloads.wordpress.org/plugin/woocommerce.7.9.0.zip
+            unzip -q woocommerce.7.9.0.zip
+          else
+            curl -L -O https://downloads.wordpress.org/plugin/woocommerce.zip
+            unzip -q woocommerce.zip
+          fi
           test -f woocommerce/woocommerce.php
 
       - name: Run tests
