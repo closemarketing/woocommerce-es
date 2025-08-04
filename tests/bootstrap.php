@@ -34,7 +34,8 @@ require_once "{$_tests_dir}/includes/functions.php";
  */
 function _manually_load_plugin() {
 	// Load WooCommerce first
-	require_once '../woocommerce/woocommerce.php';
+	$woocommerce_path = getenv( 'GITHUB_WORKSPACE' ) ? dirname( getenv( 'GITHUB_WORKSPACE' ) ) . '/woocommerce/woocommerce.php' : '../woocommerce/woocommerce.php';
+	require_once $woocommerce_path;
 
 	// Load our plugin after WooCommerce
 	require dirname( dirname( __FILE__ ) ) . '/connect-ecommerce.php';
