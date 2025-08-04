@@ -19,3 +19,4 @@ phpunit.xml.dist
 phpcs.xml.dist
 .phpcs.xml.dist
 tests/
+bin/
