@@ -39,9 +39,9 @@ jobs:
       - name: Install WooCommerce
         run: |
           cd $GITHUB_WORKSPACE/../
-          git clone --depth=1 https://github.com/woocommerce/woocommerce.git
-          cd woocommerce
-          composer install --no-dev
+          curl -L -O https://downloads.wordpress.org/plugin/woocommerce.zip
+          unzip -q woocommerce.zip
+          test -f woocommerce/woocommerce.php
 
       - name: Run tests
         run: phpunit

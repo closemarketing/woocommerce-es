@@ -34,7 +34,23 @@ require_once "{$_tests_dir}/includes/functions.php";
  */
 function _manually_load_plugin() {
 	// Load WooCommerce first
-	$woocommerce_path = getenv( 'GITHUB_WORKSPACE' ) ? dirname( getenv( 'GITHUB_WORKSPACE' ) ) . '/woocommerce/woocommerce.php' : '../woocommerce/woocommerce.php';
+	$woocommerce_path = '';
+	
+	// En GitHub Actions
+	if ( getenv( 'GITHUB_WORKSPACE' ) ) {
+		$woocommerce_path = dirname( getenv( 'GITHUB_WORKSPACE' ) ) . '/woocommerce/woocommerce.php';
+	} 
+	// En entorno local
+	else {
+		$woocommerce_path = '../woocommerce/woocommerce.php';
+	}
+	
+	// Verificar si existe el archivo
+	if ( !file_exists( $woocommerce_path ) ) {
+		echo "WooCommerce no encontrado en {$woocommerce_path}. Verifica la instalación." . PHP_EOL;
+		exit( 1 );
+	}
+	
 	require_once $woocommerce_path;
 
 	// Load our plugin after WooCommerce
