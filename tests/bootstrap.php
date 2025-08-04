@@ -30,9 +30,13 @@ if ( ! file_exists( "{$_tests_dir}/includes/functions.php" ) ) {
 require_once "{$_tests_dir}/includes/functions.php";
 
 /**
- * Manually load the plugin being tested.
+ * Manually load the plugin being tested and its dependencies.
  */
 function _manually_load_plugin() {
+	// Load WooCommerce first
+	require_once '../woocommerce/woocommerce.php';
+
+	// Load our plugin after WooCommerce
 	require dirname( dirname( __FILE__ ) ) . '/connect-ecommerce.php';
 }
 

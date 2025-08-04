@@ -2,6 +2,8 @@
 /**
  * Class CreateProductSimpleTest
  *
+ * Command: composer test -- --filter=CreateProductSimpleTest
+ *
  * @package Connect_Ecommerce
  */
 
@@ -29,6 +31,9 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 	 */
 	public function setUp(): void {
 		parent::setUp();
+		
+		// Verify that WooCommerce is active
+		$this->assertTrue(class_exists('WooCommerce'), 'WooCommerce is not active');
 
 		$this->settings = [
 			'api'            => '',
@@ -65,7 +70,7 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		
 		// Mock API connection
 		$options           = conecom_get_options();
-		$this->connapi_erp = new Connect_Ecommerce_Clientify( $options['clientify'] );
+		$this->connapi_erp = new Connect_Ecommerce_Clientify( $options );
 	}
 
 	/**
@@ -78,7 +83,14 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		
 		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		
-		// Verificar resultado
-		$this->assertNotNull($result_sync, 'El resultado de sincronización no debería ser nulo');
+		$this->assertNotNull( $result_sync );
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertIsInt( $result_sync['post_id'] );
+		
+		$product = wc_get_product( $result_sync['post_id'] );
+		$this->assertInstanceOf( 'WC_Product_Simple', $product );
+		$this->assertEquals( $item['sku'], $product->get_sku() );
+
+		wp_delete_post( $result_sync['post_id'], true ); // Clean up after test
 	}
 }

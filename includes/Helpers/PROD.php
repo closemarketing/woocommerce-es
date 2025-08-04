@@ -1076,7 +1076,7 @@ class PROD {
 	 * @return string
 	 */
 	private static function get_sale_price( $item, $settings ) {
-		$pricesale_discount = (float) $settings['pricesale_discount'] ?? 0;
+		$pricesale_discount = (float) ( $settings['pricesale_discount'] ?? 0 );
 		if ( empty( $pricesale_discount ) || empty( $item['price'] ) ) {
 			return '';
 		}
