@@ -2,13 +2,21 @@
 .editorconfig
 .git
 .gitignore
-.travis.yml
-circle.yml
 .DS_Store
-.github
 composer.lock
 .wordpress-org
 doc/
-phpcs.xml.dist
 changelog.md
 readme.md
+
+# PHP Unit
+.github
+.travis.yml
+circle.yml
+.phpcs.xml.dist
+.phpunit.result.cache
+phpunit.xml.dist
+phpcs.xml.dist
+.phpcs.xml.dist
+tests/
+bin/

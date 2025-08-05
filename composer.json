@@ -11,8 +11,6 @@
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		}
 	},
-	"require": {
-	},
 	"autoload": {
 		"psr-4": {
 			"CLOSE\\ConnectEcommerce\\": "includes/"
@@ -25,8 +23,9 @@
 		"sirbrillig/phpcs-variable-analysis": "^2",
 		"wp-coding-standards/wpcs": "^2",
 		"phpcsstandards/phpcsutils": "^1.x-dev",
-		"phpunit/phpunit": "^9.0",
-		"yoast/phpunit-polyfills": "^1.0"
+		"phpunit/phpunit": "^9.6",
+		"yoast/phpunit-polyfills": "^4.0",
+		"wp-phpunit/wp-phpunit": "^6.8"
 	},
 	"scripts": {
     "behat": "BEHAT_FEATURES_FOLDER=tests/behat/features run-behat-tests",

@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" bootstrap="tests/bootstrap.php" backupGlobals="false" colors="true" convertErrorsToExceptions="true" convertWarningsToExceptions="true" convertNoticesToExceptions="true" convertDeprecationsToExceptions="true" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd">
+  <coverage processUncoveredFiles="true">
+    <include>
+      <directory suffix=".php">./includes</directory>
+    </include>
+    <exclude>
+      <directory suffix=".php">./vendor</directory>
+      <directory suffix=".php">./tests</directory>
+    </exclude>
+  </coverage>
+  <testsuites>
+    <testsuite name="testing">
+      <directory prefix="test-" suffix=".php">./tests/Unit/</directory>
+    </testsuite>
+    <testsuite name="woocommerce">
+      <directory prefix="test-" suffix=".php">./tests/WooCommerce/</directory>
+    </testsuite>
+  </testsuites>
+  <groups>
+    <include>
+      <group>woocommerce</group>
+    </include>
+  </groups>
+  <php>
+    <env name="WP_TESTS_ACTIVATE_PLUGINS" value="woocommerce/woocommerce.php"/>
+  </php>
+</phpunit>
