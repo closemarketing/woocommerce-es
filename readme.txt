@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.0
 Tested up to: 6.8
-Stable tag: 3.1.2
-Version: 3.1.2
+Stable tag: 3.1.3
+Version: 3.1.3
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -76,6 +76,10 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 == Changelog ==
 
+= 3.1.3 =
+* Enhancement: updated versions to PHP that are supported.
+* Fixed: Fatal error in PHP 7.4.
+
 = 3.1.2 =
 * Fixed: Getting prices rates from variation products.
 * Fixed: Zero stock in variation products was giving not manage stock.
@@ -84,7 +88,6 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 = 3.1.1 =
 * Fixed: Error in orphaned variations to prevent SKU errors.
 * Fixed: Cron not running properly.
-* Fixed: Fatal error in PHP 7.4.
 
 = 3.1.0 =
 * Added: WP CLI command to import products.
