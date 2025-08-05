@@ -34,7 +34,7 @@ require_once "{$_tests_dir}/includes/functions.php";
  */
 function _manually_load_plugin() {
 	// Load WooCommerce first from the standard WordPress plugins directory
-	require_once dirname( dirname( __DIR__ ) ) . '/wp-content/plugins/woocommerce/woocommerce.php';
+	require_once '../woocommerce/woocommerce.php';
 
 	// Load our plugin after WooCommerce
 	require dirname( dirname( __FILE__ ) ) . '/connect-ecommerce.php';
