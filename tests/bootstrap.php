@@ -45,17 +45,6 @@ function _manually_load_plugin() {
 	// Load WooCommerce first from the standard WordPress plugins directory
 	require_once WP_CORE_DIR . '/wp-content/plugins/woocommerce/woocommerce.php';
 
-	// Initialize WooCommerce properly
-	if ( class_exists( 'WooCommerce' ) ) {
-		// Set up WooCommerce for testing
-		WC()->init();
-		
-		// Ensure WooCommerce tables are created
-		if ( ! WC_Install::is_installed() ) {
-			WC_Install::install();
-		}
-	}
-
 	// Load our plugin after WooCommerce
 	require dirname( dirname( __FILE__ ) ) . '/connect-ecommerce.php';
 }
@@ -64,12 +53,3 @@ tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
 // Start up the WP testing environment.
 require "{$_tests_dir}/includes/bootstrap.php";
-
-// Fix for PHP 8.0 compatibility with WooCommerce
-if ( PHP_VERSION_ID >= 80000 ) {
-	// Ensure proper class loading for WooCommerce
-	if ( ! class_exists( 'WC_Install' ) && class_exists( 'WooCommerce' ) ) {
-		// Load WooCommerce installation class if not already loaded
-		require_once WP_CORE_DIR . '/wp-content/plugins/woocommerce/includes/class-wc-install.php';
-	}
-}
