@@ -43,17 +43,15 @@ jobs:
 
       - name: Install WooCommerce
         run: |
-          cd $GITHUB_WORKSPACE/../
-          # For PHP 8.0, use a compatible version of WooCommerce
+          mkdir -p wp-content/plugins
           if [[ "${{ matrix.php-version }}" == "8.0" ]]; then
-            curl -L -O https://downloads.wordpress.org/plugin/woocommerce.7.9.0.zip
-            unzip -q woocommerce.7.9.0.zip
+            curl -L -o woocommerce.zip https://downloads.wordpress.org/plugin/woocommerce.7.9.0.zip
           else
-            # For PHP 8.2 and 8.3, use the latest version
-            curl -L -O https://downloads.wordpress.org/plugin/woocommerce.zip
-            unzip -q woocommerce.zip
+            curl -L -o woocommerce.zip https://downloads.wordpress.org/plugin/woocommerce.zip
           fi
-          test -f woocommerce/woocommerce.php
+          unzip -q woocommerce.zip
+          mv woocommerce wp-content/plugins/
+          test -f wp-content/plugins/woocommerce/woocommerce.php
 
       - name: Run tests
         run: phpunit
