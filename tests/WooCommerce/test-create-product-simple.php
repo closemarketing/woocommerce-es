@@ -80,6 +80,9 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple.json';
 		$item      = file_get_contents( $item_path );
 		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
@@ -92,6 +95,8 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertInstanceOf( 'WC_Product_Simple', $product );
 		$this->assertEquals( $item['sku'], $product->get_sku() );
 		$this->assertEquals( $item['barcode'], $product->get_global_unique_id() );
+		$this->assertEquals( $item['desc'], $product->get_description() );
+		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
 
 		// Update product asserts.
 		$update_post = [

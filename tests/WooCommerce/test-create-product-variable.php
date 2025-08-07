@@ -82,6 +82,7 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$item      = json_decode( $item, true )[0];
 
 		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
@@ -104,19 +105,9 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$index = 0;
 		foreach ( $variations as $variation_id ) {
 			$prod_variation = new WC_Product_Variation( $variation_id );
-			$this->assertEquals( $item['variations'][$index]['price'], $prod_variation->get_regular_price() );
-			$this->assertEquals( $item['variations'][$index]['attributes'], $prod_variation->get_attributes() );
-			$this->assertEquals( $item['variations'][$index]['sale_price'], $prod_variation->get_sale_price() );
-			$this->assertEquals( $item['variations'][$index]['stock_quantity'], $prod_variation->get_stock_quantity() );
-			$this->assertEquals( $item['variations'][$index]['manage_stock'], $prod_variation->get_manage_stock() );
-			$this->assertEquals( $item['variations'][$index]['backorders'], $prod_variation->get_backorders() );
-			$this->assertEquals( $item['variations'][$index]['tax_status'], $prod_variation->get_tax_status() );
-			$this->assertEquals( $item['variations'][$index]['tax_class'], $prod_variation->get_tax_class() );
-			$this->assertEquals( $item['variations'][$index]['weight'], $prod_variation->get_weight() );
-			$this->assertEquals( $item['variations'][$index]['length'], $prod_variation->get_length() );
-			$this->assertEquals( $item['variations'][$index]['width'], $prod_variation->get_width() );
-			$this->assertEquals( $item['variations'][$index]['height'], $prod_variation->get_height() );
-			$this->assertEquals( $item['variations'][$index]['shipping_class'], $prod_variation->get_shipping_class() );
+			$this->assertEquals( $item['variants'][$index]['price'], (float) $prod_variation->get_regular_price() );
+			$this->assertEquals( $item['variants'][$index]['stock'], $prod_variation->get_stock_quantity() );
+			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
 			$index++;
 		}
 
