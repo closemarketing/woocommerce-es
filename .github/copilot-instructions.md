@@ -16,9 +16,9 @@ PHP/WordPress
 - Utilize WordPress core functions and APIs when available.
 - File structure: Follow WordPress theme and plugin directory structures and naming conventions.
 - Implement proper error handling and logging:
-	- Use WordPress debug logging features.
-	- Create custom error handlers when necessary.
-	- Use try-catch blocks for expected exceptions.
+- Use WordPress debug logging features.
+- Create custom error handlers when necessary.
+- Use try-catch blocks for expected exceptions.
 - Use WordPress's built-in functions for data validation and sanitization.
 - Implement proper nonce verification for form submissions.
 - Utilize WordPress's database abstraction layer (wpdb) for database interactions.
