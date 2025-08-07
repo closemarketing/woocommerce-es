@@ -357,9 +357,9 @@ class PROD {
 
 		// Set attributes.
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
-		$item_type  = array_search( $attribute_cat_id, array_column( $attributes, 'id', 'value' ) );
-		if ( $item_type ) {
-			$categories_ids = TAX::get_categories_ids( $settings, $item_type, $is_new_product );
+		$cat_name   = array_column( $attributes, 'name', 'value' )[ $attribute_cat_id ] ?? '';
+		if ( $cat_name ) {
+			$categories_ids = TAX::get_categories_ids( $settings, $cat_name, $is_new_product );
 			if ( ! empty( $categories_ids ) ) {
 				$product_props['category_ids'] = $categories_ids;
 			}
