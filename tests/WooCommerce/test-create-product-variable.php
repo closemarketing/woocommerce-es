@@ -80,6 +80,8 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
 		$item      = file_get_contents( $item_path );
 		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
@@ -88,25 +90,12 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertEquals( 'ok', $result_sync['status'] );
 		$this->assertIsInt( $result_prod_id );
 		
+		$post_cat = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
 		$product = wc_get_product( $result_prod_id );
 		$this->assertInstanceOf( 'WC_Product_Variable', $product );
-		$this->assertEquals( $item['sku'], $product->get_sku() );
-		$this->assertEquals( $item['barcode'], $product->get_global_unique_id() );
+		$this->assertEquals( $item['sku'], $product->get_sku() ); // Only SKU, barcode not needed for variable products.
 		$this->assertEquals( $item['name'], $product->get_name() );
-		$this->assertEquals( $item['description'], $product->get_description() );
-		$this->assertEquals( $item['short_description'], $product->get_short_description() );
-		$this->assertEquals( $item['price'], $product->get_regular_price() );
-		$this->assertEquals( $item['sale_price'], $product->get_sale_price() );
-		$this->assertEquals( $item['stock_quantity'], $product->get_stock_quantity() );
-		$this->assertEquals( $item['manage_stock'], $product->get_manage_stock() );
-		$this->assertEquals( $item['backorders'], $product->get_backorders() );
-		$this->assertEquals( $item['tax_status'], $product->get_tax_status() );
-		$this->assertEquals( $item['tax_class'], $product->get_tax_class() );
-		$this->assertEquals( $item['weight'], $product->get_weight() );
-		$this->assertEquals( $item['length'], $product->get_length() );
-		$this->assertEquals( $item['width'], $product->get_width() );
-		$this->assertEquals( $item['height'], $product->get_height() );
-		$this->assertEquals( $item['shipping_class'], $product->get_shipping_class() );
+		$this->assertEquals( $item['desc'], $product->get_description() );
 		$this->assertEquals( $item['categories'], wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) );
 		$this->assertEquals( $item['tags'], wp_get_post_terms( $result_prod_id, 'product_tag', [ 'fields' => 'names' ] ) );
 

@@ -39,7 +39,7 @@ class PROD {
 		$is_new_product = $post_id ? false : true;
 
 		if ( empty( $post_id ) ) {
-			$post_id        = self::find_product( $item['sku'] );
+			$post_id        = self::find_product( $item['sku'] ?? '' );
 			$is_new_product = empty( $post_id ) ? true : false;
 		}
 
@@ -305,7 +305,8 @@ class PROD {
 			}
 		}
 
-		$product_props = array_merge( $product_props, $product_props_new );
+		$product_props        = array_merge( $product_props, $product_props_new );
+		$product_props['sku'] = $item['sku'] ?? '';
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
@@ -317,7 +318,6 @@ class PROD {
 			case 'simple':
 			case 'grouped':
 				// Values for simple products.
-				$product_props['sku'] = $item['sku'];
 				// Check if the product can be sold.
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
 					$product_props['stock_status']       = 'instock';
