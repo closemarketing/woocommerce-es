@@ -169,13 +169,13 @@ class TAX {
 	 * @return array
 	 */
 	public static function get_categories_ids( $settings, $item_type, $is_new_product ) {
+		if ( empty( $item_type ) ) {
+			return array();
+		}
 		$categories_ids = array();
-		// Category Status.
 		$category_newp = isset( $settings['catnp'] ) ? $settings['catnp'] : 'yes';
 
-		if ( ( ! empty( $item_type ) && 'yes' === $category_newp && $is_new_product ) ||
-			( ! empty( $item_type ) && 'no' === $category_newp && false === $is_new_product )
-		) {
+		if ( ( 'yes' === $category_newp && $is_new_product ) || 'no' === $category_newp ) {
 			$categories_name = self::split_categories_name( $settings, $item_type );
 			$categories_ids  = self::find_categories_ids( $categories_name );
 		}

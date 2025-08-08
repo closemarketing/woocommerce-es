@@ -1,0 +1,129 @@
+[
+	{
+		"id": "657488661e197a92c1066a9e",
+		"kind": "variants",
+		"name": "Shoes",
+		"desc": "",
+		"typeId": "",
+		"contactId": "",
+		"contactName": "",
+		"price": 12.39669,
+		"taxes": [
+			"s_iva_21"
+		],
+		"total": 14.99999,
+		"hasStock": true,
+		"stock": 0,
+		"barcode": "codbarzapblan",
+		"sku": "ZAPBLAN",
+		"cost": 12,
+		"purchasePrice": "",
+		"weight": 1.2,
+		"tags": [],
+		"categoryId": "657489742f5e2b9ef70df2c3",
+		"factoryCode": "codfabzapblan",
+		"forSale": 1,
+		"forPurchase": 1,
+		"salesChannelId": null,
+		"expAccountId": null,
+		"warehouseId": "6574879d77348f494a0ee9e0",
+		"rates": [
+			{
+				"id": "657487722c59215cff0ab487",
+				"subtotal": 9.9173600000000004,
+				"taxes": [
+					"s_iva_21"
+				]
+			}
+		],
+		"attributes": [
+			{
+				"id": "65748845e4aed84601097d0d",
+				"value": "sandalias",
+				"name": "Calzado"
+			}
+		],
+		"variants": [
+			{
+				"id": "657488661e197a92c1066aa0",
+				"barcode": "4006381374206",
+				"sku": "zap2",
+				"price": 12.39669,
+				"cost": 12,
+				"purchasePrice": 0,
+				"stock": 0,
+				"categoryFields": [
+					{
+						"id": "657489742f5e2b9ef70df2bf",
+						"name": "38",
+						"field": "3"
+					},
+					{
+						"id": "657489742f5e2b9ef70df2c0",
+						"name": "39",
+						"field": "4"
+					},
+					{
+						"id": "657489742f5e2b9ef70df2c1",
+						"name": "40",
+						"field": "5"
+					},
+					{
+						"id": "657489742f5e2b9ef70df2c2",
+						"name": "41",
+						"field": "3"
+					}
+				],
+				"rates": {
+					"657487722c59215cff0ab487": {
+						"id": "657487722c59215cff0ab487",
+						"subtotal": 9.9173600000000004,
+						"taxes": [
+							"s_iva_21"
+						]
+					}
+				}
+			},
+			{
+				"id": "657488661e197a92c1066aa1",
+				"barcode": "4006381374207",
+				"sku": "zap3",
+				"price": 12.39669,
+				"cost": 12,
+				"purchasePrice": 0,
+				"stock": 0,
+				"categoryFields": [
+					{
+						"id": "657489742f5e2b9ef70df2bf",
+						"name": "38",
+						"field": "4"
+					},
+					{
+						"id": "657489742f5e2b9ef70df2c0",
+						"name": "39",
+						"field": "3"
+					},
+					{
+						"id": "657489742f5e2b9ef70df2c1",
+						"name": "40",
+						"field": "2"
+					},
+					{
+						"id": "657489742f5e2b9ef70df2c2",
+						"name": "41",
+						"field": "2"
+					}
+				],
+				"rates": {
+					"657487722c59215cff0ab487": {
+						"id": "657487722c59215cff0ab487",
+						"subtotal": 9.9173600000000004,
+						"taxes": [
+							"s_iva_21"
+						]
+					}
+				}
+			}
+		]
+	}
+]

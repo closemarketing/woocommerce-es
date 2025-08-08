@@ -39,7 +39,7 @@ class PROD {
 		$is_new_product = $post_id ? false : true;
 
 		if ( empty( $post_id ) ) {
-			$post_id        = self::find_product( $item['sku'] );
+			$post_id        = self::find_product( $item['sku'] ?? '' );
 			$is_new_product = empty( $post_id ) ? true : false;
 		}
 
@@ -305,7 +305,8 @@ class PROD {
 			}
 		}
 
-		$product_props = array_merge( $product_props, $product_props_new );
+		$product_props        = array_merge( $product_props, $product_props_new );
+		$product_props['sku'] = $item['sku'] ?? '';
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
@@ -317,7 +318,6 @@ class PROD {
 			case 'simple':
 			case 'grouped':
 				// Values for simple products.
-				$product_props['sku'] = $item['sku'];
 				// Check if the product can be sold.
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
 					$product_props['stock_status']       = 'instock';
@@ -357,9 +357,9 @@ class PROD {
 
 		// Set attributes.
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
-		$item_type  = array_search( $attribute_cat_id, array_column( $attributes, 'id', 'value' ) );
-		if ( $item_type ) {
-			$categories_ids = TAX::get_categories_ids( $settings, $item_type, $is_new_product );
+		$cat_name   = array_column( $attributes, 'name', 'value' )[ $attribute_cat_id ] ?? '';
+		if ( $cat_name ) {
+			$categories_ids = TAX::get_categories_ids( $settings, $cat_name, $is_new_product );
 			if ( ! empty( $categories_ids ) ) {
 				$product_props['category_ids'] = $categories_ids;
 			}
@@ -437,19 +437,14 @@ class PROD {
 	private static function sync_product_simple( $settings, $item, $api_erp, $from_pack = false, $post_id = 0 ) {
 		$message = '';
 		$post_id = empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
-		if ( ! $post_id ) {
-			$post_id = self::create_product_post( $settings, $item );
-		}
-		if ( $post_id && $item['sku'] && 'simple' === $item['kind'] ) {
-			wp_set_object_terms( $post_id, 'simple', 'product_type' );
 
-			// Update meta for product.
-			$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
-			$post_id     = $result_prod['prod_id'] ?? 0;
+		// Update meta for product.
+		$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
+		$post_id     = $result_prod['prod_id'] ?? 0;
 
-			// Add custom taxonomies.
-			self::add_custom_taxonomies( $post_id, $item );
-		}
+		// Add custom taxonomies.
+		self::add_custom_taxonomies( $post_id, $item );
+
 		if ( $from_pack ) {
 			$message .= '<br/>';
 			if ( ! $post_id ) {
@@ -492,7 +487,7 @@ class PROD {
 		$message         = '';
 
 		if ( ! $is_new_product ) {
-			foreach ( $product->get_children( false ) as $child_id ) {
+			foreach ( $product->get_children() as $child_id ) {
 				// get an instance of the WC_Variation_product Object.
 				$variation_children = wc_get_product( $child_id );
 				if ( ! $variation_children || ! $variation_children->exists() ) {
@@ -568,7 +563,7 @@ class PROD {
 			$variation = new \WC_Product_Variation( $variation_id );
 			if ( ! empty( $variant['barcode'] ) ) {
 				try {
-					$variation->set_global_unique_id( $item['barcode'] );
+					$variation->set_global_unique_id( $variant['barcode'] );
 				} catch ( \Exception $e ) {
 					// Error.
 				}
