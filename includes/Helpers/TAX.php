@@ -175,9 +175,7 @@ class TAX {
 		$categories_ids = array();
 		$category_newp = isset( $settings['catnp'] ) ? $settings['catnp'] : 'yes';
 
-		if ( ( 'yes' === $category_newp && $is_new_product ) ||
-			( 'no' === $category_newp && false === $is_new_product )
-		) {
+		if ( ( 'yes' === $category_newp && $is_new_product ) || 'no' === $category_newp ) {
 			$categories_name = self::split_categories_name( $settings, $item_type );
 			$categories_ids  = self::find_categories_ids( $categories_name );
 		}
