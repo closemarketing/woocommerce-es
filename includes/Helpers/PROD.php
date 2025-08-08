@@ -437,19 +437,14 @@ class PROD {
 	private static function sync_product_simple( $settings, $item, $api_erp, $from_pack = false, $post_id = 0 ) {
 		$message = '';
 		$post_id = empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
-		if ( ! $post_id ) {
-			$post_id = self::create_product_post( $settings, $item );
-		}
-		if ( $post_id && $item['sku'] && 'simple' === $item['kind'] ) {
-			wp_set_object_terms( $post_id, 'simple', 'product_type' );
 
-			// Update meta for product.
-			$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
-			$post_id     = $result_prod['prod_id'] ?? 0;
+		// Update meta for product.
+		$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
+		$post_id     = $result_prod['prod_id'] ?? 0;
 
-			// Add custom taxonomies.
-			self::add_custom_taxonomies( $post_id, $item );
-		}
+		// Add custom taxonomies.
+		self::add_custom_taxonomies( $post_id, $item );
+
 		if ( $from_pack ) {
 			$message .= '<br/>';
 			if ( ! $post_id ) {
@@ -568,7 +563,7 @@ class PROD {
 			$variation = new \WC_Product_Variation( $variation_id );
 			if ( ! empty( $variant['barcode'] ) ) {
 				try {
-					$variation->set_global_unique_id( $item['barcode'] );
+					$variation->set_global_unique_id( $variant['barcode'] );
 				} catch ( \Exception $e ) {
 					// Error.
 				}
