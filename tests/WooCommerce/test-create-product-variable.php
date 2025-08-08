@@ -82,7 +82,7 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$item      = json_decode( $item, true )[0];
 
 		$this->settings['catattr'] = 'sandalias';
-		$this->settings['catnp']   = 'yes';
+		$this->settings['catnp']   = 'yes'; // only in new products.
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
@@ -97,7 +97,6 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertEquals( $item['name'], $product->get_name() );
 		$this->assertEquals( $item['desc'], $product->get_description() );
 		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
-		//$this->assertEquals( $item['tags'], wp_get_post_terms( $result_prod_id, 'product_tag', [ 'fields' => 'names' ] ) );
 
 		// Variable product asserts.
 		$variations = $product->get_children();

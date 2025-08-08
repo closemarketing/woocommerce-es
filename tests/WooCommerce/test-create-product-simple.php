@@ -80,9 +80,6 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple.json';
 		$item      = file_get_contents( $item_path );
 		$item      = json_decode( $item, true )[0];
-
-		$this->settings['catattr'] = 'sandalias';
-		$this->settings['catnp']   = 'yes';
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
@@ -96,7 +93,6 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertEquals( $item['sku'], $product->get_sku() );
 		$this->assertEquals( $item['barcode'], $product->get_global_unique_id() );
 		$this->assertEquals( $item['desc'], $product->get_description() );
-		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
 
 		// Update product asserts.
 		$update_post = [
@@ -118,6 +114,70 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		// Product update does not change Title and Content.
 		$this->assertEquals( 'Updated Product Title', get_the_title( $result_sync_upd['post_id'] ) );
 		$this->assertEquals( 'Updated product description.', get_post_field( 'post_content', $result_sync_upd['post_id'] ) );
+
+		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
+	}
+
+	/**
+	 * Create Product Simple without Errors.
+	 */
+	public function test_category_sync_new_products_without_errors() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes'; // yes means only on new products.
+		
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		
+		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+
+		// Update product asserts.
+		$item['attributes'] = [
+			[
+				'id'    => '64be2e55727b35ad0b0d2c42',
+				'value' => 'sandalias',
+				'name'  => 'Chanclas',
+			],
+		];
+
+		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+
+		$this->assertEquals( false, in_array( 'Chanclas', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+
+		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
+	}
+
+	/**
+	 * Create Product Simple without Errors.
+	 */
+	public function test_category_sync_updated_products_without_errors() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'no'; // yes means only on new products.
+		
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		
+		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+
+		// Update product asserts.
+		$item['attributes'] = [
+			[
+				'id'    => '64be2e55727b35ad0b0d2c42',
+				'value' => 'sandalias',
+				'name'  => 'Chanclas',
+			],
+		];
+
+		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+
+		$this->assertEquals( true, in_array( 'Chanclas', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
 	}

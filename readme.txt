@@ -76,6 +76,12 @@ The connector base is to connect Clientify, an CRM Marketing Automation tool. [T
 
 == Changelog ==
 
+= 3.1.4 =
+* Enhancement: Added tests for product simple and variable.
+* Fixed: sync barcode in product variations.
+* Fixed: sync categories criteria.
+* Fixed: deprecation notice for WooCommerce.
+
 = 3.1.3 =
 * Enhancement: updated versions to PHP that are supported.
 * Fixed: Fatal error in PHP 7.4.
