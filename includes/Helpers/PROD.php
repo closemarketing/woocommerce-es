@@ -487,7 +487,7 @@ class PROD {
 		$message         = '';
 
 		if ( ! $is_new_product ) {
-			foreach ( $product->get_children( false ) as $child_id ) {
+			foreach ( $product->get_children() as $child_id ) {
 				// get an instance of the WC_Variation_product Object.
 				$variation_children = wc_get_product( $child_id );
 				if ( ! $variation_children || ! $variation_children->exists() ) {
