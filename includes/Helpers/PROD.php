@@ -45,7 +45,7 @@ class PROD {
 			return array(
 				'status'  => 'error',
 				'post_id' => 0,
-				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')</br>',
+				'message' => __( 'SKU not finded in product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')</br>',
 			);
 		}
 
