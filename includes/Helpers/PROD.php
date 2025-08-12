@@ -32,7 +32,15 @@ class PROD {
 	 * @return array
 	 */
 	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
-		$item['kind'] = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
+		// Prevent errors.
+		if ( empty( $item['kind'] ) ) {
+			$item['kind'] = 'simple';
+		}
+
+		if ( empty( $item['name'] ) ) {
+			$item['name'] = __( 'Product without name', 'connect-ecommerce' );
+		}
+
 		if ( empty( $item['sku'] ) ) {
 			return array(
 				'status'  => 'error',
@@ -41,8 +49,12 @@ class PROD {
 			);
 		}
 
-		if ( empty( $item['name'] ) ) {
-			$item['name'] = __( 'Product without name', 'connect-ecommerce' );
+		if ( empty( $item['variants'] ) && ( 'variants' === $item['kind'] || 'variable' === $item['kind'] ) ) {
+			return array(
+				'status'  => 'error',
+				'post_id' => 0,
+				'message' => __( 'Product variable without variants', 'connect-ecommerce' ),
+			);
 		}
 
 		$status         = 'ok';
@@ -65,7 +77,7 @@ class PROD {
 			$result_post = self::sync_product_simple( $settings, $item, $api_erp, false, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
-		} elseif ( ! $is_filtered && ( 'variants' === $item['kind'] || 'variable' === $item_kind ) ) {
+		} elseif ( ! $is_filtered && ( 'variants' === $item['kind'] || 'variable' === $item['kind'] ) ) {
 			// Variable product.
 			// Check if any variants exists.
 			$any_variant_sku = true;
@@ -525,7 +537,7 @@ class PROD {
 		}
 		foreach ( $item['variants'] as $variant ) {
 			$variation_id = 0; // default value.
-			if ( ! $is_new_product && is_array( $variations_item ) ) {
+			if ( ! $is_new_product && ! empty( $variations_item ) && is_array( $variations_item ) ) {
 				$variation_id = array_search( $variant['sku'], $variations_item );
 				unset( $variations_item[ $variation_id ] );
 			}

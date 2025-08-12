@@ -133,4 +133,38 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
 	}
+
+	public function test_create_product_variable_with_errors() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+		$original_item = $item;
+		
+		// Without SKU.
+		unset( $item['sku'] );
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'error', $result_sync['status'] );
+		$this->assertEquals( 0, $result_sync['post_id'] );
+
+		// Without variants.
+		$item = $original_item;
+		unset( $item['variants'] );
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'error', $result_sync['status'] );
+		$this->assertEquals( 0, $result_sync['post_id'] );
+
+		// Without name.
+		$item = $original_item;
+		unset( $item['name'] );
+		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertNotNull( $result_sync['post_id'] );
+		$this->assertNotEmpty( 'Product without name', get_the_title( $result_sync['post_id'] ) );
+
+		// Blank product.
+		$item = [];
+		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'error', $result_sync['status'] );
+		$this->assertEquals( 0, $result_sync['post_id'] );
+	}
 }

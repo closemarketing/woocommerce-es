@@ -47,6 +47,10 @@ class TAX {
 			if ( ! $attribute_id ) {
 				$attribute_id = self::create_global_attribute( $attr_name );
 			}
+			if ( is_wp_error( $attribute_id ) ) {
+				continue;
+			}
+
 			$slug          = wc_sanitize_taxonomy_name( $attr_name );
 			$taxonomy_name = wc_attribute_taxonomy_name( $slug );
 

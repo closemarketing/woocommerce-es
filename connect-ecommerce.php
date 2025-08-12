@@ -67,8 +67,6 @@ function conecom_get_options() {
 	);
 }
 
-
-
 add_action( 'init', 'conecom_loads' );
 /**
  * Connect WooCommerce loads.

@@ -109,7 +109,7 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertIsInt( $result_sync_upd['post_id'] );
 		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
 
-		// Prices.
+		// Prices update.
 		$this->assertEquals( 100, get_post_meta( $result_sync_upd['post_id'], '_regular_price', true ) );
 
 		// Product update does not change Title and Content.
@@ -136,19 +136,18 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertEquals( 'ok', $result_sync['status'] );
 		$this->assertNotNull( $result_sync['post_id'] );
 
-		/*
 		$item = $original_item;
 		unset( $item['name'] );
 		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$this->assertEquals( 'ok', $result_sync['status'] );
 		$this->assertNotNull( $result_sync['post_id'] );
-		//$this->assertEquals( 'Product without name', get_the_title( $result_sync['post_id'] ) );
-
+		$this->assertNotEmpty( 'Product without name', get_the_title( $result_sync['post_id'] ) );
 
 		// Blank product.
 		$item = [];
 		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
-		*/
+		$this->assertEquals( 'error', $result_sync['status'] );
+		$this->assertEquals( 0, $result_sync['post_id'] );
 	}
 
 	/**
