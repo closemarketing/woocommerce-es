@@ -32,10 +32,22 @@ class PROD {
 	 * @return array
 	 */
 	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
+		$item['kind'] = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
+		if ( empty( $item['sku'] ) ) {
+			return array(
+				'status'  => 'error',
+				'post_id' => 0,
+				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')</br>',
+			);
+		}
+
+		if ( empty( $item['name'] ) ) {
+			$item['name'] = __( 'Product without name', 'connect-ecommerce' );
+		}
+
 		$status         = 'ok';
 		$message        = '';
 		$is_filtered    = self::filter_product( $settings, $item );
-		$item_kind      = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
 		$is_new_product = $post_id ? false : true;
 
 		if ( empty( $post_id ) ) {
@@ -49,11 +61,11 @@ class PROD {
 		$msg_product_created = __( 'Product created: ', 'connect-ecommerce' );
 		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
-		if ( ! $is_filtered && $item['sku'] && 'simple' === $item_kind ) {
+		if ( ! $is_filtered && $item['sku'] && 'simple' === $item['kind'] ) {
 			$result_post = self::sync_product_simple( $settings, $item, $api_erp, false, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
-		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
+		} elseif ( ! $is_filtered && ( 'variants' === $item['kind'] || 'variable' === $item_kind ) ) {
 			// Variable product.
 			// Check if any variants exists.
 			$any_variant_sku = true;
@@ -95,7 +107,7 @@ class PROD {
 				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'variable', null );
 				$post_id     = $result_prod['prod_id'] ?? 0;
 				$message    .= 0 === $post_id || false === $post_id ? $msg_product_created : $msg_product_synced;
-				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item_kind . ') ' . $result_prod['message'] ?? '';
+				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item['kind'] . ') ' . $result_prod['message'] ?? '';
 			}
 		} elseif ( ! $is_filtered && 'pack' === $item_kind && $plugin_pack_active ) {
 			$post_id = ! empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
