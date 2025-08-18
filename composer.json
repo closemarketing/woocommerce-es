@@ -23,7 +23,6 @@
 		"sirbrillig/phpcs-variable-analysis": "^2",
 		"wp-coding-standards/wpcs": "^2",
 		"phpcsstandards/phpcsutils": "^1.x-dev",
-		"phpunit/phpunit": "^9.6",
 		"yoast/phpunit-polyfills": "^4.0",
 		"wp-phpunit/wp-phpunit": "^6.8"
 	},
