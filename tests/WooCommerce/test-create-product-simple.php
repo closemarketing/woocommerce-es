@@ -101,6 +101,7 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 			'post_content' => 'Updated product description.',
 		];
 		wp_update_post( $update_post );
+		$item['price'] = 100;
 		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
 
 		$this->assertNotNull( $result_sync_upd );
@@ -108,14 +109,45 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertIsInt( $result_sync_upd['post_id'] );
 		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
 
-		// Prices.
-		$this->assertEquals( $item['price'], get_post_meta( $result_sync_upd['post_id'], '_regular_price', true ) );
+		// Prices update.
+		$this->assertEquals( 100, get_post_meta( $result_sync_upd['post_id'], '_regular_price', true ) );
 
 		// Product update does not change Title and Content.
 		$this->assertEquals( 'Updated Product Title', get_the_title( $result_sync_upd['post_id'] ) );
 		$this->assertEquals( 'Updated product description.', get_post_field( 'post_content', $result_sync_upd['post_id'] ) );
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
+	}
+
+	public function test_create_product_simple_with_errors() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+		$original_item = $item;
+		
+		unset( $item['sku'] );
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'error', $result_sync['status'] );
+		$this->assertEquals( 0, $result_sync['post_id'] );
+
+		$item = $original_item;
+		unset( $item['kind'] );
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertNotNull( $result_sync['post_id'] );
+
+		$item = $original_item;
+		unset( $item['name'] );
+		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertNotNull( $result_sync['post_id'] );
+		$this->assertNotEmpty( 'Product without name', get_the_title( $result_sync['post_id'] ) );
+
+		// Blank product.
+		$item = [];
+		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'error', $result_sync['status'] );
+		$this->assertEquals( 0, $result_sync['post_id'] );
 	}
 
 	/**

@@ -92,6 +92,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 == Changelog ==
 
 = 3.1.5 =
+* Enhancement: More robust import products. Prevents missing variables from API.
 * Fixed: error importing products without pricesale_discount.
 
 = 3.1.4 =
