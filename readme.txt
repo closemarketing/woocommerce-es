@@ -5,54 +5,69 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.0
 Tested up to: 6.8
-Stable tag: 3.1.0
-Version: 3.1.0
+Stable tag: 3.1.4
+Version: 3.1.4
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect Ecommerce with ERPs and CRMs. Products and Orders from ERP/CRM to WooCommerce.
+Connect WooCommerce with ERPs and CRMs. Products, Clients and Orders with ERP/CRM.
 
 == Description ==
 
-This plugin allows you to products from Clientify to WooCommerce. 
+Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
 
-You can import products, and it will create new products if it does not find the SKU code from your WooCommerce. If the SKU exists, it will import all data except title and description from the product. The stock will be imported as well.
+Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
 
-These are the features:
-- Import categories from CRM/ERP.
-- Import attributes as brands or others.
-- Import variable products.
-- Automate the syncronization.
-- Send Orders to CRM/ERP.
-- Send generated CRM/ERP Document attached in WooCommerce notifications.
-- Option to select the Design of the generated CRM/ERP document.
-- Import pack products from CRM/ERP.
+You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
 
-At this time, Connect Ecommerce supports in free version:
+There’s no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
+
+**How does it work?**
+It synchronizes according to the natural workflow your business should have when connected to an online store.
+
+Products: Imports products from your ERP/CRM with all the necessary sales information, supporting variable products. Keeps prices, stock, and product details up to date.
+
+Orders and Customers: Once an order is placed, it is sent to the ERP/CRM. It creates a new customer or matches the existing one to the order in the ERP/CRM. Depending on the connector, you can choose the type of document to generate.
+
+**Main Benefits**
+- Imports simple, variable, and bundled products.
+- Imports product attributes such as brand.
+- Imports product categories.
+- Automatically imports products.
+- Sends orders immediately after they are placed, including historical orders.
+- Sends invoices attached to the order email (Holded only).
+- Allows you to choose the invoice design (Holded only).
+- Uses AI to generate product marketing information.
+- Adds the NIF/CIF field for proper invoicing.
+
+This plugin serves as the foundation for various connectors. The free version supports:
 - [Clientify](https://close.marketing/likes/clientify/)
 
-And you will find, that there are Premium Addons to support:
-- [Holded CRM](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+Premium connectors include:
+- [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
 - [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
-- [NEO TPV](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
+- [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
+
+Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
+
+== Frequently Asked Questions ==
+
+= What does this plugin do? =
+Connect Ecommerce allows you to import products from an ERP/CRM to your WooCommerce store via API. It also sends orders from the store to your ERP/CRM and creates associated customers.
+
+= How are products and orders synced? =
+Products are synced from the ERP/CRM to WooCommerce because the ERP should always contain the most up-to-date business information. This ensures accurate management of products, prices, and other business data.
+
+Orders are synced from WooCommerce to the ERP/CRM so that every time a customer places an order, it is sent to your ERP for proper order and invoice management.
+
+= What happens when a product is out of stock? =
+By default, the product disappears from the store catalog but remains visible to search engines. This is intentional and matches the expected store behavior.
 
 
 == Installation ==
 
-- Extract the zip file and just drop the contents in the wp-content/plugins/ directory of your
-WordPress installation and then activate the Plugin from Plugins page.
+- Go to Add Plugin, search for Connect Ecommerce, and Install it. Then Activate the plugin. You will need to have WooCommerce Installed.
 - Go to WooCommerce > Connect Ecommerce for the configuration.
-
-== External services ==
-
-This plugin connects to an API to make AI SEO descriptions and product information.
-
-It send the product information to the API and it returns the SEO description and product information.
-Services:
-- OpenAI: [Terms of use](https://openai.com/policies/row-terms-of-use/) and [Privact policy](https://openai.com/policies/row-privacy-policy/)
-- DeepSeek: [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-terms-of-use.html) and [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html)
-
-The connector base is to connect Clientify, an CRM Marketing Automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
 == Developers ==
 [Official Repository GitHub](https://github.com/closemarketing/connect-ecommerce)
@@ -62,10 +77,41 @@ You can use WP CLI to import products from the command line. The command is:
 wp conecom products --update --ai=none,new,all
 ```
 
+== External services ==
+
+This plugin connects to an API to make AI SEO descriptions and product information.
+
+It sends product data to the API, which then returns optimized SEO descriptions and enhanced product details.
+
+Supported Services:
+- OpenAI: [Terms of use](https://openai.com/policies/row-terms-of-use/) and [Privact policy](https://openai.com/policies/row-privacy-policy/)
+- DeepSeek: [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-terms-of-use.html) and [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html)
+
+The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
+
 == Changelog ==
 
 = 3.1.5 =
 * Fixed: error importing products without pricesale_discount.
+
+= 3.1.4 =
+* Enhancement: Added tests for product simple and variable.
+* Fixed: sync barcode in product variations.
+* Fixed: sync categories criteria.
+* Fixed: deprecation notice for WooCommerce.
+
+= 3.1.3 =
+* Enhancement: updated versions to PHP that are supported.
+* Fixed: Fatal error in PHP 7.4.
+
+= 3.1.2 =
+* Fixed: Getting prices rates from variation products.
+* Fixed: Zero stock in variation products was giving not manage stock.
+* Fixed: Automated products sync not working properly.
+
+= 3.1.1 =
+* Fixed: Error in orphaned variations to prevent SKU errors.
+* Fixed: Cron not running properly.
 
 = 3.1.0 =
 * Added: WP CLI command to import products.
