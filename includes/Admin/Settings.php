@@ -454,6 +454,17 @@ class Settings {
 				);
 			}
 
+			// Company Select.
+			if ( in_array( 'company_id', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_company_select',
+					__( 'Company', 'connect-ecommerce' ),
+					array( $this, 'company_select_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
 			if ( $this->options['product_option_stock'] ) {
 				add_settings_field(
 					'wcpimh_stock',
@@ -912,6 +923,7 @@ class Settings {
 				'username'       => '',
 				'password'       => '',
 				'company'        => '',
+				'company_id'     => '',
 				'domain'         => '',
 				'dbname'         => '',
 				'stock'          => 'no',
@@ -1111,6 +1123,36 @@ class Settings {
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][company]" id="wcpimh_company" value="%s">',
 			isset( $this->settings['company'] ) ? esc_attr( $this->settings['company'] ) : ''
 		);
+	}
+
+	/**
+	 * Get companies and select them
+	 *
+	 * @return void
+	 */
+	public function company_select_callback() {
+		if ( ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
+			return esc_html__( 'By default', 'connect-ecommerce' );
+		}
+		$companies_options = $this->connapi_erp->get_companies();
+		if ( empty( $companies_options ) || 'error' === $companies_options['status'] ) {
+			$message = ! empty( $companies_options['message'] ) ? $companies_options['message'] : '';
+			$message = empty( $message ) && ! empty( $companies_options['data'] ) ? $companies_options['data'] : $message;
+			echo '<p>' . esc_html__( 'Error', 'connect-ecommerce' ) . ': ' . esc_html( $message ) . '</p>';
+			return;
+		}
+		$saved_attr = isset( $this->settings['company_id'] ) ? $this->settings['company_id'] : '';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][company_id]" id="wcpimh_company_id">
+			<?php
+			foreach ( $companies_options as $value => $label ) {
+				echo '<option value="' . esc_html( $value ) . '" ';
+				selected( $value, $saved_attr );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			?>
+		</select>
+		<?php
 	}
 
 	/**
