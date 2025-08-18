@@ -64,6 +64,9 @@ wp conecom products --update --ai=none,new,all
 
 == Changelog ==
 
+= 3.1.5 =
+* Fixed: error importing products without pricesale_discount.
+
 = 3.1.0 =
 * Added: WP CLI command to import products.
 * Fully support to import EAN to WooCommerce.
