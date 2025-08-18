@@ -91,6 +91,9 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
+= 3.1.5 =
+* Enhancement: More robust import products. Prevents missing variables from API.
+
 = 3.1.4 =
 * Enhancement: Added tests for product simple and variable.
 * Fixed: sync barcode in product variations.
