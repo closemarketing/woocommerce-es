@@ -93,6 +93,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 = 3.1.5 =
 * Enhancement: More robust import products. Prevents missing variables from API.
+* Enhancement: Added support to Odoo company field.
 * Fixed: error importing products without pricesale_discount.
 
 = 3.1.4 =
