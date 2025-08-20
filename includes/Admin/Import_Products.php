@@ -183,6 +183,9 @@ class Import_Products {
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {
 			$result_api = $this->connapi_erp->get_products( $product_erp_id );
+			if ( isset( $result_api['status'] ) && 'error' === $result_api['status'] ) {
+				wp_send_json_error( array( 'message' => __( 'Error getting product', 'connect-ecommerce' ) . ': ' . $result_api['message'] ) );
+			}
 			if ( empty( $result_api ) ) {
 				wp_send_json_error( array( 'message' => 'No products' ) );
 			}

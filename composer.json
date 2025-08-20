@@ -11,8 +11,6 @@
 			"dealerdirect/phpcodesniffer-composer-installer": true
 		}
 	},
-	"require": {
-	},
 	"autoload": {
 		"psr-4": {
 			"CLOSE\\ConnectEcommerce\\": "includes/"
@@ -25,8 +23,8 @@
 		"sirbrillig/phpcs-variable-analysis": "^2",
 		"wp-coding-standards/wpcs": "^2",
 		"phpcsstandards/phpcsutils": "^1.x-dev",
-		"phpunit/phpunit": "^9.0",
-		"yoast/phpunit-polyfills": "^1.0"
+		"yoast/phpunit-polyfills": "^4.0",
+		"wp-phpunit/wp-phpunit": "^6.8"
 	},
 	"scripts": {
     "behat": "BEHAT_FEATURES_FOLDER=tests/behat/features run-behat-tests",
@@ -36,7 +34,8 @@
     "phpmd": "phpmd . text phpmd.xml",
     "phpstan": "phpstan analyse --memory-limit=2048M",
     "prepare-behat-tests": "install-package-tests",
-    "test": "phpunit"
+    "test": "phpunit",
+		"install-tests": "bash bin/install-wp-tests.sh wordpress_test root 'root' 127.0.0.1 latest"
   },
 	"autoload-dev": {
 		"classmap": [

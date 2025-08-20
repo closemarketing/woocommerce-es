@@ -1,22 +1,24 @@
 <?php
 /**
- * Plugin Name: Connect Ecommerce
- * Plugin URI: https://close.technology/wordpress-plugins/connect-ecommerce/
- * Description: Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
- * Author: Closetechnology
- * Author URI: https://close.technology/
- * Version: 3.1.3-beta.1
+ * Plugin Name:       Connect Ecommerce
+ * Plugin URI:        https://close.technology/wordpress-plugins/connect-ecommerce/
+ * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
+ * Author:            Closetechnology
+ * Author URI:        https://close.technology/
+ * Version:           3.1.5-beta.1
+ * Requires PHP:      7.4
+ * Requires at least: 6.3
+ * Text Domain:       connect-ecommerce
+ * Requires Plugins:  woocommerce
+ * License:           GPL-2.0+
+ * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  *
  * @package WordPress
- * Text Domain: connect-ecommerce
- * Requires Plugins: woocommerce
- * License:     GPL-2.0+
- * License URI: http://www.gnu.org/licenses/gpl-2.0.txt
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.1.3-beta.1' );
+define( 'CONECOM_VERSION', '3.1.5-beta.1' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -64,8 +66,6 @@ function conecom_get_options() {
 		]
 	);
 }
-
-
 
 add_action( 'init', 'conecom_loads' );
 /**

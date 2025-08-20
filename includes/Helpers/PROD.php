@@ -32,14 +32,38 @@ class PROD {
 	 * @return array
 	 */
 	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
+		// Prevent errors.
+		if ( empty( $item['kind'] ) ) {
+			$item['kind'] = 'simple';
+		}
+
+		if ( empty( $item['name'] ) ) {
+			$item['name'] = __( 'Product without name', 'connect-ecommerce' );
+		}
+
+		if ( empty( $item['sku'] ) ) {
+			return array(
+				'status'  => 'error',
+				'post_id' => 0,
+				'message' => __( 'SKU not finded in product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')</br>',
+			);
+		}
+
+		if ( empty( $item['variants'] ) && ( 'variants' === $item['kind'] || 'variable' === $item['kind'] ) ) {
+			return array(
+				'status'  => 'error',
+				'post_id' => 0,
+				'message' => __( 'Product variable without variants', 'connect-ecommerce' ),
+			);
+		}
+
 		$status         = 'ok';
 		$message        = '';
 		$is_filtered    = self::filter_product( $settings, $item );
-		$item_kind      = ! empty( $item['kind'] ) ? $item['kind'] : 'simple';
 		$is_new_product = $post_id ? false : true;
 
 		if ( empty( $post_id ) ) {
-			$post_id        = self::find_product( $item['sku'] );
+			$post_id        = self::find_product( $item['sku'] ?? '' );
 			$is_new_product = empty( $post_id ) ? true : false;
 		}
 
@@ -49,11 +73,11 @@ class PROD {
 		$msg_product_created = __( 'Product created: ', 'connect-ecommerce' );
 		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
-		if ( ! $is_filtered && $item['sku'] && 'simple' === $item_kind ) {
+		if ( ! $is_filtered && $item['sku'] && 'simple' === $item['kind'] ) {
 			$result_post = self::sync_product_simple( $settings, $item, $api_erp, false, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
-		} elseif ( ! $is_filtered && ( 'variants' === $item_kind || 'variable' === $item_kind ) ) {
+		} elseif ( ! $is_filtered && ( 'variants' === $item['kind'] || 'variable' === $item['kind'] ) ) {
 			// Variable product.
 			// Check if any variants exists.
 			$any_variant_sku = true;
@@ -95,7 +119,7 @@ class PROD {
 				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'variable', null );
 				$post_id     = $result_prod['prod_id'] ?? 0;
 				$message    .= 0 === $post_id || false === $post_id ? $msg_product_created : $msg_product_synced;
-				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item_kind . ') ' . $result_prod['message'] ?? '';
+				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item['kind'] . ') ' . $result_prod['message'] ?? '';
 			}
 		} elseif ( ! $is_filtered && 'pack' === $item_kind && $plugin_pack_active ) {
 			$post_id = ! empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
@@ -305,7 +329,8 @@ class PROD {
 			}
 		}
 
-		$product_props = array_merge( $product_props, $product_props_new );
+		$product_props        = array_merge( $product_props, $product_props_new );
+		$product_props['sku'] = $item['sku'] ?? '';
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
@@ -317,7 +342,6 @@ class PROD {
 			case 'simple':
 			case 'grouped':
 				// Values for simple products.
-				$product_props['sku'] = $item['sku'];
 				// Check if the product can be sold.
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
 					$product_props['stock_status']       = 'instock';
@@ -361,6 +385,14 @@ class PROD {
 		if ( ! empty( $categories_ids ) ) {
 			$product_props['category_ids'] = $categories_ids;
 		}
+		/*
+		$cat_name   = array_column( $attributes, 'name', 'value' )[ $attribute_cat_id ] ?? '';
+		if ( $cat_name ) {
+			$categories_ids = TAX::get_categories_ids( $settings, $cat_name, $is_new_product );
+			if ( ! empty( $categories_ids ) ) {
+				$product_props['category_ids'] = $categories_ids;
+			}
+		*/
 
 		// Imports image.
 		self::put_product_images( $settings, $item, $product_id, $api_erp );
@@ -433,19 +465,14 @@ class PROD {
 	private static function sync_product_simple( $settings, $item, $api_erp, $from_pack = false, $post_id = 0 ) {
 		$message = '';
 		$post_id = empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
-		if ( ! $post_id ) {
-			$post_id = self::create_product_post( $settings, $item );
-		}
-		if ( $post_id && $item['sku'] && 'simple' === $item['kind'] ) {
-			wp_set_object_terms( $post_id, 'simple', 'product_type' );
 
-			// Update meta for product.
-			$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
-			$post_id     = $result_prod['prod_id'] ?? 0;
+		// Update meta for product.
+		$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
+		$post_id     = $result_prod['prod_id'] ?? 0;
 
-			// Add custom taxonomies.
-			self::add_custom_taxonomies( $post_id, $item );
-		}
+		// Add custom taxonomies.
+		self::add_custom_taxonomies( $post_id, $item );
+
 		if ( $from_pack ) {
 			$message .= '<br/>';
 			if ( ! $post_id ) {
@@ -488,7 +515,7 @@ class PROD {
 		$message         = '';
 
 		if ( ! $is_new_product ) {
-			foreach ( $product->get_children( false ) as $child_id ) {
+			foreach ( $product->get_children() as $child_id ) {
 				// get an instance of the WC_Variation_product Object.
 				$variation_children = wc_get_product( $child_id );
 				if ( ! $variation_children || ! $variation_children->exists() ) {
@@ -514,7 +541,7 @@ class PROD {
 		}
 		foreach ( $item['variants'] as $variant ) {
 			$variation_id = 0; // default value.
-			if ( ! $is_new_product && is_array( $variations_item ) ) {
+			if ( ! $is_new_product && ! empty( $variations_item ) && is_array( $variations_item ) ) {
 				$variation_id = array_search( $variant['sku'], $variations_item );
 				unset( $variations_item[ $variation_id ] );
 			}
@@ -564,7 +591,7 @@ class PROD {
 			$variation = new \WC_Product_Variation( $variation_id );
 			if ( ! empty( $variant['barcode'] ) ) {
 				try {
-					$variation->set_global_unique_id( $item['barcode'] );
+					$variation->set_global_unique_id( $variant['barcode'] );
 				} catch ( \Exception $e ) {
 					// Error.
 				}
@@ -1072,7 +1099,7 @@ class PROD {
 	 * @return string
 	 */
 	private static function get_sale_price( $item, $settings ) {
-		$pricesale_discount = (float) $settings['pricesale_discount'] ?? 0;
+		$pricesale_discount = (float) ( $settings['pricesale_discount'] ?? 0 );
 		if ( empty( $pricesale_discount ) || empty( $item['price'] ) ) {
 			return '';
 		}

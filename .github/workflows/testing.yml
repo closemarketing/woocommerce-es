@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        php-version: ['8.2', '8.0', '7.4']
+        php-version: ['8.3', '8.2', '8.1', '7.4']
     services:
       database:
         image: mysql:latest
@@ -27,11 +27,31 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: $
+          php-version: ${{ matrix.php-version }}
           tools: phpunit-polyfills:1.1
+          extensions: mbstring, xml, zip, intl, pdo, mysql
+          coverage: none
+
+      - name: Install SVN
+        run: sudo apt-get update && sudo apt-get install -y subversion
+        
+      - name: Install Composer dependencies
+        run: composer install --no-dev
 
       - name: Setup tests
         run: bash bin/install-wp-tests.sh wordpress_tests root root 127.0.0.1 latest true
+
+      - name: Install WooCommerce
+        run: |
+          mkdir -p wp-content/plugins
+          if [[ "${{ matrix.php-version }}" == "8.0" ]]; then
+            curl -L -o woocommerce.zip https://downloads.wordpress.org/plugin/woocommerce.7.9.0.zip
+          else
+            curl -L -o woocommerce.zip https://downloads.wordpress.org/plugin/woocommerce.zip
+          fi
+          unzip -q woocommerce.zip
+          mv woocommerce wp-content/plugins/
+          test -f wp-content/plugins/woocommerce/woocommerce.php
 
       - name: Run tests
         run: phpunit
