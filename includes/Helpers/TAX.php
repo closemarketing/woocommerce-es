@@ -274,10 +274,23 @@ class TAX {
 		if ( is_wp_error( $terms ) ) {
 			return array();
 		}
+		
 		$terms_wp = wp_list_pluck( $terms, 'name', 'term_id' );
 		$terms    = array();
+		
 		foreach ( $terms_wp as $term_id => $term_name ) {
-			$terms[ 'product_cat|' . $term_id ] = $term_name;
+			$term_parent = get_term( $term_id, 'product_cat' );
+			$label = $term_name;
+			
+			// Add parent term information if it exists
+			if ( $term_parent && $term_parent->parent > 0 ) {
+				$parent_term = get_term( $term_parent->parent, 'product_cat' );
+				if ( $parent_term && ! is_wp_error( $parent_term ) ) {
+					$label = $parent_term->name . ' > ' . $term_name;
+				}
+			}
+			
+			$terms[ 'product_cat|' . $term_id ] = $label;
 		}
 		return $terms;
 	}
