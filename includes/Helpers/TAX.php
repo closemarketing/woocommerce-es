@@ -234,13 +234,12 @@ class TAX {
 				}
 				if ( ! empty( $categories_ids ) ) {
 					$categories_ids = array_unique( $categories_ids );
-					return $categories_ids;
 				}
+			} else {
+				// Default mode.
+				$category_id    = self::get_categories_ids( $settings, $item_cat_value, $is_new_product );
+				$categories_ids = array_merge( $categories_ids, $category_id );
 			}
-
-			// Default mode.
-			$category_id    = self::get_categories_ids( $settings, $item_cat_value, $is_new_product );
-			$categories_ids = array_merge( $categories_ids, $category_id );
 		}
 
 		$categories_ids = array_unique( $categories_ids );
