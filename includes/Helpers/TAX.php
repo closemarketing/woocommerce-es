@@ -195,41 +195,55 @@ class TAX {
 	 * @return array
 	 */
 	public static function assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product = true ) {
+		if ( empty( $attributes )  ) {
+			return array();
+		}
+		
 		$attribute_cat_id = ! empty( $settings['catattr'] ) ? $settings['catattr'] : '';
 		$categories_ids   = array();
-		$item_cat_value   = array_search( $attribute_cat_id, array_column( $attributes, 'id', 'value' ) );
+		$items_cat_value  = array();
 
-		if ( empty( $item_cat_value ) ) {
+		foreach ( $attributes as $attribute ) {
+			if ( $attribute['value'] === $attribute_cat_id ) {
+				$items_cat_value[] = $attribute['name'];
+			}
+		}
+
+		if ( empty( $items_cat_value ) ) {
 			return array();
 		}
 
-		// Custom merge categories.
-		if ( ! empty( $settings_mergevars['prod_mergevars'] ) ){
-			foreach ( $settings_mergevars['prod_mergevars'] as $source => $target ) {
-				$target_cat      = explode( '|', $target );
-				$source_cat      = explode( '|', $source );
-				$target_cat_type = isset( $target_cat[0] ) ? $target_cat[0] : '';
-				$source_cat_type = isset( $source_cat[0] ) ? $source_cat[0] : '';
+		foreach ( $items_cat_value as $item_cat_value ) {
+			// Custom merge categories.
+			if ( ! empty( $settings_mergevars['prod_mergevars'] ) ){
+				foreach ( $settings_mergevars['prod_mergevars'] as $source => $target ) {
+					$target_cat      = explode( '|', $target );
+					$source_cat      = explode( '|', $source );
+					$target_cat_type = isset( $target_cat[0] ) ? $target_cat[0] : '';
+					$source_cat_type = isset( $source_cat[0] ) ? $source_cat[0] : '';
 
-				if ( $target_cat_type !== $source_cat_type ) {
-					continue;
+					if ( $target_cat_type !== $source_cat_type ) {
+						continue;
+					}
+					$source_cat_name = isset( $source_cat[1] ) ? sanitize_text_field( $source_cat[1] ) : '';
+					$target_cat_id   = isset( $target_cat[1] ) ? (int) $target_cat[1] : 0;
+
+					if ( $item_cat_value === $source_cat_name ) {
+						$categories_ids[] = $target_cat_id;
+					}
 				}
-				$source_cat_name = isset( $source_cat[1] ) ? sanitize_text_field( $source_cat[1] ) : '';
-				$target_cat_id   = isset( $target_cat[1] ) ? (int) $target_cat[1] : 0;
-
-				if ( $item_cat_value === $source_cat_name ) {
-					$categories_ids[] = $target_cat_id;
+				if ( ! empty( $categories_ids ) ) {
+					$categories_ids = array_unique( $categories_ids );
+					return $categories_ids;
 				}
 			}
-			if ( ! empty( $categories_ids ) ) {
-				$categories_ids = array_unique( $categories_ids );
-				return $categories_ids;
-			}
+
+			// Default mode.
+			$category_id    = self::get_categories_ids( $settings, $item_cat_value, $is_new_product );
+			$categories_ids = array_merge( $categories_ids, $category_id );
 		}
 
-		// Default mode.
-		$categories_ids = self::get_categories_ids( $settings, $item_cat_value, $is_new_product );
-
+		$categories_ids = array_unique( $categories_ids );
 		return $categories_ids;
 	}
 

@@ -381,18 +381,10 @@ class PROD {
 
 		// Set attributes.
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
-		$categories_ids = TAX::assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product = true );
+		$categories_ids = TAX::assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product );
 		if ( ! empty( $categories_ids ) ) {
 			$product_props['category_ids'] = $categories_ids;
 		}
-		/*
-		$cat_name   = array_column( $attributes, 'name', 'value' )[ $attribute_cat_id ] ?? '';
-		if ( $cat_name ) {
-			$categories_ids = TAX::get_categories_ids( $settings, $cat_name, $is_new_product );
-			if ( ! empty( $categories_ids ) ) {
-				$product_props['category_ids'] = $categories_ids;
-			}
-		*/
 
 		// Imports image.
 		self::put_product_images( $settings, $item, $product_id, $api_erp );

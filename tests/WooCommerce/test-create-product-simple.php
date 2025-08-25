@@ -163,8 +163,9 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
 		
-		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$this->assertEquals( true, in_array( 'Calzado', $product_cats ) );
 
 		// Update product asserts.
 		$item['attributes'] = [
@@ -176,8 +177,8 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		];
 
 		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
-
-		$this->assertEquals( false, in_array( 'Chanclas', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$product_cats    = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
+		$this->assertEquals( false, in_array( 'Chanclas', $product_cats ) );
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
 	}
@@ -195,8 +196,9 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
 		
-		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$this->assertEquals( true, in_array( 'Calzado', $product_cats ) );
 
 		// Update product asserts.
 		$item['attributes'] = [
@@ -209,7 +211,8 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 
 		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
 
-		$this->assertEquals( true, in_array( 'Chanclas', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
+		$this->assertEquals( true, in_array( 'Chanclas', $product_cats ) );
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
 	}

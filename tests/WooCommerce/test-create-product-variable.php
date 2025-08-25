@@ -86,7 +86,8 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
-		
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
+
 		$this->assertNotNull( $result_sync );
 		$this->assertEquals( 'ok', $result_sync['status'] );
 		$this->assertIsInt( $result_prod_id );
@@ -96,7 +97,7 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertEquals( $item['sku'], $product->get_sku() ); // Only SKU, barcode not needed for variable products.
 		$this->assertEquals( $item['name'], $product->get_name() );
 		$this->assertEquals( $item['desc'], $product->get_description() );
-		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$this->assertEquals( true, in_array( 'Calzado', $product_cats ) );
 
 		// Variable product asserts.
 		$variations = $product->get_children();
