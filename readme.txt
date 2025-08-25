@@ -92,6 +92,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 == Changelog ==
 
 = 3.1.5 =
+* Enhancement: Added support to merge categories from API to WooCommerce.
 * Enhancement: More robust import products. Prevents missing variables from API.
 * Enhancement: Added support to Odoo company field.
 * Fixed: error importing products without pricesale_discount.
@@ -112,6 +113,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 * Fixed: Automated products sync not working properly.
 
 = 3.1.1 =
+* Added: Merge categories from API to WooCommerce. You select the equivalence in the settings.
 * Fixed: Error in orphaned variations to prevent SKU errors.
 * Fixed: Cron not running properly.
 

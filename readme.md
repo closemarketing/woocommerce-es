@@ -128,3 +128,13 @@ $products['variants'][] = array(
 	]
 );
 ```
+
+Method get_product_attributes
+
+'custom_fields' => [],
+'product_cat' => [
+	'id'   => 'product_cat',
+	'name' => __( 'Product Category', 'connect-ecommerce-toptex' ),
+	'elements' => [
+	],
+],

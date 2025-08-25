@@ -351,13 +351,6 @@ class Settings {
 			'connect_ecommerce_admin'
 		);
 
-		add_settings_section(
-			'connect_woocommerce_setting_section',
-			__( 'Settings for Importing in WooCommerce', 'connect-ecommerce' ),
-			array( $this, 'connect_woocommerce_section_info' ),
-			'connect_ecommerce_admin'
-		);
-
 		add_settings_field(
 			'conecom_connector',
 			__( 'Connector', 'connect-ecommerce' ),
@@ -693,18 +686,18 @@ class Settings {
 		);
 
 		add_settings_section(
-			'imhset_prod_mergevars_setting_section',
+			'connect_ecommerce_prod_mergevars_section',
 			__( 'Merge variables from product attributes to custom fields', 'connect-ecommerce' ),
 			array( $this, 'section_info_prod_mergevars' ),
-			'connect_ecommerce_settings_prod_mergevars'
+			'connect_ecommerce_prod_mergevars'
 		);
 
 		add_settings_field(
 			'wcpimh_prod_mergevars',
 			__( 'Merge fields with product', 'connect-ecommerce' ),
 			array( $this, 'prod_mergevars_callback' ),
-			'connect_ecommerce_settings_prod_mergevars',
-			'imhset_prod_mergevars_setting_section'
+			'connect_ecommerce_prod_mergevars',
+			'connect_ecommerce_prod_mergevars_section'
 		);
 
 		/**
@@ -1594,8 +1587,9 @@ class Settings {
 		$product_fields    = PROD::get_all_product_fields();
 		$custom_fields     = PROD::get_all_custom_fields();
 		$custom_taxonomies = TAX::get_all_custom_taxonomies();
+		$product_cat_terms = TAX::get_terms_product_cat();
 		$attribute_fields  = $this->connapi_erp->get_product_attributes();
-		asort( $attribute_fields );
+
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
 		$saved_attr = array();
@@ -1623,10 +1617,19 @@ class Settings {
 							<select name='connect_ecommerce_prod_mergevars[prod_mergevars][<?php echo esc_html( $idx ); ?>][attrprod]' class="attrprod-publish" data-row="<?php echo esc_html( $idx ); ?>">
 								<option value=''></option>
 								<?php
-								foreach ( $attribute_fields as $key => $value ) {
-									echo '<option value="' . esc_html( $key ) . '" ';
-									selected( $key, $attrprod );
-									echo '>' . esc_html( $value ) . ' (' . esc_html( $key ) . ')</option>';
+								foreach ( $attribute_fields as $attribute ) {
+									?>
+									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
+										<?php
+										foreach ( $attribute['elements'] as $value ) {
+											$option_id = $attribute['id'] . '|' . $value;
+											echo '<option value="' . esc_html( $option_id ) . '" ';
+											selected( $option_id, $attrprod );
+											echo '>' . esc_html( $value ) . '</option>';
+										}
+										?>
+									</optgroup>
+									<?php
 								}
 								?>
 							</select>
@@ -1635,7 +1638,7 @@ class Settings {
 						<div class="save-item">
 							<?php 
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
-							$all_fields = array_merge( $product_fields, $custom_taxonomies, $custom_fields );
+							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
 								$custom_fields[] = $saved_custom_field;
 							}
@@ -1646,6 +1649,15 @@ class Settings {
 									<?php
 									foreach ( $product_fields as $key => $value ) {
 										echo '<option value="' . esc_html( $key ) . '" ';
+										selected( $key, $saved_custom_field );
+										echo '>' . esc_html( $value ) . '</option>';
+									}
+									?>
+								</optgroup>
+								<optgroup label="<?php esc_html_e( 'Product Category values', 'connect-ecommerce' ); ?>">
+									<?php
+									foreach ( $product_cat_terms as $key => $value ) {
+										echo '<option value="' . esc_attr( $key ) . '" ';
 										selected( $key, $saved_custom_field );
 										echo '>' . esc_html( $value ) . '</option>';
 									}

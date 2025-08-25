@@ -164,8 +164,6 @@ class Checkout {
 	 * @return void
 	 */
 	public function add_vat_invoices( $address ) {
-		global $wpo_wcpdf;
-
 		echo wp_kses( $address, array(
 			'p' => array(),
 			'strong' => array(),
@@ -173,7 +171,6 @@ class Checkout {
 			'span' => array('class' => array()),
 			'div' => array('class' => array()),
 		) ) . '<p>';
-		$wpo_wcpdf->custom_field( 'billing_vat', __( 'VAT info:', 'connect-ecommerce' ) );
 		echo '</p>';
 	}
 

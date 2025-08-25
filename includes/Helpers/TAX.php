@@ -187,6 +187,66 @@ class TAX {
 	}
 
 	/**
+	 * Assign product categories, based on the item data and merge vars.
+	 *
+	 * @param array  $item Item data.
+	 * @param array  $attributes Attributes of the product.
+	 * @param array  $settings_mergevars Settings merge variables.
+	 * @return array
+	 */
+	public static function assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product = true ) {
+		if ( empty( $attributes )  ) {
+			return array();
+		}
+		
+		$attribute_cat_id = ! empty( $settings['catattr'] ) ? $settings['catattr'] : '';
+		$categories_ids   = array();
+		$items_cat_value  = array();
+
+		foreach ( $attributes as $attribute ) {
+			if ( $attribute['value'] === $attribute_cat_id ) {
+				$items_cat_value[] = $attribute['name'];
+			}
+		}
+
+		if ( empty( $items_cat_value ) ) {
+			return array();
+		}
+
+		foreach ( $items_cat_value as $item_cat_value ) {
+			// Custom merge categories.
+			if ( ! empty( $settings_mergevars['prod_mergevars'] ) ){
+				foreach ( $settings_mergevars['prod_mergevars'] as $source => $target ) {
+					$target_cat      = explode( '|', $target );
+					$source_cat      = explode( '|', $source );
+					$target_cat_type = isset( $target_cat[0] ) ? $target_cat[0] : '';
+					$source_cat_type = isset( $source_cat[0] ) ? $source_cat[0] : '';
+
+					if ( $target_cat_type !== $source_cat_type ) {
+						continue;
+					}
+					$source_cat_name = isset( $source_cat[1] ) ? sanitize_text_field( $source_cat[1] ) : '';
+					$target_cat_id   = isset( $target_cat[1] ) ? (int) $target_cat[1] : 0;
+
+					if ( $item_cat_value === $source_cat_name ) {
+						$categories_ids[] = $target_cat_id;
+					}
+				}
+				if ( ! empty( $categories_ids ) ) {
+					$categories_ids = array_unique( $categories_ids );
+				}
+			} else {
+				// Default mode.
+				$category_id    = self::get_categories_ids( $settings, $item_cat_value, $is_new_product );
+				$categories_ids = array_merge( $categories_ids, $category_id );
+			}
+		}
+
+		$categories_ids = array_unique( $categories_ids );
+		return $categories_ids;
+	}
+
+	/**
 	 * Split categories name
 	 *
 	 * @param array  $settings   Settings of the plugin.
@@ -214,6 +274,38 @@ class TAX {
 		}
 
 		return $categories_name;
+	}
+
+	public static function get_terms_product_cat() {
+		$terms = get_terms(
+			array(
+				'taxonomy'   => 'product_cat',
+				'hide_empty' => false,
+			)
+		);
+
+		if ( is_wp_error( $terms ) ) {
+			return array();
+		}
+		
+		$terms_wp = wp_list_pluck( $terms, 'name', 'term_id' );
+		$terms    = array();
+		
+		foreach ( $terms_wp as $term_id => $term_name ) {
+			$term_parent = get_term( $term_id, 'product_cat' );
+			$label = $term_name;
+			
+			// Add parent term information if it exists
+			if ( $term_parent && $term_parent->parent > 0 ) {
+				$parent_term = get_term( $term_parent->parent, 'product_cat' );
+				if ( $parent_term && ! is_wp_error( $parent_term ) ) {
+					$label = $parent_term->name . ' > ' . $term_name;
+				}
+			}
+			
+			$terms[ 'product_cat|' . $term_id ] = $label;
+		}
+		return $terms;
 	}
 
 	/**

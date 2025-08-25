@@ -5,7 +5,7 @@
  * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
- * Version:           3.1.4
+ * Version:           3.1.5-beta.1
  * Requires PHP:      7.4
  * Requires at least: 6.3
  * Text Domain:       connect-ecommerce
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.1.4' );
+define( 'CONECOM_VERSION', '3.1.5-beta.1' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );

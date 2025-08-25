@@ -150,9 +150,6 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertEquals( 0, $result_sync['post_id'] );
 	}
 
-	/**
-	 * Create Product Simple without Errors.
-	 */
 	public function test_category_sync_new_products_without_errors() {
 		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
 		$item      = file_get_contents( $item_path );
@@ -163,8 +160,9 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
 		
-		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$this->assertEquals( true, in_array( 'Calzado', $product_cats ) );
 
 		// Update product asserts.
 		$item['attributes'] = [
@@ -176,15 +174,12 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		];
 
 		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
-
-		$this->assertEquals( false, in_array( 'Chanclas', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$product_cats    = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
+		$this->assertEquals( false, in_array( 'Chanclas', $product_cats ) );
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
 	}
 
-	/**
-	 * Create Product Simple without Errors.
-	 */
 	public function test_category_sync_updated_products_without_errors() {
 		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
 		$item      = file_get_contents( $item_path );
@@ -195,8 +190,11 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
+		$product_count_cats = count( $product_cats );
 		
-		$this->assertEquals( true, in_array( 'Calzado', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$this->assertEquals( true, in_array( 'Calzado', $product_cats ) );
+		$this->assertEquals( 2, $product_count_cats );
 
 		// Update product asserts.
 		$item['attributes'] = [
@@ -209,7 +207,55 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 
 		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
 
-		$this->assertEquals( true, in_array( 'Chanclas', wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] ) ) );
+		$product_cats           = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
+		$product_count_cats_upd = count( $product_cats );
+		
+		$this->assertEquals( true, in_array( 'Chanclas', $product_cats ) );
+		$this->assertEquals( 1, $product_count_cats_upd );
+
+		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
+	}
+
+	public function test_category_sync_products_mergevars_without_errors() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'no'; // yes means only on new products.
+		
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat' );
+		$product_count_cats = count( $product_cats );
+		
+		$this->assertEquals( true, in_array( 'Calzado', wp_list_pluck( $product_cats, 'name' ) ) );
+		$this->assertEquals( true, in_array( 'Zapatillas', wp_list_pluck( $product_cats, 'name' ) ) );
+		$this->assertEquals( 2, $product_count_cats );
+
+		update_option(
+			'connect_ecommerce_prod_mergevars',
+			array(
+				'prod_mergevars' => 
+				array (
+					'product_cat|Chanclas' => 'product_cat|' . $product_cats[0]->term_id,
+				),
+			)
+		);
+
+		// Update product asserts.
+		$item['attributes'] = [
+			[
+				'id'    => '64be2e55727b35ad0b0d2c42',
+				'value' => 'sandalias',
+				'name'  => 'Chanclas',
+			],
+		];
+
+		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+
+		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
+		$this->assertEquals( true, in_array( 'Calzado', $product_cats ) ); // We moved Chanclas to Calzado.
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
 	}
