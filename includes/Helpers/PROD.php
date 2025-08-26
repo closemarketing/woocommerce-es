@@ -346,27 +346,39 @@ class PROD {
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
 					$product_props['stock_status']       = 'instock';
 					$product_props['catalog_visibility'] = 'visible';
-					wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-					wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+					
+					try {
+						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+					} catch ( \Exception $e ) {}
 				} elseif ( 'yes' === $import_stock && $item_stock > 0 ) {
 					$product_props['manage_stock']       = true;
 					$product_props['stock_quantity']     = $item_stock;
 					$product_props['stock_status']       = 'instock';
 					$product_props['catalog_visibility'] = 'visible';
-					wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-					wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+					// Only call taxonomy functions if taxonomy exists
+					try {
+						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+					} catch ( \Exception $e ) {}
 				} elseif ( 'yes' === $import_stock && 0 === $item_stock ) {
 					$product_props['manage_stock']       = true;
 					$product_props['catalog_visibility'] = 'hidden';
 					$product_props['stock_quantity']     = 0;
 					$product_props['stock_status']       = 'outofstock';
-					wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+					// Only call taxonomy functions if taxonomy exists
+					try {
+						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+					} catch ( \Exception $e ) {}
 				} else {
 					$product_props['manage_stock']       = true;
 					$product_props['catalog_visibility'] = 'hidden';
 					$product_props['stock_quantity']     = $item['stock'];
 					$product_props['stock_status']       = 'outofstock';
-					wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+					// Only call taxonomy functions if taxonomy exists
+					try {
+						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+					} catch ( \Exception $e ) {}
 				}
 				break;
 			case 'variable':
@@ -433,7 +445,10 @@ class PROD {
 		$product->set_props( $product_props );
 		$product->save();
 		if ( 'pack' === $type ) {
-			wp_set_object_terms( $product_id, 'woosb', 'product_type' );
+			// Only call taxonomy functions if taxonomy exists
+			if ( taxonomy_exists( 'product_type' ) ) {
+				wp_set_object_terms( $product_id, 'woosb', 'product_type' );
+			}
 		}
 
 		return array(
