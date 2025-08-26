@@ -110,7 +110,7 @@ class ORDER {
 	 *
 	 * @return array
 	 */
-	private static function generate_order_data( $setttings, $order, $option_prefix ) {
+	public static function generate_order_data( $setttings, $order, $option_prefix ) {
 		$order_label_id = is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order->get_id() : $order->get_id();
 		$doclang        = $order->get_billing_country() !== 'ES' ? 'en' : 'es';
 		$shop_url       = wc_get_endpoint_url( 'shop' );
@@ -395,4 +395,69 @@ class ORDER {
 			'has_virtual' => $has_virtual,
 		];
 	}
+
+	/**
+	 * Sanitize strings for AEAT (VeriFactu) submission.
+	 *
+	 * - Removes diacritics and special characters.
+	 * - Allows only whitelisted characters.
+	 * - Collapses spaces and trims edges.
+	 * - Truncates to the maximum allowed length.
+	 *
+	 * @param string      $value     Input string (UTF-8).
+	 * @param int         $maxLen    Maximum allowed length (default 120).
+	 * @param string      $whitelist Regex character class WITHOUT brackets.
+	 * @param string|null $fallback  Value to return if empty after sanitization (null = empty string).
+	 * @return string
+	 */
+	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9 &\- ', ?string $fallback = null ): string
+	{
+		$value = trim(preg_replace('/\s+/u', ' ', $value ?? ''));
+		if ($value === '') {
+				return $fallback ?? '';
+		}
+
+		$map = [
+				'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n',
+				'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'N',
+				'à'=>'a','è'=>'e','ì'=>'i','ò'=>'o','ù'=>'u',
+				'À'=>'A','È'=>'E','Ì'=>'I','Ò'=>'O','Ù'=>'U',
+				'â'=>'a','ê'=>'e','î'=>'i','ô'=>'o','û'=>'u',
+				'Â'=>'A','Ê'=>'E','Î'=>'I','Ô'=>'O','Û'=>'U',
+				'ä'=>'a','ë'=>'e','ï'=>'i','ö'=>'o','ü'=>'u',
+				'Ä'=>'A','Ë'=>'E','Ï'=>'I','Ö'=>'O','Ü'=>'U',
+				'ã'=>'a','õ'=>'o',
+				'Ã'=>'A','Õ'=>'O',
+				'ç'=>'c','Ç'=>'C',
+				'š'=>'s','Š'=>'S',
+				'ž'=>'z','Ž'=>'Z',
+				'ý'=>'y','Ý'=>'Y',
+				'ÿ'=>'y','Ÿ'=>'Y',
+				'ø'=>'o','Ø'=>'O',
+				'æ'=>'ae','Æ'=>'AE',
+				'œ'=>'oe','Œ'=>'OE',
+				'ß'=>'ss'
+		];
+		$ascii = strtr($value, $map);
+
+		// Replace non-whitelisted characters with spaces
+		$ascii = preg_replace('/[^' . $whitelist . ']/', ' ', $ascii);
+		
+		// Collapse multiple spaces and clean up
+		$ascii = preg_replace('/\s+/', ' ', $ascii);
+		$ascii = preg_replace('/-{2,}/', '-', $ascii);
+		$ascii = trim($ascii, " \t\n\r\0\x0B-");
+
+		if ($maxLen > 0 && strlen($ascii) > $maxLen) {
+				$ascii = substr($ascii, 0, $maxLen);
+				$ascii = rtrim($ascii);
+		}
+
+		if ($ascii === '' && $fallback !== null) {
+				return $fallback;
+		}
+
+		return $ascii;
+	}
+	
 }
