@@ -48,7 +48,8 @@ class Checkout {
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ) );
 
 		/* Options for the plugin */
-		add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
+		//add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
+		add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 10 );
 
 		$remove_free = isset( $this->setttings_public['remove_free'] ) ? $this->setttings_public['remove_free'] : 'no';
 		if ( 'yes' === $remove_free ) {
@@ -131,6 +132,27 @@ class Checkout {
 		}
 
 			return $fields;
+	}
+
+	public function add_vat_field_to_checkout() {
+			woocommerce_register_additional_checkout_field(
+				array(
+					'id'            => 'namespace/gov-id',
+					'label'         => 'Government ID',
+					'optionalLabel' => 'Government ID (optional)',
+					'location'      => 'billing',
+					'priority'      => 10,
+					'required'      => true,
+					'attributes'    => array(
+						'autocomplete'     => 'government-id',
+						'aria-describedby' => 'some-element',
+						'aria-label'       => 'custom aria label',
+						'pattern'          => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
+						'title'            => 'Title to show on hover',
+						'data-custom'      => 'custom data',
+					),
+				),
+			);
 	}
 
 	public function add_billing_shipping_fields_admin( $fields ) {
@@ -237,3 +259,26 @@ class Checkout {
 		return $validation_errors;
 	}
 }
+
+add_action(
+	'woocommerce_init',
+	function() {
+		woocommerce_register_additional_checkout_field(
+			array(
+				'id'            => 'namespace/gov-id',
+				'label'         => 'Government ID',
+				'optionalLabel' => 'Government ID (optional)',
+				'location'      => 'address',
+				'required'      => true,
+				'attributes'    => array(
+					'autocomplete'     => 'government-id',
+					'aria-describedby' => 'some-element',
+					'aria-label'       => 'custom aria label',
+					'pattern'          => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
+					'title'            => 'Title to show on hover',
+					'data-custom'      => 'custom data',
+				),
+			),
+		);
+	}
+);
