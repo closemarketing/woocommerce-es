@@ -75,10 +75,14 @@ class CreateOrderTest extends WP_UnitTestCase {
 
 	public function test_clean_special_chars() {
 		$test_cases = [
-			'José M. García-López'	=> 'Jose M Garcia-Lopez',
-			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS & BEBIDAS S L',
-			'Peña "El @Rincón" / Granada'	=> 'Pena El Rincon Granada',
-			'Weiß y Aßmann/Waßmann'	=> 'Weiss y Assmann Wassmann',
+			'José M. García-López'	=> 'JOSE M GARCIA-LOPEZ',
+			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS Y BEBIDAS S L',
+			'Peña "El @Rincón" / Granada'	=> 'PEÑA EL RINCON GRANADA',
+			'Weiß y Aßmann/Waßmann'	=> 'WEISS Y ASSMANN WASSMANN',
+			'Bürgerstraße 123'	=> 'BURGERSTRASSE 123',
+			'#John Doe'	=> 'JOHN DOE',
+			'John@Doe' => 'JOHN DOE',
+			'Maçanet Çağla' => 'MAÇANET ÇAGLA',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {
@@ -173,8 +177,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 		// Review order data that sends to ERP.
 		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
 		$this->assertNotEmpty( $order_data );
-		$this->assertEquals( 'Jose M', $order_data['contactFirstName'] );
-		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
+		$this->assertEquals( 'JOSE M', $order_data['contactFirstName'] );
+		$this->assertEquals( 'GARCIA-LOPEZ', $order_data['contactLastName'] );
 	}
 
 }
