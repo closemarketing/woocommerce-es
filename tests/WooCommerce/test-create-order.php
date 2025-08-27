@@ -81,6 +81,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'Weiß y Aßmann/Waßmann'	=> 'Weiss y Assmann Wassmann',
 			'Bürgerstraße 123'	=> 'Burgerstrasse 123',
 			'#John Doe'	=> 'John Doe',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'aeiouuñçgAEIOUUÑÇG',
 			'John@Doe' => 'John Doe',
 			'Maçanet Çağla' => 'Maçanet Çagla',
 			'Francisco Araújo da Conceição' => 'Francisco Araujo da Conceiçao',
