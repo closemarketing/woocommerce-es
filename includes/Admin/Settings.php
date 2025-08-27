@@ -571,11 +571,18 @@ class Settings {
 				);
 			}
 
+			add_settings_field(
+				'wcpimh_cleanchars',
+				__( 'Clean special characters for Verifactu?', 'connect-ecommerce' ),
+				array( $this, 'cleanchars_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+
 			if ( 'Holded' === $this->options['name'] ) {
-				$name_docorder = __( 'Document to create after order completed?', 'connect-ecommerce' );
 				add_settings_field(
 					'wcpimh_doctype',
-					$name_docorder,
+					__( 'Document to create after order completed?', 'connect-ecommerce' ),
 					array( $this, 'doctype_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
@@ -932,6 +939,7 @@ class Settings {
 				'rates'          => 'default',
 				'catnp'          => 'yes',
 				'doctype'        => 'invoice',
+				'cleanchars'     => '',
 				'series'         => '',
 				'freeorder'      => 'no',
 				'ecstatus'       => 'all',
@@ -1377,6 +1385,21 @@ class Settings {
 			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
+	}
+
+	/**
+	 * Call back for clean special characters
+	 *
+	 * @return void
+	 */
+	public function cleanchars_callback() {
+		$cleanchars = isset( $this->settings['cleanchars'] ) ? $this->settings['cleanchars'] : 'no';
+		echo '<input type="checkbox" id="connwoo_cleanchars_checkbox" name="connect_ecommerce[' . esc_html( $this->connector ) . '][cleanchars]" value="on"';
+		echo checked( $cleanchars, 'on' );
+		echo '/>';
+		echo '<label for="connwoo_cleanchars_checkbox" class="description">';
+		esc_html_e( 'Clean special characters from firstname, lastname and company name', 'connect-ecommerce' );
+		echo '</label>';
 	}
 
 	/**
