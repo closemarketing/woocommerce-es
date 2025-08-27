@@ -29,6 +29,10 @@ Products: Imports products from your ERP/CRM with all the necessary sales inform
 
 Orders and Customers: Once an order is placed, it is sent to the ERP/CRM. It creates a new customer or matches the existing one to the order in the ERP/CRM. Depending on the connector, you can choose the type of document to generate.
 
+This plugin is fully GDPR compliant. The synchronization between WooCommerce and your ERP/CRM is established through a direct connection, without intermediaries or third-party storage of personal data. This ensures maximum security and transparency, keeping customer information under your full control.
+
+This plugin also includes specific adjustments to comply with Verifactu regulations. Order and invoice data are processed and structured to meet the official requirements, ensuring your business adheres to current legal standards.
+
 **Main Benefits**
 - Imports simple, variable, and bundled products.
 - Imports product attributes such as brand.
@@ -39,6 +43,7 @@ Orders and Customers: Once an order is placed, it is sent to the ERP/CRM. It cre
 - Allows you to choose the invoice design (Holded only).
 - Uses AI to generate product marketing information.
 - Adds the NIF/CIF field for proper invoicing.
+- Complies with Verifactu and GDPR.
 
 This plugin serves as the foundation for various connectors. The free version supports:
 - [Clientify](https://close.marketing/likes/clientify/)
@@ -63,6 +68,8 @@ Orders are synced from WooCommerce to the ERP/CRM so that every time a customer 
 = What happens when a product is out of stock? =
 By default, the product disappears from the store catalog but remains visible to search engines. This is intentional and matches the expected store behavior.
 
+= Does it comply with Verifactu? =
+Yes, it does. It makes the order data more readable for Verifactu.
 
 == Installation ==
 
@@ -95,6 +102,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 * Enhancement: Added support to merge categories from API to WooCommerce.
 * Enhancement: More robust import products. Prevents missing variables from API.
 * Enhancement: Added support to Odoo company field.
+* Enhancement: Added support to clean special chars in order data (Verifactu).
 * Fixed: error importing products without pricesale_discount.
 
 = 3.1.4 =
