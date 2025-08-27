@@ -120,6 +120,15 @@ class ORDER {
 		} else {
 			$contact_name = $order->get_billing_company();
 		}
+		$first_name = $order->get_billing_first_name();
+		$last_name = $order->get_billing_last_name();
+
+		// Clean special chars.
+		if ( isset( $setttings['cleanchars'] ) && 'on' === $setttings['cleanchars'] ) {
+			$contact_name = self::clean_special_chars( $contact_name );
+			$first_name   = self::clean_special_chars( $first_name );
+			$last_name    = self::clean_special_chars( $last_name );
+		}
 
 		// State and Country.
 		$billing_country_code = $order->get_billing_country();
@@ -147,9 +156,9 @@ class ORDER {
 			'contactUserID'          => $order->get_user_id(),
 			'contactCode'            => $contact_code,
 			'contactName'            => $contact_name,
-			'contactFirstName'       => $order->get_billing_first_name(),
-			'contactLastName'        => $order->get_billing_last_name(),
-			'woocommerceCustomer'    => $order->get_user()->data->user_login,
+			'contactFirstName'       => $first_name,
+			'contactLastName'        => $last_name,
+			'woocommerceCustomer'    => $order->get_user()->data->user_login ?? '',
 			'marketplace'            => 'woocommerce',
 			'woocommerceOrderStatus' => $order->get_status(),
 			'woocommerceOrderId'     => $order_label_id,

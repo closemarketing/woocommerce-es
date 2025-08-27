@@ -939,7 +939,7 @@ class Settings {
 				'rates'          => 'default',
 				'catnp'          => 'yes',
 				'doctype'        => 'invoice',
-				'cleanchars'     => 'invoice',
+				'cleanchars'     => '',
 				'series'         => '',
 				'freeorder'      => 'no',
 				'ecstatus'       => 'all',

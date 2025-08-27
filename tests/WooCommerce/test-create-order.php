@@ -78,6 +78,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'José M. García-López'	=> 'Jose M Garcia-Lopez',
 			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS & BEBIDAS S L',
 			'Peña "El @Rincón" / Granada'	=> 'Pena El Rincon Granada',
+			'Weiß y Aßmann/Waßmann'	=> 'Weiss y Assmann Wassmann',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {
@@ -85,18 +86,95 @@ class CreateOrderTest extends WP_UnitTestCase {
 		}
 	}
 
-/*
-	public function test_create_order_without_errors() {
+	public function test_create_order_company_without_errors() {
 		$order = new WC_Order();
-		$order->set_status('pending');
+		$client_data = [
+			'first_name' => 'José M.',
+			'last_name'  => 'García-López',
+			'email'      => 'john.doe@example.com',
+			'phone'      => '123456789',
+			'address_1'  => '123 Main St',
+			'address_2'  => '',
+			'city'       => 'Sample City',
+			'state'      => 'CA',
+			'postcode'   => '90001',
+			'country'    => 'US',
+			'company'    => '',
+		];
+
+		$order->set_billing_first_name( $client_data['first_name'] );
+		$order->set_billing_last_name( $client_data['last_name'] );
+		$order->set_billing_email( $client_data['email'] );
+		$order->set_billing_phone( $client_data['phone'] );
+		$order->set_billing_address_1( $client_data['address_1'] );
+		$order->set_billing_address_2( $client_data['address_2'] );
+		$order->set_billing_city( $client_data['city'] );
+		$order->set_billing_state( $client_data['state'] );
+		$order->set_billing_postcode( $client_data['postcode'] );
+		$order->set_billing_country( $client_data['country'] );
+		$order->set_billing_company( $client_data['company'] );
+		$order->set_status('completed');
+		$order->set_total(100);
+		$order->save();
+
+		$option_prefix = 'conecom-test';
+
+		// Review order data that sends to ERP.
+		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+		$this->assertNotEmpty( $order_data );
+		$this->assertEquals( $client_data['first_name'], $order_data['contactFirstName'] );
+		$this->assertEquals( $client_data['last_name'], $order_data['contactLastName'] );
+		$this->assertEquals( $client_data['first_name'] . ' ' . $client_data['last_name'], $order_data['contactName'] );
+
+		// With company.
+		$client_data['company'] = 'Acme Inc.';
+		$order->set_billing_company( $client_data['company'] );
+		$order->save();
+
+		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+		$this->assertNotEmpty( $order_data );
+		$this->assertEquals( $client_data['company'], $order_data['contactName'] );
+	}
+
+	public function test_create_order_clean_chars_without_errors() {
+		$order = new WC_Order();
+		$client_data = [
+			'first_name' => 'José M.',
+			'last_name'  => 'García-López',
+			'email'      => 'john.doe@example.com',
+			'phone'      => '123456789',
+			'address_1'  => '123 Main St',
+			'address_2'  => '',
+			'city'       => 'Sample City',
+			'state'      => 'CA',
+			'postcode'   => '90001',
+			'country'    => 'US',
+			'company'    => 'Acme Inc.',
+		];
+
+		$order->set_billing_first_name( $client_data['first_name'] );
+		$order->set_billing_last_name( $client_data['last_name'] );
+		$order->set_billing_email( $client_data['email'] );
+		$order->set_billing_phone( $client_data['phone'] );
+		$order->set_billing_address_1( $client_data['address_1'] );
+		$order->set_billing_address_2( $client_data['address_2'] );
+		$order->set_billing_city( $client_data['city'] );
+		$order->set_billing_state( $client_data['state'] );
+		$order->set_billing_postcode( $client_data['postcode'] );
+		$order->set_billing_country( $client_data['country'] );
+		$order->set_billing_company( $client_data['company'] );
+		$order->set_status('completed');
 		$order->set_total(100);
 		$order->save();
 
 		$this->settings['cleanchars'] = 'on';
-		$option_prefix = 'conecom-holded';
+		$option_prefix = 'conecom-test';
 
-		$order_data = ORDER::generate_order_data( $settings, $order, $option_prefix );
+		// Review order data that sends to ERP.
+		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+		$this->assertNotEmpty( $order_data );
+		$this->assertEquals( 'Jose M', $order_data['contactFirstName'] );
+		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
 	}
-		*/
 
 }
