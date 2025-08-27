@@ -83,6 +83,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'#John Doe'	=> 'JOHN DOE',
 			'John@Doe' => 'JOHN DOE',
 			'Maçanet Çağla' => 'MAÇANET ÇAGLA',
+			'Francisco Araújo da Conceição' => 'FRANCISCO ARAUJO DA CONCEIÇAO',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {
