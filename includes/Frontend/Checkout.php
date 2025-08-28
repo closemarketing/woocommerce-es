@@ -129,8 +129,21 @@ class Checkout {
 		if ( 'yes' !== $company_field ) {
 			unset( $fields['billing']['billing_company'] );
 		}
+		// Move billing_company after billing_last_name if both exist
+		if ( isset( $fields['billing']['billing_company'] ) && isset( $fields['billing']['billing_last_name'] ) ) {
+			$billing_fields = $fields['billing'];
+			$new_billing_fields = array();
+			foreach ( $billing_fields as $key => $value ) {
+				$new_billing_fields[ $key ] = $value;
+				if ( 'billing_last_name' === $key && isset( $billing_fields['billing_company'] ) ) {
+					$new_billing_fields['billing_company'] = $billing_fields['billing_company'];
+					unset( $billing_fields['billing_company'] );
+				}
+			}
+			$fields['billing'] = $new_billing_fields;
+		}
 
-			return $fields;
+		return $fields;
 	}
 
 	public function add_billing_shipping_fields_admin( $fields ) {
