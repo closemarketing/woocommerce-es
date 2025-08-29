@@ -579,6 +579,16 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
+			if ( in_array( 'approve_document', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_approve_document',
+					__( 'Approve document by default for validations?', 'connect-ecommerce' ),
+					array( $this, 'approve_document_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
 			if ( 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_doctype',
@@ -940,6 +950,7 @@ class Settings {
 				'catnp'          => 'yes',
 				'doctype'        => 'invoice',
 				'cleanchars'     => '',
+				'approve_document' => 'no',
 				'series'         => '',
 				'freeorder'      => 'no',
 				'ecstatus'       => 'all',
@@ -1400,6 +1411,21 @@ class Settings {
 		echo '<label for="connwoo_cleanchars_checkbox" class="description">';
 		esc_html_e( 'Clean special characters from firstname, lastname and company name', 'connect-ecommerce' );
 		echo '</label>';
+	}
+
+	/**
+	 * Call back for approve document
+	 *
+	 * @return void
+	 */
+	public function approve_document_callback() {
+		$approve_document = isset( $this->settings['approve_document'] ) ? $this->settings['approve_document'] : 'no';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][approve_document]" id="wcpimh_approve_document">
+			<option value="no" <?php selected( $approve_document, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
+			<option value="yes" <?php selected( $approve_document, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
+		</select>
+		<?php
 	}
 
 	/**

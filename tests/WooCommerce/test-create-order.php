@@ -177,4 +177,27 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
 	}
 
+	public function test_create_order_approve_document_without_errors() {
+		$order = new WC_Order();
+		$client_data = [
+			'first_name' => 'José M.',
+			'last_name'  => 'García-López',
+			'email'      => 'john.doe@example.com',
+		];
+
+		$order->set_billing_first_name( $client_data['first_name'] );
+		$order->set_billing_last_name( $client_data['last_name'] );
+		$order->set_billing_email( $client_data['email'] );
+		$order->set_status('completed');
+		$order->set_total(100);
+		$order->save();
+
+		$this->settings['approve_document'] = 'yes';
+		$option_prefix = 'conecom-test';
+
+		// Review order data that sends to ERP.
+		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+		$this->assertNotEmpty( $order_data );
+		$this->assertEquals( true, $order_data['approveDoc'] );
+	}
 }

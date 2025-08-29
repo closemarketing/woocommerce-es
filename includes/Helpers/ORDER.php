@@ -183,7 +183,14 @@ class ORDER {
 			'language'               => $doclang,
 			'pmtype'                 => null,
 			'items'                  => array(),
+			'approveDoc'             => false,
 		);
+
+		// Approve document.
+		$approve_document = isset( $setttings['approve_document'] ) ? $setttings['approve_document'] : 'no';
+		if ( 'yes' === $approve_document ) {
+			$order_data['approveDoc'] = true;
+		}
 
 		// DesignID.
 		$design_id = isset( $setttings['design_id'] ) ? $setttings['design_id'] : '';
