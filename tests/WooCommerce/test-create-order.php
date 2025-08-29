@@ -76,9 +76,15 @@ class CreateOrderTest extends WP_UnitTestCase {
 	public function test_clean_special_chars() {
 		$test_cases = [
 			'José M. García-López'	=> 'Jose M Garcia-Lopez',
-			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS & BEBIDAS S L',
-			'Peña "El @Rincón" / Granada'	=> 'Pena El Rincon Granada',
+			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS Y BEBIDAS S L',
+			'Peña "El @Rincón" / Granada'	=> 'Peña El Rincon Granada',
 			'Weiß y Aßmann/Waßmann'	=> 'Weiss y Assmann Wassmann',
+			'Bürgerstraße 123'	=> 'Burgerstrasse 123',
+			'#John Doe'	=> 'John Doe',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'aeiouuñçgAEIOUUÑÇG',
+			'John@Doe' => 'John Doe',
+			'Maçanet Çağla' => 'Maçanet Çagla',
+			'Francisco Araújo da Conceição' => 'Francisco Araujo da Conceiçao',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {

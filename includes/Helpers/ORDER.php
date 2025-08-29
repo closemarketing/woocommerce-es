@@ -419,7 +419,7 @@ class ORDER {
 	 * @param string|null $fallback  Value to return if empty after sanitization (null = empty string).
 	 * @return string
 	 */
-	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9 &\- ', ?string $fallback = null ): string
+	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9ÑÇñç &\- ', ?string $fallback = null ): string
 	{
 		$value = trim(preg_replace('/\s+/u', ' ', $value ?? ''));
 		if ($value === '') {
@@ -427,8 +427,8 @@ class ORDER {
 		}
 
 		$map = [
-				'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n',
-				'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'N',
+				'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'ñ',
+				'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'Ñ',
 				'à'=>'a','è'=>'e','ì'=>'i','ò'=>'o','ù'=>'u',
 				'À'=>'A','È'=>'E','Ì'=>'I','Ò'=>'O','Ù'=>'U',
 				'â'=>'a','ê'=>'e','î'=>'i','ô'=>'o','û'=>'u',
@@ -437,7 +437,6 @@ class ORDER {
 				'Ä'=>'A','Ë'=>'E','Ï'=>'I','Ö'=>'O','Ü'=>'U',
 				'ã'=>'a','õ'=>'o',
 				'Ã'=>'A','Õ'=>'O',
-				'ç'=>'c','Ç'=>'C',
 				'š'=>'s','Š'=>'S',
 				'ž'=>'z','Ž'=>'Z',
 				'ý'=>'y','Ý'=>'Y',
@@ -445,9 +444,11 @@ class ORDER {
 				'ø'=>'o','Ø'=>'O',
 				'æ'=>'ae','Æ'=>'AE',
 				'œ'=>'oe','Œ'=>'OE',
-				'ß'=>'ss'
+				'ß'=>'ss','@'=>' ',
+				'#'=>' ', '&' => 'Y',
+				'ğ'=>'g','Ğ'=>'G', 
 		];
-		$ascii = strtr($value, $map);
+		$ascii = strtr( $value, $map );
 
 		// Replace non-whitelisted characters with spaces
 		$ascii = preg_replace('/[^' . $whitelist . ']/', ' ', $ascii);
