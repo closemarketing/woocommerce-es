@@ -49,7 +49,13 @@ class Checkout {
 
 		/* Options for the plugin */
 		//add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
-		add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 10 );
+		// Register additional checkout fields for Gutenberg compatibility.
+		add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 99 );
+		add_action( 'wp_loaded', array( $this, 'add_vat_field_to_checkout' ), 10 );
+		
+		// Save and display additional checkout fields.
+		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'save_additional_checkout_fields' ) );
+		add_action( 'woocommerce_admin_order_data_after_billing_address', array( $this, 'display_additional_checkout_fields_admin' ) );
 
 		$remove_free = isset( $this->setttings_public['remove_free'] ) ? $this->setttings_public['remove_free'] : 'no';
 		if ( 'yes' === $remove_free ) {
@@ -135,24 +141,41 @@ class Checkout {
 	}
 
 	public function add_vat_field_to_checkout() {
-			woocommerce_register_additional_checkout_field(
-				array(
-					'id'            => 'namespace/gov-id',
-					'label'         => 'Government ID',
-					'optionalLabel' => 'Government ID (optional)',
-					'location'      => 'billing',
-					'priority'      => 10,
-					'required'      => true,
-					'attributes'    => array(
-						'autocomplete'     => 'government-id',
-						'aria-describedby' => 'some-element',
-						'aria-label'       => 'custom aria label',
-						'pattern'          => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
-						'title'            => 'Title to show on hover',
-						'data-custom'      => 'custom data',
-					),
+		// Register government ID field.
+		woocommerce_register_additional_checkout_field(
+			array(
+				'id'            => 'connect_ecommerce/billing_vat',
+				'label'         => __( 'VAT Number', 'connect-ecommerce' ),
+				'optionalLabel' => __( 'VAT Number (optional)', 'connect-ecommerce' ),
+				'location'      => 'address',
+				'priority'      => 10,
+				'required'      => true,
+				'attributes'    => array(
+					'autocomplete' => 'billing_vat',
+					'pattern'      => '[A-Z0-9]{12}', // A 5-character string of capital letters and numbers.
+					'title'        => __( 'VAT number', 'connect-ecommerce' ),
 				),
-			);
+			)
+		);
+		// Register government ID field.
+		woocommerce_register_additional_checkout_field(
+			array(
+				'id'            => 'namespace/gov-id',
+				'label'         => 'Government ID',
+				'optionalLabel' => 'Government ID (optional)',
+				'location'      => 'address',
+				'priority'      => 10,
+				'required'      => true,
+				'attributes'    => array(
+					'autocomplete'     => 'government-id',
+					'aria-describedby' => 'some-element',
+					'aria-label'       => 'custom aria label',
+					'pattern'          => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
+					'title'            => 'Title to show on hover',
+					'data-custom'      => 'custom data',
+				),
+			)
+		);
 	}
 
 	public function add_billing_shipping_fields_admin( $fields ) {
@@ -258,27 +281,44 @@ class Checkout {
 
 		return $validation_errors;
 	}
+
+	/**
+	 * Save additional checkout field data to order.
+	 *
+	 * @param int $order_id Order ID.
+	 * @return void
+	 */
+	public function save_additional_checkout_fields( $order_id ) {
+		// Save marketing opt-in field.
+		if ( ! empty( $_POST['namespace/marketing-opt-in'] ) ) {
+			update_post_meta( $order_id, '_marketing_opt_in', sanitize_text_field( wp_unslash( $_POST['namespace/marketing-opt-in'] ) ) );
+		}
+
+		// Save government ID field.
+		if ( ! empty( $_POST['namespace/gov-id'] ) ) {
+			update_post_meta( $order_id, '_government_id', sanitize_text_field( wp_unslash( $_POST['namespace/gov-id'] ) ) );
+		}
+	}
+
+	/**
+	 * Display additional checkout field data in admin order page.
+	 *
+	 * @param object $order Order object.
+	 * @return void
+	 */
+	public function display_additional_checkout_fields_admin( $order ) {
+		$marketing_opt_in = get_post_meta( $order->get_id(), '_marketing_opt_in', true );
+		$government_id    = get_post_meta( $order->get_id(), '_government_id', true );
+
+		if ( ! empty( $marketing_opt_in ) ) {
+			echo '<p><strong>' . esc_html__( 'Marketing Opt-in', 'connect-ecommerce' ) . ':</strong> ';
+			echo esc_html( $marketing_opt_in ) . '</p>';
+		}
+
+		if ( ! empty( $government_id ) ) {
+			echo '<p><strong>' . esc_html__( 'Government ID', 'connect-ecommerce' ) . ':</strong> ';
+			echo esc_html( $government_id ) . '</p>';
+		}
+	}
 }
 
-add_action(
-	'woocommerce_init',
-	function() {
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'            => 'namespace/gov-id',
-				'label'         => 'Government ID',
-				'optionalLabel' => 'Government ID (optional)',
-				'location'      => 'address',
-				'required'      => true,
-				'attributes'    => array(
-					'autocomplete'     => 'government-id',
-					'aria-describedby' => 'some-element',
-					'aria-label'       => 'custom aria label',
-					'pattern'          => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
-					'title'            => 'Title to show on hover',
-					'data-custom'      => 'custom data',
-				),
-			),
-		);
-	}
-);
