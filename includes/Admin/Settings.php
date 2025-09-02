@@ -579,7 +579,7 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
-			if ( 'Holded' === $this->options['name'] ) {
+			if ( 'Holded' === $this->options['name'] || ! empty( $this->options['product_doctype_option'] ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
 					__( 'Document to create after order completed?', 'connect-ecommerce' ),
@@ -587,7 +587,9 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
+			}
 
+			if ( 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_design_id',
 					__( 'ID Holded design for document', 'connect-ecommerce' ),
@@ -1409,9 +1411,25 @@ class Settings {
 	 */
 	public function doctype_callback() {
 		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
+
+		$doctype_options = isset( $this->options['product_doctype_option'] ) ? $this->options['product_doctype_option'] : array( 'nosync', 'invoice', 'salesreceipt', 'salesorder', 'waybill' );
+
+		$doctype_labels = array(
+			'nosync'       => __( 'Not sync', 'connect-ecommerce' ),
+			'invoice'      => __( 'Invoice', 'connect-ecommerce' ),
+			'salesreceipt' => __( 'Sales receipt', 'connect-ecommerce' ),
+			'salesorder'   => __( 'Sales order', 'connect-ecommerce' ),
+			'waybill'      => __( 'Waybill', 'connect-ecommerce' ),
+		);
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
-			<option value="nosync" <?php selected( $doctype, 'nosync' ); ?>><?php esc_html_e( 'Not sync', 'connect-ecommerce' ); ?></option>		<option value="invoice" <?php selected( $doctype, 'invoice' ); ?>><?php esc_html_e( 'Invoice', 'connect-ecommerce' ); ?></option>			<option value="salesreceipt" <?php selected( $doctype, 'salesreceipt' ); ?>><?php esc_html_e( 'Sales receipt', 'connect-ecommerce' ); ?></option>			<option value="salesorder" <?php selected( $doctype, 'salesorder' ); ?>><?php esc_html_e( 'Sales order', 'connect-ecommerce' ); ?></option>			<option value="waybill" <?php selected( $doctype, 'waybill' ); ?>><?php esc_html_e( 'Waybill', 'connect-ecommerce' ); ?></option>
+			<?php
+			foreach ( $doctype_options as $option ) {
+				echo '<option value="' . esc_html( $option ) . '" ';
+				selected( $option, $doctype );
+				echo '>' . esc_html( $doctype_labels[ $option ] ) . '</option>';
+			}
+			?>
 		</select>
 		<?php
 	}
