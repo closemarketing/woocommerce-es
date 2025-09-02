@@ -157,25 +157,6 @@ class Checkout {
 				),
 			)
 		);
-		// Register government ID field.
-		woocommerce_register_additional_checkout_field(
-			array(
-				'id'            => 'namespace/gov-id',
-				'label'         => 'Government ID',
-				'optionalLabel' => 'Government ID (optional)',
-				'location'      => 'address',
-				'priority'      => 10,
-				'required'      => true,
-				'attributes'    => array(
-					'autocomplete'     => 'government-id',
-					'aria-describedby' => 'some-element',
-					'aria-label'       => 'custom aria label',
-					'pattern'          => '[A-Z0-9]{5}', // A 5-character string of capital letters and numbers.
-					'title'            => 'Title to show on hover',
-					'data-custom'      => 'custom data',
-				),
-			)
-		);
 	}
 
 	public function add_billing_shipping_fields_admin( $fields ) {
