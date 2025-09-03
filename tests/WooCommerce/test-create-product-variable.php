@@ -187,6 +187,13 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertNotNull( $result_sync['post_id'] );
 		$this->assertNotEmpty( 'Product without name', get_the_title( $result_sync['post_id'] ) );
 
+		// Without images.
+		$item = $original_item;
+		$item['images'] = '';
+		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertNotNull( $result_sync['post_id'] );
+
 		// Blank product.
 		$item = [];
 		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
