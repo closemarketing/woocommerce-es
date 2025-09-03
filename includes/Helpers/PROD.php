@@ -888,11 +888,15 @@ class PROD {
 	 * Adds image to product
 	 *
 	 * @param int    $product_id Product ID.
-	 * @param array  $image Image data.
+	 * @param array|string  $image Image data.
 	 * @param bool   $first_image If is the first image for thumbnail.
 	 * @return void
 	 */
-	private static function attach_image_to_product( $product_id, $image, $first_image = true ) {
+	private static function attach_image_to_product( $product_id, $image_data, $first_image = true ) {
+		if ( empty( $image_data ) ) {
+			return;
+		}
+		$image      = is_array( $image_data ) ? $image_data : [ 'url' => $image_data ];
 		$attachment = array(
 			'guid'           => $image['url'] ?? '',
 			'post_mime_type' => $image['content_type'] ?? '',
@@ -912,10 +916,22 @@ class PROD {
 			$file_array['name'] = basename( $image_url );
 			$file_array['tmp_name'] = download_url( $image_url );
 
+			if ( empty( $attachment['post_mime_type'] ) && ! empty( $file_array['tmp_name'] ) && file_exists( $file_array['tmp_name'] ) ) {
+				$finfo = finfo_open( FILEINFO_MIME_TYPE );
+				if ( $finfo ) {
+					$attachment['post_mime_type'] = finfo_file( $finfo, $file_array['tmp_name'] );
+					finfo_close( $finfo );
+				}
+			}
+
 			// Check for download errors
 			if ( is_wp_error( $file_array['tmp_name'] ) ) {
 				return;
 			}
+
+			// Prevents scripts in the name of the file.
+			$base_name_after_download = basename( $file_array['tmp_name'] );
+			$file_array['name'] = $base_name_after_download;
 
 			$attach_id = media_handle_sideload( $file_array, $product_id, $attachment['post_title'], $attachment );
 
