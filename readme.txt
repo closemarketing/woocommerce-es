@@ -104,6 +104,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 * Enhancement: Added support to Odoo company field.
 * Enhancement: Added support to clean special chars in order data (Verifactu).
 * Enhancement: added support to importing images in variations.
+* Enhancement: Don't add image if already exists in WooCommerce.
 * Fixed: error importing products without pricesale_discount.
 
 = 3.1.4 =

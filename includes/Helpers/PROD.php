@@ -912,32 +912,42 @@ class PROD {
 				return;
 			}
 
-			$file_array = [];
-			$file_array['name'] = basename( $image_url );
-			$file_array['tmp_name'] = download_url( $image_url );
+			$handle_file         = [];
+			$handle_file['name'] = basename( $image_url );
+			$handle_file['tmp_name'] = download_url( $image_url );
 
-			if ( empty( $attachment['post_mime_type'] ) && ! empty( $file_array['tmp_name'] ) && file_exists( $file_array['tmp_name'] ) ) {
+			if ( empty( $attachment['post_mime_type'] ) && ! empty( $handle_file['tmp_name'] ) && file_exists( $handle_file['tmp_name'] ) ) {
 				$finfo = finfo_open( FILEINFO_MIME_TYPE );
 				if ( $finfo ) {
-					$attachment['post_mime_type'] = finfo_file( $finfo, $file_array['tmp_name'] );
+					$attachment['post_mime_type'] = finfo_file( $finfo, $handle_file['tmp_name'] );
 					finfo_close( $finfo );
 				}
 			}
 
 			// Check for download errors
-			if ( is_wp_error( $file_array['tmp_name'] ) ) {
+			if ( is_wp_error( $handle_file['tmp_name'] ) ) {
 				return;
 			}
 
 			// Prevents scripts in the name of the file.
-			$base_name_after_download = basename( $file_array['tmp_name'] );
-			$file_array['name'] = $base_name_after_download;
+			$base_name_after_download = basename( $handle_file['tmp_name'] );
+			$handle_file['name'] = $base_name_after_download;
 
-			$attach_id = media_handle_sideload( $file_array, $product_id, $attachment['post_title'], $attachment );
+			// Check if the file already exists in the media library by GUID (URL)
+			global $wpdb;
+			$attach_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT ID FROM $wpdb->posts WHERE guid LIKE %s AND post_type = 'attachment' LIMIT 1",
+					'%' . $wpdb->esc_like( $base_name_after_download )
+				)
+			);
+			if ( ! $attach_id ) {
+				$attach_id = media_handle_sideload( $handle_file, $product_id, $attachment['post_title'], $attachment );
+			}
 
 			// Check for attachment errors
 			if (is_wp_error($attach_id)) {
-				@unlink($file_array['tmp_name']);
+				@unlink($handle_file['tmp_name']);
 				return;
 			}
 		} else {
