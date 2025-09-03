@@ -83,7 +83,19 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 
 		$this->settings['catattr'] = 'sandalias';
 		$this->settings['catnp']   = 'yes'; // only in new products.
+
+		// Test images.
+		$image_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url' => $image_path,
+			'file' => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images'] = [ $image_dummy, $image_dummy, $image_dummy ];
+		$item['variants'][0]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy;
 		
+		// Sync product.
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
 		$product_cats   = wp_get_post_terms( $result_prod_id, 'product_cat', [ 'fields' => 'names' ] );
@@ -99,6 +111,13 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertEquals( $item['desc'], $product->get_description() );
 		$this->assertEquals( true, in_array( 'Calzado', $product_cats ) );
 
+		// Assert featured images.
+		$featured_image_url = get_the_post_thumbnail_url( $result_prod_id );
+		$gallery_image_ids  = $product->get_gallery_image_ids();
+		$this->assertNotEmpty( $featured_image_url );
+		$this->assertStringContainsString( 'dummy-image.png', $featured_image_url );
+		$this->assertEquals( 2, count( $gallery_image_ids ) );
+
 		// Variable product asserts.
 		$variations = $product->get_children();
 		$this->assertNotEmpty( $variations );
@@ -108,6 +127,12 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertEquals( $item['variants'][$index]['price'], (float) $prod_variation->get_regular_price() );
 			$this->assertEquals( $item['variants'][$index]['stock'], $prod_variation->get_stock_quantity() );
 			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
+
+			// Assert images.
+			$variation_image_url = get_the_post_thumbnail_url( $variation_id );
+			$this->assertNotEmpty( $variation_image_url );
+			$this->assertStringContainsString( 'dummy-image.png', $variation_image_url );
+
 			$index++;
 		}
 

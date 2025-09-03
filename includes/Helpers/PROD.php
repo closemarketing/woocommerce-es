@@ -595,7 +595,7 @@ class PROD {
 				);
 				$variation_props     = array_merge( $variation_props, $variation_props_new );
 			}
-			$variation = new \WC_Product_Variation( $variation_id );
+			$variation    = new \WC_Product_Variation( $variation_id );
 			if ( ! empty( $variant['barcode'] ) ) {
 				try {
 					$variation->set_global_unique_id( $variant['barcode'] );
@@ -633,8 +633,14 @@ class PROD {
 					$variation->update_meta_data( $key, $value );
 				}
 			}
+			$variation->update_meta_data( '_connect_ecommerce_productid', $variant['id'] );
 			$variation->save();
-			update_post_meta( $variation_id, '_connect_ecommerce_productid', $variant['id'] );
+			$variation_id = empty( $variation_id ) ? $variation->get_id() : $variation_id; // prevents new variation id.
+
+			// Add image to variation.
+			if ( ! empty( $variant['image'] ) ) {
+				self::attach_image_to_product( $variation_id, $variant['image'] );
+			}
 		}
 		$var_prop   = TAX::make_attributes( $attributes, true );
 		$data_store = $product->get_data_store();
@@ -833,71 +839,13 @@ class PROD {
 	}
 
 	/**
-	 * Attachs images to a post id
-	 *
-	 * @param int    $post_id Post id.
-	 * @param string $img_string Image string from API.
-	 * @return int
-	 */
-	public static function attach_image( $post_id, $img_string ) {
-		if ( ! $img_string || ! $post_id ) {
-			return null;
-		}
-
-		$post         = get_post( $post_id );
-		$upload_dir   = wp_upload_dir();
-		$upload_path  = $upload_dir['path'];
-		$filename     = $post->post_name . '.png';
-		$image_upload = file_put_contents( $upload_path . $filename, $img_string );
-		// HANDLE UPLOADED FILE.
-		if ( ! function_exists( 'wp_handle_sideload' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/file.php';
-		}
-
-		if ( ! function_exists( 'wp_get_current_user' ) ) {
-			require_once ABSPATH . 'wp-includes/pluggable.php';
-		}
-		$file = array(
-			'error'    => '',
-			'tmp_name' => $upload_path . $filename,
-			'name'     => $filename,
-			'type'     => 'image/png',
-			'size'     => filesize( $upload_path . $filename ),
-		);
-		if ( ! empty( $file ) ) {
-			$file_return = wp_handle_sideload( $file, array( 'test_form' => false ) );
-			$filename    = $file_return['file'];
-		}
-		if ( isset( $file_return['file'] ) && isset( $file_return['file'] ) ) {
-			$attachment = array(
-				'post_mime_type' => $file_return['type'],
-				'post_title'     => preg_replace( '/\.[^.]+$/', ' ', basename( $file_return['file'] ) ),
-				'post_content'   => '',
-				'post_status'    => 'inherit',
-				'guid'           => $file_return['url'],
-			);
-			$attach_id  = wp_insert_attachment( $attachment, $filename, $post_id );
-			if ( $attach_id ) {
-				require_once ABSPATH . 'wp-admin/includes/image.php';
-				$post_thumbnail_id = get_post_thumbnail_id( $post_id );
-				if ( $post_thumbnail_id ) {
-					wp_delete_attachment( $post_thumbnail_id, true );
-				}
-				$attach_data = wp_generate_attachment_metadata( $attach_id, $filename );
-				wp_update_attachment_metadata( $attach_id, $attach_data );
-				set_post_thumbnail( $post_id, $attach_id );
-			}
-		}
-	}
-
-	/**
 	 * Gets image from API products
 	 *
-	 * @param string $item Item of API to get information.
-	 * @param string $product_id Id of product to get information.
+	 * @param array  $item Item of API to get information.
+	 * @param int $product_id Id of product to get information.
 	 * @param object $api_erp API Object.
 	 *
-	 * @return void
+	 * @return bool
 	 */
 	public static function put_product_images( $settings, $item, $product_id, $api_erp ) {
 		if ( self::has_valid_thumbnail( $product_id ) ) {
@@ -931,55 +879,67 @@ class PROD {
 
 		$first_image = true;
 		foreach ( $images as $image ) {
-			$attachment = array(
-				'guid'           => $image['url'] ?? '',
-				'post_mime_type' => $image['content_type'] ?? '',
-				'post_title'     => $image['title'] ?? get_the_title( $product_id ),
-				'post_content'   => $image['content'] ?? '',
-				'post_status'    => 'inherit',
-			);
+			self::attach_image_to_product( $product_id, $image, $first_image );
+			$first_image = false;
+		}
+	}
 
-			if ( empty( $image['file'] ) ) { 
-				// Download image to server
-				$image_url = $image['url'] ?? '';
-				if ( empty( $image_url ) ) {
-					continue;
-				}
+	/**
+	 * Adds image to product
+	 *
+	 * @param int    $product_id Product ID.
+	 * @param array  $image Image data.
+	 * @param bool   $first_image If is the first image for thumbnail.
+	 * @return void
+	 */
+	private static function attach_image_to_product( $product_id, $image, $first_image = true ) {
+		$attachment = array(
+			'guid'           => $image['url'] ?? '',
+			'post_mime_type' => $image['content_type'] ?? '',
+			'post_title'     => $image['title'] ?? get_the_title( $product_id ),
+			'post_content'   => $image['content'] ?? '',
+			'post_status'    => 'inherit',
+		);
 
-				$file_array = [];
-				$file_array['name'] = basename( $image_url );
-				$file_array['tmp_name'] = download_url( $image_url );
-
-				// Check for download errors
-				if ( is_wp_error( $file_array['tmp_name'] ) ) {
-					continue;
-				}
-
-				$attach_id = media_handle_sideload( $file_array, $product_id, $attachment['post_title'], $attachment );
-
-				// Check for attachment errors
-				if (is_wp_error($attach_id)) {
-					@unlink($file_array['tmp_name']);
-					continue;
-				}
-			} else {
-				if ( ! file_exists( $image['file'] ) ) {
-					continue;
-				}
-
-				$attach_id  = wp_insert_attachment( $attachment, $image['file'], 0 );
+		if ( empty( $image['file'] ) ) { 
+			// Download image to server
+			$image_url = $image['url'] ?? '';
+			if ( empty( $image_url ) ) {
+				return;
 			}
 
-			if ( $first_image ) {
-				$first_image = false;
-				// Set the product image.
-				add_post_meta( $product_id, '_thumbnail_id', $attach_id, true );
-			} else {
-				// Add the image to the product gallery.
-				$gallery = get_post_meta( $product_id, '_product_image_gallery', true );
-				$gallery = $gallery ? $gallery . ',' . $attach_id : $attach_id;
-				update_post_meta( $product_id, '_product_image_gallery', $gallery );
+			$file_array = [];
+			$file_array['name'] = basename( $image_url );
+			$file_array['tmp_name'] = download_url( $image_url );
+
+			// Check for download errors
+			if ( is_wp_error( $file_array['tmp_name'] ) ) {
+				return;
 			}
+
+			$attach_id = media_handle_sideload( $file_array, $product_id, $attachment['post_title'], $attachment );
+
+			// Check for attachment errors
+			if (is_wp_error($attach_id)) {
+				@unlink($file_array['tmp_name']);
+				return;
+			}
+		} else {
+			if ( ! file_exists( $image['file'] ) ) {
+				return;
+			}
+
+			$attach_id  = wp_insert_attachment( $attachment, $image['file'], 0 );
+		}
+
+		if ( $first_image ) {
+			// Set the product image.
+			add_post_meta( $product_id, '_thumbnail_id', $attach_id, true );
+		} else {
+			// Add the image to the product gallery.
+			$gallery = get_post_meta( $product_id, '_product_image_gallery', true );
+			$gallery = $gallery ? $gallery . ',' . $attach_id : $attach_id;
+			update_post_meta( $product_id, '_product_image_gallery', $gallery );
 		}
 	}
 
