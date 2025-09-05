@@ -149,8 +149,8 @@ class AI {
 		$body          = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( 200 !== $response_code ) {
-			$message .= sanitize_text_field( $response['error']['message'] ) ?? '';
-			$message .= sanitize_text_field( $response['errors']['http_request_failed'] ) ?? '';
+			$message .= sanitize_text_field( $body['error']['message'] ) ?? '';
+			$message .= sanitize_text_field( $body['errors']['http_request_failed'] ) ?? '';
 			$message .= $message ?? __( 'Unknown error', 'connect-ecommerce' );
 
 			return array(

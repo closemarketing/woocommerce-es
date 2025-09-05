@@ -113,7 +113,7 @@ class PROD {
 			}
 
 			if ( false === $any_variant_sku ) {
-				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') <br/>';
+				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ') <br/>';
 			} else {
 				// Update meta for product.
 				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'variable', null );
@@ -121,14 +121,14 @@ class PROD {
 				$message    .= 0 === $post_id || false === $post_id ? $msg_product_created : $msg_product_synced;
 				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item['kind'] . ') ' . $result_prod['message'] ?? '';
 			}
-		} elseif ( ! $is_filtered && 'pack' === $item_kind && $plugin_pack_active ) {
+		} elseif ( ! $is_filtered && 'pack' === $item['kind'] && $plugin_pack_active ) {
 			$post_id = ! empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
 
 			if ( ! $post_id ) {
 				$post_id = self::create_product_post( $settings, $item );
 				wp_set_object_terms( $post_id, 'woosb', 'product_type' );
 			}
-			if ( $post_id && $item['sku'] && 'pack' === $item_kind ) {
+			if ( $post_id && $item['sku'] && 'pack' === $item['kind'] ) {
 				// Create subproducts before.
 				$pack_items = '';
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
@@ -152,29 +152,29 @@ class PROD {
 					'message' => __( 'There was an error while inserting new product!', 'connect-ecommerce' ) . ' ' . $item['name'],
 				);
 			}
-			$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item_kind . ')' . $result_prod['message'] ?? '';
-		} elseif ( ! $is_filtered && 'pack' === $item_kind && ! $plugin_pack_active ) {
+			$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item['kind'] . ')' . $result_prod['message'] ?? '';
+		} elseif ( ! $is_filtered && 'pack' === $item['kind'] && ! $plugin_pack_active ) {
 			$message .= '<span class="warning">' . __( 'Product needs Plugin to import: ', 'connect-ecommerce' );
 			$message .= '<a href="https://wordpress.org/plugins/woo-product-bundle/" target="_blank">WPC Product Bundles for WooCommerce</a> ';
-			$message .= '(' . $item_kind . ') </span>';
+			$message .= '(' . $item['kind'] . ') </span>';
 		} elseif ( $is_filtered ) {
 			// Product not synced without SKU.
-			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') </span>';
-		} elseif ( '' === $item['sku'] && 'simple' === $item_kind ) {
+			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ') </span>';
+		} elseif ( '' === $item['sku'] && 'simple' === $item['kind'] ) {
 			// Product not synced without SKU.
 			return array(
 				'status'  => 'error',
 				'post_id' => (int) $post_id,
 				'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ')</br>',
+				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')</br>',
 			);
-		} elseif ( 'simple' !== $item_kind ) {
+		} elseif ( 'simple' !== $item['kind'] ) {
 			// Product not synced type not supported.
 			return array(
 				'status'  => 'error',
 				'post_id' => (int) $post_id,
 				'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-				'message' => __( 'Product type not supported. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ')',
+				'message' => __( 'Product type not supported. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')',
 			);
 		}
 
