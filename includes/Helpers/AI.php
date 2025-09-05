@@ -95,7 +95,7 @@ class AI {
 			__( 'Please respond in %s language.', 'connect-ecommerce' ),
 			$language
 		);
-		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO and SEO description and export it in format JSON, with elements: title, body, seo_title, seo_description', 'connect-ecommerce' );
+		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO, SEO description and SEO Focus keyword and export it in format JSON, with elements: title, body, seo_title, seo_description, seo_keyword', 'connect-ecommerce' );
 		$content .= PHP_EOL . __( 'Return only a valid and complete JSON object. If the content is too long, split it into multiple parts and clearly indicate when to continue. Do not include any text outside of the JSON.', 'connect-ecommerce' );
 
 		$token = isset( $settings['token'] ) ? $settings['token'] : '';
@@ -160,7 +160,6 @@ class AI {
 		}
 		$content = array();
 		if ( isset( $body['choices'][0]['message']['content'] ) ) {
-			error_log( '$content: ' . print_r( $body['choices'][0]['message']['content'], true ) );
 			$content = str_replace( '```json', '', $body['choices'][0]['message']['content'] );
 			$content = preg_replace( '/```[\w]*\s*/', '', $content );
 			$content = trim( $content );

@@ -209,9 +209,7 @@ class PROD {
 						$product_info,
 					);
 
-					$seo_title = ! empty( $result_ai['data']['seo_title'] ) ? sanitize_text_field( $result_ai['data']['seo_title'] ) : '';
-					$seo_desc  = ! empty( $result_ai['data']['seo_description'] ) ? sanitize_text_field( $result_ai['data']['seo_description'] ) : '';
-					self::update_product_seo( $post_id, $seo_title, $seo_desc );
+					self::update_product_seo( $post_id, $result_ai['data'] );
 					$message .= __( 'Generated AI: ', 'connect-ecommerce' );
 					$message .= $result_ai['message'] ?? '';
 				} else {
@@ -1040,72 +1038,61 @@ class PROD {
 	 * Update SEO for product
 	 *
 	 * @param int    $product_id Product ID.
-	 * @param string $seo_title Title SEO.
-	 * @param string $seo_desc Description SEO.
+	 * @param array $seo_data SEO data.
+	 * 
+	 * @return void
 	 */
-	private static function update_product_seo( $product_id, $seo_title, $seo_desc ) {
-		// Yoast.
-		if ( is_plugin_active( 'wordpress-seo/wp-seo.php' ) || is_plugin_active( 'wordpress-seo-premium/wp-seo-premium.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_yoast_wpseo_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_yoast_wpseo_metadesc', $seo_desc );
-			}
-		}
-		// Rank Math.
-		if ( is_plugin_active( 'seo-by-rank-math/rank-math.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, 'rank_math_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, 'rank_math_description', $seo_desc );
-			}
-		}
-		// SEOPress.
-		if ( is_plugin_active( 'seopress/seopress.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_seopress_titles_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_seopress_titles_description', $seo_desc );
-			}
-		}
-		// All in one SEO.
-		if ( is_plugin_active( 'all-in-one-seo-pack/all_in_one_seo_pack.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_aioseop_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_aioseop_description', $seo_desc );
-			}
-		}
-		// SEOPress.
-		if ( is_plugin_active( 'seopress-pro/seopress-pro.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_seopress_titles_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_seopress_titles_description', $seo_desc );
-			}
-		}
-		// WP Meta SEO.
-		if ( is_plugin_active( 'wp-meta-seo/wp-meta-seo.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_wpseo_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_wpseo_metadesc', $seo_desc );
-			}
-		}
+	private static function update_product_seo( $product_id, $seo_data ) {
+		$plugins_seo_meta = array(
+			'wordpress-seo/wp-seo.php' => [ // Yoast
+				'seo_title' => '_yoast_wpseo_title',
+				'seo_description' => '_yoast_wpseo_metadesc',
+				'seo_keyword' => '_yoast_wpseo_keywords',
+			],
+			'wordpress-seo-premium/wp-seo-premium.php' => [ // Yoast Premium
+				'seo_title' => '_yoast_wpseo_title',
+				'seo_description' => '_yoast_wpseo_metadesc',
+				'seo_keyword' => '_yoast_wpseo_keywords',
+			],
+			'seo-by-rank-math/rank-math.php' => [ // Rank Math
+				'seo_title' => 'rank_math_title',
+				'seo_description' => 'rank_math_description',
+				'seo_keyword' => 'rank_math_focus_keyword',
+			],
+			'seopress/seopress.php' => [ // SEO Press
+				'seo_title' => '_seopress_titles_title',
+				'seo_description' => '_seopress_titles_description',
+				'seo_keyword' => '_seopress_titles_keywords',
+			],
+			'all-in-one-seo-pack/all_in_one_seo_pack.php' => [ // All in One SEO Pack
+				'seo_title' => '_aioseop_title',
+				'seo_description' => '_aioseop_description',
+				'seo_keyword' => '_aioseop_keywords',
+			],
+			'seopress-pro/seopress-pro.php' => [ // SEO Press Pro
+				'seo_title' => '_seopress_titles_title',
+				'seo_description' => '_seopress_titles_description',
+				'seo_keyword' => '_seopress_titles_keywords',
+			],
+			'wp-meta-seo/wp-meta-seo.php' => [ // WP Meta SEO
+				'seo_title' => '_wpseo_title',
+				'seo_description' => '_wpseo_metadesc',
+				'seo_keyword' => '_wpseo_keywords',
+			],
+			'autodescription/autodescription.php' => [ // SEO Framework
+				'seo_title' => '_autodescription_title',
+				'seo_description' => '_autodescription_description',
+				'seo_keyword' => '_autodescription_keywords',
+			],
+		);
 
-		// SEO Framework.
-		if ( is_plugin_active( 'autodescription/autodescription.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_autodescription_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_autodescription_description', $seo_desc );
+		foreach ( $plugins_seo_meta as $plugin => $meta ) {
+			if ( is_plugin_active( $plugin ) ) {
+				foreach ( $meta as $key => $value ) {
+					if ( ! empty( $seo_data[ $key ] ) ) {
+						update_post_meta( $product_id, $value, $seo_data[ $key ] );
+					}
+				}
 			}
 		}
 	}

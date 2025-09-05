@@ -234,7 +234,7 @@ class Settings {
 				<?php
 				if ( ! $this->is_disabled_ai && $this->connector ) {
 					?>
-					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI', 'connect-ecommerce' ); ?></a>
+					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI Settings', 'connect-ecommerce' ); ?></a>
 					<?php
 				}
 				do_action( 'connect_ecommerce_settings_tabs', $active_tab );
