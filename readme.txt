@@ -52,6 +52,7 @@ Premium connectors include:
 - [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
 - [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
 - [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
+- [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
 
 Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
 
