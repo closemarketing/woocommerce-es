@@ -103,6 +103,8 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 * Enhancement: More robust import products. Prevents missing variables from API.
 * Enhancement: Added support to Odoo company field.
 * Enhancement: Added support to clean special chars in order data (Verifactu).
+* Enhancement: Added support to approve document for Verifactu in some ERPs. First version for Holded.
+* Enhancement: Added support to VAT Number SIMBA Hosting plugin.
 * Enhancement: added support to importing images in variations.
 * Enhancement: Don't add image if already exists in WooCommerce.
 * Enhancement: Added support to more SEO plugins.

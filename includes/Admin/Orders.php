@@ -251,7 +251,6 @@ class Orders {
 	 */
 	public function attach_file_woocommerce_email( $attachments, $action, $email_order ) {
 		$settings = get_option( $this->options['slug'] );
-		$apikey   = isset( $settings['api'] ) ? $settings['api'] : '';
 		$order    = wc_get_order( $email_order );
 		if ( ! $order ) {
 			return $attachments;
@@ -260,7 +259,7 @@ class Orders {
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
 		if ( $api_doc_id && $apikey ) {
-			$file_document_path = $this->connapi_erp->get_order_pdf( $apikey, $api_doc_type, $api_doc_id );
+			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
 
 			if ( is_file( $file_document_path ) ) {
 				$attachments[] = $file_document_path;

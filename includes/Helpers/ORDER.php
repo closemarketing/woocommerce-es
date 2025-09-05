@@ -136,13 +136,7 @@ class ORDER {
 		$order_description    = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
 		$billing_state        = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) ? WC()->countries->get_states( $billing_country_code )[ $billing_state_code ] : '';
 
-		$contact_code = $order->get_meta( '_billing_vat' );
-		if ( empty( $contact_code ) ) {
-			$contact_code = $order->get_meta( '_billing_nif' );
-		}
-		if ( empty( $contact_code ) ) {
-			$contact_code = $order->get_meta( '_billing_vat_number' );
-		}
+		$contact_code = self::get_billing_vat( $order );
 
 		// Order Reference.
 		$base_domain = basename( sanitize_text_field( $_SERVER['HTTP_HOST'] ) );
@@ -183,7 +177,14 @@ class ORDER {
 			'language'               => $doclang,
 			'pmtype'                 => null,
 			'items'                  => array(),
+			'approveDoc'             => false,
 		);
+
+		// Approve document.
+		$approve_document = isset( $setttings['approve_document'] ) ? $setttings['approve_document'] : 'no';
+		if ( 'yes' === $approve_document ) {
+			$order_data['approveDoc'] = true;
+		}
 
 		// DesignID.
 		$design_id = isset( $setttings['design_id'] ) ? $setttings['design_id'] : '';
@@ -403,6 +404,30 @@ class ORDER {
 			'items'      => $fields_items,
 			'has_virtual' => $has_virtual,
 		];
+	}
+
+	/**
+	 * Gets Billing VAT info from order
+	 * 
+	 * @param $order Order object to get info
+	 * 
+	 * @return string
+	 */
+	private static function get_billing_vat( $order ) {
+		$code_labels = array(
+		 '_billing_vat',
+		 '_billing_nif',
+		 '_billing_vat_number',
+		 'VAT Number' // Support to SIMBA Hosting.
+		);
+		$contact_code = '';
+		foreach ( $code_labels as $code_label ) {
+			$contact_code = $order->get_meta( $code_label );
+			if ( ! empty( $contact_code ) ) {
+				break;
+			}
+		}
+		return $contact_code;
 	}
 
 	/**

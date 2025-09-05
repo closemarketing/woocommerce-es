@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.1.5-beta.2' );
+define( 'CONECOM_VERSION', '3.1.5-beta.3' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );

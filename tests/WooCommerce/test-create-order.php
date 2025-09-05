@@ -95,17 +95,18 @@ class CreateOrderTest extends WP_UnitTestCase {
 	public function test_create_order_company_without_errors() {
 		$order = new WC_Order();
 		$client_data = [
-			'first_name' => 'José M.',
-			'last_name'  => 'García-López',
-			'email'      => 'john.doe@example.com',
-			'phone'      => '123456789',
-			'address_1'  => '123 Main St',
-			'address_2'  => '',
-			'city'       => 'Sample City',
-			'state'      => 'CA',
-			'postcode'   => '90001',
-			'country'    => 'US',
-			'company'    => '',
+			'first_name'  => 'José M.',
+			'last_name'   => 'García-López',
+			'email'       => 'john.doe@example.com',
+			'phone'       => '123456789',
+			'address_1'   => '123 Main St',
+			'address_2'   => '',
+			'city'        => 'Sample City',
+			'state'       => 'CA',
+			'postcode'    => '90001',
+			'country'     => 'US',
+			'company'     => '',
+			'billing_vat' => '123456789',
 		];
 
 		$order->set_billing_first_name( $client_data['first_name'] );
@@ -119,6 +120,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order->set_billing_postcode( $client_data['postcode'] );
 		$order->set_billing_country( $client_data['country'] );
 		$order->set_billing_company( $client_data['company'] );
+		$order->add_meta_data( '_billing_vat', $client_data['billing_vat'] );
 		$order->set_status('completed');
 		$order->set_total(100);
 		$order->save();
@@ -131,6 +133,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( $client_data['first_name'], $order_data['contactFirstName'] );
 		$this->assertEquals( $client_data['last_name'], $order_data['contactLastName'] );
 		$this->assertEquals( $client_data['first_name'] . ' ' . $client_data['last_name'], $order_data['contactName'] );
+		$this->assertEquals( $client_data['billing_vat'], $order_data['contactCode'] );
 
 		// With company.
 		$client_data['company'] = 'Acme Inc.';
@@ -183,4 +186,27 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
 	}
 
+	public function test_create_order_approve_document_without_errors() {
+		$order = new WC_Order();
+		$client_data = [
+			'first_name' => 'José M.',
+			'last_name'  => 'García-López',
+			'email'      => 'john.doe@example.com',
+		];
+
+		$order->set_billing_first_name( $client_data['first_name'] );
+		$order->set_billing_last_name( $client_data['last_name'] );
+		$order->set_billing_email( $client_data['email'] );
+		$order->set_status('completed');
+		$order->set_total(100);
+		$order->save();
+
+		$this->settings['approve_document'] = 'yes';
+		$option_prefix = 'conecom-test';
+
+		// Review order data that sends to ERP.
+		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+		$this->assertNotEmpty( $order_data );
+		$this->assertEquals( true, $order_data['approveDoc'] );
+	}
 }
