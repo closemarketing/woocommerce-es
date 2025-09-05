@@ -934,13 +934,8 @@ class PROD {
 			$handle_file['name'] = $base_name_after_download;
 
 			// Check if the file already exists in the media library by GUID (URL)
-			global $wpdb;
-			$attach_id = $wpdb->get_var(
-				$wpdb->prepare(
-					"SELECT ID FROM $wpdb->posts WHERE guid LIKE %s AND post_type = 'attachment' LIMIT 1",
-					'%' . $wpdb->esc_like( $base_name_after_download )
-				)
-			);
+			$attach_id = self::search_image( $image['url'] );
+			$attach_id = $attach_id ? $attach_id : self::search_image( $base_name_after_download );
 			if ( ! $attach_id ) {
 				$attach_id = media_handle_sideload( $handle_file, $product_id, $attachment['post_title'], $attachment );
 			}
@@ -960,13 +955,45 @@ class PROD {
 
 		if ( $first_image ) {
 			// Set the product image.
-			add_post_meta( $product_id, '_thumbnail_id', $attach_id, true );
+			update_post_meta( $product_id, '_thumbnail_id', $attach_id );
 		} else {
 			// Add the image to the product gallery.
 			$gallery = get_post_meta( $product_id, '_product_image_gallery', true );
 			$gallery = $gallery ? $gallery . ',' . $attach_id : $attach_id;
 			update_post_meta( $product_id, '_product_image_gallery', $gallery );
 		}
+	}
+
+	/**
+	 * Search image by URL or filename
+	 *
+	 * @param [type] $image_url
+	 * @return int
+	 */
+	private static function search_image( $image_url ) {
+		global $wpdb;
+		$attach_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM $wpdb->posts WHERE guid LIKE %s AND post_type = 'attachment' LIMIT 1", '%' . $wpdb->esc_like( $image_url )
+			)
+		);
+
+		// If not found by URL, try searching by filename in the postmeta '_wp_attached_file'
+		if ( ! $attach_id && ! empty( $image_url ) ) {
+			$filename = basename( $image_url );
+			$attach_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT p.ID FROM $wpdb->posts p
+					INNER JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
+					WHERE pm.meta_key = '_wp_attached_file'
+					AND pm.meta_value LIKE %s
+					AND p.post_type = 'attachment'
+					LIMIT 1",
+					'%' . $wpdb->esc_like( $filename )
+				)
+			);
+		}
+		return (int) $attach_id; 
 	}
 
 	/**
