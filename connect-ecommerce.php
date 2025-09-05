@@ -5,7 +5,7 @@
  * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
- * Version:           3.1.5-beta.2
+ * Version:           3.1.5-beta.3
  * Requires PHP:      7.4
  * Requires at least: 6.3
  * Text Domain:       connect-ecommerce

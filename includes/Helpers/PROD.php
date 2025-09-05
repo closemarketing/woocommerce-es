@@ -113,7 +113,7 @@ class PROD {
 			}
 
 			if ( false === $any_variant_sku ) {
-				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') <br/>';
+				$message .= __( 'Product not imported becouse any variant has got SKU: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ') <br/>';
 			} else {
 				// Update meta for product.
 				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'variable', null );
@@ -121,14 +121,14 @@ class PROD {
 				$message    .= 0 === $post_id || false === $post_id ? $msg_product_created : $msg_product_synced;
 				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item['kind'] . ') ' . $result_prod['message'] ?? '';
 			}
-		} elseif ( ! $is_filtered && 'pack' === $item_kind && $plugin_pack_active ) {
+		} elseif ( ! $is_filtered && 'pack' === $item['kind'] && $plugin_pack_active ) {
 			$post_id = ! empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
 
 			if ( ! $post_id ) {
 				$post_id = self::create_product_post( $settings, $item );
 				wp_set_object_terms( $post_id, 'woosb', 'product_type' );
 			}
-			if ( $post_id && $item['sku'] && 'pack' === $item_kind ) {
+			if ( $post_id && $item['sku'] && 'pack' === $item['kind'] ) {
 				// Create subproducts before.
 				$pack_items = '';
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
@@ -152,29 +152,29 @@ class PROD {
 					'message' => __( 'There was an error while inserting new product!', 'connect-ecommerce' ) . ' ' . $item['name'],
 				);
 			}
-			$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item_kind . ')' . $result_prod['message'] ?? '';
-		} elseif ( ! $is_filtered && 'pack' === $item_kind && ! $plugin_pack_active ) {
+			$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item['kind'] . ')' . $result_prod['message'] ?? '';
+		} elseif ( ! $is_filtered && 'pack' === $item['kind'] && ! $plugin_pack_active ) {
 			$message .= '<span class="warning">' . __( 'Product needs Plugin to import: ', 'connect-ecommerce' );
 			$message .= '<a href="https://wordpress.org/plugins/woo-product-bundle/" target="_blank">WPC Product Bundles for WooCommerce</a> ';
-			$message .= '(' . $item_kind . ') </span>';
+			$message .= '(' . $item['kind'] . ') </span>';
 		} elseif ( $is_filtered ) {
 			// Product not synced without SKU.
-			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ') </span>';
-		} elseif ( '' === $item['sku'] && 'simple' === $item_kind ) {
+			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ') </span>';
+		} elseif ( '' === $item['sku'] && 'simple' === $item['kind'] ) {
 			// Product not synced without SKU.
 			return array(
 				'status'  => 'error',
 				'post_id' => (int) $post_id,
 				'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ')</br>',
+				'message' => __( 'SKU not finded in Simple product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')</br>',
 			);
-		} elseif ( 'simple' !== $item_kind ) {
+		} elseif ( 'simple' !== $item['kind'] ) {
 			// Product not synced type not supported.
 			return array(
 				'status'  => 'error',
 				'post_id' => (int) $post_id,
 				'prod_id' => $item['id'] ? sanitize_text_field( $item['id'] ) : '',
-				'message' => __( 'Product type not supported. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item_kind . ')',
+				'message' => __( 'Product type not supported. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')',
 			);
 		}
 
@@ -209,9 +209,7 @@ class PROD {
 						$product_info,
 					);
 
-					$seo_title = ! empty( $result_ai['data']['seo_title'] ) ? sanitize_text_field( $result_ai['data']['seo_title'] ) : '';
-					$seo_desc  = ! empty( $result_ai['data']['seo_description'] ) ? sanitize_text_field( $result_ai['data']['seo_description'] ) : '';
-					self::update_product_seo( $post_id, $seo_title, $seo_desc );
+					self::update_product_seo( $post_id, $result_ai['data'] );
 					$message .= __( 'Generated AI: ', 'connect-ecommerce' );
 					$message .= $result_ai['message'] ?? '';
 				} else {
@@ -912,32 +910,37 @@ class PROD {
 				return;
 			}
 
-			$file_array = [];
-			$file_array['name'] = basename( $image_url );
-			$file_array['tmp_name'] = download_url( $image_url );
+			$handle_file         = [];
+			$handle_file['name'] = basename( $image_url );
+			$handle_file['tmp_name'] = download_url( $image_url );
 
-			if ( empty( $attachment['post_mime_type'] ) && ! empty( $file_array['tmp_name'] ) && file_exists( $file_array['tmp_name'] ) ) {
+			if ( empty( $attachment['post_mime_type'] ) && ! empty( $handle_file['tmp_name'] ) && file_exists( $handle_file['tmp_name'] ) ) {
 				$finfo = finfo_open( FILEINFO_MIME_TYPE );
 				if ( $finfo ) {
-					$attachment['post_mime_type'] = finfo_file( $finfo, $file_array['tmp_name'] );
+					$attachment['post_mime_type'] = finfo_file( $finfo, $handle_file['tmp_name'] );
 					finfo_close( $finfo );
 				}
 			}
 
 			// Check for download errors
-			if ( is_wp_error( $file_array['tmp_name'] ) ) {
+			if ( is_wp_error( $handle_file['tmp_name'] ) ) {
 				return;
 			}
 
 			// Prevents scripts in the name of the file.
-			$base_name_after_download = basename( $file_array['tmp_name'] );
-			$file_array['name'] = $base_name_after_download;
+			$base_name_after_download = basename( $handle_file['tmp_name'] );
+			$handle_file['name'] = $base_name_after_download;
 
-			$attach_id = media_handle_sideload( $file_array, $product_id, $attachment['post_title'], $attachment );
+			// Check if the file already exists in the media library by GUID (URL)
+			$attach_id = self::search_image( $image['url'] );
+			$attach_id = $attach_id ? $attach_id : self::search_image( $base_name_after_download );
+			if ( ! $attach_id ) {
+				$attach_id = media_handle_sideload( $handle_file, $product_id, $attachment['post_title'], $attachment );
+			}
 
 			// Check for attachment errors
 			if (is_wp_error($attach_id)) {
-				@unlink($file_array['tmp_name']);
+				@unlink($handle_file['tmp_name']);
 				return;
 			}
 		} else {
@@ -950,13 +953,45 @@ class PROD {
 
 		if ( $first_image ) {
 			// Set the product image.
-			add_post_meta( $product_id, '_thumbnail_id', $attach_id, true );
+			update_post_meta( $product_id, '_thumbnail_id', $attach_id );
 		} else {
 			// Add the image to the product gallery.
 			$gallery = get_post_meta( $product_id, '_product_image_gallery', true );
 			$gallery = $gallery ? $gallery . ',' . $attach_id : $attach_id;
 			update_post_meta( $product_id, '_product_image_gallery', $gallery );
 		}
+	}
+
+	/**
+	 * Search image by URL or filename
+	 *
+	 * @param [type] $image_url
+	 * @return int
+	 */
+	private static function search_image( $image_url ) {
+		global $wpdb;
+		$attach_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT ID FROM $wpdb->posts WHERE guid LIKE %s AND post_type = 'attachment' LIMIT 1", '%' . $wpdb->esc_like( $image_url )
+			)
+		);
+
+		// If not found by URL, try searching by filename in the postmeta '_wp_attached_file'
+		if ( ! $attach_id && ! empty( $image_url ) ) {
+			$filename = basename( $image_url );
+			$attach_id = $wpdb->get_var(
+				$wpdb->prepare(
+					"SELECT p.ID FROM $wpdb->posts p
+					INNER JOIN $wpdb->postmeta pm ON p.ID = pm.post_id
+					WHERE pm.meta_key = '_wp_attached_file'
+					AND pm.meta_value LIKE %s
+					AND p.post_type = 'attachment'
+					LIMIT 1",
+					'%' . $wpdb->esc_like( $filename )
+				)
+			);
+		}
+		return (int) $attach_id; 
 	}
 
 	/**
@@ -1003,72 +1038,61 @@ class PROD {
 	 * Update SEO for product
 	 *
 	 * @param int    $product_id Product ID.
-	 * @param string $seo_title Title SEO.
-	 * @param string $seo_desc Description SEO.
+	 * @param array $seo_data SEO data.
+	 * 
+	 * @return void
 	 */
-	private static function update_product_seo( $product_id, $seo_title, $seo_desc ) {
-		// Yoast.
-		if ( is_plugin_active( 'wordpress-seo/wp-seo.php' ) || is_plugin_active( 'wordpress-seo-premium/wp-seo-premium.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_yoast_wpseo_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_yoast_wpseo_metadesc', $seo_desc );
-			}
-		}
-		// Rank Math.
-		if ( is_plugin_active( 'seo-by-rank-math/rank-math.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, 'rank_math_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, 'rank_math_description', $seo_desc );
-			}
-		}
-		// SEOPress.
-		if ( is_plugin_active( 'seopress/seopress.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_seopress_titles_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_seopress_titles_description', $seo_desc );
-			}
-		}
-		// All in one SEO.
-		if ( is_plugin_active( 'all-in-one-seo-pack/all_in_one_seo_pack.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_aioseop_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_aioseop_description', $seo_desc );
-			}
-		}
-		// SEOPress.
-		if ( is_plugin_active( 'seopress-pro/seopress-pro.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_seopress_titles_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_seopress_titles_description', $seo_desc );
-			}
-		}
-		// WP Meta SEO.
-		if ( is_plugin_active( 'wp-meta-seo/wp-meta-seo.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_wpseo_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_wpseo_metadesc', $seo_desc );
-			}
-		}
+	private static function update_product_seo( $product_id, $seo_data ) {
+		$plugins_seo_meta = array(
+			'wordpress-seo/wp-seo.php' => [ // Yoast
+				'seo_title' => '_yoast_wpseo_title',
+				'seo_description' => '_yoast_wpseo_metadesc',
+				'seo_keyword' => '_yoast_wpseo_keywords',
+			],
+			'wordpress-seo-premium/wp-seo-premium.php' => [ // Yoast Premium
+				'seo_title' => '_yoast_wpseo_title',
+				'seo_description' => '_yoast_wpseo_metadesc',
+				'seo_keyword' => '_yoast_wpseo_keywords',
+			],
+			'seo-by-rank-math/rank-math.php' => [ // Rank Math
+				'seo_title' => 'rank_math_title',
+				'seo_description' => 'rank_math_description',
+				'seo_keyword' => 'rank_math_focus_keyword',
+			],
+			'seopress/seopress.php' => [ // SEO Press
+				'seo_title' => '_seopress_titles_title',
+				'seo_description' => '_seopress_titles_description',
+				'seo_keyword' => '_seopress_titles_keywords',
+			],
+			'all-in-one-seo-pack/all_in_one_seo_pack.php' => [ // All in One SEO Pack
+				'seo_title' => '_aioseop_title',
+				'seo_description' => '_aioseop_description',
+				'seo_keyword' => '_aioseop_keywords',
+			],
+			'seopress-pro/seopress-pro.php' => [ // SEO Press Pro
+				'seo_title' => '_seopress_titles_title',
+				'seo_description' => '_seopress_titles_description',
+				'seo_keyword' => '_seopress_titles_keywords',
+			],
+			'wp-meta-seo/wp-meta-seo.php' => [ // WP Meta SEO
+				'seo_title' => '_wpseo_title',
+				'seo_description' => '_wpseo_metadesc',
+				'seo_keyword' => '_wpseo_keywords',
+			],
+			'autodescription/autodescription.php' => [ // SEO Framework
+				'seo_title' => '_autodescription_title',
+				'seo_description' => '_autodescription_description',
+				'seo_keyword' => '_autodescription_keywords',
+			],
+		);
 
-		// SEO Framework.
-		if ( is_plugin_active( 'autodescription/autodescription.php' ) ) {
-			if ( ! empty( $seo_title ) ) {
-				update_post_meta( $product_id, '_autodescription_title', $seo_title );
-			}
-			if ( ! empty( $seo_desc ) ) {
-				update_post_meta( $product_id, '_autodescription_description', $seo_desc );
+		foreach ( $plugins_seo_meta as $plugin => $meta ) {
+			if ( is_plugin_active( $plugin ) ) {
+				foreach ( $meta as $key => $value ) {
+					if ( ! empty( $seo_data[ $key ] ) ) {
+						update_post_meta( $product_id, $value, $seo_data[ $key ] );
+					}
+				}
 			}
 		}
 	}

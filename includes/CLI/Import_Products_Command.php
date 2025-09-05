@@ -74,8 +74,9 @@ class Import_Products_Command {
 
 			// Get products from API.
 			$api_products = $connapi_erp->get_products( null, $sync_loop );
+			$res_status   = $api_products['status'] ?? 'ok';
 
-			if ( 'error' === $api_products['status'] ) {
+			if ( 'error' === $res_status ) {
 				WP_CLI::line( $this->cli_header_line() . __( 'We couldn\'t connect to the API. Error: ', 'connect-ecommerce' ) . $api_products['message'] );
 				WP_CLI::line( $this->cli_header_line() . __( 'Please check your connection settings.', 'connect-ecommerce' ) );
 				break;
