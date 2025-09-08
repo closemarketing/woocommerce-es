@@ -3,7 +3,7 @@ Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, ecommerce, woocommerce, connect woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
-Requires PHP: 7.0
+Requires PHP: 7.4
 Tested up to: 6.8
 Stable tag: 3.1.4
 Version: 3.1.4
