@@ -174,7 +174,7 @@ class Checkout {
 	 * Adds VAT info in WooCommerce PDF Invoices & Packing Slips
 	 *
 	 * @param string $address Address.
-	 * @return void
+	 * @return html
 	 */
 	public function add_vat_invoices( $address ) {
 		return wp_kses( $address, array(
