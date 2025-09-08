@@ -1,4 +1,4 @@
-name: PHP Code Linting
+name: PHP Code Linting & Static Analysis
 
 on:
   push:
