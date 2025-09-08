@@ -251,9 +251,10 @@ class License {
 			$args = array(
 				'api_key' => ! empty( $api_key ) ? $api_key : '',
 			);
-			$deactivation_result = $this->license_deactivate( $args );		if ( ! empty( $deactivation_result ) ) {
-	
-					if ( true === $deactivation_result['success'] && true === $deactivation_result['deactivated'] ) {
+			$deactivation_result = $this->license_deactivate( $args );
+			
+			if ( ! empty( $deactivation_result ) && is_array( $deactivation_result ) ) {
+				if ( true === $deactivation_result['success'] && true === $deactivation_result['deactivated'] ) {
 					update_option( $this->options['slug'] . '_license_activated', 'Deactivated' );
 					update_option( $this->options['slug'] . '_license_apikey', '' );
 					update_option( $this->options['slug'] . '_license_product_id', '' );
@@ -550,7 +551,8 @@ class License {
 				'tested'         => $response['data']['package']['tested'],
 				'package'        => $response['data']['package']['package'],
 				'upgrade_notice' => $response['data']['package']['upgrade_notice'],
-			);		if ( isset( $new_version ) && isset( $curr_version ) ) {
+			);
+			if ( ! empty( $new_version ) && ! empty( $curr_version ) ) {
 				if ( version_compare( $new_version, $curr_version, '>' ) ) {
 					$transient->response[ $this->options['plugin_name'] ] = (object) $package;
 					unset( $transient->no_update[ $this->options['plugin_name'] ] );
