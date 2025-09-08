@@ -1162,7 +1162,7 @@ class PROD {
 				if ( empty( $taxonomy['id'] ) || empty( $taxonomy['value'] ) ) {
 					continue;
 				}
-				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'], true );
+				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'] );
 			}
 		}
 	}
