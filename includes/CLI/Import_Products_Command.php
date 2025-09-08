@@ -119,7 +119,7 @@ class Import_Products_Command {
 	/**
 	 * Prints the header line for CLI output.
 	 *
-	 * @return void
+	 * @return string
 	 */
 	private function cli_header_line() {
 		return '[' . gmdate( 'H:i:s' ) . '] ';

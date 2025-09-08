@@ -147,7 +147,6 @@ class HELPER {
 						UNIQUE KEY prod_id (prod_id)
 				) $charset_collate;";
 
-		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 	}
 

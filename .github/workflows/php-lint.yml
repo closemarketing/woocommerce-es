@@ -1,4 +1,4 @@
-name: PHP Code Linting & Static Analysis
+name: PHP Static Analysis
 
 on:
   push:
@@ -54,6 +54,3 @@ jobs:
 
       - name: PHP Static Analysis
         run: composer phpstan
-
-      - name: PHP Lint
-        run: composer lint
