@@ -176,16 +176,16 @@ class HELPER {
 	 * @return string
 	 */
 	public static function time_total_text( $time_start ) {
-		$time_end = microtime(true);
+		$time_end = microtime( true );
 
-		$execution_time = round($time_end - $time_start, 2);
+		$execution_time = round( $time_end - $time_start, 2 );
 		$end = "seg";
 
 		if ( $execution_time > 3600 ) {
-			$execution_time = round($execution_time / 3600, 2);
+			$execution_time = round( $execution_time / 3600, 2 );
 			$end = "horas";
 		} elseif ( $execution_time > 60 ) {
-			$execution_time = round($execution_time / 60, 2);
+			$execution_time = round( $execution_time / 60, 2 );
 			$end = "min";
 		}
 		return $execution_time . ' ' . $end;

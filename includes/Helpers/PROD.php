@@ -255,6 +255,7 @@ class PROD {
 		$is_new_product     = ( 0 === $product_id || false === $product_id ) ? true : false;
 		$settings_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
 		$message            = '';
+		$product            = null;
 
 		// Start.
 		try {
@@ -385,7 +386,7 @@ class PROD {
 				$message      .= ! empty( $result_var['message'] ) ? $result_var['message'] : '';
 				break;
 			case 'pack':
-				$product_props = self::sync_product_pack( $settings, $product, $item, $pack_items );
+				self::sync_product_pack( $product, $item, $pack_items );
 				break;
 		}
 
@@ -857,8 +858,8 @@ class PROD {
 			// Ask API for image.
 			$result_api = $api_erp->get_image_product( $settings, $item['id'], $product_id );
 
-			if ( isset( $body_response['errors'] ) ) {
-				$message = isset( $body_response['errors'][0]['message'] ) ? $body_response['errors'][0]['message'] : __( 'There was an error while inserting new product!', 'connect-ecommerce' );
+			if ( isset( $result_api['errors'] ) ) {
+				$message = isset( $result_api['errors'][0]['message'] ) ? $result_api['errors'][0]['message'] : __( 'There was an error while inserting new product!', 'connect-ecommerce' );
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
@@ -872,7 +873,7 @@ class PROD {
 		}
 
 		if ( empty( $images ) ) {
-			return;
+			return false;
 		}
 
 		$first_image = true;
@@ -880,6 +881,8 @@ class PROD {
 			self::attach_image_to_product( $product_id, $image, $first_image );
 			$first_image = false;
 		}
+
+		return true;
 	}
 
 	/**

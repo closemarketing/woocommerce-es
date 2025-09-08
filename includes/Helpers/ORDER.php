@@ -366,6 +366,7 @@ class ORDER {
 				// Taxes.
 				$item_tax  = (float) $shipping_item->get_total_tax();
 				$taxes     = $tax->get_rates( $shipping_item->get_tax_class() );
+				$tax_rates = array_shift( $taxes );
 				$item_rate = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
 
 				$fields_items[] = array(
@@ -444,16 +445,15 @@ class ORDER {
 	 * @param string|null $fallback  Value to return if empty after sanitization (null = empty string).
 	 * @return string
 	 */
-	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9ÑÇñç &\- ', ?string $fallback = null ): string
-	{
-		$value = trim(preg_replace('/\s+/u', ' ', $value ?? ''));
-		if ($value === '') {
-				return $fallback ?? '';
+	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9ÑÇñç &\- ', ?string $fallback = null ): string {
+		$value = trim( preg_replace( '/\s+/u', ' ', $value ) );
+		if ( $value === '' ) {
+			return $fallback ?? '';
 		}
 
 		$map = [
-				'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'ñ',
-				'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'Ñ',
+				'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ñ'=>'ñ',
+				'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ñ'=>'Ñ',
 				'à'=>'a','è'=>'e','ì'=>'i','ò'=>'o','ù'=>'u',
 				'À'=>'A','È'=>'E','Ì'=>'I','Ò'=>'O','Ù'=>'U',
 				'â'=>'a','ê'=>'e','î'=>'i','ô'=>'o','û'=>'u',

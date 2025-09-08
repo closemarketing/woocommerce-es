@@ -86,7 +86,9 @@ class AI {
 		$provider     = isset( $settings['provider'] ) ? $settings['provider'] : 'chatgpt';
 		$prompt       = isset( $settings['prompt'] ) ? $settings['prompt'] : '';
 		$product_info = isset( $item['full_info'] ) ? $item['full_info'] : $item;
+		$model        = isset( $settings['model'] ) ? $settings['model'] : '';
 		$message      = '';
+		$api_url      = '';
 
 		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'connect-ecommerce' ) . wp_json_encode( $product_info );
 		$language = get_locale();
@@ -109,11 +111,11 @@ class AI {
 
 		switch ( $provider ) {
 			case 'chatgpt':
-				$model   = isset( $settings['model'] ) ? $settings['model'] : 'gpt-3.5-turbo';
+				$model   = ! empty( $model ) ? $model : 'gpt-3.5-turbo';
 				$api_url = 'https://api.openai.com/v1/chat/completions';
 				break;
 			case 'deepseek':
-				$model   = isset( $settings['model'] ) ? $settings['model'] : 'deepseek-chat';
+				$model   = ! empty( $model ) ? $model : 'deepseek-chat';
 				$api_url = 'https://api.deepseek.com/v1/chat/completions';
 				break;
 		}
@@ -151,7 +153,10 @@ class AI {
 		if ( 200 !== $response_code ) {
 			$message .= sanitize_text_field( $body['error']['message'] ) ?? '';
 			$message .= sanitize_text_field( $body['errors']['http_request_failed'] ) ?? '';
-			$message .= $message ?? __( 'Unknown error', 'connect-ecommerce' );
+
+			if ( empty( $message ) ) {
+				$message = __( 'Unknown error', 'connect-ecommerce' );
+			}
 
 			return array(
 				'status'  => 'error',

@@ -1,0 +1,29 @@
+parameters:
+    level: 1
+    paths:
+        - includes
+    bootstrapFiles:
+        - tests/phpstan-bootstrap.php
+    ignoreErrors:
+        # WordPress/WooCommerce specific ignores
+        - '#Function wc_.* not found#'
+        - '#Function wp_.* not found#'
+        - '#Function get_.* not found#'
+        - '#Function is_.* not found#'
+        - '#Function WC not found#'
+        - '#Class WC_.* not found#'
+        - '#Class WP_.* not found#'
+        - '#Constant CONECOM_.* not found#'
+        - '#Function as_schedule_recurring_action not found#'
+        - '#Function conecom_get_options not found#'
+        - '#Call to static method line\(\) on an unknown class WP_CLI#'
+        - '#Instantiated class WC_.* not found#'
+        - '#Instantiated class WP_.* not found#'
+        - '#Path in require_once\(\) "\./wp-admin/includes/upgrade\.php" is not a file#'
+        # WP_CLI specific ignores
+        - '#Result of method.*cli_header_line\(\) \(void\) is used#'
+        - '#Call to static method.*on an unknown class WP_CLI#'
+        - '#WP_CLI.*not found#'
+    excludePaths:
+        - vendor/
+        - node_modules (?)

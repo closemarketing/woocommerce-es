@@ -177,14 +177,13 @@ class Checkout {
 	 * @return void
 	 */
 	public function add_vat_invoices( $address ) {
-		echo wp_kses( $address, array(
+		return wp_kses( $address, array(
 			'p' => array(),
 			'strong' => array(),
 			'br' => array(),
 			'span' => array('class' => array()),
 			'div' => array('class' => array()),
-		) ) . '<p>';
-		echo '</p>';
+		) ) . '<p></p>';
 	}
 
 	/* END EU VAT*/
