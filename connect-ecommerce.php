@@ -27,6 +27,11 @@ define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
 
+/**
+ * Gets the options for the plugin.
+ *
+ * @return array
+ */
 function conecom_get_options() {
 		/**
 	 * Default values
@@ -91,7 +96,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	 * @author David Perez
 	 */
 	function conecom_import_products_register_commands() {
-		WP_CLI::add_command('conecom', 'Import_Products_Command' );
+		WP_CLI::add_command( 'conecom', 'Import_Products_Command' );
 	}
 
 	add_action( 'cli_init', 'conecom_import_products_register_commands', 20 );

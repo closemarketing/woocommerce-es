@@ -1657,7 +1657,7 @@ class Settings {
 					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'connect-ecommerce' );?></strong></div>
 				</div>
 				<?php
-				$size = isset( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
+				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
 				for ( $idx = 0, $size; $idx <= $size; ++$idx ) {
 					$attrprod = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
 					?>

@@ -366,6 +366,7 @@ class ORDER {
 				// Taxes.
 				$item_tax  = (float) $shipping_item->get_total_tax();
 				$taxes     = $tax->get_rates( $shipping_item->get_tax_class() );
+				$tax_rates = array_shift( $taxes );
 				$item_rate = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
 
 				$fields_items[] = array(
@@ -444,34 +445,14 @@ class ORDER {
 	 * @param string|null $fallback  Value to return if empty after sanitization (null = empty string).
 	 * @return string
 	 */
-	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9ÑÇñç &\- ', ?string $fallback = null ): string
-	{
-		$value = trim(preg_replace('/\s+/u', ' ', $value ?? ''));
-		if ($value === '') {
-				return $fallback ?? '';
+	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9ÑÇñç &\- ', ?string $fallback = null ): string {
+		$value = trim( preg_replace( '/\s+/u', ' ', $value ) );
+		if ( $value === '' ) {
+			return $fallback ?? '';
 		}
 
 		$map = [
-				'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'ñ',
-				'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'Ñ',
-				'à'=>'a','è'=>'e','ì'=>'i','ò'=>'o','ù'=>'u',
-				'À'=>'A','È'=>'E','Ì'=>'I','Ò'=>'O','Ù'=>'U',
-				'â'=>'a','ê'=>'e','î'=>'i','ô'=>'o','û'=>'u',
-				'Â'=>'A','Ê'=>'E','Î'=>'I','Ô'=>'O','Û'=>'U',
-				'ä'=>'a','ë'=>'e','ï'=>'i','ö'=>'o','ü'=>'u',
-				'Ä'=>'A','Ë'=>'E','Ï'=>'I','Ö'=>'O','Ü'=>'U',
-				'ã'=>'a','õ'=>'o',
-				'Ã'=>'A','Õ'=>'O',
-				'š'=>'s','Š'=>'S',
-				'ž'=>'z','Ž'=>'Z',
-				'ý'=>'y','Ý'=>'Y',
-				'ÿ'=>'y','Ÿ'=>'Y',
-				'ø'=>'o','Ø'=>'O',
-				'æ'=>'ae','Æ'=>'AE',
-				'œ'=>'oe','Œ'=>'OE',
-				'ß'=>'ss','@'=>' ',
-				'#'=>' ', '&' => 'Y',
-				'ğ'=>'g','Ğ'=>'G', 
+			'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'ñ', 'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ñ'=>'Ñ', 'à'=>'a', 'è'=>'e', 'ì'=>'i', 'ò'=>'o', 'ù'=>'u', 'À'=>'A', 'È'=>'E', 'Ì'=>'I', 'Ò'=>'O', 'Ù'=>'U', 'â'=>'a', 'ê'=>'e', 'î'=>'i', 'ô'=>'o', 'û'=>'u', 'Â'=>'A', 'Ê'=>'E', 'Î'=>'I', 'Ô'=>'O', 'Û'=>'U', 'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u', 'Ä'=>'A', 'Ë'=>'E', 'Ï'=>'I', 'Ö'=>'O', 'Ü'=>'U', 'ã'=>'a', 'õ'=>'o', 'Ã'=>'A', 'Õ'=>'O', 'š'=>'s', 'Š'=>'S', 'ž'=>'z', 'Ž'=>'Z', 'ý'=>'y', 'Ý'=>'Y', 'ÿ'=>'y', 'Ÿ'=>'Y', 'ø'=>'o', 'Ø'=>'O', 'æ'=>'ae', 'Æ'=>'AE', 'œ'=>'oe', 'Œ'=>'OE', 'ß'=>'ss', '@'=>' ', '#'=>' ', '&' => 'Y', 'ğ'=>'g', 'Ğ'=>'G', 
 		];
 		$ascii = strtr( $value, $map );
 

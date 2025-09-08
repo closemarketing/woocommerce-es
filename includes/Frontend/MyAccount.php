@@ -26,11 +26,47 @@ class MyAccount {
 	private $options;
 
 	/**
+	 * Settings all
+	 *
+	 * @var array
+	 */
+	private $settings_all;
+
+	/**
+	 * Settings
+	 *
+	 * @var array
+	 */
+	private $settings;
+
+	/**
+	 * All options
+	 *
+	 * @var array
+	 */
+	private $all_options;
+
+	/**
+	 * API Object
+	 *
+	 * @var object
+	 */
+	private $connapi_erp;
+
+	/**
+	 * Connector
+	 *
+	 * @var object
+	 */
+	private $connector;
+
+	/**
 	 * Construct of Class
 	 *
 	 * @param array $options Options of plugin.
 	 */
-	public function __construct( $options ) {		$this->settings_all = get_option( 'connect_ecommerce' );
+	public function __construct( $options ) {
+		$this->settings_all = get_option( 'connect_ecommerce' );
 		$this->connector    = isset( $this->settings_all['connector'] ) ? $this->settings_all['connector'] : '';
 		$this->settings     = $this->settings_all[ $this->connector ] ?? array();
 		$this->all_options  = $options;

@@ -88,7 +88,7 @@ class Checkout {
 			$return[ $key ] = $value;
 		}
 
-		$source = $return;
+		return $return;
 	}
 
 	public function add_billing_fields( $fields ) {
@@ -118,8 +118,7 @@ class Checkout {
 			),
 		);
 
-		$this->array_splice_assoc( $fields, $field, 'billing_address_1' );
-		return $fields;
+		return $this->array_splice_assoc( $fields, $field, 'billing_company' );
 	}
 
 	// Our hooked in function - $fields is passed via the filter!
@@ -174,17 +173,16 @@ class Checkout {
 	 * Adds VAT info in WooCommerce PDF Invoices & Packing Slips
 	 *
 	 * @param string $address Address.
-	 * @return void
+	 * @return html
 	 */
 	public function add_vat_invoices( $address ) {
-		echo wp_kses( $address, array(
+		return wp_kses( $address, array(
 			'p' => array(),
 			'strong' => array(),
 			'br' => array(),
 			'span' => array('class' => array()),
 			'div' => array('class' => array()),
-		) ) . '<p>';
-		echo '</p>';
+		) ) . '<p></p>';
 	}
 
 	/* END EU VAT*/
@@ -213,16 +211,15 @@ class Checkout {
 	 * @return void
 	 */
 	public function add_terms_and_conditions_to_registration() {
-
 		if ( wc_get_page_id( 'terms' ) > 0 && is_account_page() ) {
 			?>
 			<p class="form-row terms wc-terms-and-conditions">
 				<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">
 					<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="terms" <?php checked( apply_filters( 'woocommerce_terms_is_checked_default', isset( $_POST['terms'] ) ), true ); ?> id="terms" /> <span>
 					<?php
-					printf(
+					echo sprintf(
 						/* translators: 1: Terms and conditions page link */
-						esc_html__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'connect-ecommerce' ),
+						__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'connect-ecommerce' ),
 						esc_url( wc_get_page_permalink( 'terms' ) )
 					);
 					?>
@@ -240,13 +237,12 @@ class Checkout {
 	 * @param string $username Username.
 	 * @param string $email Email.
 	 * @param object $validation_errors Object of validation errors.
-	 * @return object $validation_errors
+	 *
+	 * @return void
 	 */
 	public function terms_and_conditions_validation( $username, $email, $validation_errors ) {
 		if ( ! isset( $_POST['terms'] ) ) {
-			$validation_errors->add( 'terms_error', __( 'Terms and condition are not checked!', 'connect-ecommerce' ) );
+			$validation_errors->add( 'terms_error', __( 'Terms and conditions are not accepted!', 'connect-ecommerce' ) );
 		}
-
-		return $validation_errors;
 	}
 }
