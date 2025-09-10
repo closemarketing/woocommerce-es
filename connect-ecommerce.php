@@ -135,7 +135,7 @@ function conecom_review_notice() {
 	
 	$notice_message = sprintf(
 		// translators: %1$s is the plugin name, %2$s is the review URL
-		__( 'Thank you for using %1$s! If you find it helpful, please consider leaving a review on WordPress.org. It helps us a lot! <a href="%2$s" target="_blank" class="button button-primary">Leave a Review</a>', 'connect-ecommerce' ),
+		__( 'Thank you for using %1$s! The plugin that connects WooCommerce to ERPs and CRMs. If you find it helpful, please consider leaving a review on WordPress.org. It helps us a lot! <a href="%2$s" target="_blank" class="button button-primary">Leave a Review</a>', 'connect-ecommerce' ),
 		'Connect Ecommerce',
 		$review_url
 	);
@@ -146,6 +146,34 @@ function conecom_review_notice() {
 			'type'        => 'info',
 			'dismissible' => true,
 			'id'          => 'conecom-review-notice',
+			'additional_classes' => 'is-dismissible',
+		)
+	);
+	
+	// Enqueue admin script with WordPress variables
+	conecom_enqueue_admin_script();
+}
+
+/**
+ * Enqueue admin script with WordPress variables
+ *
+ * @return void
+ */
+function conecom_enqueue_admin_script() {
+	wp_enqueue_script(
+		'conecom-admin',
+		CONECOM_PLUGIN_URL . 'includes/assets/admin.js',
+		array(),
+		CONECOM_VERSION,
+		true
+	);
+	
+	wp_localize_script(
+		'conecom-admin',
+		'conecom_admin',
+		array(
+			'ajaxurl' => admin_url( 'admin-ajax.php' ),
+			'nonce'   => wp_create_nonce( 'conecom_dismiss_review' ),
 		)
 	);
 }
@@ -157,6 +185,11 @@ function conecom_review_notice() {
  */
 function conecom_dismiss_review_notice() {
 	if ( isset( $_POST['action'] ) && $_POST['action'] === 'conecom_dismiss_review_notice' ) {
+		// Verify nonce for security
+		if ( ! wp_verify_nonce( $_POST['nonce'], 'conecom_dismiss_review' ) ) {
+			wp_die( 'Security check failed' );
+		}
+		
 		update_user_meta( get_current_user_id(), 'conecom_review_notice_dismissed', true );
 		wp_die();
 	}
