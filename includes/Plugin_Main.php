@@ -20,6 +20,7 @@ use CLOSE\ConnectEcommerce\Admin\Orders;
 use CLOSE\ConnectEcommerce\Admin\Notices;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
+
 /**
  * Class Wrapper.
  *
