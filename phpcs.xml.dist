@@ -3,9 +3,12 @@
 	<description>Ruleset for Coding Standards in Connect WooCommerce.</description>
 
 	<exclude-pattern>*/tests/*</exclude-pattern>
+	<file>./includes</file>
+	<file>./connect-ecommerce.php</file>
 
 	<rule ref="WordPress">
 		<exclude name="Universal.Arrays.DisallowShortArraySyntax"/>
 		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+		<exclude name="WordPress.Files.FileName.NotLowercase"/>
 	</rule>
 </ruleset>

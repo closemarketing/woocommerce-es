@@ -75,8 +75,8 @@ $products = [
 		'cf|custom_namefield' => Custom Name of field
 		'attributes' => [
 			[
-				'id'    =>  slug of taxonomy that it will be filtered
-				'name'  => external ID of taxonomy
+				'id'    => slug or id that fits with settings
+				'name'  => slug or id that fits with settings
 				'value' => Value of the term in Taxonomy (has to be unique)
 			]
 		]
@@ -128,3 +128,13 @@ $products['variants'][] = array(
 	]
 );
 ```
+
+Method get_product_attributes
+
+'custom_fields' => [],
+'product_cat' => [
+	'id'   => 'product_cat',
+	'name' => __( 'Product Category', 'connect-ecommerce-toptex' ),
+	'elements' => [
+	],
+],

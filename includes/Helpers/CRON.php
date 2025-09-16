@@ -77,7 +77,7 @@ class CRON {
 		}
 			
 		if ( ! is_array( $products ) ) {
-			return;
+			return false;
 		}
 
 		update_option( 'conecom_total_api_products', count( $products ) );
@@ -100,6 +100,7 @@ class CRON {
 				}
 			}
 		}
+		return true;
 	}
 
 	/**
@@ -112,9 +113,8 @@ class CRON {
 	 * @return array results;
 	 */
 	public static function get_products_sync( $settings, $options, $connapi_erp ) {
-		$table_sync = isset( $options['table_sync'] ) ? $options['table_sync'] : '';
 		// Method with modified products.
-		if ( empty( $table_sync ) ) {
+		if ( empty( $options['table_sync'] ) ) {
 			$period              = self::get_active_period( $settings );
 			$modified_since_date = isset( $period['interval'] ) ? strtotime( '-' . $period['interval'] . ' seconds' ) : strtotime( '-1 day' );
 			if ( ! method_exists( $connapi_erp, 'get_products_ids_since' ) ) {
@@ -129,7 +129,7 @@ class CRON {
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				'SELECT prod_id FROM %i WHERE synced = 0 LIMIT %d',
-				$table_sync,
+				$options['table_sync'],
 				$limit
 			),
 			ARRAY_A
@@ -152,7 +152,7 @@ class CRON {
 	 */
 	public static function check_exist_valuedb( $table_sync, $gid ) {
 		global $wpdb;
-		if ( ! isset( $gid ) ) {
+		if ( empty( $gid ) ) {
 			return false;
 		}
 		$results = $wpdb->get_row(

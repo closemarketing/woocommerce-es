@@ -234,7 +234,7 @@ class Settings {
 				<?php
 				if ( ! $this->is_disabled_ai && $this->connector ) {
 					?>
-					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI', 'connect-ecommerce' ); ?></a>
+					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI Settings', 'connect-ecommerce' ); ?></a>
 					<?php
 				}
 				do_action( 'connect_ecommerce_settings_tabs', $active_tab );
@@ -351,13 +351,6 @@ class Settings {
 			'connect_ecommerce_admin'
 		);
 
-		add_settings_section(
-			'connect_woocommerce_setting_section',
-			__( 'Settings for Importing in WooCommerce', 'connect-ecommerce' ),
-			array( $this, 'connect_woocommerce_section_info' ),
-			'connect_ecommerce_admin'
-		);
-
 		add_settings_field(
 			'conecom_connector',
 			__( 'Connector', 'connect-ecommerce' ),
@@ -449,6 +442,17 @@ class Settings {
 					'wcpimh_api',
 					__( 'API Key', 'connect-ecommerce' ),
 					array( $this, 'api_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			// Company Select.
+			if ( in_array( 'company_id', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_company_select',
+					__( 'Company', 'connect-ecommerce' ),
+					array( $this, 'company_select_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
@@ -567,11 +571,28 @@ class Settings {
 				);
 			}
 
+			add_settings_field(
+				'wcpimh_cleanchars',
+				__( 'Clean special characters for Verifactu?', 'connect-ecommerce' ),
+				array( $this, 'cleanchars_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+
+			if ( in_array( 'approve_document', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_approve_document',
+					__( 'Approve document by default for validations?', 'connect-ecommerce' ),
+					array( $this, 'approve_document_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
 			if ( 'Holded' === $this->options['name'] ) {
-				$name_docorder = __( 'Document to create after order completed?', 'connect-ecommerce' );
 				add_settings_field(
 					'wcpimh_doctype',
-					$name_docorder,
+					__( 'Document to create after order completed?', 'connect-ecommerce' ),
 					array( $this, 'doctype_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
@@ -682,18 +703,18 @@ class Settings {
 		);
 
 		add_settings_section(
-			'imhset_prod_mergevars_setting_section',
+			'connect_ecommerce_prod_mergevars_section',
 			__( 'Merge variables from product attributes to custom fields', 'connect-ecommerce' ),
 			array( $this, 'section_info_prod_mergevars' ),
-			'connect_ecommerce_settings_prod_mergevars'
+			'connect_ecommerce_prod_mergevars'
 		);
 
 		add_settings_field(
 			'wcpimh_prod_mergevars',
 			__( 'Merge fields with product', 'connect-ecommerce' ),
 			array( $this, 'prod_mergevars_callback' ),
-			'connect_ecommerce_settings_prod_mergevars',
-			'imhset_prod_mergevars_setting_section'
+			'connect_ecommerce_prod_mergevars',
+			'connect_ecommerce_prod_mergevars_section'
 		);
 
 		/**
@@ -912,6 +933,7 @@ class Settings {
 				'username'       => '',
 				'password'       => '',
 				'company'        => '',
+				'company_id'     => '',
 				'domain'         => '',
 				'dbname'         => '',
 				'stock'          => 'no',
@@ -927,6 +949,8 @@ class Settings {
 				'rates'          => 'default',
 				'catnp'          => 'yes',
 				'doctype'        => 'invoice',
+				'cleanchars'     => '',
+				'approve_document' => 'no',
 				'series'         => '',
 				'freeorder'      => 'no',
 				'ecstatus'       => 'all',
@@ -1111,6 +1135,36 @@ class Settings {
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][company]" id="wcpimh_company" value="%s">',
 			isset( $this->settings['company'] ) ? esc_attr( $this->settings['company'] ) : ''
 		);
+	}
+
+	/**
+	 * Get companies and select them
+	 *
+	 * @return void
+	 */
+	public function company_select_callback() {
+		if ( ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
+			return esc_html__( 'By default', 'connect-ecommerce' );
+		}
+		$companies_options = $this->connapi_erp->get_companies();
+		if ( empty( $companies_options ) || 'error' === $companies_options['status'] ) {
+			$message = ! empty( $companies_options['message'] ) ? $companies_options['message'] : '';
+			$message = empty( $message ) && ! empty( $companies_options['data'] ) ? $companies_options['data'] : $message;
+			echo '<p>' . esc_html__( 'Error', 'connect-ecommerce' ) . ': ' . esc_html( $message ) . '</p>';
+			return;
+		}
+		$saved_attr = isset( $this->settings['company_id'] ) ? $this->settings['company_id'] : '';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][company_id]" id="wcpimh_company_id">
+			<?php
+			foreach ( $companies_options as $value => $label ) {
+				echo '<option value="' . esc_html( $value ) . '" ';
+				selected( $value, $saved_attr );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			?>
+		</select>
+		<?php
 	}
 
 	/**
@@ -1339,7 +1393,37 @@ class Settings {
 		$categorynp = isset( $this->settings['catnp'] ) ? $this->settings['catnp'] : 'yes';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catnp]" id="wcpimh_catnp">
-			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
+			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes, it will import ONLY on new products', 'connect-ecommerce' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No, it will import in ALL products', 'connect-ecommerce' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Call back for clean special characters
+	 *
+	 * @return void
+	 */
+	public function cleanchars_callback() {
+		$cleanchars = isset( $this->settings['cleanchars'] ) ? $this->settings['cleanchars'] : 'no';
+		echo '<input type="checkbox" id="connwoo_cleanchars_checkbox" name="connect_ecommerce[' . esc_html( $this->connector ) . '][cleanchars]" value="on"';
+		echo checked( $cleanchars, 'on' );
+		echo '/>';
+		echo '<label for="connwoo_cleanchars_checkbox" class="description">';
+		esc_html_e( 'Clean special characters from firstname, lastname and company name', 'connect-ecommerce' );
+		echo '</label>';
+	}
+
+	/**
+	 * Call back for approve document
+	 *
+	 * @return void
+	 */
+	public function approve_document_callback() {
+		$approve_document = isset( $this->settings['approve_document'] ) ? $this->settings['approve_document'] : 'no';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][approve_document]" id="wcpimh_approve_document">
+			<option value="no" <?php selected( $approve_document, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
+			<option value="yes" <?php selected( $approve_document, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
 	}
@@ -1552,8 +1636,9 @@ class Settings {
 		$product_fields    = PROD::get_all_product_fields();
 		$custom_fields     = PROD::get_all_custom_fields();
 		$custom_taxonomies = TAX::get_all_custom_taxonomies();
+		$product_cat_terms = TAX::get_terms_product_cat();
 		$attribute_fields  = $this->connapi_erp->get_product_attributes();
-		asort( $attribute_fields );
+
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
 		$saved_attr = array();
@@ -1572,7 +1657,7 @@ class Settings {
 					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'connect-ecommerce' );?></strong></div>
 				</div>
 				<?php
-				$size = isset( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
+				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
 				for ( $idx = 0, $size; $idx <= $size; ++$idx ) {
 					$attrprod = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
 					?>
@@ -1581,10 +1666,19 @@ class Settings {
 							<select name='connect_ecommerce_prod_mergevars[prod_mergevars][<?php echo esc_html( $idx ); ?>][attrprod]' class="attrprod-publish" data-row="<?php echo esc_html( $idx ); ?>">
 								<option value=''></option>
 								<?php
-								foreach ( $attribute_fields as $key => $value ) {
-									echo '<option value="' . esc_html( $key ) . '" ';
-									selected( $key, $attrprod );
-									echo '>' . esc_html( $value ) . ' (' . esc_html( $key ) . ')</option>';
+								foreach ( $attribute_fields as $attribute ) {
+									?>
+									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
+										<?php
+										foreach ( $attribute['elements'] as $value ) {
+											$option_id = $attribute['id'] . '|' . $value;
+											echo '<option value="' . esc_html( $option_id ) . '" ';
+											selected( $option_id, $attrprod );
+											echo '>' . esc_html( $value ) . '</option>';
+										}
+										?>
+									</optgroup>
+									<?php
 								}
 								?>
 							</select>
@@ -1593,7 +1687,7 @@ class Settings {
 						<div class="save-item">
 							<?php 
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
-							$all_fields = array_merge( $product_fields, $custom_taxonomies, $custom_fields );
+							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
 								$custom_fields[] = $saved_custom_field;
 							}
@@ -1604,6 +1698,15 @@ class Settings {
 									<?php
 									foreach ( $product_fields as $key => $value ) {
 										echo '<option value="' . esc_html( $key ) . '" ';
+										selected( $key, $saved_custom_field );
+										echo '>' . esc_html( $value ) . '</option>';
+									}
+									?>
+								</optgroup>
+								<optgroup label="<?php esc_html_e( 'Product Category values', 'connect-ecommerce' ); ?>">
+									<?php
+									foreach ( $product_cat_terms as $key => $value ) {
+										echo '<option value="' . esc_attr( $key ) . '" ';
 										selected( $key, $saved_custom_field );
 										echo '>' . esc_html( $value ) . '</option>';
 									}
