@@ -1393,7 +1393,7 @@ class Settings {
 		$categorynp = isset( $this->settings['catnp'] ) ? $this->settings['catnp'] : 'yes';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catnp]" id="wcpimh_catnp">
-			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
+			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes, it will import ONLY on new products', 'connect-ecommerce' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No, it will import in ALL products', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
 	}
