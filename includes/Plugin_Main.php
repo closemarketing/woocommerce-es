@@ -20,6 +20,7 @@ use CLOSE\ConnectEcommerce\Admin\Orders;
 use CLOSE\ConnectEcommerce\Admin\Notices;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
+
 /**
  * Class Wrapper.
  *
@@ -52,15 +53,6 @@ class Base {
 		new Orders( $options );
 		new Checkout( $options );
 		new MyAccount( $options );
-
-		register_activation_hook( $options['main_file'], array( $this, 'process_activation' ) );
-	}
-
-	/**
-	 * Process activation.
-	 */
-	public function process_activation() {
-		HELPER::create_sync_table( $this->options['table_sync'] ?? '' );
 	}
 
 	/**
