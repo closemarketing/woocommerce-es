@@ -76,7 +76,7 @@ class Import_Products {
 	 * @return void
 	 */
 	public function __construct( $options ) {
-		$settings_base = get_option( 'connect_ecommerce' );
+		$settings_base = HELPER::get_settings();
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		$connector         = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
 		if ( empty( $connector ) ) {

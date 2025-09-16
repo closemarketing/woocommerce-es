@@ -85,6 +85,20 @@ You can use WP CLI to import products from the command line. The command is:
 wp conecom products --update --ai=none,new,all
 ```
 
+You can define environment variables to set the settings of the connector.
+```
+define( 'CONECOM_CONNECTOR', 'holded' ); // values: holded, odoo, neo, datisa
+define( 'CONECOM_AUTH_APIKEY', '1234567890' );
+define( 'CONECOM_AUTH_IDCENTRE', '1234567890' );
+define( 'CONECOM_AUTH_URL', 'https://example.com' );
+define( 'CONECOM_AUTH_USERNAME', '1234567890' );
+define( 'CONECOM_AUTH_PASSWORD', '1234567890' );
+define( 'CONECOM_AUTH_COMPANY', '1234567890' );
+define( 'CONECOM_AUTH_COMPANY_ID', '1234567890' );
+define( 'CONECOM_AUTH_DOMAIN', 'domain' );
+define( 'CONECOM_AUTH_DBNAME', '1234567890' );
+```
+
 == External services ==
 
 This plugin connects to an API to make AI SEO descriptions and product information.
@@ -98,6 +112,9 @@ Supported Services:
 The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
 == Changelog ==
+
+= 3.1.6 =
+* Enhancement: Added support to define settings in environment variables.
 
 = 3.1.5 =
 * Enhancement: Added support to merge categories from API to WooCommerce.

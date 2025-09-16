@@ -18,6 +18,43 @@ defined( 'ABSPATH' ) || exit;
  * @since 1.0.0
  */
 class HELPER {
+	public static function get_settings() {
+		$settings = get_option( 'connect_ecommerce' );
+		if ( defined( 'CONECOM_CONNECTOR' ) ) {
+			$settings              = $settings[ CONECOM_CONNECTOR ] ?? [];
+			$settings['connector'] = CONECOM_CONNECTOR;
+			if ( defined( 'CONECOM_AUTH_APIKEY' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['api'] = CONECOM_AUTH_APIKEY;
+			}
+			if ( defined( 'CONECOM_AUTH_IDCENTRE' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['idcentre'] = CONECOM_AUTH_IDCENTRE;
+			}
+			if ( defined( 'CONECOM_AUTH_URL' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['url'] = CONECOM_AUTH_URL;
+			}
+			if ( defined( 'CONECOM_AUTH_USERNAME' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['username'] = CONECOM_AUTH_USERNAME;
+			}
+			if ( defined( 'CONECOM_AUTH_PASSWORD' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['password'] = CONECOM_AUTH_PASSWORD;
+			}
+			if ( defined( 'CONECOM_AUTH_COMPANY' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['company'] = CONECOM_AUTH_COMPANY;
+			}
+			if ( defined( 'CONECOM_AUTH_COMPANY_ID' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['company_id'] = CONECOM_AUTH_COMPANY_ID;
+			}
+			if ( defined( 'CONECOM_AUTH_DOMAIN' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['domain'] = CONECOM_AUTH_DOMAIN;
+			}
+			if ( defined( 'CONECOM_AUTH_DBNAME' ) ) {
+				$settings[ CONECOM_CONNECTOR ]['dbname'] = CONECOM_AUTH_DBNAME;
+			}
+		}
+
+		return $settings;
+	}
+
 	/**
 	 * Emails products with errors
 	 *

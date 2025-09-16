@@ -10,6 +10,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
+
 /**
  * LoadsAPI.
  *
@@ -39,7 +41,7 @@ class Connect_Ecommerce_Clientify {
 	 */
 	public function __construct( $options ) {
 		$this->options  = $options['clientify'];
-		$this->settings = get_option( 'connect_ecommerce' )['clientify'] ?? array();
+		$this->settings = HELPER::get_settings()['clientify'] ?? array();
 
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'clientify_cookie_checkout_field' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );

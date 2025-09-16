@@ -124,7 +124,7 @@ class Settings {
 	 * @return void
 	 */
 	public function __construct( $options = array() ) {
-		$this->settings_all = get_option( 'connect_ecommerce' );
+		$this->settings_all = HELPER::get_settings();
 		$this->connector    = isset( $this->settings_all['connector'] ) ? $this->settings_all['connector'] : '';
 		$this->settings     = $this->settings_all[ $this->connector ] ?? array();
 		$this->all_options  = $options;
@@ -922,7 +922,7 @@ class Settings {
 	 */
 	public function sanitize_fields_settings( $input ) {
 		$sanitary_values = array();
-		$imh_settings    = get_option( 'connect_ecommerce' );
+		$imh_settings    = HELPER::get_settings();
 		$connector       = isset( $input['connector'] ) ? $input['connector'] : '';
 
 		$admin_settings = [
@@ -1175,8 +1175,9 @@ class Settings {
 	 */
 	public function api_callback() {
 		printf(
-			'<input class="regular-text" type="password" name="connect_ecommerce[' . esc_html( $this->connector ) . '][api]" id="wcpimh_api" value="%s">',
-			isset( $this->settings['api'] ) ? esc_attr( $this->settings['api'] ) : ''
+			'<input class="regular-text" type="password" name="connect_ecommerce[' . esc_html( $this->connector ) . '][api]" id="wcpimh_api" value="%s" %s>',
+			isset( $this->settings['api'] ) ? esc_attr( $this->settings['api'] ) : '',
+			defined( 'CONECOM_AUTH_APIKEY' ) ? 'readonly' : ''
 		);
 	}
 

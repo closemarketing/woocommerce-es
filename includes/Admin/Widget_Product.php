@@ -12,6 +12,8 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
+
 /**
  * Mejoras productos.
  *
@@ -40,7 +42,7 @@ class Widget_Product {
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options = array() ) {
-		$settings_base = get_option( 'connect_ecommerce' );
+		$settings_base = HELPER::get_settings();
 		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
 		if ( empty( $connector ) ) {
 			return;

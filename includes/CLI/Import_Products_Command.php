@@ -37,7 +37,7 @@ class Import_Products_Command {
 				'ai'     => 'none',
 			)
 		);
-		$settings_all = get_option( 'connect_ecommerce' );
+		$settings_all = HELPER::get_settings();
 		$connector    = isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
 		$settings     = $settings_all[ $connector ] ?? array();
 		$time_start   = microtime( true );

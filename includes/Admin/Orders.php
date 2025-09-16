@@ -60,13 +60,13 @@ class Orders {
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options ) {
-		$settings_base = get_option( 'connect_ecommerce' );
+		$settings_base = HELPER::get_settings();
 		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
 		if ( empty( $connector ) ) {
 			return;
 		}
 		$this->options        = $options[ $connector ];
-		$this->settings       = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
+		$this->settings       = $settings_base[ $connector ] ?? array();
 		$apiname              = 'Connect_Ecommerce_' . $this->options['name'];
 		$this->connapi_erp    = new $apiname( $options );
 		$ecstatus             = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];

@@ -12,6 +12,8 @@ namespace CLOSE\ConnectEcommerce\Frontend;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
+
 /**
  * My Account.
  *
@@ -66,7 +68,7 @@ class MyAccount {
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options ) {
-		$this->settings_all = get_option( 'connect_ecommerce' );
+		$this->settings_all = HELPER::get_settings();
 		$this->connector    = isset( $this->settings_all['connector'] ) ? $this->settings_all['connector'] : '';
 		$this->settings     = $this->settings_all[ $this->connector ] ?? array();
 		$this->all_options  = $options;
