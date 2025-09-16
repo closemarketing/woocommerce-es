@@ -1060,8 +1060,9 @@ class Settings {
 	 */
 	public function idcentre_callback() {
 		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][idcentre]" id="wcpimh_idcentre" value="%s">',
-			isset( $this->settings['idcentre'] ) ? esc_attr( $this->settings['idcentre'] ) : ''
+			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][idcentre]" id="wcpimh_idcentre" value="%s" %s>',
+			isset( $this->settings['idcentre'] ) ? esc_attr( $this->settings['idcentre'] ) : '',
+			defined( 'CONECOM_AUTH_IDCENTRE' ) ? 'readonly' : ''
 		);
 	}
 
@@ -1072,8 +1073,9 @@ class Settings {
 	 */
 	public function url_callback() {
 		printf(
-			'<input class="regular-text" type="url" name="connect_ecommerce[' . esc_html( $this->connector ) . '][url]" id="wcpimh_url" value="%s">',
-			isset( $this->settings['url'] ) ? esc_attr( $this->settings['url'] ) : ''
+			'<input class="regular-text" type="url" name="connect_ecommerce[' . esc_html( $this->connector ) . '][url]" id="wcpimh_url" value="%s" %s>',
+			isset( $this->settings['url'] ) ? esc_attr( $this->settings['url'] ) : '',
+			defined( 'CONECOM_AUTH_URL' ) ? 'readonly' : ''
 		);
 	}
 
@@ -1084,8 +1086,9 @@ class Settings {
 	 */
 	public function username_callback() {
 		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][username]" id="wcpimh_username" value="%s">',
-			isset( $this->settings['username'] ) ? esc_attr( $this->settings['username'] ) : ''
+			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][username]" id="wcpimh_username" value="%s" %s>',
+			isset( $this->settings['username'] ) ? esc_attr( $this->settings['username'] ) : '',
+			defined( 'CONECOM_AUTH_USERNAME' ) ? 'readonly' : ''
 		);
 	}
 
@@ -1096,8 +1099,9 @@ class Settings {
 	 */
 	public function dbname_callback() {
 		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][dbname]" id="wcpimh_dbname" value="%s">',
-			isset( $this->settings['dbname'] ) ? esc_attr( $this->settings['dbname'] ) : ''
+			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][dbname]" id="wcpimh_dbname" value="%s" %s>',
+			isset( $this->settings['dbname'] ) ? esc_attr( $this->settings['dbname'] ) : '',
+			defined( 'CONECOM_AUTH_DBNAME' ) ? 'readonly' : ''
 		);
 	}
 
@@ -1108,8 +1112,9 @@ class Settings {
 	 */
 	public function password_callback() {
 		printf(
-			'<input class="regular-text" type="password" name="connect_ecommerce[' . esc_html( $this->connector ) . '][password]" id="wcpimh_password" value="%s">',
-			isset( $this->settings['password'] ) ? esc_attr( $this->settings['password'] ) : ''
+			'<input class="regular-text" type="password" name="connect_ecommerce[' . esc_html( $this->connector ) . '][password]" id="wcpimh_password" value="%s" %s>',
+			isset( $this->settings['password'] ) ? esc_attr( $this->settings['password'] ) : '',
+			defined( 'CONECOM_AUTH_PASSWORD' ) ? 'readonly' : ''
 		);
 	}
 
@@ -1120,8 +1125,9 @@ class Settings {
 	 */
 	public function domain_callback() {
 		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][domain]" id="wcpimh_domain" value="%s">',
-			isset( $this->settings['domain'] ) ? esc_attr( $this->settings['domain'] ) : ''
+			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][domain]" id="wcpimh_domain" value="%s" %s>',
+			isset( $this->settings['domain'] ) ? esc_attr( $this->settings['domain'] ) : '',
+			defined( 'CONECOM_AUTH_DOMAIN' ) ? 'readonly' : ''
 		);
 	}
 
@@ -1132,8 +1138,9 @@ class Settings {
 	 */
 	public function company_callback() {
 		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][company]" id="wcpimh_company" value="%s">',
-			isset( $this->settings['company'] ) ? esc_attr( $this->settings['company'] ) : ''
+			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][company]" id="wcpimh_company" value="%s" %s>',
+			isset( $this->settings['company'] ) ? esc_attr( $this->settings['company'] ) : '',
+			defined( 'CONECOM_AUTH_COMPANY' ) ? 'readonly' : ''
 		);
 	}
 
