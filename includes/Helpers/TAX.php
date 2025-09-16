@@ -189,23 +189,24 @@ class TAX {
 	/**
 	 * Assign product categories, based on the item data and merge vars.
 	 *
-	 * @param array  $item Item data.
-	 * @param array  $attributes Attributes of the product.
-	 * @param array  $settings_mergevars Settings merge variables.
+	 * @param array $attributes Attributes of the product.
+	 * @param array $settings Settings of the plugin.
+	 * @param array $settings_mergevars Settings merge variables.
+	 *
 	 * @return array
 	 */
 	public static function assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product = true ) {
-		if ( empty( $attributes )  ) {
+		if ( empty( $attributes ) ) {
 			return array();
 		}
-		
+
 		$attribute_cat_id = ! empty( $settings['catattr'] ) ? $settings['catattr'] : '';
 		$categories_ids   = array();
 		$items_cat_value  = array();
 
 		foreach ( $attributes as $attribute ) {
-			if ( $attribute['value'] === $attribute_cat_id ) {
-				$items_cat_value[] = $attribute['name'];
+			if ( $attribute['name'] === $attribute_cat_id || $attribute['id'] === $attribute_cat_id ) {
+				$items_cat_value[] = $attribute['value'];
 			}
 		}
 

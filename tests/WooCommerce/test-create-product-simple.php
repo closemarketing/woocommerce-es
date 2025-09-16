@@ -168,8 +168,8 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$item['attributes'] = [
 			[
 				'id'    => '64be2e55727b35ad0b0d2c42',
-				'value' => 'sandalias',
-				'name'  => 'Chanclas',
+				'name'  => 'sandalias',
+				'value' => 'Chanclas',
 			],
 		];
 
@@ -200,8 +200,8 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$item['attributes'] = [
 			[
 				'id'    => '64be2e55727b35ad0b0d2c42',
-				'value' => 'sandalias',
-				'name'  => 'Chanclas',
+				'name'  => 'sandalias',
+				'value' => 'Chanclas',
 			],
 		];
 

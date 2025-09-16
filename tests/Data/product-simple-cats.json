@@ -50,13 +50,13 @@
 		"attributes": [
 			{
 				"id": "64be2e55727b35ad0b0d2c42",
-				"value": "sandalias",
-				"name": "Calzado"
+				"name": "sandalias",
+				"value": "Calzado"
 			},
 			{
 				"id": "64be2e55727b35ad0b0d2d42",
-				"value": "sandalias",
-				"name": "Zapatillas"
+				"name": "sandalias",
+				"value": "Zapatillas"
 			}
 		]
 	}
