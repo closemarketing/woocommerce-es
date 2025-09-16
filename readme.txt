@@ -113,6 +113,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 * Fixed: Solved static analysis errors.
 * Fixed: error importing products without pricesale_discount.
 * Fixed: error importing products with categories.
+* Fixed: Better management for premium plugins addons license that complies with WordPress.org.
 
 = 3.1.4 =
 * Enhancement: Added tests for product simple and variable.
