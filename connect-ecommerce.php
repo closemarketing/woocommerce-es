@@ -63,6 +63,7 @@ function conecom_get_options() {
 				'table_sync'                 => $wpdb->prefix . 'sync_conecom-clientify',
 				'file'                       => __FILE__,
 			],
+			'main_file' => __FILE__,
 		]
 	);
 }
