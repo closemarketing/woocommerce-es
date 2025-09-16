@@ -341,8 +341,12 @@ class TAX {
 					$args_term
 				);
 			}
-			
-			// Check if term was found or created successfully
+
+			if ( is_wp_error( $search_term ) ) {
+				continue;
+			}
+
+			// Check if term was found or created successfully.
 			if ( ! is_wp_error( $search_term ) && $term_level_index === $term_levels ) {
 				$term_id = isset( $search_term['term_id'] ) ? (int) $search_term['term_id'] : (int) $search_term;
 				wp_set_object_terms( $post_id, $term_id, $taxonomy_slug );
