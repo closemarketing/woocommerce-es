@@ -120,21 +120,32 @@ class ORDER {
 		} else {
 			$contact_name = $order->get_billing_company();
 		}
-		$first_name = $order->get_billing_first_name();
-		$last_name = $order->get_billing_last_name();
+		$first_name           = $order->get_billing_first_name();
+		$last_name            = $order->get_billing_last_name();
+		$billing_company      = $order->get_billing_company();
+		$billing_address      = $order->get_billing_address_1() . ',' . $order->get_billing_address_2();
+		$billing_city         = $order->get_billing_city();
+		$billing_postcode     = $order->get_billing_postcode();
+		$billing_state_code   = $order->get_billing_state();
+		$billing_country_code = $order->get_billing_country();
 
 		// Clean special chars.
 		if ( isset( $setttings['cleanchars'] ) && 'on' === $setttings['cleanchars'] ) {
-			$contact_name = self::clean_special_chars( $contact_name );
-			$first_name   = self::clean_special_chars( $first_name );
-			$last_name    = self::clean_special_chars( $last_name );
+			$contact_name         = self::clean_special_chars( $contact_name );
+			$first_name           = self::clean_special_chars( $first_name );
+			$last_name            = self::clean_special_chars( $last_name );
+			$billing_company      = self::clean_special_chars( $billing_company );
+			$billing_address      = self::clean_special_chars( $billing_address );
+			$billing_city         = self::clean_special_chars( $billing_city );
+			$billing_postcode     = self::clean_special_chars( $billing_postcode );
+			$billing_state_code   = self::clean_special_chars( $billing_state_code );
+			$billing_country_code = self::clean_special_chars( $billing_country_code );
 		}
 
 		// State and Country.
-		$billing_country_code = $order->get_billing_country();
-		$billing_state_code   = $order->get_billing_state();
-		$order_description    = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
-		$billing_state        = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) ? WC()->countries->get_states( $billing_country_code )[ $billing_state_code ] : '';
+		$order_description = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
+		$woo_states        = WC()->countries->get_states( $billing_country_code );
+		$billing_state     = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) && ! empty( $woo_states[ $billing_state_code ] ) ? $woo_states[ $billing_state_code ] : '';
 
 		$contact_code = self::get_billing_vat( $order );
 
@@ -161,11 +172,11 @@ class ORDER {
 			'woocommerceOrderEdit'   => $order->get_edit_order_url(),
 			'woocommerceStore'       => get_bloginfo( 'name', 'display' ),
 			'contactEmail'           => $order->get_billing_email(),
-			'contactCompany'         => $order->get_billing_company(),
+			'contactCompany'         => $billing_company,
 			'contact_phone'          => $order->get_billing_phone(),
-			'contactAddress'         => $order->get_billing_address_1() . ',' . $order->get_billing_address_2(),
-			'contactCity'            => $order->get_billing_city(),
-			'contactCp'              => $order->get_billing_postcode(),
+			'contactAddress'         => $billing_address,
+			'contactCity'            => $billing_city,
+			'contactCp'              => $billing_postcode,
 			'contactProvince'        => $billing_state,
 			'contactCountryCode'     => $billing_country_code,
 			'desc'                   => $order_description,
