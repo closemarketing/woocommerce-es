@@ -91,9 +91,15 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			'file' => $image_path,
 			'content_type' => 'image/png',
 		];
+		$image_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image-alt.png';
+		$image_dummy_alt = [
+			'url' => $image_path,
+			'file' => $image_path,
+			'content_type' => 'image/png',
+		];
 		$item['images'] = [ $image_dummy, $image_dummy, $image_dummy ];
 		$item['variants'][0]['image'] = $image_dummy;
-		$item['variants'][1]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy_alt;
 		
 		// Sync product.
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
@@ -128,10 +134,15 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertEquals( $item['variants'][$index]['stock'], $prod_variation->get_stock_quantity() );
 			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
 
+			$images = [
+				'dummy-image.png',
+				'dummy-image-alt.png',
+			];
+
 			// Assert images.
 			$variation_image_url = get_the_post_thumbnail_url( $variation_id );
 			$this->assertNotEmpty( $variation_image_url );
-			$this->assertStringContainsString( 'dummy-image.png', $variation_image_url );
+			$this->assertStringContainsString( $images[$index], $variation_image_url );
 
 			$index++;
 		}

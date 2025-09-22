@@ -545,6 +545,7 @@ class PROD {
 				}
 			}
 		}
+		$variations_atachment_ids = array();
 		foreach ( $item['variants'] as $variant ) {
 			$variation_id = 0; // default value.
 			if ( ! $is_new_product && ! empty( $variations_item ) && is_array( $variations_item ) ) {
@@ -638,8 +639,11 @@ class PROD {
 
 			// Add image to variation.
 			if ( ! empty( $variant['image'] ) ) {
-				self::attach_image_to_product( $variation_id, $variant['image'] );
+				$variations_atachment_ids[] = self::attach_image_to_product( $variation_id, $variant['image'] );
 			}
+		}
+		if ( ! empty( $variations_atachment_ids ) ) {
+			$product->set_gallery_image_ids( $variations_atachment_ids );
 		}
 		$var_prop   = TAX::make_attributes( $attributes, true );
 		$data_store = $product->get_data_store();
@@ -891,7 +895,8 @@ class PROD {
 	 * @param int    $product_id Product ID.
 	 * @param array|string  $image Image data.
 	 * @param bool   $first_image If is the first image for thumbnail.
-	 * @return void
+	 *
+	 * @return int $attach_id Attachment ID.
 	 */
 	private static function attach_image_to_product( $product_id, $image_data, $first_image = true ) {
 		if ( empty( $image_data ) ) {
@@ -927,7 +932,7 @@ class PROD {
 
 			// Check for download errors
 			if ( is_wp_error( $handle_file['tmp_name'] ) ) {
-				return;
+				return 0;
 			}
 
 			// Prevents scripts in the name of the file.
@@ -963,6 +968,8 @@ class PROD {
 			$gallery = $gallery ? $gallery . ',' . $attach_id : $attach_id;
 			update_post_meta( $product_id, '_product_image_gallery', $gallery );
 		}
+
+		return $attach_id;
 	}
 
 	/**
