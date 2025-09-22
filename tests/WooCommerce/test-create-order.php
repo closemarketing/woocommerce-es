@@ -83,6 +83,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'#John Doe'	=> 'John Doe',
 			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'aeiouuñçgAEIOUUÑÇG',
 			'John@Doe' => 'John Doe',
+			'John@  Doe' => 'John Doe', // double space
+			'º[]John Doe' => 'John Doe',
 			'Maçanet Çağla' => 'Maçanet Çagla',
 			'Francisco Araújo da Conceição' => 'Francisco Araujo da Conceiçao',
 		];
@@ -154,10 +156,10 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'phone'      => '123456789',
 			'address_1'  => '123 Main St',
 			'address_2'  => '',
-			'city'       => 'Sample City',
-			'state'      => 'CA',
+			'city'       => 'Sampleº City',
+			'state'      => 'CAº',
 			'postcode'   => '90001',
-			'country'    => 'US',
+			'country'    => 'USº',
 			'company'    => 'Acme Inc.',
 		];
 
@@ -184,6 +186,10 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $order_data );
 		$this->assertEquals( 'Jose M', $order_data['contactFirstName'] );
 		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
+		$this->assertEquals( 'Sample City', $order_data['contactCity'] );
+		$this->assertEquals( 'California', $order_data['contactProvince'] );
+		$this->assertEquals( 'US', $order_data['contactCountryCode'] );
+		$this->assertEquals( '90001', $order_data['contactCp'] );
 	}
 
 	public function test_create_order_approve_document_without_errors() {
