@@ -101,6 +101,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 = 3.1.6 =
 * Enhancement: Added variation images to product gallery.
+* Fixed: error saving category separator.
 
 = 3.1.5 =
 * Enhancement: Added support to merge categories from API to WooCommerce.
