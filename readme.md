@@ -138,3 +138,12 @@ Method get_product_attributes
 	'elements' => [
 	],
 ],
+
+Method get_payment_methods
+```
+return [
+	[
+		'id' => Payment method id. It has to be prefixed with paymentmethods|
+		'name' => Name of payment
+	]
+]
