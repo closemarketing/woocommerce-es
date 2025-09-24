@@ -704,14 +704,14 @@ class Settings {
 
 		add_settings_section(
 			'connect_ecommerce_prod_mergevars_section',
-			__( 'Merge variables from product attributes to custom fields', 'connect-ecommerce' ),
+			__( 'Merge variables from ERP to WooCommerce', 'connect-ecommerce' ),
 			array( $this, 'section_info_prod_mergevars' ),
 			'connect_ecommerce_prod_mergevars'
 		);
 
 		add_settings_field(
 			'wcpimh_prod_mergevars',
-			__( 'Merge fields with product', 'connect-ecommerce' ),
+			__( 'Merge fields', 'connect-ecommerce' ),
 			array( $this, 'prod_mergevars_callback' ),
 			'connect_ecommerce_prod_mergevars',
 			'connect_ecommerce_prod_mergevars_section'
@@ -1438,7 +1438,11 @@ class Settings {
 		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
-			<option value="nosync" <?php selected( $doctype, 'nosync' ); ?>><?php esc_html_e( 'Not sync', 'connect-ecommerce' ); ?></option>		<option value="invoice" <?php selected( $doctype, 'invoice' ); ?>><?php esc_html_e( 'Invoice', 'connect-ecommerce' ); ?></option>			<option value="salesreceipt" <?php selected( $doctype, 'salesreceipt' ); ?>><?php esc_html_e( 'Sales receipt', 'connect-ecommerce' ); ?></option>			<option value="salesorder" <?php selected( $doctype, 'salesorder' ); ?>><?php esc_html_e( 'Sales order', 'connect-ecommerce' ); ?></option>			<option value="waybill" <?php selected( $doctype, 'waybill' ); ?>><?php esc_html_e( 'Waybill', 'connect-ecommerce' ); ?></option>
+			<option value="nosync" <?php selected( $doctype, 'nosync' ); ?>><?php esc_html_e( 'Not sync', 'connect-ecommerce' ); ?></option>
+			<option value="invoice" <?php selected( $doctype, 'invoice' ); ?>><?php esc_html_e( 'Invoice', 'connect-ecommerce' ); ?></option>
+			<option value="salesreceipt" <?php selected( $doctype, 'salesreceipt' ); ?>><?php esc_html_e( 'Sales receipt', 'connect-ecommerce' ); ?></option>
+			<option value="salesorder" <?php selected( $doctype, 'salesorder' ); ?>><?php esc_html_e( 'Sales order', 'connect-ecommerce' ); ?></option>
+			<option value="waybill" <?php selected( $doctype, 'waybill' ); ?>><?php esc_html_e( 'Waybill', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
 	}
@@ -1634,11 +1638,13 @@ class Settings {
 	 * @return void
 	 */
 	public function prod_mergevars_callback() {
-		$product_fields    = PROD::get_all_product_fields();
-		$custom_fields     = PROD::get_all_custom_fields();
-		$custom_taxonomies = TAX::get_all_custom_taxonomies();
-		$product_cat_terms = TAX::get_terms_product_cat();
-		$attribute_fields  = $this->connapi_erp->get_product_attributes();
+		$product_fields      = PROD::get_all_product_fields();
+		$custom_fields       = PROD::get_all_custom_fields();
+		$custom_taxonomies   = TAX::get_all_custom_taxonomies();
+		$product_cat_terms   = TAX::get_terms_product_cat();
+		$attribute_fields    = $this->connapi_erp->get_product_attributes();
+		$payment_methods_api = method_exists( $this->connapi_erp, 'get_payment_methods' ) ? $this->connapi_erp->get_payment_methods() : array();
+		$payment_methods     = WC()->payment_gateways()->get_available_payment_gateways();
 
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
@@ -1660,7 +1666,8 @@ class Settings {
 				<?php
 				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
 				for ( $idx = 0, $size; $idx <= $size; ++$idx ) {
-					$attrprod = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
+					$attrprod       = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
+					$attrprod_label = '';
 					?>
 					<div class="product-mergevars repeating" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
 						<div class="save-item">
@@ -1668,6 +1675,9 @@ class Settings {
 								<option value=''></option>
 								<?php
 								foreach ( $attribute_fields as $attribute ) {
+									if ( empty( $attribute['elements'] ) ) {
+										continue;
+									}
 									?>
 									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
 										<?php
@@ -1676,17 +1686,43 @@ class Settings {
 											echo '<option value="' . esc_html( $option_id ) . '" ';
 											selected( $option_id, $attrprod );
 											echo '>' . esc_html( $value ) . '</option>';
+
+											if ( $option_id === $attrprod ) {
+												$attrprod_label = $attribute['name'];
+											}
 										}
 										?>
 									</optgroup>
 									<?php
 								}
 								?>
+								<?php if ( ! empty( $payment_methods_api ) ) { ?>
+									<optgroup label="<?php esc_html_e( 'Payment Methods', 'connect-ecommerce' ); ?>">
+										<?php
+										foreach ( $payment_methods_api as $key => $value ) {
+											echo '<option value="' . esc_html( $key ) . '" ';
+											selected( $key, $attrprod );
+											echo '>' . esc_html( $value ) . '</option>';
+
+											if ( $key === $attrprod ) {
+												$attrprod_label = __( 'Payment Method', 'connect-ecommerce' );
+											}
+										}
+										?>
+									</optgroup>
+								<?php } ?>
 							</select>
 						</div>
+						<span class="attrprod-label">
+							<?php
+							if ( ! empty( $attrprod_label ) ) {
+								echo esc_html( $attrprod_label );
+							}
+							?>
+						</span>
 						<span class="dashicons dashicons-arrow-right-alt2"></span>
 						<div class="save-item">
-							<?php 
+							<?php
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
 							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
@@ -1733,6 +1769,16 @@ class Settings {
 								echo '<option value="custom">' . esc_html__( 'Customized', 'connect-ecommerce' ) . '</option>';
 								?>
 								</optgroup>
+								<?php if ( ! empty( $payment_methods_api ) ) { ?>
+									<optgroup label="<?php esc_html_e( 'Payment Methods', 'connect-ecommerce' ); ?>">
+										<?php
+										foreach ( $payment_methods as $method ) {
+											$key = 'cf|' . $method->id;
+											?>
+											<option value="<?php echo esc_html( $key ); ?>" <?php selected( $key, $saved_custom_field ); ?>><?php echo esc_html( $method->title ); ?></option>
+										<?php } ?>
+									</optgroup>
+								<?php } ?>
 							</select>
 						</div>
 						<div class="save-item">
