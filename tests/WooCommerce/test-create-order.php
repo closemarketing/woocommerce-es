@@ -174,12 +174,17 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order->set_billing_postcode( $client_data['postcode'] );
 		$order->set_billing_country( $client_data['country'] );
 		$order->set_billing_company( $client_data['company'] );
+		$order->set_payment_method( 'bacs' );
 		$order->set_status('completed');
 		$order->set_total(100);
 		$order->save();
 
 		$this->settings['cleanchars'] = 'on';
 		$option_prefix = 'conecom-test';
+
+		$this->settings['prod_mergevars'] = [
+			'paymentmethods|58f9c4091c9798739520e6b2' => 'cf|bacs',
+		];
 
 		// Review order data that sends to ERP.
 		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
@@ -190,6 +195,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( 'California', $order_data['contactProvince'] );
 		$this->assertEquals( 'US', $order_data['contactCountryCode'] );
 		$this->assertEquals( '90001', $order_data['contactCp'] );
+		$this->assertEquals( 'bacs', $order_data['pmtype'] );
+		$this->assertEquals( '58f9c4091c9798739520e6b2', $order_data['pmtype_api'] );
 	}
 
 	public function test_create_order_approve_document_without_errors() {

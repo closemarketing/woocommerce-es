@@ -704,14 +704,14 @@ class Settings {
 
 		add_settings_section(
 			'connect_ecommerce_prod_mergevars_section',
-			__( 'Merge variables from product attributes to custom fields', 'connect-ecommerce' ),
+			__( 'Merge variables from ERP to WooCommerce', 'connect-ecommerce' ),
 			array( $this, 'section_info_prod_mergevars' ),
 			'connect_ecommerce_prod_mergevars'
 		);
 
 		add_settings_field(
 			'wcpimh_prod_mergevars',
-			__( 'Merge fields with product', 'connect-ecommerce' ),
+			__( 'Merge fields', 'connect-ecommerce' ),
 			array( $this, 'prod_mergevars_callback' ),
 			'connect_ecommerce_prod_mergevars',
 			'connect_ecommerce_prod_mergevars_section'
@@ -1438,7 +1438,11 @@ class Settings {
 		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
-			<option value="nosync" <?php selected( $doctype, 'nosync' ); ?>><?php esc_html_e( 'Not sync', 'connect-ecommerce' ); ?></option>		<option value="invoice" <?php selected( $doctype, 'invoice' ); ?>><?php esc_html_e( 'Invoice', 'connect-ecommerce' ); ?></option>			<option value="salesreceipt" <?php selected( $doctype, 'salesreceipt' ); ?>><?php esc_html_e( 'Sales receipt', 'connect-ecommerce' ); ?></option>			<option value="salesorder" <?php selected( $doctype, 'salesorder' ); ?>><?php esc_html_e( 'Sales order', 'connect-ecommerce' ); ?></option>			<option value="waybill" <?php selected( $doctype, 'waybill' ); ?>><?php esc_html_e( 'Waybill', 'connect-ecommerce' ); ?></option>
+			<option value="nosync" <?php selected( $doctype, 'nosync' ); ?>><?php esc_html_e( 'Not sync', 'connect-ecommerce' ); ?></option>
+			<option value="invoice" <?php selected( $doctype, 'invoice' ); ?>><?php esc_html_e( 'Invoice', 'connect-ecommerce' ); ?></option>
+			<option value="salesreceipt" <?php selected( $doctype, 'salesreceipt' ); ?>><?php esc_html_e( 'Sales receipt', 'connect-ecommerce' ); ?></option>
+			<option value="salesorder" <?php selected( $doctype, 'salesorder' ); ?>><?php esc_html_e( 'Sales order', 'connect-ecommerce' ); ?></option>
+			<option value="waybill" <?php selected( $doctype, 'waybill' ); ?>><?php esc_html_e( 'Waybill', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
 	}
@@ -1662,7 +1666,8 @@ class Settings {
 				<?php
 				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
 				for ( $idx = 0, $size; $idx <= $size; ++$idx ) {
-					$attrprod = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
+					$attrprod       = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
+					$attrprod_label = '';
 					?>
 					<div class="product-mergevars repeating" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
 						<div class="save-item">
@@ -1681,6 +1686,10 @@ class Settings {
 											echo '<option value="' . esc_html( $option_id ) . '" ';
 											selected( $option_id, $attrprod );
 											echo '>' . esc_html( $value ) . '</option>';
+
+											if ( $option_id === $attrprod ) {
+												$attrprod_label = $attribute['name'];
+											}
 										}
 										?>
 									</optgroup>
@@ -1689,13 +1698,28 @@ class Settings {
 								?>
 								<?php if ( ! empty( $payment_methods_api ) ) { ?>
 									<optgroup label="<?php esc_html_e( 'Payment Methods', 'connect-ecommerce' ); ?>">
-										<?php foreach ( $payment_methods_api as $key => $value ) { ?>
-											<option value="<?php echo esc_html( $key ); ?>" <?php selected( $key, $attrprod ); ?>><?php echo esc_html( $value ); ?></option>
-										<?php } ?>
+										<?php
+										foreach ( $payment_methods_api as $key => $value ) {
+											echo '<option value="' . esc_html( $key ) . '" ';
+											selected( $key, $attrprod );
+											echo '>' . esc_html( $value ) . '</option>';
+
+											if ( $key === $attrprod ) {
+												$attrprod_label = __( 'Payment Method', 'connect-ecommerce' );
+											}
+										}
+										?>
 									</optgroup>
 								<?php } ?>
 							</select>
 						</div>
+						<span class="attrprod-label">
+							<?php
+							if ( ! empty( $attrprod_label ) ) {
+								echo esc_html( $attrprod_label );
+							}
+							?>
+						</span>
 						<span class="dashicons dashicons-arrow-right-alt2"></span>
 						<div class="save-item">
 							<?php
