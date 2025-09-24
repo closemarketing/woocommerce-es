@@ -1769,12 +1769,12 @@ class Settings {
 								echo '<option value="custom">' . esc_html__( 'Customized', 'connect-ecommerce' ) . '</option>';
 								?>
 								</optgroup>
-								<?php
-								if ( ! empty( $payment_methods_api ) ) {
-									$key = 'cf|' . $method->id;
-									?>
+								<?php if ( ! empty( $payment_methods_api ) ) { ?>
 									<optgroup label="<?php esc_html_e( 'Payment Methods', 'connect-ecommerce' ); ?>">
-										<?php foreach ( $payment_methods as $method ) { ?>
+										<?php
+										foreach ( $payment_methods as $method ) {
+											$key = 'cf|' . $method->id;
+											?>
 											<option value="<?php echo esc_html( $key ); ?>" <?php selected( $key, $saved_custom_field ); ?>><?php echo esc_html( $method->title ); ?></option>
 										<?php } ?>
 									</optgroup>
