@@ -44,9 +44,15 @@ This plugin also includes specific adjustments to comply with Verifactu regulati
 - Uses AI to generate product marketing information.
 - Adds the NIF/CIF field for proper invoicing.
 - Complies with Verifactu and GDPR.
+- For ERPs that support it, you can send the payment method.
 
 This plugin serves as the foundation for various connectors. The free version supports:
 - [Clientify](https://close.marketing/likes/clientify/)
+
+**Merge variables**
+You can use this section to merge variables from ERP to WooCommerce. That means that you can merge categories, attributes, products, custom fields, taxonomies, etc.
+
+You will need to add Payment methods to merge variables to send the payment method to the ERP.
 
 Premium connectors include:
 - [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
