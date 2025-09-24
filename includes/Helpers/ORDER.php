@@ -27,19 +27,15 @@ class ORDER {
 	 * @param string $option_prefix Option prefix.
 	 * @param object $api_erp API ERP.
 	 * @param bool   $force    Force create.
-	 * @param string $default_freeorder Fallback for the "Create document for free Orders?"
-	 *                                  setting when the merchant never saved it, lets a
-	 *                                  connector (e.g. one with no document to skip) opt in
-	 *                                  to processing free orders by default.
 	 *
 	 * @return array
 	 */
-	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false, $default_freeorder = 'no' ) {
+	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false ) {
 		$order          = wc_get_order( $order_id );
 		$order_total    = (float) $order->get_total();
 		$ec_invoice_id  = $order->get_meta( $meta_key_order );
-		$freeorder      = isset( $settings['freeorder'] ) ? $settings['freeorder'] : $default_freeorder;
-		$order_free_msg = __( 'Free order not created ', 'woocommerce-es' );
+		$freeorder      = isset( $settings['freeorder'] ) ? $settings['freeorder'] : 'no';
+		$order_free_msg = __( 'Free order not created ', 'connect-ecommerce' );
 		$is_debug_log   = isset( $settings['debug_log'] ) && 'on' === $settings['debug_log'] ? true : false;
 
 		// Not create order if free.
@@ -53,7 +49,7 @@ class ORDER {
 				'message' => $order_free_msg,
 			);
 		} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' === $ec_invoice_id ) {
-			$order_free_msg = __( 'Free order not created ', 'woocommerce-es' );
+			$order_free_msg = __( 'Free order not created ', 'connect-ecommerce' );
 			return array(
 				'status'  => 'ok',
 				'message' => $order_free_msg,
@@ -64,7 +60,7 @@ class ORDER {
 		if ( is_a( $order, 'WC_Order_Refund' ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => __( 'Connot create refund', 'woocommerce-es' ),
+				'message' => __( 'Connot create refund', 'connect-ecommerce' ),
 			);
 		}
 		$doctype = isset( $settings['doctype'] ) ? $settings['doctype'] : 'invoice';
@@ -77,37 +73,30 @@ class ORDER {
 				$invoice_id = $order->get_meta( $meta_key_order );
 				$result     = $api_erp->create_order( $order_data, $doc_id, $invoice_id, $force );
 
-				$doc_id     = 'error' === $result['status'] ? '' : ( $result['document_id'] ?? '' );
+				$doc_id     = 'error' === $result['status'] ? '' : $result['document_id'];
 				$invoice_id = isset( $result['invoice_id'] ) ? $result['invoice_id'] : $invoice_id;
 				$order->update_meta_data( $meta_key_order, $invoice_id );
 				$order->update_meta_data( '_' . $option_prefix . '_doc_id', $doc_id );
 				$order->update_meta_data( '_' . $option_prefix . '_doc_type', $doctype );
-				if ( $is_debug_log && isset( $result['log_payload'] ) ) {
-					$order->update_meta_data( '_' . $option_prefix . '_log_payload', $result['log_payload'] );
-				}
 				$order->save();
 
-				$order_msg = __( 'Order synced correctly with ERP, ID: ', 'woocommerce-es' ) . $invoice_id;
+				$order_msg = __( 'Order synced correctly with ERP, ID: ', 'connect-ecommerce' ) . $invoice_id;
 
 				$order->add_order_note( $order_msg );
 			} catch ( \Exception $e ) {
 				$result = array(
 					'status'  => 'error',
-					'message' => $e->getMessage(),
+					'message' => $e,
 				);
 			}
 		} else {
 			$result = array(
-				'status'  => 'ok',
-				'message' => $doctype . ' ' . __( 'num: ', 'woocommerce-es' ) . $ec_invoice_id,
+				'status'  => 'error',
+				'message' => $doctype . ' ' . __( 'num: ', 'connect-ecommerce' ) . $ec_invoice_id,
 			);
 		}
 		if ( $is_debug_log ) {
 			HELPER::save_log( 'create_order', $order_data, $result );
-		}
-		// Send alert if there was an error creating the order.
-		if ( 'error' === $result['status'] && ! empty( $result['message'] ) ) {
-			ALERT::send_order_error_alert( $order_id, $result['message'] );
 		}
 		return $result;
 	}
@@ -115,13 +104,13 @@ class ORDER {
 	/**
 	 * Generate data for Order ERP
 	 *
-	 * @param object $settings Settings data.
+	 * @param object $setttings Settings data.
 	 * @param object $order Order data from WooCommerce.
 	 * @param string $option_prefix Option prefix.
 	 *
 	 * @return array
 	 */
-	public static function generate_order_data( $settings, $order, $option_prefix ) {
+	public static function generate_order_data( $setttings, $order, $option_prefix ) {
 		$order_label_id = is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order->get_id() : $order->get_id();
 		$doclang        = $order->get_billing_country() !== 'ES' ? 'en' : 'es';
 		$shop_url       = wc_get_endpoint_url( 'shop' );
@@ -140,8 +129,12 @@ class ORDER {
 		$billing_state_code   = $order->get_billing_state();
 		$billing_country_code = $order->get_billing_country();
 
+		// State and Country.
+		$woo_states    = WC()->countries->get_states( $billing_country_code );
+		$billing_state = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) && ! empty( $woo_states[ $billing_state_code ] ) ? $woo_states[ $billing_state_code ] : '';
+
 		// Clean special chars.
-		if ( isset( $settings['cleanchars'] ) && 'on' === $settings['cleanchars'] ) {
+		if ( isset( $setttings['cleanchars'] ) && 'on' === $setttings['cleanchars'] ) {
 			$contact_name         = self::clean_special_chars( $contact_name );
 			$first_name           = self::clean_special_chars( $first_name );
 			$last_name            = self::clean_special_chars( $last_name );
@@ -150,15 +143,12 @@ class ORDER {
 			$billing_city         = self::clean_special_chars( $billing_city );
 			$billing_postcode     = self::clean_special_chars( $billing_postcode );
 			$billing_state_code   = self::clean_special_chars( $billing_state_code );
+			$billing_state        = self::clean_special_chars( $billing_state );
 			$billing_country_code = self::clean_special_chars( $billing_country_code );
 		}
 
-		// State and Country.
 		$order_description = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
-		$woo_states        = WC()->countries->get_states( $billing_country_code );
-		$billing_state     = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) && ! empty( $woo_states[ $billing_state_code ] ) ? $woo_states[ $billing_state_code ] : '';
-
-		$contact_code = self::get_billing_vat( $order );
+		$contact_code      = self::get_billing_vat( $order );
 
 		// Order Reference.
 		$base_domain = basename( sanitize_text_field( $_SERVER['HTTP_HOST'] ) );
@@ -197,44 +187,55 @@ class ORDER {
 			'saleschannel'           => null,
 			'currency'               => get_woocommerce_currency(),
 			'language'               => $doclang,
+			'pmtype'                 => null,
 			'items'                  => array(),
 			'approveDoc'             => false,
-			'total'                  => (float) $order->get_total(),
-			'total_tax'              => (float) $order->get_total_tax(),
-			'is_paid'                => $order->is_paid(),
 		);
 
 		// Approve document.
-		$approve_document = isset( $settings['approve_document'] ) ? $settings['approve_document'] : 'no';
+		$approve_document = isset( $setttings['approve_document'] ) ? $setttings['approve_document'] : 'no';
 		if ( 'yes' === $approve_document ) {
 			$order_data['approveDoc'] = true;
 		}
 
 		// DesignID.
-		$design_id = isset( $settings['design_id'] ) ? $settings['design_id'] : '';
+		$design_id = isset( $setttings['design_id'] ) ? $setttings['design_id'] : '';
 		if ( $design_id ) {
 			$order_data['designId'] = $design_id;
 		}
 
 		// Series ID.
-		$series_number = isset( $settings['series'] ) ? $settings['series'] : '';
+		$series_number = isset( $setttings['series'] ) ? $setttings['series'] : '';
 		if ( ! empty( $series_number ) && 'default' !== $series_number ) {
 			$order_data['numSerieId'] = $series_number;
 		}
 
 		// Visitor Key.
-		$visitor_key = isset( $settings['clientify_vk'] ) ? $settings['clientify_vk'] : '';
+		$visitor_key = isset( $setttings['clientify_vk'] ) ? $setttings['clientify_vk'] : '';
 		if ( ! empty( $visitor_key ) ) {
 			$order_data['clientify_vk'] = $visitor_key;
 		}
 
-		// Payment method.
-		$order_data = array_merge( $order_data, PAYMENTS::get_equivalent_payment_method( $order, $settings ) );
-
-		// Treasury.
-		$order_data = array_merge( $order_data, PAYMENTS::get_equivalent_treasury( $order, $settings ) );
-
-		$result_items        = self::review_items( $order, $option_prefix );
+		$wc_payment_method    = $order->get_payment_method();
+		$order_data['notes'] .= ' ';
+		switch ( $wc_payment_method ) {
+			case 'cod':
+				$order_data['notes'] .= __( 'Paid by cash', 'connect-ecommerce' );
+				break;
+			case 'cheque':
+				$order_data['notes'] .= __( 'Paid by check', 'connect-ecommerce' );
+				break;
+			case 'paypal':
+				$order_data['notes'] .= __( 'Paid by paypal', 'connect-ecommerce' );
+				break;
+			case 'bacs':
+				$order_data['notes'] .= __( 'Paid by bank transfer', 'connect-ecommerce' );
+				break;
+			default:
+				$order_data['notes'] .= __( 'Paid by', 'connect-ecommerce' ) . ' ' . (string) $wc_payment_method;
+				break;
+		}
+		$result_items = self::review_items( $order, $option_prefix );
 		$order_data['items'] = $result_items['items'];
 
 		// Add shipping if products not virtual.
@@ -267,7 +268,7 @@ class ORDER {
 		$fields_items = array();
 		$index        = 0;
 		$index_bund   = 0;
-		$has_virtual  = true;
+		$has_virtual	= true;
 		$tax          = new \WC_Tax();
 
 		$coupons         = $order->get_items( 'coupon' );
@@ -331,40 +332,42 @@ class ORDER {
 					}
 					$product_cost                            = floatval( $item['line_total'] );
 					$fields_items[ $index_bund ]['subtotal'] = $fields_items[ $index_bund ]['subtotal'] + $product_cost;
-					$fields_items[ $index_bund ]['tax']      = (float) number_format( $vat_per, 2, '.', '' );
+					$fields_items[ $index_bund ]['tax']      = round( $vat_per, 0 );
 				}
 			} else {
 				$item_qty   = (int) $item->get_quantity();
 				$price_line = $item->get_subtotal() / $item_qty;
 
+				// Taxes.
+				$item_tax  = (float) $item->get_total_tax();
+				$taxes     = $tax->get_rates( $product->get_tax_class() );
+				$rates     = array_shift( $taxes );
+				$item_rate = ! empty( $item_tax ) ? floor( array_shift( $rates ) ) : 0;
+
 				$item_data = array(
 					'name'      => $item->get_name(),
 					'desc'      => get_the_excerpt( $product_id ),
 					'units'     => $item_qty,
-					'subtotal'  => (float) number_format( $price_line, 2, '.', '' ),
+					'subtotal'  => (float) $price_line,
+					'tax'       => $item_rate,
 					'sku'       => ! empty( $product ) ? $product->get_sku() : '',
 					'image_url' => get_the_post_thumbnail_url( $product_id, 'post-thumbnail' ),
 					'permalink' => get_the_permalink( $product_id ),
-				);
-				$item_data = array_merge(
-					$item_data,
-					self::get_taxes( $item, $tax )
 				);
 
 				// Discount.
 				$line_discount = $item->get_subtotal() - $item->get_total();
 				if ( $line_discount > 0 ) {
 					$coupon = array_search( (string) $line_discount, array_column( $order_discounts, 'discount' ), true );
-					if ( false !== $coupon && 'percent' === $order_discounts[ $coupon ]['type'] ) {
-						// Percentage discount: amount is already the percentage value.
-						$item_data['discount'] = (float) number_format( (float) $order_discounts[ $coupon ]['amount'], 2, '.', '' );
+					if ( false !== $coupon ) {
+						$item_data['discount'] = 'percent' !== $order_discounts[ $coupon ]['type'] ? ( $item->get_subtotal() * $order_discounts[ $coupon ]['amount'] ) / 100 : $order_discounts[ $coupon ]['amount'];
 					} else {
-						$item_data['discount'] = (float) number_format( ( $line_discount * 100 ) / $item->get_subtotal(), 2, '.', '' );
+						$item_data['discount'] = round( ( $line_discount * 100 ) / $item->get_subtotal(), 0 );
 					}
 				}
 
 				$fields_items[] = $item_data;
-				++$index;
+				$index++;
 			}
 		}
 
@@ -372,19 +375,20 @@ class ORDER {
 		$shipping_items = $order->get_items( 'shipping' );
 		if ( ! empty( $shipping_items ) ) {
 			foreach ( $shipping_items as $shipping_item ) {
-				$shipping_data = array(
-					'name'     => __( 'Shipping:', 'woocommerce-es' ) . ' ' . $shipping_item->get_name(),
+				// Taxes.
+				$item_tax  = (float) $shipping_item->get_total_tax();
+				$taxes     = $tax->get_rates( $shipping_item->get_tax_class() );
+				$tax_rates = array_shift( $taxes );
+				$item_rate = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
+
+				$fields_items[] = array(
+					'name'     => __( 'Shipping:', 'connect-ecommerce' ) . ' ' . $shipping_item->get_name(),
 					'desc'     => '',
 					'units'    => 1,
 					'subtotal' => (float) $shipping_item->get_total(),
+					'tax'      => $item_rate,
 					'sku'      => 'shipping',
 				);
-				$shipping_data = array_merge(
-					$shipping_data,
-					self::get_taxes( $shipping_item, $tax )
-				);
-
-				$fields_items[] = $shipping_data;
 			}
 		}
 
@@ -392,70 +396,27 @@ class ORDER {
 		$items_fee = $order->get_items( 'fee' );
 		if ( ! empty( $items_fee ) ) {
 			foreach ( $items_fee as $item_fee ) {
-				$fee_data = array(
+				// Taxes.
+				$item_tax  = (float) $item_fee->get_total_tax();
+				$taxes     = $tax->get_rates( $item_fee->get_tax_class() );
+				$tax_rates = array_shift( $taxes );
+				$item_rate = ! empty( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
+
+				$fields_items[] = array(
 					'name'     => $item_fee->get_name(),
 					'desc'     => '',
 					'units'    => 1,
 					'subtotal' => (float) $item_fee->get_total(),
+					'tax'      => $item_rate,
 					'sku'      => 'fee',
 				);
-				$fee_data = array_merge(
-					$fee_data,
-					self::get_taxes( $item_fee, $tax )
-				);
-
-				$fields_items[] = $fee_data;
 			}
 		}
 
-		return array(
-			'items'       => $fields_items,
+		return [
+			'items'      => $fields_items,
 			'has_virtual' => $has_virtual,
-		);
-	}
-
-	/**
-	 * Get tax rate
-	 *
-	 * - Strategy: "Key Only".
-	 * - Gets the key configured in WooCommerce (e.g.: s_ivait22).
-	 * - Sends ONLY the 'taxes' array.
-	 * - Explicitly REMOVES the 'tax' field to avoid precedence conflicts in Holded.
-	 *
-	 * @param object $item Item object.
-	 * @param object $tax Tax object.
-	 *
-	 * @return array
-	 */
-	private static function get_taxes( $item, $tax = null ) {
-		$item_taxes = array();
-
-		if ( empty( $tax ) ) {
-			$tax = new \WC_Tax();
-		}
-		
-		// Get the taxes applied to the line of the order
-		$item_tax_data = $item->get_taxes();
-		
-		if ( ! empty( $item_tax_data['total'] ) && is_array( $item_tax_data['total'] ) ) {
-			$tax_rate_ids = array_keys( $item_tax_data['total'] );
-
-			$tax_rate_id_from_item = $tax_rate_ids[0];
-			
-			// Get the KEY of text configured in the plugin (Database)
-			$tax_key = '';
-			if ( class_exists( __NAMESPACE__ . '\\TAXES' ) ) {
-				$tax_key = TAXES::get_tax_types_map( $tax_rate_id_from_item );
-			}
-				
-			if ( ! empty( $tax_key ) ) {
-				$item_taxes['taxes'] = array( trim( $tax_key ) );
-			} else {
-				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? (float) number_format( (float) $item_tax_data['total'][ $tax_rate_id_from_item ], 2, '.', '' ) : 0;
-			}
-		}
-
-		return $item_taxes;
+		];
 	}
 
 	/**
@@ -465,17 +426,21 @@ class ORDER {
 	 *
 	 * @return string
 	 */
-	public static function get_billing_vat( $order ) {
+	private static function get_billing_vat( $order ) {
+		$code_labels = array(
+			'_billing_vat',
+			'_billing_nif',
+			'_billing_vat_number',
+			'VAT Number', // Support to SIMBA Hosting.
+		);
 		$contact_code = '';
-		foreach ( CONECOM_VAT_FIELD_SLUGS as $code_label ) {
-			// Add underscore prefix for meta fields.
-			$meta_key = 'VAT Number' === $code_label ? $code_label : '_' . $code_label;
-			$contact_code = $order->get_meta( $meta_key );
+		foreach ( $code_labels as $code_label ) {
+			$contact_code = $order->get_meta( $code_label );
 			if ( ! empty( $contact_code ) ) {
 				break;
 			}
 		}
-		return sanitize_text_field( $contact_code );
+		return $contact_code;
 	}
 
 	/**
@@ -499,25 +464,103 @@ class ORDER {
 		}
 
 		$map = [
-			'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'ñ', 'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ñ'=>'Ñ', 'à'=>'a', 'è'=>'e', 'ì'=>'i', 'ò'=>'o', 'ù'=>'u', 'À'=>'A', 'È'=>'E', 'Ì'=>'I', 'Ò'=>'O', 'Ù'=>'U', 'â'=>'a', 'ê'=>'e', 'î'=>'i', 'ô'=>'o', 'û'=>'u', 'Â'=>'A', 'Ê'=>'E', 'Î'=>'I', 'Ô'=>'O', 'Û'=>'U', 'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u', 'Ä'=>'A', 'Ë'=>'E', 'Ï'=>'I', 'Ö'=>'O', 'Ü'=>'U', 'ã'=>'a', 'õ'=>'o', 'Ã'=>'A', 'Õ'=>'O', 'å'=>'a', 'Å'=>'A', 'š'=>'s', 'Š'=>'S', 'ž'=>'z', 'Ž'=>'Z', 'ý'=>'y', 'Ý'=>'Y', 'ÿ'=>'y', 'Ÿ'=>'Y', 'ø'=>'o', 'Ø'=>'O', 'æ'=>'ae', 'Æ'=>'AE', 'œ'=>'oe', 'Œ'=>'OE', 'ß'=>'ss', 'ł'=>'l', 'Ł'=>'L', '@'=>' ', '#'=>' ', '&' => 'Y', 'ğ'=>'g', 'Ğ'=>'G', 'ő'=>'o', 'Ő'=>'O', 'Ė' => 'E', 'ė' => 'e', 'į' => 'i', 'Į' => 'I',
+			'á'  => 'A',
+			'é'  => 'E',
+			'í'  => 'I',
+			'ó'  => 'O',
+			'ú'  => 'U',
+			'ñ'  => 'Ñ',
+			'Á'  => 'A',
+			'É'  => 'E',
+			'Í'  => 'I',
+			'Ó'  => 'O',
+			'Ú'  => 'U',
+			'Ñ'  => 'Ñ',
+			'à'  => 'A',
+			'è'  => 'E',
+			'ì'  => 'I',
+			'ò'  => 'O',
+			'ù'  => 'U',
+			'À'  => 'A',
+			'È'  => 'E',
+			'Ì'  => 'I',
+			'Ò'  => 'O',
+			'Ù'  => 'U',
+			'â'  => 'A',
+			'ê'  => 'E',
+			'î'  => 'I',
+			'ô'  => 'O',
+			'û'  => 'U',
+			'Â'  => 'A',
+			'Ê'  => 'E',
+			'Î'  => 'I',
+			'Ô'  => 'O',
+			'Û'  => 'U',
+			'ä'  => 'A',
+			'ë'  => 'E',
+			'ï'  => 'I',
+			'ö'  => 'O',
+			'ü'  => 'U',
+			'Ä'  => 'A',
+			'Ë'  => 'E',
+			'Ï'  => 'I',
+			'Ö'  => 'O',
+			'Ü'  => 'U',
+			'ã'  => 'A',
+			'õ'  => 'O',
+			'Ã'  => 'A',
+			'Õ'  => 'O',
+			'š'  => 'S',
+			'Š'  => 'S',
+			'ž'  => 'Z',
+			'Ž'  => 'Z',
+			'ý'  => 'Y',
+			'Ý'  => 'Y',
+			'ÿ'  => 'Y',
+			'Ÿ'  => 'Y',
+			'ø'  => 'O',
+			'Ø'  => 'O',
+			'æ'  => 'AE',
+			'Æ'  => 'AE',
+			'œ'  => 'OE',
+			'Œ'  => 'OE',
+			'ß'  => 'SS',
+			'@'  => ' ',
+			'#'  => ' ',
+			'&'  => 'Y',
+			'ğ'  => 'g',
+			'Ğ'  => 'G',
+			'ç'  => 'Ç',
+			'к'  => 'К',
+			'т'  => 'Т',
+			'Т'  => 'Т',
+			'о'  => 'О',
+			'О'  => 'О',
+			'б'  => 'Б',
+			'Б'  => 'Б',
+			'ч'  => 'Ч',
+			'Ч'  => 'Ч',
+			'ен' => 'ЕН',
+			'ЕН' => 'ЕН',
 		];
 		$ascii = strtr( $value, $map );
 
 		// Replace non-whitelisted characters with spaces.
 		$ascii = preg_replace( '/[^' . $whitelist . ']/', ' ', $ascii );
 
-		// Collapse multiple spaces and clean up
-		$ascii = preg_replace('/\s+/', ' ', $ascii);
-		$ascii = preg_replace('/-{2,}/', '-', $ascii);
-		$ascii = trim($ascii, " \t\n\r\0\x0B-");
+		// Collapse multiple spaces and clean up.
+		$ascii = preg_replace( '/\s+/', ' ', $ascii );
+		$ascii = preg_replace( '/-{2,}/', '-', $ascii );
+		$ascii = trim( $ascii, " \t\n\r\0\x0B-" );
 
-		if ($maxLen > 0 && strlen($ascii) > $maxLen) {
-				$ascii = substr($ascii, 0, $maxLen);
-				$ascii = rtrim($ascii);
+		if ( $maxLen > 0 && strlen( $ascii ) > $maxLen ) {
+			$ascii = substr( $ascii, 0, $maxLen );
+			$ascii = rtrim( $ascii );
 		}
+		$ascii = strtoupper( $ascii );
 
-		if ($ascii === '' && $fallback !== null) {
-				return $fallback;
+		if ( $ascii === '' && $fallback !== null ) {
+			return $fallback;
 		}
 
 		return $ascii;
