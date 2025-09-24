@@ -218,7 +218,7 @@ class ORDER {
 		// Payment method.
 		$wc_payment_method = $order->get_payment_method();
 		if ( ! empty( $wc_payment_method ) ) {
-			$order_data['pmtype'] = $wc_payment_method;
+			$order_data['paymentMethod'] = $wc_payment_method;
 		}
 		$settings_prod_mergevars = isset( $setttings['prod_mergevars'] ) ? $setttings['prod_mergevars'] : '';
 		if ( ! empty( $settings_prod_mergevars ) ) {
@@ -229,7 +229,7 @@ class ORDER {
 				$payment_method     = explode( '|', $key );
 				$payment_method_woo = explode( '|', $value );
 				if ( $payment_method_woo[1] === $wc_payment_method ) {
-					$order_data['pmtype_api'] = $payment_method[1];
+					$order_data['paymentMethodId'] = $payment_method[1];
 				}
 			}
 		}

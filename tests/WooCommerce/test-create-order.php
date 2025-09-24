@@ -195,8 +195,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( 'California', $order_data['contactProvince'] );
 		$this->assertEquals( 'US', $order_data['contactCountryCode'] );
 		$this->assertEquals( '90001', $order_data['contactCp'] );
-		$this->assertEquals( 'bacs', $order_data['pmtype'] );
-		$this->assertEquals( '58f9c4091c9798739520e6b2', $order_data['pmtype_api'] );
+		$this->assertEquals( 'bacs', $order_data['paymentMethod'] );
+		$this->assertEquals( '58f9c4091c9798739520e6b2', $order_data['paymentMethodId'] );
 	}
 
 	public function test_create_order_approve_document_without_errors() {

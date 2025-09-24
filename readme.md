@@ -130,7 +130,7 @@ $products['variants'][] = array(
 ```
 
 Method get_product_attributes
-
+```
 'custom_fields' => [],
 'product_cat' => [
 	'id'   => 'product_cat',
@@ -138,6 +138,7 @@ Method get_product_attributes
 	'elements' => [
 	],
 ],
+```
 
 Method get_payment_methods
 ```
@@ -147,3 +148,74 @@ return [
 		'name' => Name of payment
 	]
 ]
+```
+
+## Order data received to send to convert and send to API
+
+```
+$order_data = array(
+	'contactUserID'          => User ID of WordPress
+	'contactCode'            => VAT info code
+	'contactName'            => Contact Name. It can be Company or Full name
+	'contactFirstName'       => First 
+	'contactLastName'        => Last name
+	'woocommerceCustomer'    => $order->get_user()->data->user_login ?? '',
+	'marketplace'            => 'woocommerce'
+	'woocommerceOrderStatus' => Order status
+	'woocommerceOrderId'     => Label ID
+	'woocommerceReference'   => Reference
+	'woocommerceUrl'         => URL shop
+	'woocommerceOrderEdit'   => URL edit order
+	'woocommerceStore'       => Name of Shop
+	'contactEmail'           => Billing email
+	'contactCompany'         => Billing company
+	'contact_phone'          => Billing Phone
+	'contactAddress'         => Billing Address
+	'contactCity'            => Billing City
+	'contactCp'              => Billing Postal Code
+	'contactProvince'        => Billing Province
+	'contactCountryCode'     => Billing Country Code
+	'desc'                   => Order description
+	'date'                   => Order date
+	'datestart'              => Order start date
+	'notes'                  => Order note
+	'saleschannel'           => null
+	'currency'               => Shop currency
+	'language'               => Document language
+	'approveDoc'             => false,
+	'designId'               => Design ID for the documet
+	'numSerieId'             => Serial number ID
+	'clientify_vk'           => Clientify Visitor Key
+	'paymentMethod'          => WooCommerce payment method identifier
+	'paymentMethodId'        => Payment method API identifier
+	'items'                  => [
+		[
+			'name'      => Product name
+			'desc'      => Excerpt of product
+			'units'     => Quantity
+			'subtotal'  => Price
+			'tax'       => Tax rate
+			'sku'       => Product SKU
+			'image_url' => URL image
+			'permalink' => Permalink url from product
+		],
+		...
+		[
+			'name'     => Shipping product
+			'desc'     => null
+			'units'    => 1,
+			'subtotal' => Subtotal
+			'tax'      => Rate of tax
+			'sku'      => 'shipping',
+		],
+		[
+			'name'     => Fee title
+			'desc'     => '',
+			'units'    => 1,
+			'subtotal' => Subtotal
+			'tax'      => Tax
+			'sku'      => 'fee',
+		]
+	]
+);
+```

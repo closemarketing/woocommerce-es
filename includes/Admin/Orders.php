@@ -65,12 +65,13 @@ class Orders {
 		if ( empty( $connector ) ) {
 			return;
 		}
-		$this->options        = $options[ $connector ];
-		$this->settings       = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
-		$apiname              = 'Connect_Ecommerce_' . $this->options['name'];
-		$this->connapi_erp    = new $apiname( $options );
-		$ecstatus             = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
-		$this->meta_key_order = '_' . $this->options['slug'] . '_invoice_id';
+		$this->options                    = $options[ $connector ];
+		$this->settings                   = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
+		$this->settings['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
+		$apiname                          = 'Connect_Ecommerce_' . $this->options['name'];
+		$this->connapi_erp                = new $apiname( $options );
+		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
 
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
 
