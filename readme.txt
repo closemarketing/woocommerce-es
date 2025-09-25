@@ -106,7 +106,8 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 == Changelog ==
 
 = 3.1.6 =
-* Enhancement: Added variation images to product gallery.
+* Enhancement: Added variation images to product gallery for APIs that allows images in variations.
+* Enhancement: Added support to import variable products without SKU in parent.
 * Fixed: error saving category separator.
 * Enhancement: Added support to payment methods from API.
 
