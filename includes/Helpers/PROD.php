@@ -41,7 +41,7 @@ class PROD {
 			$item['name'] = __( 'Product without name', 'connect-ecommerce' );
 		}
 
-		if ( empty( $item['sku'] ) ) {
+		if ( empty( $item['sku'] ) && empty( $item['variants'] ) ) { // Only for simple products.
 			return array(
 				'status'  => 'error',
 				'post_id' => 0,

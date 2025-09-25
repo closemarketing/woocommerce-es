@@ -211,4 +211,47 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertEquals( 'error', $result_sync['status'] );
 		$this->assertEquals( 0, $result_sync['post_id'] );
 	}
+
+	public function test_create_product_variable_without_parent_sku() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable-without-parent-sku.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertNotNull( $result_prod_id );
+
+		$product = wc_get_product( $result_prod_id );
+		$this->assertInstanceOf( 'WC_Product_Variable', $product );
+		$this->assertEmpty( $product->get_sku() );
+		$this->assertEquals( $item['name'], $product->get_name() );
+		$this->assertEquals( $item['desc'], $product->get_description() );
+
+		// Variable product asserts.
+		$variations = $product->get_children();
+		$this->assertNotEmpty( $variations );
+		$index = 0;
+		foreach ( $variations as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			$this->assertEquals( $item['variants'][$index]['price'], (float) $prod_variation->get_regular_price() );
+			$this->assertEquals( $item['variants'][$index]['sku'], $prod_variation->get_sku() );
+			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
+			$index++;
+		}
+
+		// Check that update gets the correct product without sku in parent.
+		$update_post = [
+			'ID'           => $result_prod_id,
+			'post_title'   => 'Updated Product Title',
+			'post_content' => 'Updated product description.',
+		];
+		wp_update_post( $update_post );
+		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+
+		$this->assertNotNull( $result_sync_upd );
+		$this->assertEquals( 'ok', $result_sync_upd['status'] );
+		$this->assertIsInt( $result_sync_upd['post_id'] );
+		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
+	}
 }
