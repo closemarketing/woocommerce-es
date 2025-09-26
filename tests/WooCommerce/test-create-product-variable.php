@@ -177,11 +177,18 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$item      = json_decode( $item, true )[0];
 		$original_item = $item;
 		
-		// Without SKU.
+		// Without Parent SKU.
 		unset( $item['sku'] );
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
-		$this->assertEquals( 'error', $result_sync['status'] );
-		$this->assertEquals( 0, $result_sync['post_id'] );
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertNotNull( $result_sync['post_id'] );
+
+		// Without Variants SKU.
+		$item = $original_item;
+		unset( $item['variants'][0]['sku'] );
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertNotNull( $result_sync['post_id'] );
 
 		// Without variants.
 		$item = $original_item;

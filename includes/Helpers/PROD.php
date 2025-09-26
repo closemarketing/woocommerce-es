@@ -48,6 +48,7 @@ class PROD {
 				'message' => __( 'SKU not finded in product. Product not imported: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ')</br>',
 			);
 		}
+		$item_sku = ! empty( $item['sku'] ) ? $item['sku'] : '';
 
 		if ( empty( $item['variants'] ) && ( 'variants' === $item['kind'] || 'variable' === $item['kind'] ) ) {
 			return array(
@@ -63,7 +64,7 @@ class PROD {
 		$is_new_product = $post_id ? false : true;
 
 		if ( empty( $post_id ) ) {
-			$post_id        = self::find_product( $item['sku'] ?? '' );
+			$post_id        = self::find_product( $item_sku );
 			$is_new_product = empty( $post_id ) ? true : false;
 		}
 
@@ -73,7 +74,7 @@ class PROD {
 		$msg_product_created = __( 'Product created: ', 'connect-ecommerce' );
 		$msg_product_synced  = __( 'Product synced: ', 'connect-ecommerce' );
 
-		if ( ! $is_filtered && $item['sku'] && 'simple' === $item['kind'] ) {
+		if ( ! $is_filtered && $item_sku && 'simple' === $item['kind'] ) {
 			$result_post = self::sync_product_simple( $settings, $item, $api_erp, false, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
 			$message    .= $result_post['message'] ?? '';
@@ -85,9 +86,9 @@ class PROD {
 				$post_id = 0;
 				// Activar para buscar un archivo.
 				$any_variant_sku = false;
-	
+
 				foreach ( $item['variants'] as $variant ) {
-					if ( ! $variant['sku'] ) {
+					if ( empty( $variant['sku'] ) ) {
 						break;
 					} else {
 						$any_variant_sku = true;
@@ -103,11 +104,18 @@ class PROD {
 			// Fix Parent product without SKU.
 			if ( $post_id ) {
 				$parent_product = wc_get_product( $post_id );
-				if ( $parent_product && ! $parent_product->get_sku() && ! empty( $item['sku'] ) ) {
+				if ( $parent_product && ! $parent_product->get_sku() && $item_sku ) {
 					try {
-						$parent_product->set_sku( $item['sku'] );
+						$parent_product->set_sku( $item_sku );
 						$parent_product->save();
-					} catch ( \Exception $e ) {}
+					} catch ( \Exception $e ) {
+						// Error.
+						return array(
+							'status'  => 'error',
+							'post_id' => $post_id,
+							'message' => __( 'Error setting SKU to parent product: ', 'connect-ecommerce' ) . $e->getMessage(),
+						);
+					}
 				}
 				unset( $parent_product );
 			}
@@ -119,16 +127,16 @@ class PROD {
 				$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'variable', null );
 				$post_id     = $result_prod['prod_id'] ?? 0;
 				$message    .= 0 === $post_id || false === $post_id ? $msg_product_created : $msg_product_synced;
-				$message    .= $item['name'] . '. SKU: ' . $item['sku'] . '(' . $item['kind'] . ') ' . $result_prod['message'] ?? '';
+				$message    .= $item['name'] . '. SKU: ' . $item_sku . '(' . $item['kind'] . ') ' . $result_prod['message'] ?? '';
 			}
 		} elseif ( ! $is_filtered && 'pack' === $item['kind'] && $plugin_pack_active ) {
-			$post_id = ! empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
+			$post_id = ! empty( $post_id ) ? $post_id : self::find_product( $item_sku );
 
 			if ( ! $post_id ) {
 				$post_id = self::create_product_post( $settings, $item );
 				wp_set_object_terms( $post_id, 'woosb', 'product_type' );
 			}
-			if ( $post_id && $item['sku'] && 'pack' === $item['kind'] ) {
+			if ( $post_id && $item_sku && 'pack' === $item['kind'] ) {
 				// Create subproducts before.
 				$pack_items = '';
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
@@ -152,7 +160,7 @@ class PROD {
 					'message' => __( 'There was an error while inserting new product!', 'connect-ecommerce' ) . ' ' . $item['name'],
 				);
 			}
-			$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item['kind'] . ')' . $result_prod['message'] ?? '';
+			$message .= $item['name'] . '. SKU: ' . $item_sku . ' (' . $item['kind'] . ')' . $result_prod['message'] ?? '';
 		} elseif ( ! $is_filtered && 'pack' === $item['kind'] && ! $plugin_pack_active ) {
 			$message .= '<span class="warning">' . __( 'Product needs Plugin to import: ', 'connect-ecommerce' );
 			$message .= '<a href="https://wordpress.org/plugins/woo-product-bundle/" target="_blank">WPC Product Bundles for WooCommerce</a> ';
@@ -160,7 +168,7 @@ class PROD {
 		} elseif ( $is_filtered ) {
 			// Product not synced without SKU.
 			$message .= '<span class="warning">' . __( 'Product filtered to not import: ', 'connect-ecommerce' ) . $item['name'] . '(' . $item['kind'] . ') </span>';
-		} elseif ( '' === $item['sku'] && 'simple' === $item['kind'] ) {
+		} elseif ( '' === $item_sku && 'simple' === $item['kind'] ) {
 			// Product not synced without SKU.
 			return array(
 				'status'  => 'error',
@@ -256,6 +264,7 @@ class PROD {
 		$settings_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
 		$message            = '';
 		$product            = null;
+		$item_sku           = ! empty( $item['sku'] ) ? $item['sku'] : '';
 
 		// Start.
 		try {
@@ -329,7 +338,7 @@ class PROD {
 		}
 
 		$product_props        = array_merge( $product_props, $product_props_new );
-		$product_props['sku'] = $item['sku'] ?? '';
+		$product_props['sku'] = $item_sku;
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
