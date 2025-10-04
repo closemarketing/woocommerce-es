@@ -110,6 +110,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 * Enhancement: Added support to import variable products without SKU in parent.
 * Fixed: error saving category separator.
 * Enhancement: Added support to payment methods from API.
+* Enhancement: Added support to smart doctype in Holded.
 
 = 3.1.5 =
 * Enhancement: Added support to merge categories from API to WooCommerce.
