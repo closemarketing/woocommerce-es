@@ -1,0 +1,36 @@
+default:
+	suites:
+		default:
+			paths:
+				- '%paths.base%/tests/behat/features'
+			contexts:
+				- ConnectEcommerce\Tests\Behat\PluginContext
+				- ConnectEcommerce\Tests\Behat\ProductContext
+				- ConnectEcommerce\Tests\Behat\OrderContext
+				- ConnectEcommerce\Tests\Behat\SettingsContext
+	extensions:
+		PaulGibbs\WordpressBehatExtension:
+			path: '%paths.base%/../../../../'
+			connection:
+				db: 'wordpress_test'
+				username: 'root'
+				password: 'root'
+				host: '127.0.0.1'
+				driver: 'wpcli'
+				wpcli:
+					binary: 'wp'
+			default_driver: 'wpcli'
+			users:
+				admin:
+					username: 'admin'
+					password: 'admin'
+					roles:
+						- administrator
+				customer:
+					username: 'customer'
+					password: 'customer'
+					roles:
+						- customer
+
+
+
