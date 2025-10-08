@@ -107,7 +107,7 @@ $products = [
 ```
 
 Variants:
-````
+```
 $products['variants'][] = array(
 	'id'                    => Internal ID
 	'name'                  => Name of the variation
