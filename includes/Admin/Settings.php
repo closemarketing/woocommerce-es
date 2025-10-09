@@ -1435,14 +1435,24 @@ class Settings {
 	 * @return void
 	 */
 	public function doctype_callback() {
+		$documents_type = array(
+			'nosync'       => __( 'Not sync', 'connect-ecommerce' ),
+			'smart'        => __( 'Smart', 'connect-ecommerce' ),
+			'invoice'      => __( 'Invoice', 'connect-ecommerce' ),
+			'salesreceipt' => __( 'Sales receipt', 'connect-ecommerce' ),
+			'salesorder'   => __( 'Sales order', 'connect-ecommerce' ),
+			'waybill'      => __( 'Waybill', 'connect-ecommerce' ),
+		);
 		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
-			<option value="nosync" <?php selected( $doctype, 'nosync' ); ?>><?php esc_html_e( 'Not sync', 'connect-ecommerce' ); ?></option>
-			<option value="invoice" <?php selected( $doctype, 'invoice' ); ?>><?php esc_html_e( 'Invoice', 'connect-ecommerce' ); ?></option>
-			<option value="salesreceipt" <?php selected( $doctype, 'salesreceipt' ); ?>><?php esc_html_e( 'Sales receipt', 'connect-ecommerce' ); ?></option>
-			<option value="salesorder" <?php selected( $doctype, 'salesorder' ); ?>><?php esc_html_e( 'Sales order', 'connect-ecommerce' ); ?></option>
-			<option value="waybill" <?php selected( $doctype, 'waybill' ); ?>><?php esc_html_e( 'Waybill', 'connect-ecommerce' ); ?></option>
+			<?php
+			foreach ( $documents_type as $value => $label ) {
+				echo '<option value="' . esc_html( $value ) . '" ';
+				selected( $value, $doctype );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			?>
 		</select>
 		<?php
 	}
