@@ -45,7 +45,7 @@ function _manually_load_plugin() {
 	require_once WP_CORE_DIR . '/wp-content/plugins/woocommerce/woocommerce.php';
 
 	// Load our plugin after WooCommerce
-	require dirname( dirname( __FILE__ ) ) . '/connect-ecommerce.php';
+	require dirname( dirname( __FILE__ ) ) . '/woocommerce-es.php';
 }
 
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );

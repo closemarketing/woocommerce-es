@@ -9,7 +9,7 @@
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 	<exclude-pattern>*/node_modules/*</exclude-pattern>
 	<file>./includes</file>
-	<file>./connect-ecommerce.php</file>
+	<file>./woocommerce-es.php</file>
 
 	<!-- WordPress Coding Standards -->
 	<rule ref="WordPress">

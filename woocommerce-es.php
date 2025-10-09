@@ -8,7 +8,7 @@
  * Version:           3.1.6
  * Requires PHP:      7.4
  * Requires at least: 6.3
- * Text Domain:       connect-ecommerce
+ * Text Domain:       woocommerce-es
  * Requires Plugins:  woocommerce
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
@@ -62,7 +62,7 @@ function conecom_get_options() {
 				'settings_logo'              => CONECOM_PLUGIN_URL . 'includes/Connector/assets/logo.svg',
 				'settings_admin_message'     => sprintf(
 					// translators: %s url of contact.
-					__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App Test API</a>.', 'connect-ecommerce' ),
+					__( 'Put the connection API key settings in order to connect and sync products. You can go here <a href = "%s" target = "_blank">App Test API</a>.', 'woocommerce-es' ),
 					'https://app.test.com/api'
 				),
 				'settings_special_tabs'      => array(),
