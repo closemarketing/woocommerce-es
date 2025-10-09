@@ -11,10 +11,10 @@
   </coverage>
   <testsuites>
     <testsuite name="testing">
-      <directory prefix="test-" suffix=".php">./tests/Unit/</directory>
+      <directory suffix="Test.php">./tests/Unit/</directory>
     </testsuite>
     <testsuite name="woocommerce">
-      <directory prefix="test-" suffix=".php">./tests/WooCommerce/</directory>
+      <directory suffix="Test.php">./tests/WooCommerce/</directory>
     </testsuite>
   </testsuites>
   <php>
