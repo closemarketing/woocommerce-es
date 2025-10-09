@@ -45,12 +45,24 @@ class Taxes_Rates {
 			return;
 		}
 
-		// Check if we're on the standard section.
+		// Get current section (tax class).
 		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		$current_section = isset( $_GET['section'] ) ? sanitize_text_field( wp_unslash( $_GET['section'] ) ) : '';
-		if ( 'standard' !== $current_section ) {
+		if ( empty( $current_section ) ) {
 			return;
 		}
+
+		// Map section names to rate types for preselection.
+		$section_to_rate_map = array(
+			'standard'           => 'standard_rate',
+			'reduced-rate'       => 'reduced_rate',
+			'reduced-rate-alt'   => 'reduced_rate_alt',
+			'super-reduced-rate' => 'super_reduced_rate',
+			'zero-rate'          => 'standard_rate',
+		);
+
+		// Get the default rate type based on section.
+		$default_rate_type = isset( $section_to_rate_map[ $current_section ] ) ? $section_to_rate_map[ $current_section ] : 'all';
 
 		$inline_script = "
 		document.addEventListener('DOMContentLoaded', function() {
@@ -91,11 +103,15 @@ class Taxes_Rates {
 				const rateTypeSelect = document.getElementById('connect-rate-type');
 				const messageDiv = document.getElementById('connect-tax-rates-message');
 
+				// Set default rate type based on current section.
+				rateTypeSelect.value = '" . esc_js( $default_rate_type ) . "';
+
 				button.addEventListener('click', function(e) {
 					e.preventDefault();
 					
 					const originalText = button.textContent;
 					const rateType = rateTypeSelect.value;
+					const taxClass = '" . esc_js( $current_section ) . "';
 					
 					button.disabled = true;
 					button.textContent = '" . esc_js( __( 'Updating...', 'connect-ecommerce' ) ) . "';
@@ -106,7 +122,7 @@ class Taxes_Rates {
 						headers: {
 							'Content-Type': 'application/x-www-form-urlencoded',
 						},
-						body: 'action=connect_update_tax_rates&nonce=' + '" . wp_create_nonce( 'connect_update_tax_rates' ) . "' + '&rate_type=' + encodeURIComponent(rateType)
+						body: 'action=connect_update_tax_rates&nonce=' + '" . wp_create_nonce( 'connect_update_tax_rates' ) . "' + '&rate_type=' + encodeURIComponent(rateType) + '&tax_class=' + encodeURIComponent(taxClass)
 					})
 					.then(response => response.json())
 					.then(data => {
@@ -152,10 +168,11 @@ class Taxes_Rates {
 			);
 		}
 
-		// Get rate type from request.
+		// Get rate type and tax class from request.
 		$rate_type = isset( $_POST['rate_type'] ) ? sanitize_text_field( wp_unslash( $_POST['rate_type'] ) ) : 'all';
+		$tax_class = isset( $_POST['tax_class'] ) ? sanitize_text_field( wp_unslash( $_POST['tax_class'] ) ) : '';
 
-		$result = $this->update_woocommerce_tax_rates( $rate_type );
+		$result = $this->update_woocommerce_tax_rates( $rate_type, $tax_class );
 
 		if ( is_wp_error( $result ) ) {
 			wp_send_json_error(
@@ -177,10 +194,14 @@ class Taxes_Rates {
 	 * Update WooCommerce tax rates with EU rates.
 	 *
 	 * @param string $rate_type Type of rate to update (standard_rate, reduced_rate, reduced_rate_alt, super_reduced_rate, or all).
+	 * @param string $tax_class Tax class to update (standard, reduced-rate, etc.). Empty string for standard.
 	 * @return array|\WP_Error
 	 */
-	private function update_woocommerce_tax_rates( $rate_type = 'all' ) {
+	private function update_woocommerce_tax_rates( $rate_type = 'all', $tax_class = '' ) {
 		global $wpdb;
+
+		// Convert section slug to WooCommerce tax class.
+		$wc_tax_class = $this->get_wc_tax_class( $tax_class );
 
 		// EU country codes.
 		$eu_countries = array(
@@ -231,7 +252,9 @@ class Taxes_Rates {
 					$country_code,
 					$rates['standard_rate'],
 					__( 'VAT', 'connect-ecommerce' ),
-					1
+					1,
+					'',
+					$wc_tax_class
 				);
 				++$updated_count;
 			}
@@ -242,7 +265,9 @@ class Taxes_Rates {
 					$country_code,
 					$rates['reduced_rate'],
 					__( 'Reduced VAT', 'connect-ecommerce' ),
-					2
+					2,
+					'',
+					$wc_tax_class
 				);
 				++$updated_count;
 			}
@@ -253,7 +278,9 @@ class Taxes_Rates {
 					$country_code,
 					$rates['reduced_rate_alt'],
 					__( 'Reduced Alt VAT', 'connect-ecommerce' ),
-					3
+					3,
+					'',
+					$wc_tax_class
 				);
 				++$updated_count;
 			}
@@ -264,9 +291,73 @@ class Taxes_Rates {
 					$country_code,
 					$rates['super_reduced_rate'],
 					__( 'Super Reduced VAT', 'connect-ecommerce' ),
-					4
+					4,
+					'',
+					$wc_tax_class
 				);
 				++$updated_count;
+			}
+
+			// Special handling for countries with special regions.
+			$special_regions = TAXES::get_special_regions( $country_code );
+			if ( ! empty( $special_regions ) ) {
+				foreach ( $special_regions as $state_code => $region_data ) {
+					// Insert or update standard rate for special regions.
+					if ( ( 'all' === $rate_type || 'standard_rate' === $rate_type ) && isset( $region_data['standard_rate'] ) ) {
+						$this->insert_or_update_tax_rate(
+							$country_code,
+							$region_data['standard_rate'],
+							/* translators: %s: Region name */
+							sprintf( __( 'VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							1,
+							$state_code,
+							$wc_tax_class
+						);
+						++$updated_count;
+					}
+
+					// Insert or update reduced rate for special regions.
+					if ( ( 'all' === $rate_type || 'reduced_rate' === $rate_type ) && isset( $region_data['reduced_rate'] ) ) {
+						$this->insert_or_update_tax_rate(
+							$country_code,
+							$region_data['reduced_rate'],
+							/* translators: %s: Region name */
+							sprintf( __( 'Reduced VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							2,
+							$state_code,
+							$wc_tax_class
+						);
+						++$updated_count;
+					}
+
+					// Insert or update alternative reduced rate for special regions.
+					if ( ( 'all' === $rate_type || 'reduced_rate_alt' === $rate_type ) && isset( $region_data['reduced_rate_alt'] ) ) {
+						$this->insert_or_update_tax_rate(
+							$country_code,
+							$region_data['reduced_rate_alt'],
+							/* translators: %s: Region name */
+							sprintf( __( 'Reduced Alt VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							3,
+							$state_code,
+							$wc_tax_class
+						);
+						++$updated_count;
+					}
+
+					// Insert or update super reduced rate for special regions.
+					if ( ( 'all' === $rate_type || 'super_reduced_rate' === $rate_type ) && isset( $region_data['super_reduced_rate'] ) ) {
+						$this->insert_or_update_tax_rate(
+							$country_code,
+							$region_data['super_reduced_rate'],
+							/* translators: %s: Region name */
+							sprintf( __( 'Super Reduced VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							4,
+							$state_code,
+							$wc_tax_class
+						);
+						++$updated_count;
+					}
+				}
 			}
 		}
 
@@ -287,20 +378,34 @@ class Taxes_Rates {
 	 * @param float  $rate Tax rate.
 	 * @param string $rate_name Rate name.
 	 * @param int    $rate_order Rate order.
+	 * @param string $state_code Optional. State code.
+	 * @param string $tax_class Optional. Tax class.
 	 * @return void
 	 */
-	private function insert_or_update_tax_rate( $country_code, $rate, $rate_name, $rate_order ) {
+	private function insert_or_update_tax_rate( $country_code, $rate, $rate_name, $rate_order, $state_code = '', $tax_class = '' ) {
 		global $wpdb;
 
 		// Check if rate already exists.
-		$existing_rate = $wpdb->get_row(
-			$wpdb->prepare(
-				"SELECT tax_rate_id FROM {$wpdb->prefix}woocommerce_tax_rates 
+		$query        = "SELECT tax_rate_id FROM {$wpdb->prefix}woocommerce_tax_rates 
 				WHERE tax_rate_country = %s 
 				AND tax_rate_name = %s 
-				AND tax_rate_class = ''",
-				$country_code,
-				$rate_name
+				AND tax_rate_class = %s";
+		$query_params = array( $country_code, $rate_name, $tax_class );
+
+		if ( $state_code ) {
+			$query         .= ' AND tax_rate_state = %s';
+			$query_params[] = $state_code;
+		} else {
+			$query         .= ' AND tax_rate_state = %s';
+			$query_params[] = '';
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$existing_rate = $wpdb->get_row(
+			// phpcs:ignore WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+			$wpdb->prepare(
+				$query, // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+				...$query_params
 			)
 		);
 
@@ -323,13 +428,15 @@ class Taxes_Rates {
 				$wpdb->prefix . 'woocommerce_tax_rates',
 				array(
 					'tax_rate_country'  => $country_code,
+					'tax_rate_state'    => $state_code,
 					'tax_rate'          => $rate,
 					'tax_rate_name'     => $rate_name,
 					'tax_rate_priority' => $rate_order,
 					'tax_rate_order'    => $rate_order,
-					'tax_rate_class'    => '',
+					'tax_rate_class'    => $tax_class,
 				),
 				array(
+					'%s',
 					'%s',
 					'%f',
 					'%s',
@@ -342,5 +449,24 @@ class Taxes_Rates {
 
 		// Clear tax rate cache.
 		\WC_Cache_Helper::invalidate_cache_group( 'taxes' );
+	}
+
+	/**
+	 * Convert section slug to WooCommerce tax class.
+	 *
+	 * @param string $section Section slug (e.g., 'standard', 'reduced-rate').
+	 * @return string WooCommerce tax class.
+	 */
+	private function get_wc_tax_class( $section ) {
+		// Map section slugs to WooCommerce tax classes.
+		$section_to_class = array(
+			'standard'           => '',
+			'reduced-rate'       => 'reduced-rate',
+			'reduced-rate-alt'   => 'reduced-rate-alt',
+			'super-reduced-rate' => 'super-reduced-rate',
+			'zero-rate'          => 'zero-rate',
+		);
+
+		return isset( $section_to_class[ $section ] ) ? $section_to_class[ $section ] : '';
 	}
 }

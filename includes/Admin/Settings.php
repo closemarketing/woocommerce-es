@@ -230,6 +230,7 @@ class Settings {
 				}
 				?>
 				<a href="?page=connect_ecommerce&tab=settings" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'connect-ecommerce' ); ?></a>
+				<?php do_action( 'connect_ecommerce_settings_tabs_after_settings', $active_tab ); ?>
 				<a href="?page=connect_ecommerce&tab=public" class="nav-tab <?php echo 'public' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Frontend Settings', 'connect-ecommerce' ); ?></a>
 				<?php
 				if ( ! $this->is_disabled_ai && $this->connector ) {

@@ -76,20 +76,20 @@ class TAXES {
 				'parking_rate'       => false,
 			),
 			'DE' => array(
-				'country'               => __( 'Germany', 'connect-ecommerce' ),
-				'standard_rate'         => 19.00,
-				'reduced_rate'          => 7.00,
-				'reduced_rate_alt'      => false,
-				'super_reduced_rate'    => false,
-				'parking_rate'          => false,
+				'country'            => __( 'Germany', 'connect-ecommerce' ),
+				'standard_rate'      => 19.00,
+				'reduced_rate'       => 7.00,
+				'reduced_rate_alt'   => false,
+				'super_reduced_rate' => false,
+				'parking_rate'       => false,
 			),
 			'EE' => array(
-				'country'               => __( 'Estonia', 'connect-ecommerce' ),
-				'standard_rate'         => 24.00,
-				'reduced_rate'          => 9.00,
-				'reduced_rate_alt'      => false,
-				'super_reduced_rate'    => false,
-				'parking_rate'          => false,
+				'country'            => __( 'Estonia', 'connect-ecommerce' ),
+				'standard_rate'      => 22.00,
+				'reduced_rate'       => 9.00,
+				'reduced_rate_alt'   => false,
+				'super_reduced_rate' => false,
+				'parking_rate'       => false,
 			),
 			'EL' => array(
 				'country'            => __( 'Greece', 'connect-ecommerce' ),
@@ -118,12 +118,12 @@ class TAXES {
 				'parking_rate'       => false,
 			),
 			'FI' => array(
-				'country'               => __( 'Finland', 'connect-ecommerce' ),
-				'standard_rate'         => 25.50,
-				'reduced_rate'          => 14.00,
-				'reduced_rate_alt'      => 10.00,
-				'super_reduced_rate'    => false,
-				'parking_rate'          => false,
+				'country'            => __( 'Finland', 'connect-ecommerce' ),
+				'standard_rate'      => 25.50,
+				'reduced_rate'       => 14.00,
+				'reduced_rate_alt'   => 10.00,
+				'super_reduced_rate' => false,
+				'parking_rate'       => false,
 			),
 			'FR' => array(
 				'country'            => __( 'France', 'connect-ecommerce' ),
@@ -166,12 +166,12 @@ class TAXES {
 				'parking_rate'       => false,
 			),
 			'LU' => array(
-				'country'               => __( 'Luxembourg', 'connect-ecommerce' ),
-				'standard_rate'         => 17.00,
-				'reduced_rate'          => 14.00,
-				'reduced_rate_alt'      => 8.00,
-				'super_reduced_rate'    => 3.00,
-				'parking_rate'          => 12.00,
+				'country'            => __( 'Luxembourg', 'connect-ecommerce' ),
+				'standard_rate'      => 17.00,
+				'reduced_rate'       => 14.00,
+				'reduced_rate_alt'   => 8.00,
+				'super_reduced_rate' => 3.00,
+				'parking_rate'       => 12.00,
 			),
 			'HU' => array(
 				'country'            => __( 'Hungary', 'connect-ecommerce' ),
@@ -182,12 +182,12 @@ class TAXES {
 				'parking_rate'       => false,
 			),
 			'IE' => array(
-				'country'               => __( 'Ireland', 'connect-ecommerce' ),
-				'standard_rate'         => 23.00,
-				'reduced_rate'          => 13.50,
-				'reduced_rate_alt'      => 9.00,
-				'super_reduced_rate'    => 4.80,
-				'parking_rate'          => 13.50,
+				'country'            => __( 'Ireland', 'connect-ecommerce' ),
+				'standard_rate'      => 23.00,
+				'reduced_rate'       => 13.50,
+				'reduced_rate_alt'   => 9.00,
+				'super_reduced_rate' => 4.80,
+				'parking_rate'       => 13.50,
 			),
 			'MT' => array(
 				'country'            => __( 'Malta', 'connect-ecommerce' ),
@@ -238,12 +238,12 @@ class TAXES {
 				'parking_rate'       => false,
 			),
 			'SK' => array(
-				'country'               => __( 'Slovakia', 'connect-ecommerce' ),
-				'standard_rate'         => 23.00,
-				'reduced_rate'          => 19.00,
-				'reduced_rate_alt'      => 5.00,
-				'super_reduced_rate'    => false,
-				'parking_rate'          => false,
+				'country'            => __( 'Slovakia', 'connect-ecommerce' ),
+				'standard_rate'      => 23.00,
+				'reduced_rate'       => 19.00,
+				'reduced_rate_alt'   => 5.00,
+				'super_reduced_rate' => false,
+				'parking_rate'       => false,
 			),
 			'SE' => array(
 				'country'            => __( 'Sweden', 'connect-ecommerce' ),
@@ -276,5 +276,52 @@ class TAXES {
 		}
 
 		return array();
+	}
+
+	/**
+	 * Get special regions for a country with custom tax rates.
+	 *
+	 * @param string $country Country code (e.g., 'ES').
+	 * @return array Special regions with their tax rates or empty array if no special regions.
+	 */
+	public static function get_special_regions( $country ) {
+		$country         = strtoupper( $country );
+		$special_regions = array();
+
+		// Spain special regions with 0% VAT.
+		if ( 'ES' === $country ) {
+			$special_regions = array(
+				'CE' => array(
+					'name'               => __( 'Ceuta', 'connect-ecommerce' ),
+					'standard_rate'      => 0.00,
+					'reduced_rate'       => 0.00,
+					'reduced_rate_alt'   => 0.00,
+					'super_reduced_rate' => 0.00,
+				),
+				'GC' => array(
+					'name'               => __( 'Las Palmas', 'connect-ecommerce' ),
+					'standard_rate'      => 0.00,
+					'reduced_rate'       => 0.00,
+					'reduced_rate_alt'   => 0.00,
+					'super_reduced_rate' => 0.00,
+				),
+				'ML' => array(
+					'name'               => __( 'Melilla', 'connect-ecommerce' ),
+					'standard_rate'      => 0.00,
+					'reduced_rate'       => 0.00,
+					'reduced_rate_alt'   => 0.00,
+					'super_reduced_rate' => 0.00,
+				),
+				'TF' => array(
+					'name'               => __( 'Santa Cruz de Tenerife', 'connect-ecommerce' ),
+					'standard_rate'      => 0.00,
+					'reduced_rate'       => 0.00,
+					'reduced_rate_alt'   => 0.00,
+					'super_reduced_rate' => 0.00,
+				),
+			);
+		}
+
+		return $special_regions;
 	}
 }
