@@ -158,7 +158,7 @@ class Settings {
 			__( 'Connect Ecommerce', 'connect-ecommerce' ),
 			'manage_woocommerce',
 			'connect_ecommerce',
-			array( $this, 'create_admin_page' ),
+			array( $this, 'create_admin_page' )
 		);
 	}
 

@@ -122,3 +122,32 @@
 	position: absolute;
 	right: 18px;
 }
+
+/* Taxes Rates */
+.connect-update-tax-rates-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+	justify-content: flex-end;
+}
+
+.connect-update-tax-rates-wrapper label {
+	font-weight: bold;
+}
+
+.connect-update-tax-rates-wrapper select {
+	width: auto;
+}
+
+.connect-update-tax-rates-wrapper .button {
+	background-color: #D33564;
+	border-color: #D33564;
+	color: white;
+}
+
+.connect-update-tax-rates-wrapper .button:hover {
+	background-color: #D33564;
+	border-color: #D33564;
+	color: white;
+}
