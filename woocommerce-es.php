@@ -1,11 +1,11 @@
 <?php
 /**
- * Plugin Name:       Connect Ecommerce and EU VAT Compliance
+ * Plugin Name:       Connect and EU VAT Compliance for WooCommerce
  * Plugin URI:        https://close.technology/wordpress-plugins/connect-ecommerce/
  * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock. Includes EU VAT Compliance. Import European Taxes and check VAT compliance.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
- * Version:           3.1.6
+ * Version:           3.2.0-beta.1
  * Requires PHP:      7.4
  * Requires at least: 6.3
  * Text Domain:       woocommerce-es
@@ -20,12 +20,11 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.1.6' );
+define( 'CONECOM_VERSION', '3.2.0-beta.1' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
-
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
 
@@ -42,8 +41,8 @@ function conecom_get_options() {
 
 	return apply_filters(
 		'conecom_options_plugin',
-		[
-			'clientify' => [
+		array(
+			'clientify' => array(
 				'name'                       => 'Clientify',
 				'slug'                       => 'conecom-clientify',
 				'version'                    => CONECOM_VERSION,
@@ -69,8 +68,8 @@ function conecom_get_options() {
 				'settings_fields'            => array( 'apipassword' ),
 				'table_sync'                 => $wpdb->prefix . 'sync_conecom-clientify',
 				'file'                       => __FILE__,
-			],
-		]
+			),
+		)
 	);
 }
 
