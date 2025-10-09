@@ -191,4 +191,23 @@ class HELPER {
 		}
 		return $execution_time . ' ' . $end;
 	}
+
+	/**
+	 * Move settings from old plugin to new plugin
+	 *
+	 * @return void
+	 */
+	public static function move_settings() {
+		$old_settings = get_option( 'wces_settings' );
+
+		if ( empty( $old_settings ) ) {
+			return;
+		}
+
+		foreach ( $old_settings as $key => $value ) {
+			$new_settings[ $key ] = $value;
+		}
+		update_option( 'connect_ecommerce_public', $new_settings );
+		delete_option( 'wces_settings' );
+	}
 }

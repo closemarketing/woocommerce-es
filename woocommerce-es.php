@@ -1,8 +1,8 @@
 <?php
 /**
- * Plugin Name:       Connect Ecommerce
+ * Plugin Name:       Connect Ecommerce and EU VAT Compliance
  * Plugin URI:        https://close.technology/wordpress-plugins/connect-ecommerce/
- * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
+ * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock. Includes EU VAT Compliance. Import European Taxes and check VAT compliance.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
  * Version:           3.1.6
@@ -102,4 +102,14 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	}
 
 	add_action( 'cli_init', 'conecom_import_products_register_commands', 20 );
+}
+
+register_activation_hook( __FILE__, 'conecom_move_settings' );
+/**
+ * Move settings from old plugin to new plugin
+ *
+ * @return void
+ */
+function conecom_move_settings() {
+	CLOSE\ConnectEcommerce\Helpers\HELPER::move_settings();
 }

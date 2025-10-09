@@ -174,158 +174,204 @@ class Settings {
 			$this->settings_ai             = get_option( 'connect_ecommerce_ai' );
 			$special_tabs                  = ! empty( $this->options['settings_special_tabs'] ) ? $this->options['settings_special_tabs'] : array();
 		}
-		$plugin_logo = $this->options['settings_logo'] ?? CONECOM_PLUGIN_URL . 'includes/assets/logo.svg';
+		$plugin_logo = CONECOM_PLUGIN_URL . 'includes/assets/logo.png';
 		?>
-		<div class="header-wrap">
-			<div class="wrapper">
-				<h2 style="display: none;"></h2>
-				<div id="nag-container"></div>
-				<div class="header connwoo-header">
-					<div class="logo">
-						<img src="<?php echo esc_url( $plugin_logo ); ?>" height="35" width="154"/>
-						<h2>
-							<?php
-							esc_html_e( 'WooCommerce Connection Settings ', 'connect-ecommerce' );
-							?>
-						</h2>
+		<div class="connect-ecommerce-settings">
+			<div class="header-wrap">
+				<div class="wrapper">
+					<h2 style="display: none;"></h2>
+					<div id="nag-container"></div>
+					<div class="header connwoo-header">
+						<div class="logo">
+							<img src="<?php echo esc_url( $plugin_logo ); ?>" height="47" width="154"/>
+							<h2>
+								<?php
+								esc_html_e( 'Connect Ecommerce and EU/VAT Compliance', 'connect-ecommerce' );
+								?>
+							</h2>
+						</div>
 					</div>
 				</div>
 			</div>
-		</div>
-		<div class="wrap">
-			<?php settings_errors(); ?>
+			<div class="wrap">
+				<?php settings_errors(); ?>
 
-			<?php
-			$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'sync_products';
-			if ( ! isset( $_GET['tab'] ) && ! $this->connector ) {
-				$active_tab = 'settings';
-			}
-			?>
-			<h2 class="nav-tab-wrapper">
 				<?php
-				if ( $this->connector ) {
+				// Main tabs.
+				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'settings';
+
+				// Subtabs.
+				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
+
+				// Set default subtabs.
+				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
+					$active_subtab = 'sync_products';
+				}
+				if ( 'settings' === $active_tab && empty( $active_subtab ) ) {
+					$active_subtab = 'connection';
+				}
+				?>
+				<h2 class="nav-tab-wrapper">
+					<a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'connect-ecommerce' ); ?></a>
+					<?php
+					if ( $this->connector ) {
+						?>
+						<a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'connect-ecommerce' ); ?></a>
+						<?php
+					}
 					?>
-					<a href="?page=connect_ecommerce&tab=sync_products" class="nav-tab <?php echo 'sync_products' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync products', 'connect-ecommerce' ); ?></a>
+					<?php
+					if ( $this->connector && in_array( 'subscriptions', $special_tabs, true ) ) {
+						?>
+						<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'connect-ecommerce' ); ?></a>
+						<?php
+					}
+					do_action( 'connect_ecommerce_settings_tabs', $active_tab );
+					?>
+				</h2>
+
+				<?php
+				// Subtabs for Synchronization.
+				if ( 'synchronization' === $active_tab && $this->connector ) {
+					?>
+					<ul class="subsubsub">
+						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'connect-ecommerce' ); ?></a> | </li>
+						<?php
+						if ( ! $this->is_disabled_orders ) {
+							?>
+							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'connect-ecommerce' ); ?></a> | </li>
+							<?php
+						}
+						?>
+						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=automate" class="<?php echo 'automate' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Automate', 'connect-ecommerce' ); ?></a></li>
+					</ul>
+					<br class="clear">
 					<?php
 				}
-				if ( $this->connector && $this->is_mergevars ) {
+
+				// Subtabs for Settings.
+				if ( 'settings' === $active_tab ) {
 					?>
-					<a href="?page=connect_ecommerce&tab=prod_mergevars" class="nav-tab <?php echo 'prod_mergevars' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'connect-ecommerce' ); ?></a>
-					<?php
-				}
-				if ( ! $this->is_disabled_orders && $this->connector ) {
-					?>
-					<a href="?page=connect_ecommerce&tab=sync_orders" class="nav-tab <?php echo 'sync_orders' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Sync Orders', 'connect-ecommerce' ); ?></a>
-					<?php
-				}
-				if ( $this->connector && in_array( 'subscriptions', $special_tabs, true ) ) {
-					?>
-					<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'connect-ecommerce' ); ?></a>
-					<?php
-				}
-				if ( $this->connector ) {
-					?>
-					<a href="?page=connect_ecommerce&tab=automate" class="nav-tab <?php echo 'automate' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Automate', 'connect-ecommerce' ); ?></a>
+					<ul class="subsubsub">
+						<li><a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="<?php echo 'connection' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Connection', 'connect-ecommerce' ); ?></a> | </li>
+						<li><a href="?page=connect_ecommerce&tab=settings&subtab=vat_compliance" class="<?php echo 'vat_compliance' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'EU VAT Compliance', 'connect-ecommerce' ); ?></a><?php echo ( $this->connector && $this->is_mergevars ) || ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
+						<?php
+						if ( $this->connector && $this->is_mergevars ) {
+							?>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'connect-ecommerce' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
+							<?php
+						}
+						if ( ! $this->is_disabled_ai && $this->connector ) {
+							?>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'connect-ecommerce' ); ?></a></li>
+							<?php
+						}
+						?>
+					</ul>
+					<br class="clear">
 					<?php
 				}
 				?>
-				<a href="?page=connect_ecommerce&tab=settings" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'connect-ecommerce' ); ?></a>
-				<a href="?page=connect_ecommerce&tab=public" class="nav-tab <?php echo 'public' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Frontend Settings', 'connect-ecommerce' ); ?></a>
+
 				<?php
-				if ( ! $this->is_disabled_ai && $this->connector ) {
-					?>
-					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI Settings', 'connect-ecommerce' ); ?></a>
-					<?php
+				// Synchronization Tab Content.
+				if ( 'synchronization' === $active_tab ) {
+					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
+						$this->page_get_sync( $active_subtab );
+					}
+
+					if ( 'automate' === $active_subtab ) {
+						?>
+						<form method="post" action="options.php">
+							<?php
+							settings_fields( 'connect_ecommerce_settings' );
+							do_settings_sections( 'connect_ecommerce_automate' );
+							submit_button(
+								__( 'Save automate', 'connect-ecommerce' ),
+								'primary',
+								'submit_automate'
+							);
+							?>
+						</form>
+						<?php
+					}
 				}
-				do_action( 'connect_ecommerce_settings_tabs', $active_tab );
+
+				// Settings Tab Content.
+				if ( 'settings' === $active_tab ) {
+					if ( 'connection' === $active_subtab ) {
+						?>
+						<form method="post" action="options.php">
+							<?php
+								settings_fields( 'connect_ecommerce_settings' );
+								do_settings_sections( 'connect_ecommerce_admin' );
+								submit_button(
+									__( 'Save settings', 'connect-ecommerce' ),
+									'primary',
+									'submit_settings'
+								);
+							?>
+						</form>
+						<?php
+					}
+
+					if ( 'vat_compliance' === $active_subtab ) {
+						?>
+						<form method="post" action="options.php">
+							<?php
+							settings_fields( 'connect_ecommerce_settings_public' );
+							do_settings_sections( 'connect_ecommerce_public' );
+							submit_button(
+								__( 'Save VAT Compliance', 'connect-ecommerce' ),
+								'primary',
+								'submit_public'
+							);
+							?>
+						</form>
+						<?php
+					}
+
+					if ( 'merge_vars' === $active_subtab && $this->is_mergevars ) {
+						?>
+						<form method="post" action="options.php">
+							<?php
+							settings_fields( 'connect_ecommerce_settings_prod_mergevars' );
+							do_settings_sections( 'connect_ecommerce_prod_mergevars' );
+							submit_button(
+								__( 'Save merge vars', 'connect-ecommerce' ),
+								'primary',
+								'submit_prod_mergevars'
+							);
+							?>
+						</form>
+						<?php
+					}
+
+					if ( 'ai_products' === $active_subtab ) {
+						?>
+						<form method="post" action="options.php">
+							<?php
+							settings_fields( 'connect_ecommerce_settings_ai' );
+							do_settings_sections( 'connect_ecommerce_ai' );
+							submit_button(
+								__( 'Save AI', 'connect-ecommerce' ),
+								'primary',
+								'submit_ai'
+							);
+							?>
+						</form>
+						<?php
+					}
+				}
+
+				// Subscriptions Tab (kept separate as it's not part of the two main tabs).
+				if ( 'subscriptions' === $active_tab ) {
+					$this->page_get_subscriptions();
+				}
+
+				do_action( 'connect_ecommerce_settings_tabs_content', $active_tab, $active_subtab );
 				?>
-			</h2>
-
-			<?php
-			if ( 'sync_products' === $active_tab || 'sync_orders' === $active_tab ) {
-				$this->page_get_sync( $active_tab );
-			}
-
-			if ( 'settings' === $active_tab ) {
-				?>
-				<form method="post" action="options.php">
-					<?php
-						settings_fields( 'connect_ecommerce_settings' );
-						do_settings_sections( 'connect_ecommerce_admin' );
-						submit_button(
-							__( 'Save settings', 'connect-ecommerce' ),
-							'primary',
-							'submit_settings'
-						);
-					?>
-				</form>
-			<?php } ?>
-			<?php	if ( 'automate' === $active_tab ) { ?>
-				<form method="post" action="options.php">
-					<?php
-					settings_fields( 'connect_ecommerce_settings' );
-					do_settings_sections( 'connect_ecommerce_automate' );
-					submit_button(
-						__( 'Save automate', 'connect-ecommerce' ),
-						'primary',
-						'submit_automate'
-					);
-					?>
-				</form>
-			<?php } ?>
-			<?php	if ( 'public' === $active_tab ) { ?>
-				<form method="post" action="options.php">
-					<?php
-					settings_fields( 'connect_ecommerce_settings_public' );
-					do_settings_sections( 'connect_ecommerce_public' );
-					submit_button(
-						__( 'Save public', 'connect-ecommerce' ),
-						'primary',
-						'submit_public'
-					);
-					?>
-				</form>
-				<?php
-			}
-
-			if ( 'prod_mergevars' === $active_tab && $this->is_mergevars ) {
-				?>
-				<form method="post" action="options.php">
-					<?php
-					settings_fields( 'connect_ecommerce_settings_prod_mergevars' );
-					do_settings_sections( 'connect_ecommerce_prod_mergevars' );
-					submit_button(
-						__( 'Save merge', 'connect-ecommerce' ),
-						'primary',
-						'submit_prod_mergevars'
-					);
-					?>
-				</form>
-				<?php
-			}
-
-			if ( 'ai' === $active_tab ) {
-				?>
-				<form method="post" action="options.php">
-					<?php
-					settings_fields( 'connect_ecommerce_settings_ai' );
-					do_settings_sections( 'connect_ecommerce_ai' );
-					submit_button(
-						__( 'Save AI', 'connect-ecommerce' ),
-						'primary',
-						'submit_ai'
-					);
-					?>
-				</form>
-				<?php
-			}
-
-			if ( 'subscriptions' === $active_tab ) {
-				$this->page_get_subscriptions();
-			}
-
-			do_action( 'connect_ecommerce_settings_tabs_content', $active_tab );
-			?>
+			</div>
 		</div>
 		<?php
 	}

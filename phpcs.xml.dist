@@ -21,6 +21,17 @@
 		<exclude name="WordPress.NamingConventions.ValidFunctionName"/>
 	</rule>
 
+	<!-- Define plugin prefix -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="conecom"/>
+				<element value="connect_ecommerce"/>
+				<element value="CONECOM"/>
+			</property>
+		</properties>
+	</rule>
+
 	<!-- PHP 7.4+ specific rules -->
 	<rule ref="Generic.PHP.ForbiddenFunctions">
 		<properties>

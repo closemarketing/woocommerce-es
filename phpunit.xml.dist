@@ -17,11 +17,6 @@
       <directory prefix="test-" suffix=".php">./tests/WooCommerce/</directory>
     </testsuite>
   </testsuites>
-  <groups>
-    <include>
-      <group>woocommerce</group>
-    </include>
-  </groups>
   <php>
     <env name="WP_TESTS_ACTIVATE_PLUGINS" value="woocommerce/woocommerce.php"/>
   </php>
