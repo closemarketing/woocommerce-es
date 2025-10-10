@@ -86,7 +86,9 @@ class AI {
 		$provider     = isset( $settings['provider'] ) ? $settings['provider'] : 'chatgpt';
 		$prompt       = isset( $settings['prompt'] ) ? $settings['prompt'] : '';
 		$product_info = isset( $item['full_info'] ) ? $item['full_info'] : $item;
+		$model        = isset( $settings['model'] ) ? $settings['model'] : '';
 		$message      = '';
+		$api_url      = '';
 
 		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'connect-ecommerce' ) . wp_json_encode( $product_info );
 		$language = get_locale();
@@ -95,7 +97,7 @@ class AI {
 			__( 'Please respond in %s language.', 'connect-ecommerce' ),
 			$language
 		);
-		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO and SEO description and export it in format JSON, with elements: title, body, seo_title, seo_description', 'connect-ecommerce' );
+		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO, SEO description and SEO Focus keyword and export it in format JSON, with elements: title, body, seo_title, seo_description, seo_keyword', 'connect-ecommerce' );
 		$content .= PHP_EOL . __( 'Return only a valid and complete JSON object. If the content is too long, split it into multiple parts and clearly indicate when to continue. Do not include any text outside of the JSON.', 'connect-ecommerce' );
 
 		$token = isset( $settings['token'] ) ? $settings['token'] : '';
@@ -109,11 +111,11 @@ class AI {
 
 		switch ( $provider ) {
 			case 'chatgpt':
-				$model   = isset( $settings['model'] ) ? $settings['model'] : 'gpt-3.5-turbo';
+				$model   = ! empty( $model ) ? $model : 'gpt-3.5-turbo';
 				$api_url = 'https://api.openai.com/v1/chat/completions';
 				break;
 			case 'deepseek':
-				$model   = isset( $settings['model'] ) ? $settings['model'] : 'deepseek-chat';
+				$model   = ! empty( $model ) ? $model : 'deepseek-chat';
 				$api_url = 'https://api.deepseek.com/v1/chat/completions';
 				break;
 		}
@@ -149,9 +151,12 @@ class AI {
 		$body          = json_decode( wp_remote_retrieve_body( $response ), true );
 
 		if ( 200 !== $response_code ) {
-			$message .= sanitize_text_field( $response['error']['message'] ) ?? '';
-			$message .= sanitize_text_field( $response['errors']['http_request_failed'] ) ?? '';
-			$message .= $message ?? __( 'Unknown error', 'connect-ecommerce' );
+			$message .= sanitize_text_field( $body['error']['message'] ) ?? '';
+			$message .= sanitize_text_field( $body['errors']['http_request_failed'] ) ?? '';
+
+			if ( empty( $message ) ) {
+				$message = __( 'Unknown error', 'connect-ecommerce' );
+			}
 
 			return array(
 				'status'  => 'error',
@@ -160,7 +165,6 @@ class AI {
 		}
 		$content = array();
 		if ( isset( $body['choices'][0]['message']['content'] ) ) {
-			error_log( '$content: ' . print_r( $body['choices'][0]['message']['content'], true ) );
 			$content = str_replace( '```json', '', $body['choices'][0]['message']['content'] );
 			$content = preg_replace( '/```[\w]*\s*/', '', $content );
 			$content = trim( $content );

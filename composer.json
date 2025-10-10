@@ -8,7 +8,8 @@
 			"php": "8.3"
 		},
 		"allow-plugins": {
-			"dealerdirect/phpcodesniffer-composer-installer": true
+			"dealerdirect/phpcodesniffer-composer-installer": true,
+			"phpstan/extension-installer": true
 		}
 	},
 	"autoload": {
@@ -21,10 +22,15 @@
 		"dealerdirect/phpcodesniffer-composer-installer": "^0.7",
 		"phpcompatibility/phpcompatibility-wp": "^2",
 		"sirbrillig/phpcs-variable-analysis": "^2",
-		"wp-coding-standards/wpcs": "^2",
+		"wp-coding-standards/wpcs": "^3.1",
 		"phpcsstandards/phpcsutils": "^1.x-dev",
 		"yoast/phpunit-polyfills": "^4.0",
-		"wp-phpunit/wp-phpunit": "^6.8"
+		"wp-phpunit/wp-phpunit": "^6.8",
+		"phpstan/phpstan": "^2.1",
+		"szepeviktor/phpstan-wordpress": "^2.0",
+		"phpstan/extension-installer": "^1.4",
+		"php-stubs/wordpress-stubs": "^6.8",
+		"php-stubs/woocommerce-stubs": "^10.1"
 	},
 	"scripts": {
     "behat": "BEHAT_FEATURES_FOLDER=tests/behat/features run-behat-tests",
@@ -35,6 +41,7 @@
     "phpstan": "phpstan analyse --memory-limit=2048M",
     "prepare-behat-tests": "install-package-tests",
     "test": "phpunit",
+		"test-debug": "XDEBUG_MODE=debug XDEBUG_TRIGGER=1 phpunit",
 		"test-install": "bash bin/install-wp-tests.sh wordpress_test root 'root' 127.0.0.1 latest"
   },
 	"autoload-dev": {

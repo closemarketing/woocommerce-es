@@ -26,12 +26,62 @@ class MyAccount {
 	private $options;
 
 	/**
+	 * Settings all
+	 *
+	 * @var array
+	 */
+	private $settings_all;
+
+	/**
+	 * Settings
+	 *
+	 * @var array
+	 */
+	private $settings;
+
+	/**
+	 * All options
+	 *
+	 * @var array
+	 */
+	private $all_options;
+
+	/**
+	 * API Object
+	 *
+	 * @var object
+	 */
+	private $connapi_erp;
+
+	/**
+	 * Connector
+	 *
+	 * @var object
+	 */
+	private $connector;
+
+	/**
 	 * Construct of Class
 	 *
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options ) {
-		$this->options = $options;
+		$this->settings_all = get_option( 'connect_ecommerce' );
+		$this->connector    = isset( $this->settings_all['connector'] ) ? $this->settings_all['connector'] : '';
+		$this->settings     = $this->settings_all[ $this->connector ] ?? array();
+		$this->all_options  = $options;
+		$this->connapi_erp  = null;
+
+		if ( ! empty( $this->connector ) ) {
+			$this->options            = $options[ $this->connector ];
+			if ( empty( $this->options['name'] ) ) {
+				$this->settings_all['connector'] = '';
+				update_option( 'connect_ecommerce', $this->settings_all );
+				return;
+			}
+			$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
+			$this->connapi_erp = new $apiname( $options );
+		}
 
 		add_filter( 'woocommerce_account_orders_columns', array( $this, 'add_account_orders_column' ), 10, 1 );
 		add_action( 'woocommerce_my_account_my_orders_column_custom-column', array( $this, 'add_account_orders_column_rows' ) );
@@ -66,11 +116,16 @@ class MyAccount {
 		$api_doc_id = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 
 		if ( ! empty( $api_doc_id ) ) {
-			$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
-			$nonce        = wp_create_nonce( 'cwc-document-nonce' );
-			echo '<a href=' . esc_url( admin_url( 'admin-ajax.php?action=cwc_document_download&doc_id=' . esc_attr( $api_doc_id ) . '&doc_type=' . esc_attr( $api_doc_type ) . '&nonce=' . $nonce ) ) . ' class="button button-primary" target="_blank">';
-			echo esc_html__( 'Download', 'connect-ecommerce' ) . '</a>';
-
+			$api_doc_type  = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
+			if ( ! method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
+				return;
+			}
+			$document_file = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
+			if ( $document_file ) {
+				$nonce        = wp_create_nonce( 'cwc-document-nonce' );
+				echo '<a href=' . esc_url( admin_url( 'admin-ajax.php?action=cwc_document_download&doc_id=' . esc_attr( $api_doc_id ) . '&doc_type=' . esc_attr( $api_doc_type ) . '&nonce=' . $nonce ) ) . ' class="button button-primary" target="_blank">';
+				echo esc_html__( 'Download', 'connect-ecommerce' ) . '</a>';
+			}
 		}
 	}
 
@@ -92,9 +147,8 @@ class MyAccount {
 		if ( $api_doc_id ) {
 			$settings           = get_option( $this->options['slug'] );
 			$apiname            = 'Connect_Ecommerce_' . $this->options['name'];
-			$apikey             = isset( $settings['api'] ) ? $settings['api'] : '';
 			$connapi_erp        = new $apiname( $this->options );
-			$file_document_path = $connapi_erp->get_order_pdf( $apikey, $api_doc_type, $api_doc_id );
+			$file_document_path = $connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
 		}
 
 		if ( ! file_exists( $file_document_path ) ) {

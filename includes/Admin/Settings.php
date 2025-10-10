@@ -234,7 +234,7 @@ class Settings {
 				<?php
 				if ( ! $this->is_disabled_ai && $this->connector ) {
 					?>
-					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI', 'connect-ecommerce' ); ?></a>
+					<a href="?page=connect_ecommerce&tab=ai" class="nav-tab <?php echo 'ai' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'AI Settings', 'connect-ecommerce' ); ?></a>
 					<?php
 				}
 				do_action( 'connect_ecommerce_settings_tabs', $active_tab );
@@ -579,6 +579,16 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
+			if ( in_array( 'approve_document', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_approve_document',
+					__( 'Approve document by default for validations?', 'connect-ecommerce' ),
+					array( $this, 'approve_document_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
 			if ( 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_doctype',
@@ -694,14 +704,14 @@ class Settings {
 
 		add_settings_section(
 			'connect_ecommerce_prod_mergevars_section',
-			__( 'Merge variables from product attributes to custom fields', 'connect-ecommerce' ),
+			__( 'Merge variables from ERP to WooCommerce', 'connect-ecommerce' ),
 			array( $this, 'section_info_prod_mergevars' ),
 			'connect_ecommerce_prod_mergevars'
 		);
 
 		add_settings_field(
 			'wcpimh_prod_mergevars',
-			__( 'Merge fields with product', 'connect-ecommerce' ),
+			__( 'Merge fields', 'connect-ecommerce' ),
 			array( $this, 'prod_mergevars_callback' ),
 			'connect_ecommerce_prod_mergevars',
 			'connect_ecommerce_prod_mergevars_section'
@@ -917,39 +927,40 @@ class Settings {
 
 		$admin_settings = [
 			$connector => [
-				'api'            => '',
-				'idcentre'       => '',
-				'url'            => '',
-				'username'       => '',
-				'password'       => '',
-				'company'        => '',
-				'company_id'     => '',
-				'domain'         => '',
-				'dbname'         => '',
-				'stock'          => 'no',
-				'prodst'         => 'draft',
-				'virtual'        => 'no',
-				'backorders'     => 'no',
-				'catsep'         => '',
-				'catattr'        => '',
-				'filter'         => '',
+				'api'                => '',
+				'idcentre'           => '',
+				'url'                => '',
+				'username'           => '',
+				'password'           => '',
+				'company'            => '',
+				'company_id'         => '',
+				'domain'             => '',
+				'dbname'             => '',
+				'stock'              => 'no',
+				'prodst'             => 'draft',
+				'virtual'            => 'no',
+				'backorders'         => 'no',
+				'catsep'             => '',
+				'catattr'            => '',
+				'filter'             => '',
 				'pricesale_discount' => '',
-				'filter_sku'     => '',
-				'tax_option'     => 'no',
-				'rates'          => 'default',
-				'catnp'          => 'yes',
-				'doctype'        => 'invoice',
-				'cleanchars'     => '',
-				'series'         => '',
-				'freeorder'      => 'no',
-				'ecstatus'       => 'all',
-				'order_tags'     => '',
-				'design_id'      => '',
-				'sync'           => 'no',
-				'sync_num'       => 5,
-				'sync_email'     => 'yes',
-				'prod_weight_eq' => '',
-				'debug_log'      => 'no',
+				'filter_sku'         => '',
+				'tax_option'         => 'no',
+				'rates'              => 'default',
+				'catnp'              => 'yes',
+				'doctype'            => 'invoice',
+				'cleanchars'         => '',
+				'approve_document'   => 'no',
+				'series'             => '',
+				'freeorder'          => 'no',
+				'ecstatus'           => 'all',
+				'order_tags'         => '',
+				'design_id'          => '',
+				'sync'               => 'no',
+				'sync_num'           => 5,
+				'sync_email'         => 'yes',
+				'prod_weight_eq'     => '',
+				'debug_log'          => 'no',
 			],
 		];
 
@@ -1243,7 +1254,8 @@ class Settings {
 			$this->settings['catsep'] = $this->options['product_category_fixed'];
 		}
 		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catsep]" id="wcpimh_catsep" value="%s" %s>',
+			'<input class="regular-text" type="text" name="connect_ecommerce[%s][catsep]" id="wcpimh_catsep" value="%s" %s>',
+			esc_html( $this->connector ),
 			isset( $this->settings['catsep'] ) ? esc_attr( $this->settings['catsep'] ) : '',
 			! empty( $prod_category_fixed ) ? ' readonly' : ''
 		);
@@ -1382,7 +1394,7 @@ class Settings {
 		$categorynp = isset( $this->settings['catnp'] ) ? $this->settings['catnp'] : 'yes';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catnp]" id="wcpimh_catnp">
-			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
+			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes, it will import ONLY on new products', 'connect-ecommerce' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No, it will import in ALL products', 'connect-ecommerce' ); ?></option>
 		</select>
 		<?php
 	}
@@ -1403,15 +1415,44 @@ class Settings {
 	}
 
 	/**
+	 * Call back for approve document
+	 *
+	 * @return void
+	 */
+	public function approve_document_callback() {
+		$approve_document = isset( $this->settings['approve_document'] ) ? $this->settings['approve_document'] : 'no';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][approve_document]" id="wcpimh_approve_document">
+			<option value="no" <?php selected( $approve_document, 'no' ); ?>><?php esc_html_e( 'No', 'connect-ecommerce' ); ?></option>
+			<option value="yes" <?php selected( $approve_document, 'yes' ); ?>><?php esc_html_e( 'Yes', 'connect-ecommerce' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
 	 * Document type
 	 *
 	 * @return void
 	 */
 	public function doctype_callback() {
+		$documents_type = array(
+			'nosync'       => __( 'Not sync', 'connect-ecommerce' ),
+			'smart'        => __( 'Smart', 'connect-ecommerce' ),
+			'invoice'      => __( 'Invoice', 'connect-ecommerce' ),
+			'salesreceipt' => __( 'Sales receipt', 'connect-ecommerce' ),
+			'salesorder'   => __( 'Sales order', 'connect-ecommerce' ),
+			'waybill'      => __( 'Waybill', 'connect-ecommerce' ),
+		);
 		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
-			<option value="nosync" <?php selected( $doctype, 'nosync' ); ?>><?php esc_html_e( 'Not sync', 'connect-ecommerce' ); ?></option>		<option value="invoice" <?php selected( $doctype, 'invoice' ); ?>><?php esc_html_e( 'Invoice', 'connect-ecommerce' ); ?></option>			<option value="salesreceipt" <?php selected( $doctype, 'salesreceipt' ); ?>><?php esc_html_e( 'Sales receipt', 'connect-ecommerce' ); ?></option>			<option value="salesorder" <?php selected( $doctype, 'salesorder' ); ?>><?php esc_html_e( 'Sales order', 'connect-ecommerce' ); ?></option>			<option value="waybill" <?php selected( $doctype, 'waybill' ); ?>><?php esc_html_e( 'Waybill', 'connect-ecommerce' ); ?></option>
+			<?php
+			foreach ( $documents_type as $value => $label ) {
+				echo '<option value="' . esc_html( $value ) . '" ';
+				selected( $value, $doctype );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			?>
 		</select>
 		<?php
 	}
@@ -1607,11 +1648,13 @@ class Settings {
 	 * @return void
 	 */
 	public function prod_mergevars_callback() {
-		$product_fields    = PROD::get_all_product_fields();
-		$custom_fields     = PROD::get_all_custom_fields();
-		$custom_taxonomies = TAX::get_all_custom_taxonomies();
-		$product_cat_terms = TAX::get_terms_product_cat();
-		$attribute_fields  = $this->connapi_erp->get_product_attributes();
+		$product_fields      = PROD::get_all_product_fields();
+		$custom_fields       = PROD::get_all_custom_fields();
+		$custom_taxonomies   = TAX::get_all_custom_taxonomies();
+		$product_cat_terms   = TAX::get_terms_product_cat();
+		$attribute_fields    = $this->connapi_erp->get_product_attributes();
+		$payment_methods_api = method_exists( $this->connapi_erp, 'get_payment_methods' ) ? $this->connapi_erp->get_payment_methods() : array();
+		$payment_methods     = WC()->payment_gateways()->get_available_payment_gateways();
 
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
@@ -1631,9 +1674,10 @@ class Settings {
 					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'connect-ecommerce' );?></strong></div>
 				</div>
 				<?php
-				$size = isset( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
+				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
 				for ( $idx = 0, $size; $idx <= $size; ++$idx ) {
-					$attrprod = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
+					$attrprod       = isset( $saved_attr[ $idx ]['attrprod'] ) ? $saved_attr[ $idx ]['attrprod'] : '';
+					$attrprod_label = '';
 					?>
 					<div class="product-mergevars repeating" style="border: 1px solid #ccc; padding: 10px; margin-bottom: 10px;">
 						<div class="save-item">
@@ -1641,6 +1685,9 @@ class Settings {
 								<option value=''></option>
 								<?php
 								foreach ( $attribute_fields as $attribute ) {
+									if ( empty( $attribute['elements'] ) ) {
+										continue;
+									}
 									?>
 									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
 										<?php
@@ -1649,17 +1696,43 @@ class Settings {
 											echo '<option value="' . esc_html( $option_id ) . '" ';
 											selected( $option_id, $attrprod );
 											echo '>' . esc_html( $value ) . '</option>';
+
+											if ( $option_id === $attrprod ) {
+												$attrprod_label = $attribute['name'];
+											}
 										}
 										?>
 									</optgroup>
 									<?php
 								}
 								?>
+								<?php if ( ! empty( $payment_methods_api ) ) { ?>
+									<optgroup label="<?php esc_html_e( 'Payment Methods', 'connect-ecommerce' ); ?>">
+										<?php
+										foreach ( $payment_methods_api as $key => $value ) {
+											echo '<option value="' . esc_html( $key ) . '" ';
+											selected( $key, $attrprod );
+											echo '>' . esc_html( $value ) . '</option>';
+
+											if ( $key === $attrprod ) {
+												$attrprod_label = __( 'Payment Method', 'connect-ecommerce' );
+											}
+										}
+										?>
+									</optgroup>
+								<?php } ?>
 							</select>
 						</div>
+						<span class="attrprod-label">
+							<?php
+							if ( ! empty( $attrprod_label ) ) {
+								echo esc_html( $attrprod_label );
+							}
+							?>
+						</span>
 						<span class="dashicons dashicons-arrow-right-alt2"></span>
 						<div class="save-item">
-							<?php 
+							<?php
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
 							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
@@ -1706,6 +1779,16 @@ class Settings {
 								echo '<option value="custom">' . esc_html__( 'Customized', 'connect-ecommerce' ) . '</option>';
 								?>
 								</optgroup>
+								<?php if ( ! empty( $payment_methods_api ) ) { ?>
+									<optgroup label="<?php esc_html_e( 'Payment Methods', 'connect-ecommerce' ); ?>">
+										<?php
+										foreach ( $payment_methods as $method ) {
+											$key = 'cf|' . $method->id;
+											?>
+											<option value="<?php echo esc_html( $key ); ?>" <?php selected( $key, $saved_custom_field ); ?>><?php echo esc_html( $method->title ); ?></option>
+										<?php } ?>
+									</optgroup>
+								<?php } ?>
 							</select>
 						</div>
 						<div class="save-item">

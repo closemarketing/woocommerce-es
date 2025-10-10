@@ -18,5 +18,6 @@ circle.yml
 phpunit.xml.dist
 phpcs.xml.dist
 .phpcs.xml.dist
+phpstan.neon.dist
 tests/
 bin/

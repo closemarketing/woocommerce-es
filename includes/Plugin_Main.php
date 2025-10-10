@@ -17,8 +17,10 @@ use CLOSE\ConnectEcommerce\Admin\Import_Products;
 use CLOSE\ConnectEcommerce\Admin\Widget_Order;
 use CLOSE\ConnectEcommerce\Admin\Widget_Product;
 use CLOSE\ConnectEcommerce\Admin\Orders;
+use CLOSE\ConnectEcommerce\Admin\Notices;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
+
 /**
  * Class Wrapper.
  *
@@ -45,6 +47,7 @@ class Base {
 			new Import_Products( $options );
 			new Widget_Product( $options );
 			new Widget_Order( $options );
+			new Notices();
 		}
 
 		new Orders( $options );

@@ -76,9 +76,17 @@ class CreateOrderTest extends WP_UnitTestCase {
 	public function test_clean_special_chars() {
 		$test_cases = [
 			'José M. García-López'	=> 'Jose M Garcia-Lopez',
-			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS & BEBIDAS S L',
-			'Peña "El @Rincón" / Granada'	=> 'Pena El Rincon Granada',
+			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS Y BEBIDAS S L',
+			'Peña "El @Rincón" / Granada'	=> 'Peña El Rincon Granada',
 			'Weiß y Aßmann/Waßmann'	=> 'Weiss y Assmann Wassmann',
+			'Bürgerstraße 123'	=> 'Burgerstrasse 123',
+			'#John Doe'	=> 'John Doe',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'aeiouuñçgAEIOUUÑÇG',
+			'John@Doe' => 'John Doe',
+			'John@  Doe' => 'John Doe', // double space
+			'º[]John Doe' => 'John Doe',
+			'Maçanet Çağla' => 'Maçanet Çagla',
+			'Francisco Araújo da Conceição' => 'Francisco Araujo da Conceiçao',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {
@@ -89,17 +97,18 @@ class CreateOrderTest extends WP_UnitTestCase {
 	public function test_create_order_company_without_errors() {
 		$order = new WC_Order();
 		$client_data = [
-			'first_name' => 'José M.',
-			'last_name'  => 'García-López',
-			'email'      => 'john.doe@example.com',
-			'phone'      => '123456789',
-			'address_1'  => '123 Main St',
-			'address_2'  => '',
-			'city'       => 'Sample City',
-			'state'      => 'CA',
-			'postcode'   => '90001',
-			'country'    => 'US',
-			'company'    => '',
+			'first_name'  => 'José M.',
+			'last_name'   => 'García-López',
+			'email'       => 'john.doe@example.com',
+			'phone'       => '123456789',
+			'address_1'   => '123 Main St',
+			'address_2'   => '',
+			'city'        => 'Sample City',
+			'state'       => 'CA',
+			'postcode'    => '90001',
+			'country'     => 'US',
+			'company'     => '',
+			'billing_vat' => '123456789',
 		];
 
 		$order->set_billing_first_name( $client_data['first_name'] );
@@ -113,6 +122,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order->set_billing_postcode( $client_data['postcode'] );
 		$order->set_billing_country( $client_data['country'] );
 		$order->set_billing_company( $client_data['company'] );
+		$order->add_meta_data( '_billing_vat', $client_data['billing_vat'] );
 		$order->set_status('completed');
 		$order->set_total(100);
 		$order->save();
@@ -125,6 +135,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( $client_data['first_name'], $order_data['contactFirstName'] );
 		$this->assertEquals( $client_data['last_name'], $order_data['contactLastName'] );
 		$this->assertEquals( $client_data['first_name'] . ' ' . $client_data['last_name'], $order_data['contactName'] );
+		$this->assertEquals( $client_data['billing_vat'], $order_data['contactCode'] );
 
 		// With company.
 		$client_data['company'] = 'Acme Inc.';
@@ -145,10 +156,10 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'phone'      => '123456789',
 			'address_1'  => '123 Main St',
 			'address_2'  => '',
-			'city'       => 'Sample City',
-			'state'      => 'CA',
+			'city'       => 'Sampleº City',
+			'state'      => 'CAº',
 			'postcode'   => '90001',
-			'country'    => 'US',
+			'country'    => 'USº',
 			'company'    => 'Acme Inc.',
 		];
 
@@ -163,6 +174,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order->set_billing_postcode( $client_data['postcode'] );
 		$order->set_billing_country( $client_data['country'] );
 		$order->set_billing_company( $client_data['company'] );
+		$order->set_payment_method( 'bacs' );
 		$order->set_status('completed');
 		$order->set_total(100);
 		$order->save();
@@ -170,11 +182,44 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->settings['cleanchars'] = 'on';
 		$option_prefix = 'conecom-test';
 
+		$this->settings['prod_mergevars'] = [
+			'paymentmethods|58f9c4091c9798739520e6b2' => 'cf|bacs',
+		];
+
 		// Review order data that sends to ERP.
 		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
 		$this->assertNotEmpty( $order_data );
 		$this->assertEquals( 'Jose M', $order_data['contactFirstName'] );
 		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
+		$this->assertEquals( 'Sample City', $order_data['contactCity'] );
+		$this->assertEquals( 'California', $order_data['contactProvince'] );
+		$this->assertEquals( 'US', $order_data['contactCountryCode'] );
+		$this->assertEquals( '90001', $order_data['contactCp'] );
+		$this->assertEquals( 'bacs', $order_data['paymentMethod'] );
+		$this->assertEquals( '58f9c4091c9798739520e6b2', $order_data['paymentMethodId'] );
 	}
 
+	public function test_create_order_approve_document_without_errors() {
+		$order = new WC_Order();
+		$client_data = [
+			'first_name' => 'José M.',
+			'last_name'  => 'García-López',
+			'email'      => 'john.doe@example.com',
+		];
+
+		$order->set_billing_first_name( $client_data['first_name'] );
+		$order->set_billing_last_name( $client_data['last_name'] );
+		$order->set_billing_email( $client_data['email'] );
+		$order->set_status('completed');
+		$order->set_total(100);
+		$order->save();
+
+		$this->settings['approve_document'] = 'yes';
+		$option_prefix = 'conecom-test';
+
+		// Review order data that sends to ERP.
+		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+		$this->assertNotEmpty( $order_data );
+		$this->assertEquals( true, $order_data['approveDoc'] );
+	}
 }

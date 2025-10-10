@@ -5,7 +5,7 @@
  * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
- * Version:           3.1.5-beta.1
+ * Version:           3.1.6
  * Requires PHP:      7.4
  * Requires at least: 6.3
  * Text Domain:       connect-ecommerce
@@ -13,12 +13,14 @@
  * License:           GPL-2.0+
  * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
  *
+ * Prefix:            conecom_
+ *
  * @package WordPress
  */
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.1.5-beta.1' );
+define( 'CONECOM_VERSION', '3.1.6' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -27,6 +29,11 @@ define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
 
+/**
+ * Gets the options for the plugin.
+ *
+ * @return array
+ */
 function conecom_get_options() {
 		/**
 	 * Default values
@@ -91,7 +98,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	 * @author David Perez
 	 */
 	function conecom_import_products_register_commands() {
-		WP_CLI::add_command('conecom', 'Import_Products_Command' );
+		WP_CLI::add_command( 'conecom', 'Import_Products_Command' );
 	}
 
 	add_action( 'cli_init', 'conecom_import_products_register_commands', 20 );

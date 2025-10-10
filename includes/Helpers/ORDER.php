@@ -120,29 +120,34 @@ class ORDER {
 		} else {
 			$contact_name = $order->get_billing_company();
 		}
-		$first_name = $order->get_billing_first_name();
-		$last_name = $order->get_billing_last_name();
+		$first_name           = $order->get_billing_first_name();
+		$last_name            = $order->get_billing_last_name();
+		$billing_company      = $order->get_billing_company();
+		$billing_address      = $order->get_billing_address_1() . ',' . $order->get_billing_address_2();
+		$billing_city         = $order->get_billing_city();
+		$billing_postcode     = $order->get_billing_postcode();
+		$billing_state_code   = $order->get_billing_state();
+		$billing_country_code = $order->get_billing_country();
 
 		// Clean special chars.
 		if ( isset( $setttings['cleanchars'] ) && 'on' === $setttings['cleanchars'] ) {
-			$contact_name = self::clean_special_chars( $contact_name );
-			$first_name   = self::clean_special_chars( $first_name );
-			$last_name    = self::clean_special_chars( $last_name );
+			$contact_name         = self::clean_special_chars( $contact_name );
+			$first_name           = self::clean_special_chars( $first_name );
+			$last_name            = self::clean_special_chars( $last_name );
+			$billing_company      = self::clean_special_chars( $billing_company );
+			$billing_address      = self::clean_special_chars( $billing_address );
+			$billing_city         = self::clean_special_chars( $billing_city );
+			$billing_postcode     = self::clean_special_chars( $billing_postcode );
+			$billing_state_code   = self::clean_special_chars( $billing_state_code );
+			$billing_country_code = self::clean_special_chars( $billing_country_code );
 		}
 
 		// State and Country.
-		$billing_country_code = $order->get_billing_country();
-		$billing_state_code   = $order->get_billing_state();
-		$order_description    = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
-		$billing_state        = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) ? WC()->countries->get_states( $billing_country_code )[ $billing_state_code ] : '';
+		$order_description = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
+		$woo_states        = WC()->countries->get_states( $billing_country_code );
+		$billing_state     = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) && ! empty( $woo_states[ $billing_state_code ] ) ? $woo_states[ $billing_state_code ] : '';
 
-		$contact_code = $order->get_meta( '_billing_vat' );
-		if ( empty( $contact_code ) ) {
-			$contact_code = $order->get_meta( '_billing_nif' );
-		}
-		if ( empty( $contact_code ) ) {
-			$contact_code = $order->get_meta( '_billing_vat_number' );
-		}
+		$contact_code = self::get_billing_vat( $order );
 
 		// Order Reference.
 		$base_domain = basename( sanitize_text_field( $_SERVER['HTTP_HOST'] ) );
@@ -167,11 +172,11 @@ class ORDER {
 			'woocommerceOrderEdit'   => $order->get_edit_order_url(),
 			'woocommerceStore'       => get_bloginfo( 'name', 'display' ),
 			'contactEmail'           => $order->get_billing_email(),
-			'contactCompany'         => $order->get_billing_company(),
+			'contactCompany'         => $billing_company,
 			'contact_phone'          => $order->get_billing_phone(),
-			'contactAddress'         => $order->get_billing_address_1() . ',' . $order->get_billing_address_2(),
-			'contactCity'            => $order->get_billing_city(),
-			'contactCp'              => $order->get_billing_postcode(),
+			'contactAddress'         => $billing_address,
+			'contactCity'            => $billing_city,
+			'contactCp'              => $billing_postcode,
 			'contactProvince'        => $billing_state,
 			'contactCountryCode'     => $billing_country_code,
 			'desc'                   => $order_description,
@@ -183,7 +188,14 @@ class ORDER {
 			'language'               => $doclang,
 			'pmtype'                 => null,
 			'items'                  => array(),
+			'approveDoc'             => false,
 		);
+
+		// Approve document.
+		$approve_document = isset( $setttings['approve_document'] ) ? $setttings['approve_document'] : 'no';
+		if ( 'yes' === $approve_document ) {
+			$order_data['approveDoc'] = true;
+		}
 
 		// DesignID.
 		$design_id = isset( $setttings['design_id'] ) ? $setttings['design_id'] : '';
@@ -203,26 +215,26 @@ class ORDER {
 			$order_data['clientify_vk'] = $visitor_key;
 		}
 
-		$wc_payment_method    = $order->get_payment_method();
-		$order_data['notes'] .= ' ';
-		switch ( $wc_payment_method ) {
-			case 'cod':
-				$order_data['notes'] .= __( 'Paid by cash', 'connect-ecommerce' );
-				break;
-			case 'cheque':
-				$order_data['notes'] .= __( 'Paid by check', 'connect-ecommerce' );
-				break;
-			case 'paypal':
-				$order_data['notes'] .= __( 'Paid by paypal', 'connect-ecommerce' );
-				break;
-			case 'bacs':
-				$order_data['notes'] .= __( 'Paid by bank transfer', 'connect-ecommerce' );
-				break;
-			default:
-				$order_data['notes'] .= __( 'Paid by', 'connect-ecommerce' ) . ' ' . (string) $wc_payment_method;
-				break;
+		// Payment method.
+		$wc_payment_method = $order->get_payment_method();
+		if ( ! empty( $wc_payment_method ) ) {
+			$order_data['paymentMethod'] = $wc_payment_method;
 		}
-		$result_items = self::review_items( $order, $option_prefix );
+		$settings_prod_mergevars = isset( $setttings['prod_mergevars'] ) ? $setttings['prod_mergevars'] : '';
+		if ( ! empty( $settings_prod_mergevars ) ) {
+			foreach ( $settings_prod_mergevars as $key => $value ) {
+				if ( false === strpos( $key, 'paymentmethods|' ) ) {
+					continue;
+				}
+				$payment_method     = explode( '|', $key );
+				$payment_method_woo = explode( '|', $value );
+				if ( $payment_method_woo[1] === $wc_payment_method ) {
+					$order_data['paymentMethodId'] = $payment_method[1];
+				}
+			}
+		}
+
+		$result_items        = self::review_items( $order, $option_prefix );
 		$order_data['items'] = $result_items['items'];
 
 		// Add shipping if products not virtual.
@@ -365,6 +377,7 @@ class ORDER {
 				// Taxes.
 				$item_tax  = (float) $shipping_item->get_total_tax();
 				$taxes     = $tax->get_rates( $shipping_item->get_tax_class() );
+				$tax_rates = array_shift( $taxes );
 				$item_rate = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
 
 				$fields_items[] = array(
@@ -406,6 +419,30 @@ class ORDER {
 	}
 
 	/**
+	 * Gets Billing VAT info from order
+	 * 
+	 * @param $order Order object to get info
+	 * 
+	 * @return string
+	 */
+	private static function get_billing_vat( $order ) {
+		$code_labels = array(
+		 '_billing_vat',
+		 '_billing_nif',
+		 '_billing_vat_number',
+		 'VAT Number' // Support to SIMBA Hosting.
+		);
+		$contact_code = '';
+		foreach ( $code_labels as $code_label ) {
+			$contact_code = $order->get_meta( $code_label );
+			if ( ! empty( $contact_code ) ) {
+				break;
+			}
+		}
+		return $contact_code;
+	}
+
+	/**
 	 * Sanitize strings for AEAT (VeriFactu) submission.
 	 *
 	 * - Removes diacritics and special characters.
@@ -419,35 +456,16 @@ class ORDER {
 	 * @param string|null $fallback  Value to return if empty after sanitization (null = empty string).
 	 * @return string
 	 */
-	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9 &\- ', ?string $fallback = null ): string
-	{
-		$value = trim(preg_replace('/\s+/u', ' ', $value ?? ''));
-		if ($value === '') {
-				return $fallback ?? '';
+	public static function clean_special_chars( string $value, int $maxLen = 120, string $whitelist = 'A-Za-z0-9ÑÇñç &\- ', ?string $fallback = null ): string {
+		$value = trim( preg_replace( '/\s+/u', ' ', $value ) );
+		if ( $value === '' ) {
+			return $fallback ?? '';
 		}
 
 		$map = [
-				'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','ü'=>'u','ñ'=>'n',
-				'Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','Ü'=>'U','Ñ'=>'N',
-				'à'=>'a','è'=>'e','ì'=>'i','ò'=>'o','ù'=>'u',
-				'À'=>'A','È'=>'E','Ì'=>'I','Ò'=>'O','Ù'=>'U',
-				'â'=>'a','ê'=>'e','î'=>'i','ô'=>'o','û'=>'u',
-				'Â'=>'A','Ê'=>'E','Î'=>'I','Ô'=>'O','Û'=>'U',
-				'ä'=>'a','ë'=>'e','ï'=>'i','ö'=>'o','ü'=>'u',
-				'Ä'=>'A','Ë'=>'E','Ï'=>'I','Ö'=>'O','Ü'=>'U',
-				'ã'=>'a','õ'=>'o',
-				'Ã'=>'A','Õ'=>'O',
-				'ç'=>'c','Ç'=>'C',
-				'š'=>'s','Š'=>'S',
-				'ž'=>'z','Ž'=>'Z',
-				'ý'=>'y','Ý'=>'Y',
-				'ÿ'=>'y','Ÿ'=>'Y',
-				'ø'=>'o','Ø'=>'O',
-				'æ'=>'ae','Æ'=>'AE',
-				'œ'=>'oe','Œ'=>'OE',
-				'ß'=>'ss'
+			'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'ñ', 'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ñ'=>'Ñ', 'à'=>'a', 'è'=>'e', 'ì'=>'i', 'ò'=>'o', 'ù'=>'u', 'À'=>'A', 'È'=>'E', 'Ì'=>'I', 'Ò'=>'O', 'Ù'=>'U', 'â'=>'a', 'ê'=>'e', 'î'=>'i', 'ô'=>'o', 'û'=>'u', 'Â'=>'A', 'Ê'=>'E', 'Î'=>'I', 'Ô'=>'O', 'Û'=>'U', 'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u', 'Ä'=>'A', 'Ë'=>'E', 'Ï'=>'I', 'Ö'=>'O', 'Ü'=>'U', 'ã'=>'a', 'õ'=>'o', 'Ã'=>'A', 'Õ'=>'O', 'š'=>'s', 'Š'=>'S', 'ž'=>'z', 'Ž'=>'Z', 'ý'=>'y', 'Ý'=>'Y', 'ÿ'=>'y', 'Ÿ'=>'Y', 'ø'=>'o', 'Ø'=>'O', 'æ'=>'ae', 'Æ'=>'AE', 'œ'=>'oe', 'Œ'=>'OE', 'ß'=>'ss', '@'=>' ', '#'=>' ', '&' => 'Y', 'ğ'=>'g', 'Ğ'=>'G', 
 		];
-		$ascii = strtr($value, $map);
+		$ascii = strtr( $value, $map );
 
 		// Replace non-whitelisted characters with spaces
 		$ascii = preg_replace('/[^' . $whitelist . ']/', ' ', $ascii);

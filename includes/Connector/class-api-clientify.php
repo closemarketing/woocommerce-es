@@ -233,7 +233,9 @@ class Connect_Ecommerce_Clientify {
 	 * Creates the order to Clientify
 	 *
 	 * @param array  $order Order prepared to API.
-	 * @param string $meta_key String to save in order.
+	 * @param string $doc_id Document ID.
+	 * @param string $invoice_id Invoice ID.
+	 * @param string $force Force to create the order.
 	 *
 	 * @return array
 	 */

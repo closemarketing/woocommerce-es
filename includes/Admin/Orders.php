@@ -48,6 +48,13 @@ class Orders {
 	private $settings;
 
 	/**
+	 * Message error orders
+	 *
+	 * @var array
+	 */
+	private $msg_error_orders;
+
+	/**
 	 * Init and hook in the integration.
 	 *
 	 * @param array $options Options of plugin.
@@ -58,12 +65,13 @@ class Orders {
 		if ( empty( $connector ) ) {
 			return;
 		}
-		$this->options        = $options[ $connector ];
-		$this->settings       = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
-		$apiname              = 'Connect_Ecommerce_' . $this->options['name'];
-		$this->connapi_erp    = new $apiname( $options );
-		$ecstatus             = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
-		$this->meta_key_order = '_' . $this->options['slug'] . '_invoice_id';
+		$this->options                    = $options[ $connector ];
+		$this->settings                   = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
+		$this->settings['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
+		$apiname                          = 'Connect_Ecommerce_' . $this->options['name'];
+		$this->connapi_erp                = new $apiname( $options );
+		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
 
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
 
@@ -128,7 +136,7 @@ class Orders {
 			return;
 		}
 		$not_sapi_cli = substr( php_sapi_name(), 0, 3 ) !== 'cli' ? true : false;
-		$doing_ajax   = defined( 'DOING_AJAX' ) && DOING_AJAX;
+		$doing_ajax   = wp_doing_ajax();
 		$sync_loop    = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$message      = '';
 
@@ -145,7 +153,7 @@ class Orders {
 					'order'          => 'DESC',
 				)
 			);
-
+			$sync_orders = array();
 			foreach ( $orders as $order ) {
 				if ( $order->has_status( 'completed' ) ) {
 					$sync_orders[] = array(
@@ -251,7 +259,6 @@ class Orders {
 	 */
 	public function attach_file_woocommerce_email( $attachments, $action, $email_order ) {
 		$settings = get_option( $this->options['slug'] );
-		$apikey   = isset( $settings['api'] ) ? $settings['api'] : '';
 		$order    = wc_get_order( $email_order );
 		if ( ! $order ) {
 			return $attachments;
@@ -259,8 +266,8 @@ class Orders {
 		$api_doc_id   = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
-		if ( $api_doc_id && $apikey ) {
-			$file_document_path = $this->connapi_erp->get_order_pdf( $apikey, $api_doc_type, $api_doc_id );
+		if ( $api_doc_id ) {
+			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
 
 			if ( is_file( $file_document_path ) ) {
 				$attachments[] = $file_document_path;
@@ -338,7 +345,7 @@ class Orders {
 		}
 		wp_send_json_success(
 			array(
-				'message'  => $result['message'],
+				'message'  => $result['message'] ?? '',
 				'order_id' => $order_id,
 			)
 		);

@@ -15,7 +15,7 @@
 		"hasStock": true,
 		"stock": 0,
 		"barcode": "codbarzapblan",
-		"sku": "ZAPBLAN",
+		"sku": "",
 		"cost": 12,
 		"purchasePrice": "",
 		"weight": 1.2,
