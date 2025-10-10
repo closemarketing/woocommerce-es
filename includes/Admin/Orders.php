@@ -184,23 +184,23 @@ class Orders {
 					if ( $doing_ajax ) {
 						wp_send_json_error(
 							array(
-								'msg' => __( 'No orders to import', 'connect-ecommerce' ),
+								'msg' => __( 'No orders to import', 'woocommerce-es' ),
 							)
 						);
 					} else {
-						die( esc_html( __( 'No orders to import', 'connect-ecommerce' ) ) );
+						die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
 					}
 				} else {
 					$ec_invoice_id = $order->get_meta( $this->meta_key_order );
 
 					if ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
-						$message .= __( 'Order already exported to API ID:', 'connect-ecommerce' ) . $ec_invoice_id;
+						$message .= __( 'Order already exported to API ID:', 'woocommerce-es' ) . $ec_invoice_id;
 					} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
-						$message .= __( 'Free order not exported', 'connect-ecommerce' );
+						$message .= __( 'Free order not exported', 'woocommerce-es' );
 					} else {
 						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
 
-						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'connect-ecommerce' ) : __( 'Order not created.', 'connect-ecommerce' );
+						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
 						$message .= ' ' . $result['message'];
 					}
 				}
@@ -210,13 +210,13 @@ class Orders {
 
 					if ( $orders_synced <= $orders_count ) {
 						$order_date = gmdate( 'd-m-Y H:m', strtotime( $order->get_date_created() ) );
-						$message    = '[' . date_i18n( 'H:i:s' ) . '] ' . $orders_synced . '/' . $orders_count . ' ' . __( 'orders. ', 'connect-ecommerce' ) . ' ' . __( 'Created:', 'connect-ecommerce' ) . ' ' . $order_date . ' ' . $message;
+						$message    = '[' . date_i18n( 'H:i:s' ) . '] ' . $orders_synced . '/' . $orders_count . ' ' . __( 'orders. ', 'woocommerce-es' ) . ' ' . __( 'Created:', 'woocommerce-es' ) . ' ' . $order_date . ' ' . $message;
 						if ( $ec_invoice_id ) {
 							$link     = get_bloginfo( 'wpurl' ) . '/wp-admin/admin.php?page=wc-orders&id=' . $item['id'] . '&action=edit';
-							$message .= ' <a href="' . $link . '" target="_blank">' . __( 'View', 'connect-ecommerce' ) . '</a>';
+							$message .= ' <a href="' . $link . '" target="_blank">' . __( 'View', 'woocommerce-es' ) . '</a>';
 						}
 						if ( $orders_synced == $orders_count ) {
-							$message .= '<p class="finish">' . __( 'All caught up!', 'connect-ecommerce' ) . '</p>';
+							$message .= '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>';
 						}
 
 						$args = array(
@@ -238,9 +238,9 @@ class Orders {
 				}
 			} else {
 				if ( $doing_ajax ) {
-					wp_send_json_error( array( 'msg' => __( 'No orders to import', 'connect-ecommerce' ) ) );
+					wp_send_json_error( array( 'msg' => __( 'No orders to import', 'woocommerce-es' ) ) );
 				} else {
-					die( esc_html( __( 'No orders to import', 'connect-ecommerce' ) ) );
+					die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
 				}
 			}
 		}
@@ -266,7 +266,7 @@ class Orders {
 		$api_doc_id   = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
-		if ( $api_doc_id ) {
+		if ( $api_doc_id && method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
 			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
 
 			if ( is_file( $file_document_path ) ) {

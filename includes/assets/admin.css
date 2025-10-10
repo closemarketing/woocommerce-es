@@ -1,62 +1,61 @@
-.wp-admin #wcpimh_catnp,
-.wp-admin #wcpimh_stock,
-.wp-admin #wcpimh_catsep {
+.connect-ecommerce-settings #wcpimh_stock,
+.connect-ecommerce-settings #wcpimh_catsep {
 	width: 70px;
 }
 
-.wp-admin #wcpimh_idcentre,
-.wp-admin #wcpimh_sync_num {
+.connect-ecommerce-settings #wcpimh_idcentre,
+.connect-ecommerce-settings #wcpimh_sync_num {
 	width: 50px;
 }
 
-.wp-admin #wcpimh_prodst {
+.connect-ecommerce-settings #wcpimh_prodst {
 	width: 150px;
 }
 
-.wp-admin #wcpimh_api,
-.wp-admin #wcpimh_taxinc {
-	width: 270px;
+.connect-ecommerce-settings #wcpimh_api,
+.connect-ecommerce-settings #wcpimh_taxinc {
+	width: 326px;
 }
 
-.connwoo-sync-engine #logwrapper {
+.connect-ecommerce-settings .connwoo-sync-engine #logwrapper {
 	border: 1px solid #aaa;
 	margin: 10px auto;
 }
 
-.connwoo-sync-engine fieldset {
+.connect-ecommerce-settings .connwoo-sync-engine fieldset {
 	padding: 20px;
 	width: auto;
 }
 
-.connwoo-sync-engine #loglist {
+.connect-ecommerce-settings .connwoo-sync-engine #loglist {
 	border: 1px solid #AAAAAA;
 	height: 380px;
 	overflow: auto;
 }
 
-.connwoo-sync-engine #loglist>p {
+.connect-ecommerce-settings .connwoo-sync-engine #loglist>p {
 	margin: 0;
 	padding: 3px 5px;
 }
 
-.connwoo-sync-engine #loglist>p.odd {
+.connect-ecommerce-settings .connwoo-sync-engine #loglist>p.odd {
 	background: #dfdfdf;
 }
 
-.connwoo-sync-engine #loglist>p.finish {
+.connect-ecommerce-settings .connwoo-sync-engine #loglist>p.finish {
 	background: #76d771;
 }
 
-.connwoo-sync-engine .error {
+.connect-ecommerce-settings .connwoo-sync-engine .error {
 	color: red;
 }
 
-.connwoo-sync-engine .warning {
+.connect-ecommerce-settings .connwoo-sync-engine .warning {
 	color: orange;
 }
 
-.connwoo-header {
-	background: #D33564 url('background.svg');
+.connect-ecommerce-settings .connwoo-header {
+	background: #010101 url('background.jpg');
 	margin-left: -20px;
 	padding: 20px 15%;
 	display: flex;
@@ -66,32 +65,32 @@
 	background-size: cover;
 }
 
-.connwoo-header .logo {
+.connect-ecommerce-settings .connwoo-header .logo {
 	min-width: 20%;
 }
 
-.connwoo-header h2 {
+.connect-ecommerce-settings .connwoo-header h2 {
 	float: right;
 	color: white;
 	padding: 10px 0 0 30px;
 	margin: 0;
 }
 
-.repeater-section .product-mergevars {
+.connect-ecommerce-settings .repeater-section .product-mergevars {
 	display: grid;
 	grid-template-columns: 3fr 1fr 1fr 3fr 1fr;
 }
 
-.repeater-section .dashicons {
+.connect-ecommerce-settings .repeater-section .dashicons {
 	padding-top: 4px;
 	padding-right: 5px;
 }
 
-.repeater-section .dashicons.dashicons-arrow-right-alt2 {
+.connect-ecommerce-settings .repeater-section .dashicons.dashicons-arrow-right-alt2 {
 	padding-top: 7px;
 }
 
-.progress-bar {
+.connect-ecommerce-settings .progress-bar {
 	background-color: #1a1a1a;
 	height: 16px;
 	padding: 5px;
@@ -101,7 +100,7 @@
 	box-shadow: 0 1px 5px #000 inset, 0 1px 0 #444;
 }
 
-.progress-bar span {
+.connect-ecommerce-settings .progress-bar span {
 	display: inline-block;
 	float: left;
 	height: 100%;
@@ -110,11 +109,11 @@
 	transition: width .4s ease-in-out;
 }
 
-.blue span {
+.connect-ecommerce-settings .blue span {
 	background-color: #2271b1;
 }
 
-.progress-text {
+.connect-ecommerce-settings .progress-text {
 	text-align: right;
 	color: white;
 	margin: 0;
@@ -141,13 +140,13 @@
 }
 
 .connect-update-tax-rates-wrapper .button {
-	background-color: #D33564;
-	border-color: #D33564;
+	background-color: #010101;
+	border-color: #010101;
 	color: white;
 }
 
 .connect-update-tax-rates-wrapper .button:hover {
-	background-color: #D33564;
-	border-color: #D33564;
+	background-color: #010101;
+	border-color: #010101;
 	color: white;
 }

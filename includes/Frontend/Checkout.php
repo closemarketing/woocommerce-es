@@ -47,8 +47,18 @@ class Checkout {
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_key_notification' ), 10, 1 );
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ) );
 
-		/* Options for the plugin */
-		add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
+		$show_vat = isset( $this->setttings_public['vat_show'] ) ? $this->setttings_public['vat_show'] : 'yes';
+		if ( 'yes' === $show_vat ) {
+			add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
+
+			// Gutenberg compatibility.
+			add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 99 );
+			add_action( 'wp_loaded', array( $this, 'add_vat_field_to_checkout' ), 10 );
+		}
+		
+		// Save and display additional checkout fields.
+		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'save_additional_checkout_fields' ) );
+		add_action( 'woocommerce_admin_order_data_after_billing_address', array( $this, 'display_additional_checkout_fields_admin' ) );
 
 		$remove_free = isset( $this->setttings_public['remove_free'] ) ? $this->setttings_public['remove_free'] : 'no';
 		if ( 'yes' === $remove_free ) {
@@ -110,8 +120,8 @@ class Checkout {
 
 		$field = array(
 			'billing_vat' => array(
-				'label'       => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
-				'placeholder' => apply_filters( 'conecom_vatssn_label_x', __( 'VAT No', 'connect-ecommerce' ) ),
+				'label'       => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) ),
+				'placeholder' => apply_filters( 'conecom_vatssn_label_x', __( 'VAT No', 'woocommerce-es' ) ),
 				'required'    => $mandatory,
 				'class'       => array( 'form-row-last' ),
 				'clear'       => true,
@@ -121,7 +131,12 @@ class Checkout {
 		return $this->array_splice_assoc( $fields, $field, 'billing_company' );
 	}
 
-	// Our hooked in function - $fields is passed via the filter!
+	/**
+	 * Custom override checkout fields.
+	 *
+	 * @param array $fields Fields.
+	 * @return array
+	 */
 	public function custom_override_checkout_fields( $fields ) {
 		$company_field = isset( $this->setttings_public['company_field'] ) ? $this->setttings_public['company_field'] : 'no';
 
@@ -145,14 +160,51 @@ class Checkout {
 		return $fields;
 	}
 
+	/**
+	 * Add VAT field to checkout.
+	 *
+	 * @return void
+	 */
+	public function add_vat_field_to_checkout() {
+		$required = isset( $this->setttings_public['vat_mandatory'] ) ? $this->setttings_public['vat_mandatory'] : 'no';
+		$required = $required === 'yes' ? true : false;
+
+		woocommerce_register_additional_checkout_field(
+			array(
+				'id'            => 'connect_ecommerce/billing_vat',
+				'label'         => __( 'VAT Number', 'connect-ecommerce' ),
+				'optionalLabel' => __( 'VAT Number (optional)', 'connect-ecommerce' ),
+				'location'      => 'address',
+				'priority'      => 10,
+				'required'      => $required,
+				'attributes'    => array(
+					'autocomplete' => 'billing_vat',
+					'title'        => __( 'VAT number', 'connect-ecommerce' ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Add VAT field to admin order page.
+	 *
+	 * @param array $fields Fields.
+	 * @return array
+	 */
 	public function add_billing_shipping_fields_admin( $fields ) {
 		$fields['vat'] = array(
-			'label' => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
+			'label' => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) ),
 		);
 
 		return $fields;
 	}
 
+	/**
+	 * Add VAT field to order data.
+	 *
+	 * @param array $fields Fields.
+	 * @return array
+	 */
 	public function add_var_load_order_data( $fields ) {
 		$fields['billing_vat'] = '';
 		return $fields;
@@ -165,7 +217,7 @@ class Checkout {
 	 * @return void
 	 */
 	public function email_key_notification( $order ) {
-		echo '<p><strong>' . esc_html__( 'VAT No', 'connect-ecommerce' ) . ':</strong> ';
+		echo '<p><strong>' . esc_html__( 'VAT No', 'woocommerce-es' ) . ':</strong> ';
 		echo esc_html( get_post_meta( $order->get_id(), '_billing_vat', true ) ) . '</p>';
 	}
 
@@ -219,7 +271,7 @@ class Checkout {
 					<?php
 					echo sprintf(
 						/* translators: 1: Terms and conditions page link */
-						__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'connect-ecommerce' ),
+						__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'woocommerce-es' ),
 						esc_url( wc_get_page_permalink( 'terms' ) )
 					);
 					?>
@@ -242,7 +294,47 @@ class Checkout {
 	 */
 	public function terms_and_conditions_validation( $username, $email, $validation_errors ) {
 		if ( ! isset( $_POST['terms'] ) ) {
-			$validation_errors->add( 'terms_error', __( 'Terms and conditions are not accepted!', 'connect-ecommerce' ) );
+			$validation_errors->add( 'terms_error', __( 'Terms and conditions are not accepted!', 'woocommerce-es' ) );
+		}
+	}
+
+	/**
+	 * Save additional checkout field data to order.
+	 *
+	 * @param int $order_id Order ID.
+	 * @return void
+	 */
+	public function save_additional_checkout_fields( $order_id ) {
+		// Save marketing opt-in field.
+		if ( ! empty( $_POST['namespace/marketing-opt-in'] ) ) {
+			update_post_meta( $order_id, '_marketing_opt_in', sanitize_text_field( wp_unslash( $_POST['namespace/marketing-opt-in'] ) ) );
+		}
+
+		// Save government ID field.
+		if ( ! empty( $_POST['namespace/gov-id'] ) ) {
+			update_post_meta( $order_id, '_government_id', sanitize_text_field( wp_unslash( $_POST['namespace/gov-id'] ) ) );
+		}
+	}
+
+	/**
+	 * Display additional checkout field data in admin order page.
+	 *
+	 * @param object $order Order object.
+	 * @return void
+	 */
+	public function display_additional_checkout_fields_admin( $order ) {
+		$marketing_opt_in = get_post_meta( $order->get_id(), '_marketing_opt_in', true );
+		$government_id    = get_post_meta( $order->get_id(), '_government_id', true );
+
+		if ( ! empty( $marketing_opt_in ) ) {
+			echo '<p><strong>' . esc_html__( 'Marketing Opt-in', 'connect-ecommerce' ) . ':</strong> ';
+			echo esc_html( $marketing_opt_in ) . '</p>';
+		}
+
+		if ( ! empty( $government_id ) ) {
+			echo '<p><strong>' . esc_html__( 'Government ID', 'connect-ecommerce' ) . ':</strong> ';
+			echo esc_html( $government_id ) . '</p>';
 		}
 	}
 }
+

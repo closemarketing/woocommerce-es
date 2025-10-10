@@ -225,41 +225,41 @@ class CRON {
 		$total_count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync WHERE synced = 1" );
 
 		if ( $total_count > 0 && 'yes' === $send_email ) {
-			$subject = __( 'All products synced with ', 'connect-ecommerce' ) . $option_name;
+			$subject = __( 'All products synced with ', 'woocommerce-es' ) . $option_name;
 			$headers = array( 'Content-Type: text/html; charset=UTF-8' );
-			$body    = '<h2>' . __( 'All products synced with ', 'connect-ecommerce' ) . $option_name . '</h2> ';
-			$body   .= '<br/><strong>' . __( 'Total products:', 'connect-ecommerce' ) . '</strong> ';
+			$body    = '<h2>' . __( 'All products synced with ', 'woocommerce-es' ) . $option_name . '</h2> ';
+			$body   .= '<br/><strong>' . __( 'Total products:', 'woocommerce-es' ) . '</strong> ';
 			$body   .= $total_count;
 
 			$total_api_products = (int) get_option( $option_prefix . '_total_api_products' );
 			if ( $total_api_products || $total_count !== $total_api_products ) {
-				$body .= ' ' . esc_html__( 'filtered', 'connect-ecommerce' );
-				$body .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'connect-ecommerce' ) . ' )';
+				$body .= ' ' . esc_html__( 'filtered', 'woocommerce-es' );
+				$body .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'woocommerce-es' ) . ' )';
 			}
 
-			$body .= '<br/><strong>' . __( 'Time:', 'connect-ecommerce' ) . '</strong> ';
+			$body .= '<br/><strong>' . __( 'Time:', 'woocommerce-es' ) . '</strong> ';
 			$body .= date_i18n( 'Y-m-d H:i', current_time( 'timestamp' ) );
 
 			$start_time = get_option( $option_prefix . '_sync_start_time' );
 			if ( $start_time ) {
-				$body .= '<br/><strong>' . __( 'Total Time:', 'connect-ecommerce' ) . '</strong> ';
+				$body .= '<br/><strong>' . __( 'Total Time:', 'woocommerce-es' ) . '</strong> ';
 				$body .= round( ( strtotime( 'now' ) - $start_time ) / 60 / 60, 1 );
 				$body .= 'h';
 			}
 
 			$products_errors = get_option( $option_prefix . '_sync_errors' );
 			if ( false !== $products_errors && ! empty( $products_errors ) ) {
-				$body .= '<h2>' . __( 'Errors founded', 'connect-ecommerce' ) . '</h2>';
+				$body .= '<h2>' . __( 'Errors founded', 'woocommerce-es' ) . '</h2>';
 
 				foreach ( $products_errors as $error ) {
 					$body .= '<br/><strong>' . $error['error'] . '</strong>';
-					$body .= '<br/><strong>' . __( 'Product id: ', 'connect-ecommerce' ) . '</strong>' . $error['id'];
+					$body .= '<br/><strong>' . __( 'Product id: ', 'woocommerce-es' ) . '</strong>' . $error['id'];
 
 					if ( 'Holded' === $option_name ) {
-						$body .= ' <a href="https://app.holded.com/products/' . $error['id'] . '">' . __( 'View in Holded', 'connect-ecommerce' ) . '</a>';
+						$body .= ' <a href="https://app.holded.com/products/' . $error['id'] . '">' . __( 'View in Holded', 'woocommerce-es' ) . '</a>';
 					}
-					$body .= '<br/><strong>' . __( 'Product name: ', 'connect-ecommerce' ) . '</strong>' . $error['name'];
-					$body .= '<br/><strong>' . __( 'Product sku: ', 'connect-ecommerce' ) . '</strong>' . $error['sku'];
+					$body .= '<br/><strong>' . __( 'Product name: ', 'woocommerce-es' ) . '</strong>' . $error['name'];
+					$body .= '<br/><strong>' . __( 'Product sku: ', 'woocommerce-es' ) . '</strong>' . $error['sku'];
 					$body .= '<br/>';
 				}
 			}
@@ -296,43 +296,43 @@ class CRON {
 			array(
 				'key'      => 'every_five_minutes',
 				'interval' => 300,
-				'display'  => __( 'Every 5 minutes', 'connect-ecommerce' ),
+				'display'  => __( 'Every 5 minutes', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_five_minutes',
 			),
 			array(
 				'key'      => 'every_fifteen_minutes',
 				'interval' => 900,
-				'display'  => __( 'Every 15 minutes', 'connect-ecommerce' ),
+				'display'  => __( 'Every 15 minutes', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_fifteen_minutes',
 			),
 			array(
 				'key'      => 'every_thirty_minutes',
 				'interval' => 1800,
-				'display'  => __( 'Every 30 Minutes', 'connect-ecommerce' ),
+				'display'  => __( 'Every 30 Minutes', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_thirty_minutes',
 			),
 			array(
 				'key'      => 'every_one_hour',
 				'interval' => 3600,
-				'display'  => __( 'Every 1 Hour', 'connect-ecommerce' ),
+				'display'  => __( 'Every 1 Hour', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_one_hour',
 			),
 			array(
 				'key'      => 'every_three_hours',
 				'interval' => 10800,
-				'display'  => __( 'Every 3 Hours', 'connect-ecommerce' ),
+				'display'  => __( 'Every 3 Hours', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_three_hours',
 			),
 			array(
 				'key'      => 'every_six_hours',
 				'interval' => 21600,
-				'display'  => __( 'Every 6 Hours', 'connect-ecommerce' ),
+				'display'  => __( 'Every 6 Hours', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_six_hours',
 			),
 			array(
 				'key'      => 'every_twelve_hours',
 				'interval' => 43200,
-				'display'  => __( 'Every 12 Hours', 'connect-ecommerce' ),
+				'display'  => __( 'Every 12 Hours', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_twelve_hours',
 			),
 		);

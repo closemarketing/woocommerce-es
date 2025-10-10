@@ -99,7 +99,7 @@ class MyAccount {
 		unset( $columns['order-actions'] ); // Remove Order actions.
 
 		// Add your custom column key / label.
-		$columns['custom-column'] = __( 'Invoice', 'connect-ecommerce' );
+		$columns['custom-column'] = __( 'Invoice', 'woocommerce-es' );
 
 		// Add back previously saved "Order actions".
 		$columns['order-actions'] = $order_actions;
@@ -124,7 +124,7 @@ class MyAccount {
 			if ( $document_file ) {
 				$nonce        = wp_create_nonce( 'cwc-document-nonce' );
 				echo '<a href=' . esc_url( admin_url( 'admin-ajax.php?action=cwc_document_download&doc_id=' . esc_attr( $api_doc_id ) . '&doc_type=' . esc_attr( $api_doc_type ) . '&nonce=' . $nonce ) ) . ' class="button button-primary" target="_blank">';
-				echo esc_html__( 'Download', 'connect-ecommerce' ) . '</a>';
+				echo esc_html__( 'Download', 'woocommerce-es' ) . '</a>';
 			}
 		}
 	}
