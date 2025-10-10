@@ -47,11 +47,14 @@ class Checkout {
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_key_notification' ), 10, 1 );
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ) );
 
-		/* Options for the plugin */
-		//add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
-		// Register additional checkout fields for Gutenberg compatibility.
-		add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 99 );
-		add_action( 'wp_loaded', array( $this, 'add_vat_field_to_checkout' ), 10 );
+		$show_vat = isset( $this->setttings_public['vat_show'] ) ? $this->setttings_public['vat_show'] : 'yes';
+		if ( 'yes' === $show_vat ) {
+			add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
+
+			// Gutenberg compatibility.
+			add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 99 );
+			add_action( 'wp_loaded', array( $this, 'add_vat_field_to_checkout' ), 10 );
+		}
 		
 		// Save and display additional checkout fields.
 		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'save_additional_checkout_fields' ) );
@@ -128,7 +131,12 @@ class Checkout {
 		return $this->array_splice_assoc( $fields, $field, 'billing_company' );
 	}
 
-	// Our hooked in function - $fields is passed via the filter!
+	/**
+	 * Custom override checkout fields.
+	 *
+	 * @param array $fields Fields.
+	 * @return array
+	 */
 	public function custom_override_checkout_fields( $fields ) {
 		$company_field = isset( $this->setttings_public['company_field'] ) ? $this->setttings_public['company_field'] : 'no';
 
@@ -152,8 +160,15 @@ class Checkout {
 		return $fields;
 	}
 
+	/**
+	 * Add VAT field to checkout.
+	 *
+	 * @return void
+	 */
 	public function add_vat_field_to_checkout() {
-		// Register government ID field.
+		$required = isset( $this->setttings_public['vat_mandatory'] ) ? $this->setttings_public['vat_mandatory'] : 'no';
+		$required = $required === 'yes' ? true : false;
+
 		woocommerce_register_additional_checkout_field(
 			array(
 				'id'            => 'connect_ecommerce/billing_vat',
@@ -161,16 +176,21 @@ class Checkout {
 				'optionalLabel' => __( 'VAT Number (optional)', 'connect-ecommerce' ),
 				'location'      => 'address',
 				'priority'      => 10,
-				'required'      => true,
+				'required'      => $required,
 				'attributes'    => array(
 					'autocomplete' => 'billing_vat',
-					'pattern'      => '[A-Z0-9]{12}', // A 5-character string of capital letters and numbers.
 					'title'        => __( 'VAT number', 'connect-ecommerce' ),
 				),
 			)
 		);
 	}
 
+	/**
+	 * Add VAT field to admin order page.
+	 *
+	 * @param array $fields Fields.
+	 * @return array
+	 */
 	public function add_billing_shipping_fields_admin( $fields ) {
 		$fields['vat'] = array(
 			'label' => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
@@ -179,6 +199,12 @@ class Checkout {
 		return $fields;
 	}
 
+	/**
+	 * Add VAT field to order data.
+	 *
+	 * @param array $fields Fields.
+	 * @return array
+	 */
 	public function add_var_load_order_data( $fields ) {
 		$fields['billing_vat'] = '';
 		return $fields;
