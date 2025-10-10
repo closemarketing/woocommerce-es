@@ -105,6 +105,9 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
+= 3.2.0 =
+* Enhancement: Gutenberg support for VAT field in checkout.
+
 = 3.1.6 =
 * Enhancement: Added variation images to product gallery for APIs that allows images in variations.
 * Enhancement: Added support to import variable products without SKU in parent.
