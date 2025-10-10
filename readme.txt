@@ -122,6 +122,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 = 3.2.0 =
 * Enhancement: Moved to a new plugin repository: https://wordpress.org/plugins/woocommerce-es/
+* Enhancement: Gutenberg support for VAT field in checkout.
 
 = 3.1.6 =
 * Enhancement: Added variation images to product gallery for APIs that allows images in variations.

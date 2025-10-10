@@ -266,7 +266,7 @@ class Orders {
 		$api_doc_id   = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
-		if ( $api_doc_id ) {
+		if ( $api_doc_id && method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
 			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
 
 			if ( is_file( $file_document_path ) ) {
