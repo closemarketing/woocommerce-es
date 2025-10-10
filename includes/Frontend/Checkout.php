@@ -120,8 +120,8 @@ class Checkout {
 
 		$field = array(
 			'billing_vat' => array(
-				'label'       => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
-				'placeholder' => apply_filters( 'conecom_vatssn_label_x', __( 'VAT No', 'connect-ecommerce' ) ),
+				'label'       => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) ),
+				'placeholder' => apply_filters( 'conecom_vatssn_label_x', __( 'VAT No', 'woocommerce-es' ) ),
 				'required'    => $mandatory,
 				'class'       => array( 'form-row-last' ),
 				'clear'       => true,
@@ -193,7 +193,7 @@ class Checkout {
 	 */
 	public function add_billing_shipping_fields_admin( $fields ) {
 		$fields['vat'] = array(
-			'label' => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'connect-ecommerce' ) ),
+			'label' => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) ),
 		);
 
 		return $fields;
@@ -217,7 +217,7 @@ class Checkout {
 	 * @return void
 	 */
 	public function email_key_notification( $order ) {
-		echo '<p><strong>' . esc_html__( 'VAT No', 'connect-ecommerce' ) . ':</strong> ';
+		echo '<p><strong>' . esc_html__( 'VAT No', 'woocommerce-es' ) . ':</strong> ';
 		echo esc_html( get_post_meta( $order->get_id(), '_billing_vat', true ) ) . '</p>';
 	}
 
@@ -271,7 +271,7 @@ class Checkout {
 					<?php
 					echo sprintf(
 						/* translators: 1: Terms and conditions page link */
-						__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'connect-ecommerce' ),
+						__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'woocommerce-es' ),
 						esc_url( wc_get_page_permalink( 'terms' ) )
 					);
 					?>
@@ -294,7 +294,7 @@ class Checkout {
 	 */
 	public function terms_and_conditions_validation( $username, $email, $validation_errors ) {
 		if ( ! isset( $_POST['terms'] ) ) {
-			$validation_errors->add( 'terms_error', __( 'Terms and conditions are not accepted!', 'connect-ecommerce' ) );
+			$validation_errors->add( 'terms_error', __( 'Terms and conditions are not accepted!', 'woocommerce-es' ) );
 		}
 	}
 

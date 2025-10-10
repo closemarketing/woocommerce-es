@@ -9,7 +9,7 @@
 	<exclude-pattern>*/vendor/*</exclude-pattern>
 	<exclude-pattern>*/node_modules/*</exclude-pattern>
 	<file>./includes</file>
-	<file>./connect-ecommerce.php</file>
+	<file>./woocommerce-es.php</file>
 
 	<!-- WordPress Coding Standards -->
 	<rule ref="WordPress">
@@ -19,6 +19,17 @@
 		<exclude name="WordPress.PHP.YodaConditions"/>
 		<exclude name="WordPress.NamingConventions.ValidVariableName"/>
 		<exclude name="WordPress.NamingConventions.ValidFunctionName"/>
+	</rule>
+
+	<!-- Define plugin prefix -->
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="conecom"/>
+				<element value="connect_ecommerce"/>
+				<element value="CONECOM"/>
+			</property>
+		</properties>
 	</rule>
 
 	<!-- PHP 7.4+ specific rules -->

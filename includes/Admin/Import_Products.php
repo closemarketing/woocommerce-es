@@ -105,7 +105,7 @@ class Import_Products {
 	 */
 	public function admin_enqueues() {
 		wp_enqueue_style(
-			'connect-ecommerce',
+			'woocommerce-es',
 			CONECOM_PLUGIN_URL . 'includes/assets/admin.css',
 			array(),
 			CONECOM_VERSION
@@ -132,9 +132,9 @@ class Import_Products {
 			'ConEcom_ajaxAction',
 			array(
 				'url'                 => admin_url( 'admin-ajax.php' ),
-				'label_sync'          => __( 'Sync', 'connect-ecommerce' ),
-				'label_syncing'       => __( 'Syncing', 'connect-ecommerce' ),
-				'label_sync_complete' => __( 'Finished', 'connect-ecommerce' ),
+				'label_sync'          => __( 'Sync', 'woocommerce-es' ),
+				'label_syncing'       => __( 'Syncing', 'woocommerce-es' ),
+				'label_sync_complete' => __( 'Finished', 'woocommerce-es' ),
 				'nonce'               => wp_create_nonce( 'conecom_manual_import_nonce' ),
 			)
 		);
@@ -153,8 +153,8 @@ class Import_Products {
 			'ConEcom_ajaxActionOrder',
 			array(
 				'url'           => admin_url( 'admin-ajax.php' ),
-				'label_syncing' => __( 'Syncing', 'connect-ecommerce' ),
-				'label_synced'  => __( 'Synced', 'connect-ecommerce' ),
+				'label_syncing' => __( 'Syncing', 'woocommerce-es' ),
+				'label_synced'  => __( 'Synced', 'woocommerce-es' ),
 				'nonce'         => wp_create_nonce( 'sync_erp_order_nonce' ),
 			)
 		);
@@ -184,7 +184,7 @@ class Import_Products {
 		if ( ! empty( $product_erp_id ) ) {
 			$result_api = $this->connapi_erp->get_products( $product_erp_id );
 			if ( isset( $result_api['status'] ) && 'error' === $result_api['status'] ) {
-				wp_send_json_error( array( 'message' => __( 'Error getting product', 'connect-ecommerce' ) . ': ' . $result_api['message'] ) );
+				wp_send_json_error( array( 'message' => __( 'Error getting product', 'woocommerce-es' ) . ': ' . $result_api['message'] ) );
 			}
 			if ( empty( $result_api ) ) {
 				wp_send_json_error( array( 'message' => 'No products' ) );
@@ -211,7 +211,7 @@ class Import_Products {
 		if ( 0 === $sync_loop || ( $api_pagination && 0 === $loop_page ) ) {
 			$api_products                     = $this->connapi_erp->get_products( null, $sync_loop );
 			$_SESSION['conecom_api_products'] = HELPER::sanitize_array_recursive( $api_products );
-			$res_message             .= __( 'Connecting with API...', 'connect-ecommerce' ) . '<br/>';
+			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
 		} elseif ( 0 < $sync_loop ) {
 			$api_products = isset( $_SESSION['conecom_api_products'] ) ? HELPER::sanitize_array_recursive( $_SESSION['conecom_api_products'] ) : array();
 		}
@@ -259,17 +259,17 @@ class Import_Products {
 			// Get taxonomies from post_id.
 			$term_list = wp_get_post_terms( $post_id, 'product_cat', array( 'fields' => 'names' ) );
 			if ( ! empty( $term_list ) && is_array( $term_list ) ) {
-				$res_message .= ' <span class="taxonomies">' . __( 'Categories: ', 'connect-ecommerce' );
+				$res_message .= ' <span class="taxonomies">' . __( 'Categories: ', 'woocommerce-es' );
 				$res_message .= implode( ', ', $term_list ) . '</span>';
 			}
 
 			// Get link to product.
 			if ( 0 <= $sync_loop ) {
-				$res_message .= ' <a href="' . get_edit_post_link( $post_id ) . '" target="_blank">' . __( 'View', 'connect-ecommerce' ) . '</a>';
+				$res_message .= ' <a href="' . get_edit_post_link( $post_id ) . '" target="_blank">' . __( 'View', 'woocommerce-es' ) . '</a>';
 			}
 		}
 		if ( $finish ) {
-			$res_message .= '<p class="finish">' . __( 'All caught up!', 'connect-ecommerce' ) . '</p>';
+			$res_message .= '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>';
 		}
 
 		$args = array(

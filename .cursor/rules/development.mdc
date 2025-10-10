@@ -13,6 +13,10 @@ Key Principles
 - Prefer iteration and modularization over duplication.
 - Use descriptive function, variable, and file names.
 
+Format code
+- Use tabs for indentations.
+- Space to align equals in same group of variable definitions.
+
 PHP/WordPress
 - Use PHP 7.4+ features when appropriate (e.g., typed properties, arrow functions).
 - Follow WordPress PHP Coding Standards.

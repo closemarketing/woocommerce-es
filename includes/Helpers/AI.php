@@ -90,22 +90,22 @@ class AI {
 		$message      = '';
 		$api_url      = '';
 
-		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'connect-ecommerce' ) . wp_json_encode( $product_info );
+		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'woocommerce-es' ) . wp_json_encode( $product_info );
 		$language = get_locale();
 		$content .= PHP_EOL . sprintf(
 			/* translators: %s: language */
-			__( 'Please respond in %s language.', 'connect-ecommerce' ),
+			__( 'Please respond in %s language.', 'woocommerce-es' ),
 			$language
 		);
-		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO, SEO description and SEO Focus keyword and export it in format JSON, with elements: title, body, seo_title, seo_description, seo_keyword', 'connect-ecommerce' );
-		$content .= PHP_EOL . __( 'Return only a valid and complete JSON object. If the content is too long, split it into multiple parts and clearly indicate when to continue. Do not include any text outside of the JSON.', 'connect-ecommerce' );
+		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO, SEO description and SEO Focus keyword and export it in format JSON, with elements: title, body, seo_title, seo_description, seo_keyword', 'woocommerce-es' );
+		$content .= PHP_EOL . __( 'Return only a valid and complete JSON object. If the content is too long, split it into multiple parts and clearly indicate when to continue. Do not include any text outside of the JSON.', 'woocommerce-es' );
 
 		$token = isset( $settings['token'] ) ? $settings['token'] : '';
 
 		if ( empty( $token ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => __( 'Error no credentials', 'connect-ecommerce' ),
+				'message' => __( 'Error no credentials', 'woocommerce-es' ),
 			);
 		}
 
@@ -155,7 +155,7 @@ class AI {
 			$message .= sanitize_text_field( $body['errors']['http_request_failed'] ) ?? '';
 
 			if ( empty( $message ) ) {
-				$message = __( 'Unknown error', 'connect-ecommerce' );
+				$message = __( 'Unknown error', 'woocommerce-es' );
 			}
 
 			return array(
@@ -172,13 +172,13 @@ class AI {
 			if ( json_last_error() !== JSON_ERROR_NONE ) {
 				return array(
 					'status'  => 'error',
-					'message' => __( 'Error decoding JSON', 'connect-ecommerce' ) . ': ' . json_last_error_msg(),
+					'message' => __( 'Error decoding JSON', 'woocommerce-es' ) . ': ' . json_last_error_msg(),
 				);
 			}
 			if ( ! is_array( $content ) ) {
 				$content = array();
 			}
-			$message = __( 'Spent tokens: ', 'connect-ecommerce' ) . ( isset( $body['usage']['total_tokens'] ) ? $body['usage']['total_tokens'] : 0 );
+			$message = __( 'Spent tokens: ', 'woocommerce-es' ) . ( isset( $body['usage']['total_tokens'] ) ? $body['usage']['total_tokens'] : 0 );
 		}
 
 		return array(

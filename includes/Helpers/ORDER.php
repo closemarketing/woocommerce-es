@@ -35,7 +35,7 @@ class ORDER {
 		$order_total    = (float) $order->get_total();
 		$ec_invoice_id  = $order->get_meta( $meta_key_order );
 		$freeorder      = isset( $settings['freeorder'] ) ? $settings['freeorder'] : 'no';
-		$order_free_msg = __( 'Free order not created ', 'connect-ecommerce' );
+		$order_free_msg = __( 'Free order not created ', 'woocommerce-es' );
 		$is_debug_log   = isset( $settings['debug_log'] ) && 'on' === $settings['debug_log'] ? true : false;
 
 		// Not create order if free.
@@ -49,7 +49,7 @@ class ORDER {
 				'message' => $order_free_msg,
 			);
 		} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' === $ec_invoice_id ) {
-			$order_free_msg = __( 'Free order not created ', 'connect-ecommerce' );
+			$order_free_msg = __( 'Free order not created ', 'woocommerce-es' );
 			return array(
 				'status'  => 'ok',
 				'message' => $order_free_msg,
@@ -60,7 +60,7 @@ class ORDER {
 		if ( is_a( $order, 'WC_Order_Refund' ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => __( 'Connot create refund', 'connect-ecommerce' ),
+				'message' => __( 'Connot create refund', 'woocommerce-es' ),
 			);
 		}
 		$doctype = isset( $settings['doctype'] ) ? $settings['doctype'] : 'invoice';
@@ -80,7 +80,7 @@ class ORDER {
 				$order->update_meta_data( '_' . $option_prefix . '_doc_type', $doctype );
 				$order->save();
 
-				$order_msg = __( 'Order synced correctly with ERP, ID: ', 'connect-ecommerce' ) . $invoice_id;
+				$order_msg = __( 'Order synced correctly with ERP, ID: ', 'woocommerce-es' ) . $invoice_id;
 
 				$order->add_order_note( $order_msg );
 			} catch ( \Exception $e ) {
@@ -92,7 +92,7 @@ class ORDER {
 		} else {
 			$result = array(
 				'status'  => 'error',
-				'message' => $doctype . ' ' . __( 'num: ', 'connect-ecommerce' ) . $ec_invoice_id,
+				'message' => $doctype . ' ' . __( 'num: ', 'woocommerce-es' ) . $ec_invoice_id,
 			);
 		}
 		if ( $is_debug_log ) {
@@ -381,7 +381,7 @@ class ORDER {
 				$item_rate = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
 
 				$fields_items[] = array(
-					'name'     => __( 'Shipping:', 'connect-ecommerce' ) . ' ' . $shipping_item->get_name(),
+					'name'     => __( 'Shipping:', 'woocommerce-es' ) . ' ' . $shipping_item->get_name(),
 					'desc'     => '',
 					'units'    => 1,
 					'subtotal' => (float) $shipping_item->get_total(),

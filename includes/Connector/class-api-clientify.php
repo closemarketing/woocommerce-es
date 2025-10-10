@@ -212,7 +212,7 @@ class Connect_Ecommerce_Clientify {
 		if ( 'error' === $products['status'] ) {
 			return array(
 				'status'  => 'error',
-				'message' => __( 'Error getting products from Clientify', 'connect-ecommerce' ),
+				'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
 			);
 		}
 
@@ -245,7 +245,7 @@ class Connect_Ecommerce_Clientify {
 		if ( empty( $order ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => __( 'Error order not found in WooCommerce.', 'connect-ecommerce' ),
+				'message' => __( 'Error order not found in WooCommerce.', 'woocommerce-es' ),
 			);
 		}
 
@@ -317,14 +317,14 @@ class Connect_Ecommerce_Clientify {
 		if ( empty( $order_clientify['items'] ) ) {
 			return array(
 				'status'  => 'error',
-				'message' => $order['woocommerceOrderId'] . ' ' . __( 'Error items not valid in the order.', 'connect-ecommerce' ),
+				'message' => $order['woocommerceOrderId'] . ' ' . __( 'Error items not valid in the order.', 'woocommerce-es' ),
 			);
 		}
 
 		// Create sales order.
 		$result_clientify = $this->api( 'contacts/', $api_key, 'POST', $clientify_contact );
 		if ( 'error' === $result_clientify['status'] || ! isset( $result_clientify['data']['url'] ) ) {
-			$order_msg = __( 'Error creating the contact in Clientify', 'connect-ecommerce' );
+			$order_msg = __( 'Error creating the contact in Clientify', 'woocommerce-es' );
 			return array(
 				'status'  => 'error',
 				'message' => $order_msg,
@@ -337,13 +337,13 @@ class Connect_Ecommerce_Clientify {
 			$clientify_sale_id = isset( $result_order['data']['id'] ) ? $result_order['data']['id'] : 0;
 			return array(
 				'status'      => 'ok',
-				'message'     => __( 'The order was created correctly in Clientify', 'connect-ecommerce' ) . $clientify_sale_id,
+				'message'     => __( 'The order was created correctly in Clientify', 'woocommerce-es' ) . $clientify_sale_id,
 				'document_id' => $clientify_sale_id,
 				'invoice_id'  => $clientify_sale_id,
 			);
 		} else {
 			$message_data = is_array( $result_order['data'] ) ? implode( ' ', $result_order['data'] ) : $result_order['data'];
-			$order_msg    = __( 'Order error syncing with Clientify. Error: ', 'connect-ecommerce' ) . $message_data;
+			$order_msg    = __( 'Order error syncing with Clientify. Error: ', 'woocommerce-es' ) . $message_data;
 
 			// Log Error and return.
 			return array(

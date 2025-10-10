@@ -79,7 +79,7 @@ class Widget_Product {
 
 		echo '<table>';
 		// Send Product.
-		echo '<tr><td><strong>' . esc_html__( 'Product:', 'connect-ecommerce' ) . '</strong></td>';
+		echo '<tr><td><strong>' . esc_html__( 'Product:', 'woocommerce-es' ) . '</strong></td>';
 		echo '<td>';
 		echo '<div name="connwoo-sync-product" id="sync-erp-products-' . esc_html( $product_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncProductERP(this,\'';
@@ -87,7 +87,7 @@ class Widget_Product {
 		echo '\'' . esc_html( $product_erp_id ) . '\',';
 		echo '\'' . esc_html( $product->get_sku() ) . '\',';
 		echo '\'' . esc_html( $product_id ) . '\',';
-		echo ')">' . esc_html__( 'Sync', 'connect-ecommerce' ) . '</div>';
+		echo ')">' . esc_html__( 'Sync', 'woocommerce-es' ) . '</div>';
 		echo '</td>';
 		echo '</tr>';
 		echo '</table>';
@@ -95,7 +95,7 @@ class Widget_Product {
 			echo '<input type="checkbox" name="connwoo-sync-product-ai" ';
 			echo 'id="connect_ecommerce_ai" ';
 			echo ' /><label for="connect_ecommerce_ai">';
-			echo esc_html__( 'Use AI to regenerate title, description and seo.', 'connect-ecommerce' ) . '</label>';
+			echo esc_html__( 'Use AI to regenerate title, description and seo.', 'woocommerce-es' ) . '</label>';
 		}
 	}
 }

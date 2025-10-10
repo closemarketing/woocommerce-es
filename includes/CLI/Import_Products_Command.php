@@ -66,7 +66,7 @@ class Import_Products_Command {
 		$synced_products = 0;
 		do {
 			$message = sprintf(
-				__( 'Fetching %s products from %s', 'connect-ecommerce' ),
+				__( 'Fetching %s products from %s', 'woocommerce-es' ),
 				$api_pagination,
 				$connector
 			);
@@ -77,8 +77,8 @@ class Import_Products_Command {
 			$res_status   = $api_products['status'] ?? 'ok';
 
 			if ( 'error' === $res_status ) {
-				WP_CLI::line( $this->cli_header_line() . __( 'We couldn\'t connect to the API. Error: ', 'connect-ecommerce' ) . $api_products['message'] );
-				WP_CLI::line( $this->cli_header_line() . __( 'Please check your connection settings.', 'connect-ecommerce' ) );
+				WP_CLI::line( $this->cli_header_line() . __( 'We couldn\'t connect to the API. Error: ', 'woocommerce-es' ) . $api_products['message'] );
+				WP_CLI::line( $this->cli_header_line() . __( 'Please check your connection settings.', 'woocommerce-es' ) );
 				break;
 			}
 
@@ -108,7 +108,7 @@ class Import_Products_Command {
 
 		// Resume.
 		$message = sprintf(
-			__( 'Products imported: %s / %s . Total time: %s', 'connect-ecommerce' ),
+			__( 'Products imported: %s / %s . Total time: %s', 'woocommerce-es' ),
 			$synced_products,
 			$sync_loop,
 			HELPER::time_total_text( $time_start )
