@@ -10,7 +10,7 @@ Version: 3.2.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect WooCommerce with ERPs and CRMs. Products, Clients and Orders with ERP/CRM.
+Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooCommerce with ERPs and CRMs. Products, Clients and Orders with ERP/CRM.
 
 == Description ==
 

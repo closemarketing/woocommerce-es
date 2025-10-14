@@ -1,11 +1,21 @@
-# Connect Ecommerce Documentation
+# Connect Ecommerce and EU/VAT Compliance
 
-## Documentation
+Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooCommerce with ERPs and CRMs. Products, Clients and Orders with ERP/CRM.
 
-* This is a base plugin
-* Usage
+- Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
+- EU/VAT Compliance: Import European Taxes and check VAT compliance.
+- (optional) Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
+- Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
+- You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
+- There’s no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
+- This plugin is fully GDPR compliant. The synchronization between WooCommerce and your ERP/CRM is established through a direct connection, without intermediaries or third-party storage of personal data. This ensures maximum security and transparency, keeping customer information under your full control.
+- This plugin also includes specific adjustments to comply with Verifactu regulations. Order and invoice data are processed and structured to meet the official requirements, ensuring your business adheres to current legal standards.
 
-## Usage
+Plugin WordPress url: https://wordpress.org/plugins/woocommerce-es/
+
+## Developers
+
+### Addon for Connect Ecommerce
 You will need to use this code in order to import the library.
 
 ```
@@ -47,7 +57,7 @@ require_once PREFIX_PLUGIN_PATH . 'vendor/closemarketing/connect-woocommerce-lib
 new Connect_WooCommerce( $connwoo_options_erp );
 ```
 
-## Send products from API to Library
+### Send products from API to Library
 
 It needs this format:
 
@@ -150,7 +160,7 @@ return [
 ]
 ```
 
-## Order data received to send to convert and send to API
+### Order data received to send to convert and send to API
 
 ```
 $order_data = array(
