@@ -158,7 +158,7 @@ class Settings {
 			__( 'Connect Ecommerce', 'woocommerce-es' ),
 			'manage_woocommerce',
 			'connect_ecommerce',
-			array( $this, 'create_admin_page' ),
+			array( $this, 'create_admin_page' )
 		);
 	}
 
@@ -272,7 +272,6 @@ class Settings {
 					<?php
 				}
 				?>
-
 				<?php
 				// Synchronization Tab Content.
 				if ( 'synchronization' === $active_tab ) {

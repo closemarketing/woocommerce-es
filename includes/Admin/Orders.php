@@ -269,7 +269,8 @@ class Orders {
 		if ( $api_doc_id && method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
 			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
 
-			if ( is_file( $file_document_path ) ) {
+			// Check if file exists and is readable before attaching.
+			if ( is_readable( $file_document_path ) && is_file( $file_document_path ) ) {
 				$attachments[] = $file_document_path;
 			}
 		}

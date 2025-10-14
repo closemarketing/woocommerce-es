@@ -122,8 +122,31 @@
 	right: 18px;
 }
 
-/* Subtab Navigation Styles */
-.connect-ecommerce-settings .wrap .subsubsub {
-	margin-top: 15px;
-	margin-bottom: 15px;
+/* Taxes Rates */
+.connect-update-tax-rates-wrapper {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 10px;
+	justify-content: flex-end;
+}
+
+.connect-update-tax-rates-wrapper label {
+	font-weight: bold;
+}
+
+.connect-update-tax-rates-wrapper select {
+	width: auto;
+}
+
+.connect-update-tax-rates-wrapper .button {
+	background-color: #010101;
+	border-color: #010101;
+	color: white;
+}
+
+.connect-update-tax-rates-wrapper .button:hover {
+	background-color: #010101;
+	border-color: #010101;
+	color: white;
 }

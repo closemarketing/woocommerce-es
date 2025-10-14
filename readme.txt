@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.1.6
-Version: 3.1.6
+Stable tag: 3.2.0
+Version: 3.2.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,13 +16,19 @@ Connect WooCommerce with ERPs and CRMs. Products, Clients and Orders with ERP/CR
 
 **Functionalities**
 
-- Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
+- Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
 - EU/VAT Compliance: Import European Taxes and check VAT compliance.
+- (optional) Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
 - Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
 - You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
 - There’s no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
 - This plugin is fully GDPR compliant. The synchronization between WooCommerce and your ERP/CRM is established through a direct connection, without intermediaries or third-party storage of personal data. This ensures maximum security and transparency, keeping customer information under your full control.
 - This plugin also includes specific adjustments to comply with Verifactu regulations. Order and invoice data are processed and structured to meet the official requirements, ensuring your business adheres to current legal standards.
+
+
+**EU/VAT Compliance: Import European Taxes and check VAT compliance.**
+
+You can use this feature alone if you need it. You can import European Taxes and check VAT compliance.
 
 **Connect your WooCommerce store to your ERP or CRM software.**
 Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
@@ -32,10 +38,6 @@ Save hours of administrative work by eliminating the need to manually enter prod
 You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
 
 There’s no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
-
-**EU/VAT Compliance: Import European Taxes and check VAT compliance.**
-
-You can use this feature alone if you need it. You can import European Taxes and check VAT compliance.
 
 **How does it work the synchronization?**
 It synchronizes according to the natural workflow your business should have when connected to an online store.
@@ -121,6 +123,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 == Changelog ==
 
 = 3.2.0 =
+* Enhancement: Added support to update tax rates from EU database.
 * Enhancement: Moved to a new plugin repository: https://wordpress.org/plugins/woocommerce-es/
 * Enhancement: Gutenberg support for VAT field in checkout.
 

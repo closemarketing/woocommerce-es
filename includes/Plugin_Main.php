@@ -18,6 +18,7 @@ use CLOSE\ConnectEcommerce\Admin\Widget_Order;
 use CLOSE\ConnectEcommerce\Admin\Widget_Product;
 use CLOSE\ConnectEcommerce\Admin\Orders;
 use CLOSE\ConnectEcommerce\Admin\Notices;
+use CLOSE\ConnectEcommerce\Admin\Taxes_Rates;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
 
@@ -48,6 +49,7 @@ class Base {
 			new Widget_Product( $options );
 			new Widget_Order( $options );
 			new Notices();
+			new Taxes_Rates();
 		}
 
 		new Orders( $options );
@@ -60,7 +62,7 @@ class Base {
 	 *
 	 * @return array
 	 */
-	public function get_options( ) {
+	public function get_options() {
 		return $this->options;
 	}
 }
