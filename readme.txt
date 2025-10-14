@@ -122,6 +122,9 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
+= 3.2.0.1 =
+* Fixed: Constant not defined.
+
 = 3.2.0 =
 * Enhancement: Added support to update tax rates from EU database.
 * Enhancement: Moved to a new plugin repository: https://wordpress.org/plugins/woocommerce-es/
