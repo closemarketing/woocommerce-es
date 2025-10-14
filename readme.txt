@@ -1,6 +1,6 @@
 === Connect Ecommerce - Connect WooCommerce Shop to ERP/CRM and EU/VAT Compliance ===
 Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
-Tags: connect, integrate, eu vat, vat compliance, woocommerce, connect woocommerce
+Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
