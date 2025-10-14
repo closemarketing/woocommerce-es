@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.2.0.1
-Version: 3.2.0.1
+Stable tag: 3.2.0.2
+Version: 3.2.0.2
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -121,6 +121,9 @@ Supported Services:
 The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
 == Changelog ==
+
+= 3.2.0.2 =
+* Fixed: Error updating tax rates.
 
 = 3.2.0.1 =
 * Fixed: Constant not defined.

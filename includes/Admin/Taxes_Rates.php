@@ -79,17 +79,17 @@ class Taxes_Rates {
 				wrapper.innerHTML = `
 					<div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 10px;\">
 						<label for=\"connect-rate-type\" style=\"font-weight: bold;\">
-							" . esc_js( __( 'Rate Type:', 'connect-ecommerce' ) ) . "
+							" . esc_html__( 'Rate Type:', 'woocommerce-es' ) . "
 						</label>
 						<select id=\"connect-rate-type\" class=\"regular-text\" style=\"width: auto;\">
-							<option value=\"standard_rate\">" . esc_js( __( 'Standard Rate', 'connect-ecommerce' ) ) . "</option>
-							<option value=\"reduced_rate\">" . esc_js( __( 'Reduced Rate', 'connect-ecommerce' ) ) . "</option>
-							<option value=\"reduced_rate_alt\">" . esc_js( __( 'Reduced Rate Alt', 'connect-ecommerce' ) ) . "</option>
-							<option value=\"super_reduced_rate\">" . esc_js( __( 'Super Reduced Rate', 'connect-ecommerce' ) ) . "</option>
-							<option value=\"all\">" . esc_js( __( 'All Rates', 'connect-ecommerce' ) ) . "</option>
+							<option value=\"standard_rate\">" . esc_html__( 'Standard Rate', 'woocommerce-es' ) . "</option>
+							<option value=\"reduced_rate\">" . esc_html__( 'Reduced Rate', 'woocommerce-es' ) . "</option>
+							<option value=\"reduced_rate_alt\">" . esc_html__( 'Reduced Rate Alt', 'woocommerce-es' ) . "</option>
+							<option value=\"super_reduced_rate\">" . esc_html__( 'Super Reduced Rate', 'woocommerce-es' ) . "</option>
+							<option value=\"all\">" . esc_html__( 'All Rates', 'woocommerce-es' ) . "</option>
 						</select>
 						<button type=\"button\" id=\"connect-update-tax-rates\" class=\"button button-primary\">
-							" . esc_js( __( 'Update Tax Rates from EU Database', 'connect-ecommerce' ) ) . "
+							" . esc_html__( 'Update Tax Rates from EU Database', 'woocommerce-es' ) . "
 						</button>
 					</div>
 					<div id=\"connect-tax-rates-message\"></div>
@@ -114,7 +114,7 @@ class Taxes_Rates {
 					const taxClass = '" . esc_js( $current_section ) . "';
 					
 					button.disabled = true;
-					button.textContent = '" . esc_js( __( 'Updating...', 'connect-ecommerce' ) ) . "';
+					button.textContent = '" . esc_js( __( 'Updating...', 'woocommerce-es' ) ) . "';
 					messageDiv.innerHTML = '';
 
 					fetch(ajaxurl, {
@@ -142,7 +142,7 @@ class Taxes_Rates {
 					.catch(error => {
 						button.disabled = false;
 						button.textContent = originalText;
-						messageDiv.innerHTML = '<div class=\"notice notice-error inline\"><p>" . esc_js( __( 'An error occurred. Please try again.', 'connect-ecommerce' ) ) . "</p></div>';
+						messageDiv.innerHTML = '<div class=\"notice notice-error inline\"><p>" . esc_js( __( 'An error occurred. Please try again.', 'woocommerce-es' ) ) . "</p></div>';
 					});
 				});
 			}, 500);
@@ -163,7 +163,7 @@ class Taxes_Rates {
 		if ( ! current_user_can( 'manage_woocommerce' ) ) {
 			wp_send_json_error(
 				array(
-					'message' => __( 'You do not have permission to perform this action.', 'connect-ecommerce' ),
+					'message' => __( 'You do not have permission to perform this action.', 'woocommerce-es' ),
 				)
 			);
 		}
@@ -200,9 +200,6 @@ class Taxes_Rates {
 	private function update_woocommerce_tax_rates( $rate_type = 'all', $tax_class = '' ) {
 		global $wpdb;
 
-		// Convert section slug to WooCommerce tax class.
-		$wc_tax_class = $this->get_wc_tax_class( $tax_class );
-
 		// EU country codes.
 		$eu_countries = array(
 			'AT',
@@ -238,6 +235,7 @@ class Taxes_Rates {
 		);
 
 		$updated_count = 0;
+		$tax_class     = 'standard' === $tax_class ? '' : $tax_class;
 
 		foreach ( $eu_countries as $country_code ) {
 			$rates = TAXES::get_rates_by_country( $country_code );
@@ -251,10 +249,10 @@ class Taxes_Rates {
 				$this->insert_or_update_tax_rate(
 					$country_code,
 					$rates['standard_rate'],
-					__( 'VAT', 'connect-ecommerce' ),
+					__( 'VAT', 'woocommerce-es' ),
 					1,
 					'',
-					$wc_tax_class
+					$tax_class
 				);
 				++$updated_count;
 			}
@@ -264,10 +262,10 @@ class Taxes_Rates {
 				$this->insert_or_update_tax_rate(
 					$country_code,
 					$rates['reduced_rate'],
-					__( 'Reduced VAT', 'connect-ecommerce' ),
+					__( 'Reduced VAT', 'woocommerce-es' ),
 					2,
 					'',
-					$wc_tax_class
+					$tax_class
 				);
 				++$updated_count;
 			}
@@ -277,10 +275,10 @@ class Taxes_Rates {
 				$this->insert_or_update_tax_rate(
 					$country_code,
 					$rates['reduced_rate_alt'],
-					__( 'Reduced Alt VAT', 'connect-ecommerce' ),
+					__( 'Reduced Alt VAT', 'woocommerce-es' ),
 					3,
 					'',
-					$wc_tax_class
+					$tax_class
 				);
 				++$updated_count;
 			}
@@ -290,10 +288,10 @@ class Taxes_Rates {
 				$this->insert_or_update_tax_rate(
 					$country_code,
 					$rates['super_reduced_rate'],
-					__( 'Super Reduced VAT', 'connect-ecommerce' ),
+					__( 'Super Reduced VAT', 'woocommerce-es' ),
 					4,
 					'',
-					$wc_tax_class
+					$tax_class
 				);
 				++$updated_count;
 			}
@@ -308,10 +306,10 @@ class Taxes_Rates {
 							$country_code,
 							$region_data['standard_rate'],
 							/* translators: %s: Region name */
-							sprintf( __( 'VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							sprintf( __( 'VAT %s', 'woocommerce-es' ), $region_data['name'] ),
 							1,
 							$state_code,
-							$wc_tax_class
+							$tax_class
 						);
 						++$updated_count;
 					}
@@ -322,10 +320,10 @@ class Taxes_Rates {
 							$country_code,
 							$region_data['reduced_rate'],
 							/* translators: %s: Region name */
-							sprintf( __( 'Reduced VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							sprintf( __( 'Reduced VAT %s', 'woocommerce-es' ), $region_data['name'] ),
 							2,
 							$state_code,
-							$wc_tax_class
+							$tax_class
 						);
 						++$updated_count;
 					}
@@ -336,10 +334,10 @@ class Taxes_Rates {
 							$country_code,
 							$region_data['reduced_rate_alt'],
 							/* translators: %s: Region name */
-							sprintf( __( 'Reduced Alt VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							sprintf( __( 'Reduced Alt VAT %s', 'woocommerce-es' ), $region_data['name'] ),
 							3,
 							$state_code,
-							$wc_tax_class
+							$tax_class
 						);
 						++$updated_count;
 					}
@@ -350,10 +348,10 @@ class Taxes_Rates {
 							$country_code,
 							$region_data['super_reduced_rate'],
 							/* translators: %s: Region name */
-							sprintf( __( 'Super Reduced VAT %s', 'connect-ecommerce' ), $region_data['name'] ),
+							sprintf( __( 'Super Reduced VAT %s', 'woocommerce-es' ), $region_data['name'] ),
 							4,
 							$state_code,
-							$wc_tax_class
+							$tax_class
 						);
 						++$updated_count;
 					}
@@ -364,7 +362,7 @@ class Taxes_Rates {
 		return array(
 			'message' => sprintf(
 				/* translators: %d: number of tax rates updated */
-				__( 'Successfully updated %d tax rates.', 'connect-ecommerce' ),
+				__( 'Successfully updated %d tax rates.', 'woocommerce-es' ),
 				$updated_count
 			),
 			'updated' => $updated_count,
@@ -388,9 +386,8 @@ class Taxes_Rates {
 		// Check if rate already exists.
 		$query        = "SELECT tax_rate_id FROM {$wpdb->prefix}woocommerce_tax_rates 
 				WHERE tax_rate_country = %s 
-				AND tax_rate_name = %s 
 				AND tax_rate_class = %s";
-		$query_params = array( $country_code, $rate_name, $tax_class );
+		$query_params = array( $country_code, $tax_class );
 
 		if ( $state_code ) {
 			$query         .= ' AND tax_rate_state = %s';
@@ -449,24 +446,5 @@ class Taxes_Rates {
 
 		// Clear tax rate cache.
 		\WC_Cache_Helper::invalidate_cache_group( 'taxes' );
-	}
-
-	/**
-	 * Convert section slug to WooCommerce tax class.
-	 *
-	 * @param string $section Section slug (e.g., 'standard', 'reduced-rate').
-	 * @return string WooCommerce tax class.
-	 */
-	private function get_wc_tax_class( $section ) {
-		// Map section slugs to WooCommerce tax classes.
-		$section_to_class = array(
-			'standard'           => '',
-			'reduced-rate'       => 'reduced-rate',
-			'reduced-rate-alt'   => 'reduced-rate-alt',
-			'super-reduced-rate' => 'super-reduced-rate',
-			'zero-rate'          => 'zero-rate',
-		);
-
-		return isset( $section_to_class[ $section ] ) ? $section_to_class[ $section ] : '';
 	}
 }
