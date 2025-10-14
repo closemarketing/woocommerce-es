@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.1.6
-Version: 3.1.6
+Stable tag: 3.2.0
+Version: 3.2.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
