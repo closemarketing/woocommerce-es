@@ -24,7 +24,6 @@ define( 'CONECOM_VERSION', '3.2.0-beta.1' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
-define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
 
