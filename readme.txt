@@ -122,6 +122,9 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
+= 3.2.1 =
+* Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
+
 = 3.2.0.2 =
 * Fixed: Error updating tax rates.
 
