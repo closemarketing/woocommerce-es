@@ -102,6 +102,30 @@ class ORDER {
 	}
 
 	/**
+	 * Create refund invoice
+	 *
+	 * @param array  $settings Settings data.
+	 * @param int    $refund_id Refund id.
+	 * @param array  $args Arguments.
+	 * @param string $option_prefix Option prefix.
+	 * @param object $api_erp API ERP.
+	 *
+	 * @return array
+	 */
+	public static function create_refund_invoice( $settings, $refund_id, $args, $option_prefix, $api_erp ) {
+		if ( ! method_exists( $api_erp, 'create_refund' ) ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'API ERP does not support create refund', 'woocommerce-es' ),
+			);
+		}
+		$refund_data = self::generate_order_refund_data( $settings, $refund_id, $args, $option_prefix );
+		$result      = $api_erp->create_refund( $refund_data );
+
+		return $result;
+	}
+
+	/**
 	 * Generate data for Order ERP
 	 *
 	 * @param object $setttings Settings data.
@@ -111,7 +135,7 @@ class ORDER {
 	 * @return array
 	 */
 	public static function generate_order_data( $setttings, $order, $option_prefix ) {
-		$order_label_id = is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order->get_id() : $order->get_id();
+		$order_label_id = self::generate_label_id( $order->get_id() );
 		$doclang        = $order->get_billing_country() !== 'ES' ? 'en' : 'es';
 		$shop_url       = wc_get_endpoint_url( 'shop' );
 
@@ -150,9 +174,7 @@ class ORDER {
 		$contact_code = self::get_billing_vat( $order );
 
 		// Order Reference.
-		$base_domain = basename( sanitize_text_field( $_SERVER['HTTP_HOST'] ) );
-		$base_domain = str_replace( 'www.', '', $base_domain );
-		$prefix      = $base_domain . '_';
+		$prefix = self::generate_prefix();
 
 		/**
 		 * ## Fields
@@ -419,18 +441,45 @@ class ORDER {
 	}
 
 	/**
+	 * Generate order refund data
+	 *
+	 * @param array  $settings Settings plugin.
+	 * @param string $refund_id Refund id.
+	 * @param array  $args Args.
+	 * @param string $option_prefix Option prefix.
+	 *
+	 * @return array
+	 */
+	public static function generate_order_refund_data( $settings, $refund_id, $args, $option_prefix ) {
+		$refund         = wc_get_order( $refund_id );
+		$order          = wc_get_order( $refund->get_parent_id() );
+		$order_label_id = self::generate_label_id( $order->get_id() );
+		$prefix         = self::generate_prefix();
+
+		$refund_data = array(
+			'contactCode'          => self::get_billing_vat( $order ),
+			'woocommerceOrderId'   => self::generate_label_id( $order->get_id() ),
+			'woocommerceReference' => $prefix . $order_label_id,
+			'date'                 => $refund->get_date_created(),
+		);
+		
+
+		return $refund_data;
+	}
+
+	/**
 	 * Gets Billing VAT info from order
-	 * 
-	 * @param $order Order object to get info
-	 * 
+	 *
+	 * @param object $order Order object to get info.
+	 *
 	 * @return string
 	 */
 	private static function get_billing_vat( $order ) {
 		$code_labels = array(
-		 '_billing_vat',
-		 '_billing_nif',
-		 '_billing_vat_number',
-		 'VAT Number' // Support to SIMBA Hosting.
+			'_billing_vat',
+			'_billing_nif',
+			'_billing_vat_number',
+			'VAT Number', // Support to SIMBA Hosting.
 		);
 		$contact_code = '';
 		foreach ( $code_labels as $code_label ) {
@@ -440,6 +489,28 @@ class ORDER {
 			}
 		}
 		return $contact_code;
+	}
+
+	/**
+	 * Generate reference
+	 *
+	 * @param int $order_id Order id.
+	 *
+	 * @return int
+	 */
+	private static function generate_label_id( $order_id ) {
+		return is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order_id : $order_id;
+	}
+
+	/**
+	 * Generate prefix
+	 *
+	 * @return string
+	 */
+	private static function generate_prefix() {
+		$base_domain = basename( sanitize_text_field( $_SERVER['HTTP_HOST'] ) );
+		$base_domain = str_replace( 'www.', '', $base_domain );
+		return $base_domain . '_';
 	}
 
 	/**

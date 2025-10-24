@@ -2,7 +2,7 @@
 /**
  * Class CreateOrderTest
  *
- * Command: composer test -- --filter=CreateOrderTest
+ * Command: composer test-debug -- --filter=CreateOrderTest
  *
  * @package Connect_Ecommerce
  */
@@ -221,5 +221,53 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
 		$this->assertNotEmpty( $order_data );
 		$this->assertEquals( true, $order_data['approveDoc'] );
+	}
+
+	public function test_refund_order_without_errors() {
+		$order = new WC_Order();
+		$order->set_status('completed');
+		$order->set_total(100);
+		$order->save();
+
+		$refund = wc_create_refund( [
+			'order_id' => $order->get_id(),
+			'amount'   => 50,
+		] );
+
+		$args = array(
+			'amount'         => '29.24',
+			'reason'         => '',
+			'order_id'       => 74,
+			'refund_id'      => 0,
+			'line_items'     => array(
+				25 => array(
+					'qty'          => '1',
+					'refund_total' => '29',
+					'refund_tax'   => array(),
+				),
+				26 => array(
+					'qty'          => '1',
+					'refund_total' => '0.24',
+					'refund_tax'   => array(),
+				),
+				27 => array(
+					'qty'          => 0,
+					'refund_total' => '0',
+					'refund_tax'   => array(),
+				),
+			),
+			'refund_payment' => false,
+			'restock_items'  => true,
+		);
+
+		$result = ORDER::create_refund_invoice( $this->settings, $refund->get_id(), $args, 'conecom-test', $this->connapi_erp );
+		$this->assertNotEmpty( $result );
+		$this->assertEquals( 'success', $result['status'] );
+		$this->assertEquals( 'Refund created successfully', $result['message'] );
+
+		$this->assertNotEmpty( $refund );
+		$this->assertEquals( 50, $refund->get_amount() );
+		$this->assertEquals( $order->get_id(), $refund->get_parent_id() );
+		$this->assertEquals( 'completed', $refund->get_status() );
 	}
 }

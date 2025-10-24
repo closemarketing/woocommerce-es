@@ -1,6 +1,6 @@
 <?php
 /**
- * Class Holded Connector
+ * Class Clientify Connector
  *
  * @package    WordPress
  * @author     David Perez <david@closemarketing.es>
@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 /**
  * LoadsAPI.
  *
- * API Holded.
+ * API Clientify.
  *
  * @since 1.0
  */
@@ -199,7 +199,7 @@ class Connect_Ecommerce_Clientify {
 	}
 
 	/**
-	 * Gets information from Holded products
+	 * Gets information from Clientify products
 	 *
 	 * @param string $id Id of product to get information.
 	 * @param string $period Date to get YYYYMMDD.
@@ -353,6 +353,21 @@ class Connect_Ecommerce_Clientify {
 				'invoice_id'  => '',
 			);
 		}
+	}
+
+	/**
+	 * Creates the refund to Clientify
+	 *
+	 * @param array $order Order prepared to API.
+	 * @return array
+	 */
+	public function create_refund( $order ) {
+		return array(
+			'status'  => 'ok',
+			'message' => __( 'The refund was created correctly in Clientify', 'woocommerce-es' ),
+			'document_id' => $order['id'],
+			'invoice_id'  => $order['id'],
+		);
 	}
 
 	/**

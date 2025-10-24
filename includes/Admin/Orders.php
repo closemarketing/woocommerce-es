@@ -123,6 +123,7 @@ class Orders {
 	 * @return void
 	 */
 	public function refunded_created( $refund_id, $args ) {
+		ORDER::create_refund_invoice( $this->settings, $refund_id, $args, $this->options['slug'], $this->connapi_erp );
 	}
 
 	/**
