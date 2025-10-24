@@ -58,6 +58,9 @@ class HELPER {
 		// Sends an email to admin.
 		$headers = array( 'Content-Type: text/html; charset=UTF-8' );
 		wp_mail( get_option( 'admin_email' ), __( 'Error in Products Synced in', 'woocommerce-es' ) . ' ' . get_option( 'blogname' ), $error_content, $headers );
+
+		// Send alert notification using the new alert system.
+		ALERT::send_product_errors_alert( $product_errors );
 	}
 	/**
 	 * Sends errors to admin

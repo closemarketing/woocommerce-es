@@ -17,6 +17,7 @@ use CLOSE\ConnectEcommerce\Helpers\TAX;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
 use CLOSE\ConnectEcommerce\Helpers\AI;
 use CLOSE\ConnectEcommerce\Helpers\CRON;
+use CLOSE\ConnectEcommerce\Helpers\ALERT;
 
 /**
  * Library for WooCommerce Settings
@@ -145,6 +146,7 @@ class Settings {
 
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
+		add_action( 'wp_ajax_connect_ecommerce_test_alert', array( $this, 'test_alert_callback' ) );
 	}
 	/**
 	 * Adds plugin page.
@@ -226,6 +228,7 @@ class Settings {
 						<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'woocommerce-es' ); ?></a>
 						<?php
 					}
+					
 					do_action( 'connect_ecommerce_settings_tabs', $active_tab );
 					?>
 				</h2>
@@ -263,10 +266,11 @@ class Settings {
 						}
 						if ( ! $this->is_disabled_ai && $this->connector ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'woocommerce-es' ); ?></a></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'woocommerce-es' ); ?></a> | </li>
 							<?php
 						}
 						?>
+						<li><a href="?page=connect_ecommerce&tab=settings&subtab=alerts" class="<?php echo 'alerts' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Alerts', 'woocommerce-es' ); ?></a></li>
 					</ul>
 					<br class="clear">
 					<?php
@@ -359,6 +363,65 @@ class Settings {
 							);
 							?>
 						</form>
+						<?php
+					}
+
+					if ( 'alerts' === $active_subtab ) {
+						?>
+						<form method="post" action="options.php">
+							<?php
+							settings_fields( 'connect_ecommerce_settings_alerts' );
+							do_settings_sections( 'connect_ecommerce_alerts' );
+							?>
+							<p>
+								<button type="button" id="test-alert" class="button button-secondary">
+									<?php esc_html_e( 'Send Test Alert', 'woocommerce-es' ); ?>
+								</button>
+								<span id="test-alert-result"></span>
+							</p>
+							<?php
+							submit_button(
+								__( 'Save Alerts Settings', 'woocommerce-es' ),
+								'primary',
+								'submit_alerts'
+							);
+							?>
+						</form>
+						<script>
+						document.getElementById('test-alert').addEventListener('click', function() {
+							var btn = this;
+							var resultSpan = document.getElementById('test-alert-result');
+							btn.disabled = true;
+							btn.textContent = '<?php esc_html_e( 'Sending...', 'woocommerce-es' ); ?>';
+							resultSpan.textContent = '';
+							
+							fetch('<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>', {
+								method: 'POST',
+								headers: {
+									'Content-Type': 'application/x-www-form-urlencoded',
+								},
+								body: 'action=connect_ecommerce_test_alert&nonce=<?php echo esc_js( wp_create_nonce( 'test_alert_nonce' ) ); ?>'
+							})
+							.then(response => response.json())
+							.then(data => {
+								btn.disabled = false;
+								btn.textContent = '<?php esc_html_e( 'Send Test Alert', 'woocommerce-es' ); ?>';
+								if (data.success) {
+									resultSpan.innerHTML = '<span style="color: green;">✓ <?php esc_html_e( 'Test alert sent successfully!', 'woocommerce-es' ); ?></span>';
+								} else {
+									resultSpan.innerHTML = '<span style="color: red;">✗ <?php esc_html_e( 'Failed to send test alert.', 'woocommerce-es' ); ?></span>';
+								}
+								setTimeout(function() {
+									resultSpan.textContent = '';
+								}, 5000);
+							})
+							.catch(error => {
+								btn.disabled = false;
+								btn.textContent = '<?php esc_html_e( 'Send Test Alert', 'woocommerce-es' ); ?>';
+								resultSpan.innerHTML = '<span style="color: red;">✗ <?php esc_html_e( 'Error sending test alert.', 'woocommerce-es' ); ?></span>';
+							});
+						});
+						</script>
 						<?php
 					}
 				}
@@ -865,6 +928,55 @@ class Settings {
 			array( $this, 'ai_prompt_callback' ),
 			'connect_ecommerce_ai',
 			'imhset_ai_setting_section'
+		);
+
+		/**
+		 * ## Alerts
+		 * --------------------------- */
+
+		register_setting(
+			'connect_ecommerce_settings_alerts',
+			'connect_ecommerce_alerts',
+			array( $this, 'sanitize_fields_alerts' )
+		);
+
+		add_settings_section(
+			'connect_ecommerce_alerts_section',
+			__( 'Configure Alert Notifications for Errors', 'woocommerce-es' ),
+			array( $this, 'section_info_alerts' ),
+			'connect_ecommerce_alerts'
+		);
+
+		add_settings_field(
+			'connect_ecommerce_alert_enabled',
+			__( 'Enable Alerts', 'woocommerce-es' ),
+			array( $this, 'alert_enabled_callback' ),
+			'connect_ecommerce_alerts',
+			'connect_ecommerce_alerts_section'
+		);
+
+		add_settings_field(
+			'connect_ecommerce_alert_method',
+			__( 'Alert Method', 'woocommerce-es' ),
+			array( $this, 'alert_method_callback' ),
+			'connect_ecommerce_alerts',
+			'connect_ecommerce_alerts_section'
+		);
+
+		add_settings_field(
+			'connect_ecommerce_alert_email',
+			__( 'Email Address', 'woocommerce-es' ),
+			array( $this, 'alert_email_callback' ),
+			'connect_ecommerce_alerts',
+			'connect_ecommerce_alerts_section'
+		);
+
+		add_settings_field(
+			'connect_ecommerce_slack_webhook',
+			__( 'Slack Webhook URL', 'woocommerce-es' ),
+			array( $this, 'slack_webhook_callback' ),
+			'connect_ecommerce_alerts',
+			'connect_ecommerce_alerts_section'
 		);
 	}
 
@@ -1949,6 +2061,140 @@ class Settings {
 		<textarea class="regular-text" rows="5" style="width: 100%;" name="connect_ecommerce_ai[prompt]" id="wcpimh_prompt"><?php echo esc_textarea( $prompt ); ?></textarea>
 		<p><?php esc_html_e( 'After prompt, we add the format to retrieve the contact', 'woocommerce-es' ); ?></p>
 		<?php
+	}
+
+	/**
+	 * ## Alerts
+	 * --------------------------- */
+
+	/**
+	 * Section info for alerts
+	 *
+	 * @return void
+	 */
+	public function section_info_alerts() {
+		?>
+		<p><?php esc_html_e( 'Configure how you want to receive alerts when there are errors in order submissions or product imports.', 'woocommerce-es' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Alert enabled callback
+	 *
+	 * @return void
+	 */
+	public function alert_enabled_callback() {
+		$settings = get_option( 'connect_ecommerce_alerts' );
+		$enabled  = isset( $settings['alert_enabled'] ) ? $settings['alert_enabled'] : 'no';
+		?>
+		<select name="connect_ecommerce_alerts[alert_enabled]" id="alert_enabled">
+			<option value="no" <?php selected( $enabled, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<option value="yes" <?php selected( $enabled, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Alert method callback
+	 *
+	 * @return void
+	 */
+	public function alert_method_callback() {
+		$settings = get_option( 'connect_ecommerce_alerts' );
+		$method   = isset( $settings['alert_method'] ) ? $settings['alert_method'] : 'email';
+		?>
+		<select name="connect_ecommerce_alerts[alert_method]" id="alert_method">
+			<option value="email" <?php selected( $method, 'email' ); ?>><?php esc_html_e( 'Email', 'woocommerce-es' ); ?></option>
+			<option value="slack" <?php selected( $method, 'slack' ); ?>><?php esc_html_e( 'Slack', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'Choose how you want to receive alert notifications.', 'woocommerce-es' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Alert email callback
+	 *
+	 * @return void
+	 */
+	public function alert_email_callback() {
+		$settings = get_option( 'connect_ecommerce_alerts' );
+		$email    = isset( $settings['alert_email'] ) ? $settings['alert_email'] : get_option( 'admin_email' );
+		?>
+		<input type="email" class="regular-text" name="connect_ecommerce_alerts[alert_email]" id="alert_email" value="<?php echo esc_attr( $email ); ?>">
+		<p class="description"><?php esc_html_e( 'Email address to receive alert notifications. Leave empty to use admin email.', 'woocommerce-es' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Slack webhook callback
+	 *
+	 * @return void
+	 */
+	public function slack_webhook_callback() {
+		$settings    = get_option( 'connect_ecommerce_alerts' );
+		$webhook_url = isset( $settings['slack_webhook'] ) ? $settings['slack_webhook'] : '';
+		?>
+		<input type="url" class="regular-text" name="connect_ecommerce_alerts[slack_webhook]" id="slack_webhook" value="<?php echo esc_attr( $webhook_url ); ?>" placeholder="https://hooks.slack.com/services/...">
+		<p class="description">
+			<?php esc_html_e( 'Enter your Slack webhook URL to receive notifications in Slack.', 'woocommerce-es' ); ?>
+			<br>
+			<?php
+			printf(
+				// translators: %s is URL to Slack documentation.
+				esc_html__( 'Learn how to create a webhook: %s', 'woocommerce-es' ),
+				'<a href="https://api.slack.com/messaging/webhooks" target="_blank">https://api.slack.com/messaging/webhooks</a>'
+			);
+			?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Sanitize alerts fields
+	 *
+	 * @param array $input Input fields.
+	 * @return array
+	 */
+	public function sanitize_fields_alerts( $input ) {
+		$sanitary_values = array();
+
+		if ( isset( $input['alert_enabled'] ) ) {
+			$sanitary_values['alert_enabled'] = sanitize_text_field( $input['alert_enabled'] );
+		}
+
+		if ( isset( $input['alert_method'] ) ) {
+			$sanitary_values['alert_method'] = sanitize_text_field( $input['alert_method'] );
+		}
+
+		if ( isset( $input['alert_email'] ) ) {
+			$sanitary_values['alert_email'] = sanitize_email( $input['alert_email'] );
+		}
+
+		if ( isset( $input['slack_webhook'] ) ) {
+			$sanitary_values['slack_webhook'] = esc_url_raw( $input['slack_webhook'] );
+		}
+
+		return $sanitary_values;
+	}
+
+	/**
+	 * Test alert callback
+	 *
+	 * @return void
+	 */
+	public function test_alert_callback() {
+		if ( ! check_ajax_referer( 'test_alert_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => 'Invalid nonce' ) );
+			return;
+		}
+
+		$result = ALERT::send_test_alert();
+
+		if ( $result ) {
+			wp_send_json_success( array( 'message' => __( 'Test alert sent successfully!', 'woocommerce-es' ) ) );
+		} else {
+			wp_send_json_error( array( 'message' => __( 'Failed to send test alert. Please check your settings.', 'woocommerce-es' ) ) );
+		}
 	}
 
 	/**
