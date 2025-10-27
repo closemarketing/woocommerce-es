@@ -126,7 +126,7 @@ class ORDER {
 			);
 		}
 		$refund_data = self::generate_order_refund_data( $settings, $refund_id, $args, $option_prefix );
-		$result      = $api_erp->create_refund( $refund_data );
+		$result      = $api_erp->create_refund( $settings, $refund_data );
 
 		return $result;
 	}
@@ -295,7 +295,7 @@ class ORDER {
 		$fields_items = array();
 		$index        = 0;
 		$index_bund   = 0;
-		$has_virtual	= true;
+		$has_virtual  = true;
 		$tax          = new \WC_Tax();
 
 		$coupons         = $order->get_items( 'coupon' );
@@ -452,11 +452,10 @@ class ORDER {
 	 * @param array  $settings Settings plugin.
 	 * @param string $refund_id Refund id.
 	 * @param array  $args Args.
-	 * @param string $option_prefix Option prefix.
 	 *
 	 * @return array
 	 */
-	public static function generate_order_refund_data( $settings, $refund_id, $args, $option_prefix ) {
+	public static function generate_order_refund_data( $settings, $refund_id, $args ) {
 		$refund         = wc_get_order( $refund_id );
 		$order          = wc_get_order( $refund->get_parent_id() );
 		$order_label_id = self::generate_label_id( $order->get_id() );
@@ -468,9 +467,47 @@ class ORDER {
 			'woocommerceReference' => $prefix . $order_label_id,
 			'date'                 => $refund->get_date_created(),
 		);
-		
+
+		$refund_data['items'] = self::generate_refund_items( $order, $refund, $args );
 
 		return $refund_data;
+	}
+
+	/**
+	 * Generate refund items
+	 *
+	 * @param object $order Order object.
+	 * @param object $refund Refund object.
+	 * @param array  $args Refund args.
+	 *
+	 * @return array
+	 */
+	public static function generate_refund_items( $order, $refund, $args ) {
+		$items = array();
+		foreach ( $args['line_items'] as $item_id => $item ) {
+			if ( 0 === (int) $item['qty'] ) {
+				continue;
+			}
+			$order_item = $order->get_item( $item_id );
+			if ( ! $order_item ) {
+				continue;
+			}
+
+			$product = $order_item->get_product();
+			if ( ! $product ) {
+				continue;
+			}
+
+			$items[] = array(
+				'name'     => $product->get_name(),
+				'desc'     => $product->get_description(),
+				'sku'      => $product->get_sku(),
+				'units'    => $item['qty'],
+				'subtotal' => $item['refund_total'],
+				'tax'      => isset( $item['refund_tax'][1] ) ? $item['refund_tax'][1] : 0,
+			);
+		}
+		return $items;
 	}
 
 	/**

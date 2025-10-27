@@ -365,8 +365,8 @@ class Connect_Ecommerce_Clientify {
 		return array(
 			'status'  => 'ok',
 			'message' => __( 'The refund was created correctly in Clientify', 'woocommerce-es' ),
-			'document_id' => $order['id'],
-			'invoice_id'  => $order['id'],
+			'document_id' => $order['id'] ?? '',
+			'invoice_id'  => $order['id'] ?? '',
 		);
 	}
 

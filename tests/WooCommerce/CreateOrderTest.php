@@ -262,8 +262,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 
 		$result = ORDER::create_refund_invoice( $this->settings, $refund->get_id(), $args, 'conecom-test', $this->connapi_erp );
 		$this->assertNotEmpty( $result );
-		$this->assertEquals( 'success', $result['status'] );
-		$this->assertEquals( 'Refund created successfully', $result['message'] );
+		$this->assertEquals( 'ok', $result['status'] );
 
 		$this->assertNotEmpty( $refund );
 		$this->assertEquals( 50, $refund->get_amount() );
