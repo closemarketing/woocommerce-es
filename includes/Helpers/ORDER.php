@@ -86,8 +86,10 @@ class ORDER {
 			} catch ( \Exception $e ) {
 				$result = array(
 					'status'  => 'error',
-					'message' => $e,
+					'message' => $e->getMessage(),
 				);
+				// Send alert for order error.
+				ALERT::send_order_error_alert( $order_id, $e->getMessage() );
 			}
 		} else {
 			$result = array(
@@ -97,6 +99,10 @@ class ORDER {
 		}
 		if ( $is_debug_log ) {
 			HELPER::save_log( 'create_order', $order_data, $result );
+		}
+		// Send alert if there was an error creating the order.
+		if ( 'error' === $result['status'] && ! empty( $result['message'] ) ) {
+			ALERT::send_order_error_alert( $order_id, $result['message'] );
 		}
 		return $result;
 	}
