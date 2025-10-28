@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.2.0.2
-Version: 3.2.0.2
+Stable tag: 3.2.1
+Version: 3.2.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,10 +18,11 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 
 - Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
 - EU/VAT Compliance: Import European Taxes and check VAT compliance.
+- **NEW: Validate VAT numbers via VIES** (VAT Information Exchange System) - Automatically verify EU VAT numbers during checkout using the official European Commission service.
 - (optional) Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
 - Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
 - You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
-- There’s no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
+- There's no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
 - This plugin is fully GDPR compliant. The synchronization between WooCommerce and your ERP/CRM is established through a direct connection, without intermediaries or third-party storage of personal data. This ensures maximum security and transparency, keeping customer information under your full control.
 - This plugin also includes specific adjustments to comply with Verifactu regulations. Order and invoice data are processed and structured to meet the official requirements, ensuring your business adheres to current legal standards.
 
@@ -29,6 +30,16 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 **EU/VAT Compliance: Import European Taxes and check VAT compliance.**
 
 You can use this feature alone if you need it. You can import European Taxes and check VAT compliance.
+
+**VAT Number Validation via VIES**
+
+The plugin now integrates with the VIES (VAT Information Exchange System) service to automatically validate EU VAT numbers during checkout. This feature:
+- Verifies VAT numbers in real-time against the official European Commission database
+- Can be configured as mandatory (blocking checkout) or optional (showing warnings)
+- Caches validation results to avoid overloading the VIES service
+- Handles service unavailability gracefully
+- Stores validation results in order metadata for compliance tracking
+- Enabled by default and can be disabled in settings if needed
 
 **Connect your WooCommerce store to your ERP or CRM software.**
 Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
@@ -82,7 +93,7 @@ Need another connector? We offer custom integration services. [Contact us](https
 == Frequently Asked Questions ==
 
 = What does this plugin do? =
-Connect Ecommerce allows you to import products from an ERP/CRM to your WooCommerce store via API. It also sends orders from the store to your ERP/CRM and creates associated customers. It also allows you to import European Taxes and check VAT compliance.
+Connect Ecommerce allows you to import products from an ERP/CRM to your WooCommerce store via API. It also sends orders from the store to your ERP/CRM and creates associated customers. It also allows you to import European Taxes, validate VAT numbers via VIES, and check VAT compliance.
 
 = How are products and orders synced? =
 Products are synced from the ERP/CRM to WooCommerce because the ERP should always contain the most up-to-date business information. This ensures accurate management of products, prices, and other business data.
@@ -94,6 +105,12 @@ By default, the product disappears from the store catalog but remains visible to
 
 = Does it comply with Verifactu? =
 Yes, it does. It makes the order data more readable for Verifactu.
+
+= How does the VAT validation work? =
+The plugin integrates with the VIES (VAT Information Exchange System) service from the European Commission. When a customer enters their VAT number during checkout, the plugin validates it in real-time. You can configure it as mandatory (blocking invalid VAT numbers) or optional (showing warnings). The validation results are cached and stored with the order for compliance purposes.
+
+= What happens if the VIES service is unavailable? =
+If the VIES service is unavailable, the plugin will gracefully accept the VAT number and allow the order to proceed. This ensures that temporary service issues don't block legitimate orders.
 
 == Installation ==
 
@@ -120,10 +137,20 @@ Supported Services:
 
 The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
+**VAT Number Validation Service**
+
+This plugin uses the VIES (VAT Information Exchange System) service provided by the European Commission to validate EU VAT numbers. The VIES service is accessed through the dragonbe/vies PHP library. When a customer enters a VAT number during checkout, the plugin communicates with the VIES web service to verify the number's validity. This is an official EU service and does not store personal data. [VIES Information](https://ec.europa.eu/taxation_customs/vies/)
+
 == Changelog ==
 
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
+* Enhancement: Added VAT number validation via VIES (VAT Information Exchange System).
+* Enhancement: Integrated dragonbe/vies library for EU VAT number validation.
+* Enhancement: VIES validation enabled by default with configurable mandatory/optional modes.
+* Enhancement: Added caching mechanism for VIES responses to improve performance.
+* Enhancement: VAT validation results stored in order metadata for compliance tracking.
+* Enhancement: Graceful handling of VIES service unavailability.
 
 = 3.2.0.2 =
 * Fixed: Error updating tax rates.

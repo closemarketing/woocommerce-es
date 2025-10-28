@@ -426,21 +426,17 @@ class ORDER {
 
 	/**
 	 * Gets Billing VAT info from order
-	 * 
-	 * @param $order Order object to get info
-	 * 
+	 *
+	 * @param object $order Order object to get info.
+	 *
 	 * @return string
 	 */
 	private static function get_billing_vat( $order ) {
-		$code_labels = array(
-		 '_billing_vat',
-		 '_billing_nif',
-		 '_billing_vat_number',
-		 'VAT Number' // Support to SIMBA Hosting.
-		);
 		$contact_code = '';
-		foreach ( $code_labels as $code_label ) {
-			$contact_code = $order->get_meta( $code_label );
+		foreach ( CONECOM_VAT_FIELD_SLUGS as $code_label ) {
+			// Add underscore prefix for meta fields.
+			$meta_key = 'VAT Number' === $code_label ? $code_label : '_' . $code_label;
+			$contact_code = $order->get_meta( $meta_key );
 			if ( ! empty( $contact_code ) ) {
 				break;
 			}

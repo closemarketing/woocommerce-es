@@ -12,6 +12,8 @@ namespace CLOSE\ConnectEcommerce\Frontend;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Helpers\VAT;
+
 /**
  * Public class
  */
@@ -70,6 +72,17 @@ class Checkout {
 		if ( 'yes' === $terms_registration ) {
 			add_action( 'woocommerce_register_form', array( $this, 'add_terms_and_conditions_to_registration' ), 20 );
 			add_action( 'woocommerce_register_post', array( $this, 'terms_and_conditions_validation' ), 20, 3 );
+		}
+
+		// VAT validation via VIES.
+		$vat_vies_enabled = isset( $this->setttings_public['vat_vies_enabled'] ) ? $this->setttings_public['vat_vies_enabled'] : 'yes';
+		if ( 'yes' === $vat_vies_enabled ) {
+			// Classic checkout validation.
+			add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_vat_number_checkout' ), 10, 2 );
+			add_action( 'woocommerce_checkout_order_processed', array( $this, 'save_vat_validation_result' ), 10, 1 );
+			
+			// Gutenberg Blocks checkout validation.
+			add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'validate_vat_number_checkout_blocks' ), 10, 2 );
 		}
 	}
 
@@ -334,6 +347,147 @@ class Checkout {
 		if ( ! empty( $government_id ) ) {
 			echo '<p><strong>' . esc_html__( 'Government ID', 'connect-ecommerce' ) . ':</strong> ';
 			echo esc_html( $government_id ) . '</p>';
+		}
+	}
+
+	/**
+	 * Validate VAT number during checkout.
+	 *
+	 * @param array    $data Posted data.
+	 * @param WP_Error $errors Validation errors.
+	 * @return void
+	 */
+	public function validate_vat_number_checkout( $data, $errors ) {
+		$vat_number = '';
+
+		// Check standard fields.
+		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
+			if ( isset( $data[ $field ] ) && ! empty( $data[ $field ] ) ) {
+				$vat_number = sanitize_text_field( wp_unslash( $data[ $field ] ) );
+				break;
+			}
+		}
+
+		// Check custom checkout field (Gutenberg compatible).
+		if ( empty( $vat_number ) && isset( $_POST['connect_ecommerce/billing_vat'] ) ) {
+			$vat_number = sanitize_text_field( wp_unslash( $_POST['connect_ecommerce/billing_vat'] ) );
+		}
+
+		// If no VAT number provided, skip validation.
+		if ( empty( $vat_number ) ) {
+			return;
+		}
+
+		// Get country code.
+		$country_code = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
+
+		// Validate VAT number.
+		$validation_result = VAT::validate_vat_number( $vat_number, $country_code );
+
+		// Store validation result in session for later use.
+		WC()->session->set( 'vat_validation_result', $validation_result );
+
+		// Check if validation is mandatory.
+		$vat_vies_mandatory = isset( $this->setttings_public['vat_vies_mandatory'] ) ? $this->setttings_public['vat_vies_mandatory'] : 'no';
+
+		if ( 'yes' === $vat_vies_mandatory && ! $validation_result['valid'] ) {
+			$errors->add(
+				'vat_validation',
+				sprintf(
+					// translators: %s is the error message.
+					__( 'VAT number validation failed: %s', 'woocommerce-es' ),
+					$validation_result['message']
+				)
+			);
+		} elseif ( ! $validation_result['valid'] ) {
+			// Show notice but allow checkout.
+			wc_add_notice(
+				sprintf(
+					// translators: %s is the error message.
+					__( 'VAT number validation warning: %s. Your order will be processed but may require verification.', 'woocommerce-es' ),
+					$validation_result['message']
+				),
+				'notice'
+			);
+		}
+	}
+
+	/**
+	 * Save VAT validation result to order meta.
+	 *
+	 * @param int $order_id Order ID.
+	 * @return void
+	 */
+	public function save_vat_validation_result( $order_id ) {
+		// Get validation result from session.
+		$validation_result = WC()->session->get( 'vat_validation_result' );
+
+		if ( ! empty( $validation_result ) ) {
+			VAT::save_vat_validation_result( $order_id, $validation_result );
+
+			// Clear session.
+			WC()->session->set( 'vat_validation_result', null );
+		}
+	}
+
+	/**
+	 * Validate VAT number during checkout for WooCommerce Blocks.
+	 *
+	 * @param \WC_Order        $order Order object.
+	 * @param \WP_REST_Request $request Request object.
+	 * @return void
+	 */
+	public function validate_vat_number_checkout_blocks( $order, $request ) {
+		$vat_number = '';
+
+		// Get billing data from request.
+		$billing_address = $request->get_param( 'billing_address' );
+		
+		// Check standard fields.
+		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
+			$field_name = str_replace( 'billing_', '', $field );
+			if ( isset( $billing_address[ $field_name ] ) && ! empty( $billing_address[ $field_name ] ) ) {
+				$vat_number = sanitize_text_field( $billing_address[ $field_name ] );
+				break;
+			}
+		}
+		if ( empty( $vat_number ) && isset( $billing_address['connect_ecommerce/billing_vat'] ) ) {
+			$vat_number = sanitize_text_field( $billing_address['connect_ecommerce/billing_vat'] );
+		}
+
+		// If no VAT number provided, skip validation.
+		if ( empty( $vat_number ) ) {
+			return;
+		}
+
+		// Get country code.
+		$country_code = isset( $billing_address['country'] ) ? $billing_address['country'] : '';
+
+		// Validate VAT number.
+		$validation_result = VAT::validate_vat_number( $vat_number, $country_code );
+
+		// Save validation result to order meta.
+		VAT::save_vat_validation_result( $order->get_id(), $validation_result );
+
+		// Check if validation is mandatory.
+		$vat_vies_mandatory = isset( $this->setttings_public['vat_vies_mandatory'] ) ? $this->setttings_public['vat_vies_mandatory'] : 'no';
+
+		if ( 'yes' === $vat_vies_mandatory && ! $validation_result['valid'] ) {
+			throw new \Exception(
+				sprintf(
+					// translators: %s is the error message.
+					__( 'VAT number validation failed: %s', 'woocommerce-es' ),
+					$validation_result['message']
+				)
+			);
+		} elseif ( ! $validation_result['valid'] ) {
+			$order->add_order_note(
+				sprintf(
+					// translators: %s is the error message.
+					__( 'VAT number validation warning: %s', 'woocommerce-es' ),
+					$validation_result['message']
+				)
+			);
 		}
 	}
 }
