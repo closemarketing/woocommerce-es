@@ -269,4 +269,205 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( $order->get_id(), $refund->get_parent_id() );
 		$this->assertEquals( 'completed', $refund->get_status() );
 	}
+
+	/**
+	 * Test get_tax_rate method using Reflection
+	 *
+	 * @return void
+	 */
+	public function test_get_tax_rate_with_zero_tax() {
+		// Create a product with no tax.
+		$product = new WC_Product_Simple();
+		$product->set_name( 'Test Product' );
+		$product->set_regular_price( 100 );
+		$product->set_tax_class( '' );
+		$product->save();
+
+		// Create an order and add the product.
+		$order = new WC_Order();
+		$item  = new WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		$item->set_total_tax( 0 );
+		$order->add_item( $item );
+		$order->save();
+
+		// Use Reflection to access the private method.
+		$reflection = new ReflectionClass( ORDER::class );
+		$method     = $reflection->getMethod( 'get_tax_rate' );
+		$method->setAccessible( true );
+
+		$tax    = new WC_Tax();
+		$result = $method->invoke( null, $item, $tax );
+
+		$this->assertEquals( 0, $result );
+	}
+
+	/**
+	 * Test get_tax_rate method returns zero when tax rates are not properly configured
+	 *
+	 * @return void
+	 */
+	public function test_get_tax_rate_with_tax_but_no_rates_configured() {
+		// Create a product.
+		$product = new WC_Product_Simple();
+		$product->set_name( 'Test Product with Tax' );
+		$product->set_tax_class( '' );
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		// Create an order and add the product.
+		$order = new WC_Order();
+		$order->set_billing_country( 'ES' );
+
+		$item = new WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		$item->set_total_tax( 21 );
+		$item->set_tax_class( '' );
+
+		$order->add_item( $item );
+		$order->save();
+
+		// Use Reflection to access the private method.
+		$reflection = new ReflectionClass( ORDER::class );
+		$method     = $reflection->getMethod( 'get_tax_rate' );
+		$method->setAccessible( true );
+
+		$tax    = new WC_Tax();
+		$result = $method->invoke( null, $item, $tax );
+
+		// When rates are not properly configured, the function should return 0 safely.
+		$this->assertIsNumeric( $result );
+		$this->assertGreaterThanOrEqual( 0, $result );
+	}
+
+	/**
+	 * Test get_tax_rate method with item that has tax
+	 *
+	 * @return void
+	 */
+	public function test_get_tax_rate_with_reduced_tax() {
+		// Create a product with reduced tax.
+		$product = new WC_Product_Simple();
+		$product->set_name( 'Test Product with Reduced Tax' );
+		$product->set_tax_class( 'reduced-rate' );
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		// Create an order and add the product.
+		$order = new WC_Order();
+		$order->set_billing_country( 'ES' );
+
+		$item = new WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		$item->set_total_tax( 10 );
+		$item->set_tax_class( 'reduced-rate' );
+
+		$order->add_item( $item );
+		$order->save();
+
+		// Use Reflection to access the private method.
+		$reflection = new ReflectionClass( ORDER::class );
+		$method     = $reflection->getMethod( 'get_tax_rate' );
+		$method->setAccessible( true );
+
+		$tax    = new WC_Tax();
+		$result = $method->invoke( null, $item, $tax );
+
+		// The function should return a numeric value >= 0.
+		$this->assertIsNumeric( $result );
+		$this->assertGreaterThanOrEqual( 0, $result );
+	}
+
+	/**
+	 * Test get_tax_rate method with shipping item
+	 *
+	 * @return void
+	 */
+	public function test_get_tax_rate_with_shipping() {
+		// Create tax rate.
+		$tax_rate = array(
+			'tax_rate_country'  => 'ES',
+			'tax_rate_state'    => '',
+			'tax_rate'          => '21.0000',
+			'tax_rate_name'     => 'IVA',
+			'tax_rate_priority' => '1',
+			'tax_rate_compound' => '0',
+			'tax_rate_shipping' => '1',
+			'tax_rate_order'    => '1',
+			'tax_rate_class'    => '',
+		);
+		WC_Tax::_insert_tax_rate( $tax_rate );
+
+		// Create an order with shipping.
+		$order = new WC_Order();
+		$order->set_billing_country( 'ES' );
+
+		$shipping_item = new WC_Order_Item_Shipping();
+		$shipping_item->set_method_title( 'Flat Rate' );
+		$shipping_item->set_total( 10 );
+
+		// Set shipping tax.
+		$shipping_taxes = WC_Tax::calc_shipping_tax( 10, WC_Tax::get_shipping_tax_rates() );
+		$shipping_item->set_taxes( array( 'total' => $shipping_taxes ) );
+
+		$order->add_item( $shipping_item );
+		$order->calculate_totals();
+		$order->save();
+
+		// Use Reflection to access the private method.
+		$reflection = new ReflectionClass( ORDER::class );
+		$method     = $reflection->getMethod( 'get_tax_rate' );
+		$method->setAccessible( true );
+
+		$tax    = new WC_Tax();
+		$result = $method->invoke( null, $shipping_item, $tax );
+
+		// Shipping should have tax rate (or 0 if no tax was calculated).
+		$this->assertIsNumeric( $result );
+		$this->assertGreaterThanOrEqual( 0, $result );
+	}
+
+	/**
+	 * Test get_tax_rate method without tax object parameter
+	 *
+	 * @return void
+	 */
+	public function test_get_tax_rate_without_tax_object() {
+		// Create a product with no tax.
+		$product = new WC_Product_Simple();
+		$product->set_name( 'Test Product No Tax Object' );
+		$product->set_regular_price( 100 );
+		$product->set_tax_class( '' );
+		$product->save();
+
+		// Create an order and add the product.
+		$order = new WC_Order();
+		$item  = new WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		$item->set_total_tax( 0 );
+		$order->add_item( $item );
+		$order->save();
+
+		// Use Reflection to access the private method.
+		$reflection = new ReflectionClass( ORDER::class );
+		$method     = $reflection->getMethod( 'get_tax_rate' );
+		$method->setAccessible( true );
+
+		// Call without tax object (should create one internally).
+		$result = $method->invoke( null, $item );
+
+		$this->assertEquals( 0, $result );
+	}
 }

@@ -126,9 +126,36 @@ class ORDER {
 			);
 		}
 		$refund_data = self::generate_order_refund_data( $settings, $refund_id, $args, $option_prefix );
-		$result      = $api_erp->create_refund( $settings, $refund_data );
 
-		return $result;
+		// Check if there was an error generating refund data.
+		if ( isset( $refund_data['error'] ) && true === $refund_data['error'] ) {
+			return array(
+				'status'      => 'error',
+				'message'     => $refund_data['message'],
+				'document_id' => '',
+				'invoice_id'  => '',
+			);
+		}
+
+		$result = $api_erp->create_refund( $settings, $refund_data['refund_data'] );
+		$order  = $refund_data['order'];
+
+		if ( 'error' === $result['status'] ) {
+			$order_msg = __( 'Error syncing refund with ERP, ID: ', 'woocommerce-es' ) . $result['message'];
+		} else {
+			$order_msg = __( 'Refund synced correctly with ERP, ID: ', 'woocommerce-es' ) . $result['document_id'];
+			$order->update_meta_data( '_' . $option_prefix . '_refund_doc_id', $result['document_id'] );
+			$order->update_meta_data( '_' . $option_prefix . '_refund_invoice_id', $result['invoice_id'] );
+			$order->save();
+		}
+		$order->add_order_note( $order_msg );
+
+		return array(
+			'status'      => $result['status'],
+			'message'     => $order_msg,
+			'document_id' => $result['document_id'] ?? '',
+			'invoice_id'  => $result['invoice_id'] ?? '',
+		);
 	}
 
 	/**
@@ -365,18 +392,12 @@ class ORDER {
 				$item_qty   = (int) $item->get_quantity();
 				$price_line = $item->get_subtotal() / $item_qty;
 
-				// Taxes.
-				$item_tax  = (float) $item->get_total_tax();
-				$taxes     = $tax->get_rates( $product->get_tax_class() );
-				$rates     = array_shift( $taxes );
-				$item_rate = ! empty( $item_tax ) ? floor( array_shift( $rates ) ) : 0;
-
 				$item_data = array(
 					'name'      => $item->get_name(),
 					'desc'      => get_the_excerpt( $product_id ),
 					'units'     => $item_qty,
 					'subtotal'  => (float) $price_line,
-					'tax'       => $item_rate,
+					'tax'       => self::get_tax_rate( $item, $tax ),
 					'sku'       => ! empty( $product ) ? $product->get_sku() : '',
 					'image_url' => get_the_post_thumbnail_url( $product_id, 'post-thumbnail' ),
 					'permalink' => get_the_permalink( $product_id ),
@@ -402,18 +423,12 @@ class ORDER {
 		$shipping_items = $order->get_items( 'shipping' );
 		if ( ! empty( $shipping_items ) ) {
 			foreach ( $shipping_items as $shipping_item ) {
-				// Taxes.
-				$item_tax  = (float) $shipping_item->get_total_tax();
-				$taxes     = $tax->get_rates( $shipping_item->get_tax_class() );
-				$tax_rates = array_shift( $taxes );
-				$item_rate = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
-
 				$fields_items[] = array(
 					'name'     => __( 'Shipping:', 'woocommerce-es' ) . ' ' . $shipping_item->get_name(),
 					'desc'     => '',
 					'units'    => 1,
 					'subtotal' => (float) $shipping_item->get_total(),
-					'tax'      => $item_rate,
+					'tax'      => self::get_tax_rate( $shipping_item, $tax ),
 					'sku'      => 'shipping',
 				);
 			}
@@ -423,27 +438,55 @@ class ORDER {
 		$items_fee = $order->get_items( 'fee' );
 		if ( ! empty( $items_fee ) ) {
 			foreach ( $items_fee as $item_fee ) {
-				// Taxes.
-				$item_tax  = (float) $item_fee->get_total_tax();
-				$taxes     = $tax->get_rates( $item_fee->get_tax_class() );
-				$tax_rates = array_shift( $taxes );
-				$item_rate = ! empty( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
-
 				$fields_items[] = array(
 					'name'     => $item_fee->get_name(),
 					'desc'     => '',
 					'units'    => 1,
 					'subtotal' => (float) $item_fee->get_total(),
-					'tax'      => $item_rate,
+					'tax'      => self::get_tax_rate( $item_fee, $tax ),
 					'sku'      => 'fee',
 				);
 			}
 		}
 
-		return [
-			'items'      => $fields_items,
+		return array(
+			'items'       => $fields_items,
 			'has_virtual' => $has_virtual,
-		];
+		);
+	}
+
+	/**
+	 * Get tax rate
+	 *
+	 * @param object $item Item object.
+	 * @param object $tax Tax object.
+	 *
+	 * @return float
+	 */
+	private static function get_tax_rate( $item, $tax = null ) {
+		if ( empty( $tax ) ) {
+			$tax = new \WC_Tax();
+		}
+
+		$item_tax = (float) $item->get_total_tax();
+
+		if ( empty( $item_tax ) ) {
+			return 0;
+		}
+
+		$taxes = $tax->get_rates( $item->get_tax_class() );
+
+		if ( empty( $taxes ) ) {
+			return 0;
+		}
+
+		$rates = array_shift( $taxes );
+
+		if ( ! is_array( $rates ) || empty( $rates ) ) {
+			return 0;
+		}
+
+		return floor( array_shift( $rates ) );
 	}
 
 	/**
@@ -461,16 +504,49 @@ class ORDER {
 		$order_label_id = self::generate_label_id( $order->get_id() );
 		$prefix         = self::generate_prefix();
 
+		// Check if contact has VAT number.
+		$contact_vat = self::get_billing_vat( $order );
+		if ( empty( $contact_vat ) ) {
+			return array(
+				'error'  => true,
+				'status' => 'error',
+				'message' => __( 'Cannot create refund: Contact does not have a VAT number', 'woocommerce-es' ),
+			);
+		}
+
+		$refunded_by_id   = $refund->get_refunded_by();
+		$refunded_by_user = ! empty( $refunded_by_id ) ? get_userdata( $refunded_by_id ) : null;
+		$refunded_by_name = $refunded_by_user ? $refunded_by_user->display_name : __( 'Unknown', 'woocommerce-es' );
+
+		$notes = sprintf(
+			/* translators: 1: Refunded by 2: Refund reason 3: Order label id */
+			__( 'Refunded by: %1$s - %2$s from order %3$s', 'woocommerce-es' ),
+			$refunded_by_name,
+			$refund->get_reason(),
+			$order_label_id
+		);
+
 		$refund_data = array(
-			'contactCode'          => self::get_billing_vat( $order ),
+			'contactCode'          => $contact_vat,
 			'woocommerceOrderId'   => self::generate_label_id( $order->get_id() ),
 			'woocommerceReference' => $prefix . $order_label_id,
-			'date'                 => $refund->get_date_created(),
+			'date'                 => strtotime( $refund->get_date_created()->date( 'Y-m-d H:i:s' ) ),
+			'notes'                => $notes,
+			'approveDoc'           => false,
 		);
+
+		// Approve document.
+		$approve_document = isset( $setttings['approve_document'] ) ? $setttings['approve_document'] : 'no';
+		if ( 'yes' === $approve_document ) {
+			$order_data['approveDoc'] = true;
+		}
 
 		$refund_data['items'] = self::generate_refund_items( $order, $refund, $args );
 
-		return $refund_data;
+		return array(
+			'refund_data' => $refund_data,
+			'order'       => $order,
+		);
 	}
 
 	/**
@@ -500,7 +576,6 @@ class ORDER {
 
 			$items[] = array(
 				'name'     => $product->get_name(),
-				'desc'     => $product->get_description(),
 				'sku'      => $product->get_sku(),
 				'units'    => $item['qty'],
 				'subtotal' => $item['refund_total'],
@@ -517,7 +592,7 @@ class ORDER {
 	 *
 	 * @return string
 	 */
-	private static function get_billing_vat( $order ) {
+	public static function get_billing_vat( $order ) {
 		$code_labels = array(
 			'_billing_vat',
 			'_billing_nif',

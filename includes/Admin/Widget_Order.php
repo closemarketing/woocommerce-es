@@ -10,6 +10,8 @@
 
 namespace CLOSE\ConnectEcommerce\Admin;
 
+use CLOSE\ConnectEcommerce\Helpers\ORDER;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -98,10 +100,63 @@ class Widget_Order {
 
 		$label = $invoice_id ? __( 'Update to ERP', 'woocommerce-es' ) : __( 'Send to ERP', 'woocommerce-es' );
 
-		echo '<br/><br/><div name="grao-sync-order" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
+		echo '<br/><br/><div name="connect-ecommerce-sync-order" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncOrderERP(' . esc_html( $order_id );
 		echo ',this.id,\'erp-post\')">' . esc_html( $label ) . '</div>';
 		echo '</td></tr>';
+
+		// Show refunds if exist.
+		$refunds = $order->get_refunds();
+		if ( ! empty( $refunds ) ) {
+			echo '<tr><td colspan="2"><hr/></td></tr>';
+			echo '<tr><td colspan="2"><strong>' . esc_html__( 'Refunds', 'woocommerce-es' ) . '</strong></td></tr>';
+
+			// Check if order has VAT number.
+			$contact_vat = ORDER::get_billing_vat( $order );
+			$has_vat     = ! empty( $contact_vat );
+
+			if ( ! $has_vat ) {
+				echo '<tr><td colspan="2" style="background:#fff3cd;padding:10px;border-left:4px solid #ffc107;">';
+				echo '<strong>⚠️ ' . esc_html__( 'Warning', 'woocommerce-es' ) . ':</strong> ';
+				echo esc_html__( 'Contact does not have a VAT number. Cannot send refund to ERP.', 'woocommerce-es' );
+				echo '</td></tr>';
+			}
+
+			foreach ( $refunds as $refund ) {
+				$refund_id     = $refund->get_id();
+				$refund_amount = $refund->get_amount();
+				$refund_key    = '_' . $this->options['slug'] . '_refund_doc_id';
+				$refund_doc_id = $refund->get_meta( $refund_key, true );
+
+				echo '<tr><td>';
+				echo esc_html__( 'Refund', 'woocommerce-es' ) . ' #' . esc_html( $refund_id );
+				echo '</td><td>';
+				echo esc_html__( 'Amount', 'woocommerce-es' ) . ': ' . wp_kses_post( wc_price( $refund_amount ) ) . '<br/>';
+
+				if ( $refund_doc_id ) {
+					echo 'ERP: ';
+					$refund_edit_url = $this->connapi_erp->get_url_link_api( $refund );
+					if ( $refund_edit_url ) {
+						echo '<a href="' . esc_url( $refund_edit_url ) . '" target="_blank">';
+					}
+					echo esc_html( $refund_doc_id );
+					if ( $refund_edit_url ) {
+						echo '</a>';
+					}
+					echo '<br/>';
+				}
+
+				$refund_label = $refund_doc_id ? __( 'Resend Refund', 'woocommerce-es' ) : __( 'Send Refund', 'woocommerce-es' );
+
+				echo '<div name="connect-ecommerce-sync-refund" id="sync-erp-refund-' . esc_html( $refund_id ) . '" ';
+				echo 'class="button button-secondary' . ( ! $has_vat ? ' disabled' : '' ) . '" style="margin-top:5px;"';
+				if ( $has_vat ) {
+					echo ' onclick="syncOrderERP(' . esc_html( $refund_id ) . ',this.id,\'erp-refund\')"';
+				}
+				echo '>' . esc_html( $refund_label ) . '</div>';
+				echo '</td></tr>';
+			}
+		}
 
 		echo '</table>';
 	}

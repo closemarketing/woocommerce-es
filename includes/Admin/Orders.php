@@ -344,7 +344,36 @@ class Orders {
 
 		if ( 'erp-post' === $type ) {
 			$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true );
+		} elseif ( 'erp-refund' === $type ) {
+			// Get refund object.
+			$refund = wc_get_order( $order_id );
+			if ( ! $refund || 'shop_order_refund' !== $refund->get_type() ) {
+				wp_send_json_error( array( 'error' => __( 'Invalid refund ID', 'woocommerce-es' ) ) );
+			}
+
+			// Get refund args from refund object.
+			$args = array(
+				'amount'         => $refund->get_amount(),
+				'reason'         => $refund->get_reason(),
+				'order_id'       => $refund->get_parent_id(),
+				'refund_id'      => $order_id,
+				'line_items'     => array(),
+				'refund_payment' => false,
+				'restock_items'  => false,
+			);
+
+			// Get line items from refund.
+			foreach ( $refund->get_items() as $item_id => $item ) {
+				$args['line_items'][ $item_id ] = array(
+					'qty'          => abs( $item->get_quantity() ),
+					'refund_total' => abs( $item->get_total() ),
+					'refund_tax'   => array(),
+				);
+			}
+
+			$result = ORDER::create_refund_invoice( $this->settings, $order_id, $args, $this->options['slug'], $this->connapi_erp );
 		}
+
 		wp_send_json_success(
 			array(
 				'message'  => $result['message'] ?? '',
