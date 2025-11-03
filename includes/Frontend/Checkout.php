@@ -12,6 +12,8 @@ namespace CLOSE\ConnectEcommerce\Frontend;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Helpers\ORDER;
+
 /**
  * Public class
  */
@@ -45,7 +47,7 @@ class Checkout {
 		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'add_billing_shipping_fields_admin' ) );
 		add_filter( 'woocommerce_load_order_data', array( $this, 'add_var_load_order_data' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_key_notification' ), 10, 1 );
-		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ) );
+		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ), 10, 2 );
 
 		$show_vat = isset( $this->setttings_public['vat_show'] ) ? $this->setttings_public['vat_show'] : 'yes';
 		if ( 'yes' === $show_vat ) {
@@ -225,19 +227,39 @@ class Checkout {
 	 * Adds VAT info in WooCommerce PDF Invoices & Packing Slips
 	 *
 	 * @param string $address Address.
-	 * @return html
+	 * @param object $document Document object.
+	 *
+	 * @return string
 	 */
-	public function add_vat_invoices( $address ) {
-		return wp_kses( $address, array(
-			'p' => array(),
-			'strong' => array(),
-			'br' => array(),
-			'span' => array('class' => array()),
-			'div' => array('class' => array()),
-		) ) . '<p></p>';
+	public function add_vat_invoices( $address, $document ) {
+		$vat_number = '';
+		if ( ! empty( $document ) && is_callable( array( $document, 'get_custom_field' ) ) ) {
+			foreach ( CONECOM_VAT_FIELD_SLUGS as $vat_field_slug ) {
+				$vat_number = $document->get_custom_field( $vat_field_slug );
+				if ( ! empty( $vat_number ) ) {
+					$address .= sprintf( '<p>%s %s</p>', __( 'VAT info:', 'woocommerce-es' ), $vat_number );
+					break;
+				}
+			}
+		}
+		if ( ! empty( $vat_number ) ) {
+			return $address;
+		}
+		// Get VAT number from order.
+		if ( empty( $document->order ) ) {
+			return $address;
+		}
+		$vat_number = ORDER::get_billing_vat( $document->order );
+		if ( ! empty( $vat_number ) ) {
+			$address .= sprintf(
+				/* translators: 1: VAT info label, 2: VAT number */
+				'<p>%s %s</p>',
+				__( 'VAT info:', 'woocommerce-es' ),
+				$vat_number
+			);
+		}
+		return $address;
 	}
-
-	/* END EU VAT*/
 
 	/**
 	 * Hide shipping rates when free shipping is available.
