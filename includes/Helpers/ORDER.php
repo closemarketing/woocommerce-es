@@ -431,13 +431,8 @@ class ORDER {
 	 * 
 	 * @return string
 	 */
-	private static function get_billing_vat( $order ) {
-		$code_labels = array(
-		 '_billing_vat',
-		 '_billing_nif',
-		 '_billing_vat_number',
-		 'VAT Number' // Support to SIMBA Hosting.
-		);
+	public static function get_billing_vat( $order ) {
+		$code_labels = CONECOM_VAT_FIELD_SLUGS;
 		$contact_code = '';
 		foreach ( $code_labels as $code_label ) {
 			$contact_code = $order->get_meta( $code_label );

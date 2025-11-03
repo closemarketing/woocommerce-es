@@ -5,7 +5,7 @@
  * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock. Includes EU VAT Compliance. Import European Taxes and check VAT compliance.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
- * Version:           3.2.1-beta.1
+ * Version:           3.2.1
  * Requires PHP:      7.4
  * Requires at least: 6.3
  * Text Domain:       woocommerce-es
@@ -20,11 +20,22 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.2.1-beta.1' );
+define( 'CONECOM_VERSION', '3.2.1' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
 define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
+define(
+	'CONECOM_VAT_FIELD_SLUGS',
+	array(
+		'_billing_vat',
+		'_billing_nif',
+		'_billing_vat_number',
+		'billing_vat',
+		'_wc_shipping/connect_ecommerce/billing_vat', // Gutenberg compatibility.
+		'VAT Number', // Support to SIMBA Hosting.
+	)
+);
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
 
