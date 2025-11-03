@@ -233,7 +233,7 @@ class Checkout {
 	 */
 	public function add_vat_invoices( $address, $document ) {
 		$vat_number = '';
-		if ( ! empty( $document ) && is_callable( array( $document, 'get_custom_field' ) ) ) {
+		if ( $document && is_callable( array( $document, 'get_custom_field' ) ) ) {
 			foreach ( CONECOM_VAT_FIELD_SLUGS as $vat_field_slug ) {
 				$vat_number = $document->get_custom_field( $vat_field_slug );
 				if ( ! empty( $vat_number ) ) {
