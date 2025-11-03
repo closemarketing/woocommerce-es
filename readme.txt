@@ -17,6 +17,7 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 **Functionalities**
 
 - Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
+- Supports WooCommerce PDF Invoices & Packing Slips for VAT info in invoices.
 - EU/VAT Compliance: Import European Taxes and check VAT compliance.
 - (optional) Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
 - Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
