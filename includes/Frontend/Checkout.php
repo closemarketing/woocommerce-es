@@ -285,6 +285,7 @@ class Checkout {
 
 	/**
 	 * Validate required term and conditions check box
+	 * Not applies in Admin
 	 *
 	 * @param string $username Username.
 	 * @param string $email Email.
@@ -293,7 +294,11 @@ class Checkout {
 	 * @return void
 	 */
 	public function terms_and_conditions_validation( $username, $email, $validation_errors ) {
-		if ( ! isset( $_POST['terms'] ) ) {
+		$action = isset( $_POST['action'] ) ? sanitize_text_field( wp_unslash( $_POST['action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		if ( 'yith_wcaf_create_affiliate' === $action || is_admin() ) {
+			return;
+		}
+		if ( ! isset( $_POST['terms'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			$validation_errors->add( 'terms_error', __( 'Terms and conditions are not accepted!', 'woocommerce-es' ) );
 		}
 	}
