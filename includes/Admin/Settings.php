@@ -1305,12 +1305,14 @@ class Settings {
 	 */
 	public function company_select_callback() {
 		if ( ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
-			return esc_html__( 'By default', 'woocommerce-es' );
+			echo '<p>' . esc_html__( 'By default', 'woocommerce-es' ) . '</p>';
+			return;
 		}
-		$companies_options = $this->connapi_erp->get_companies();
-		if ( empty( $companies_options ) || 'error' === $companies_options['status'] ) {
-			$message = ! empty( $companies_options['message'] ) ? $companies_options['message'] : '';
-			$message = empty( $message ) && ! empty( $companies_options['data'] ) ? $companies_options['data'] : $message;
+		$result_companies = $this->connapi_erp->get_companies();
+		if ( empty( $result_companies ) || 'error' === $result_companies['status'] || empty( $result_companies['data'] ) ) {
+			$message = ! empty( $result_companies['message'] ) ? $result_companies['message'] : '';
+			$message = empty( $message ) && ! empty( $result_companies['data'] ) ? $result_companies['data'] : $message;
+			$message = empty( $message ) ? esc_html__( 'Error getting companies', 'woocommerce-es' ) : $message;
 			echo '<p>' . esc_html__( 'Error', 'woocommerce-es' ) . ': ' . esc_html( $message ) . '</p>';
 			return;
 		}
@@ -1318,7 +1320,7 @@ class Settings {
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][company_id]" id="wcpimh_company_id">
 			<?php
-			foreach ( $companies_options as $value => $label ) {
+			foreach ( $result_companies['data'] as $value => $label ) {
 				echo '<option value="' . esc_html( $value ) . '" ';
 				selected( $value, $saved_attr );
 				echo '>' . esc_html( $label ) . '</option>';
