@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.8
-Stable tag: 3.2.0.2
-Version: 3.2.0.2
+Stable tag: 3.2.1
+Version: 3.2.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -124,6 +124,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
+* Fixed: Error in VAT info in WooCommerce PDF Invoices & Packing Slips.
 
 = 3.2.0.2 =
 * Fixed: Error updating tax rates.
