@@ -748,8 +748,12 @@ class Settings {
 			}
 
 			if ( ! empty( $this->options['product_weight_equivalence'] ) ) {
-				$attribute_fields = $this->connapi_erp->get_product_attributes();
-				if ( ! empty( $attribute_fields ) ) {
+				$attributes = get_transient( 'conecom_query_attributes' );
+				if ( false === $attributes ) { // Query attributes.
+					$attributes = $this->connapi_erp->get_product_attributes();
+					set_transient( 'conecom_query_attributes', $attributes, HOUR_IN_SECONDS * 3 );
+				}
+				if ( ! empty( $attributes ) ) {
 					add_settings_field(
 						'wcpimh_product_weight_equivalence',
 						__( 'Custom field for Equivalence with weight', 'woocommerce-es' ),
