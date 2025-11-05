@@ -19,6 +19,52 @@ defined( 'ABSPATH' ) || exit;
  */
 class TAXES {
 	/**
+	 * Get tax types map.
+	 *
+	 * @param int|null $tax_rate_id Tax rate ID.
+	 * @return array|string Tax types map or single tax type if tax rate ID is provided.
+	 */
+	public static function get_tax_types_map( $tax_rate_id = null ) {
+		// Get all existing ERP tax types from database.
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$existing_values = $wpdb->get_results(
+			"SELECT tax_rate_id, erp_tax_type 
+			FROM {$wpdb->prefix}woocommerce_tax_rates 
+			WHERE erp_tax_type IS NOT NULL AND erp_tax_type != ''",
+			ARRAY_A
+		);
+
+		// Convert to associative array tax_rate_id => erp_tax_type.
+		$tax_types_map = array();
+		foreach ( $existing_values as $row ) {
+			$tax_types_map[ (int) $row['tax_rate_id'] ] = $row['erp_tax_type'];
+		}
+
+		return $tax_types_map;
+	}
+
+	/**
+	 * Update tax type.
+	 *
+	 * @param int    $tax_rate_id  Tax rate ID.
+	 * @param string $erp_tax_type ERP tax type.
+	 * @return void
+	 */
+	public static function update_tax_type( $tax_rate_id, $erp_tax_type ) {
+		$erp_tax_type = sanitize_text_field( $erp_tax_type );
+		$tax_rate_id  = absint( $tax_rate_id );
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$wpdb->update(
+			$wpdb->prefix . 'woocommerce_tax_rates',
+			array( 'erp_tax_type' => $erp_tax_type ),
+			array( 'tax_rate_id' => $tax_rate_id )
+		);
+	}
+
+	/**
 	 * Get VAT rates by country code.
 	 *
 	 * @param string $country Country code (e.g., 'ES', 'FR', 'DE').
