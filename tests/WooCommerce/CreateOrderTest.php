@@ -2,12 +2,13 @@
 /**
  * Class CreateOrderTest
  *
- * Command: composer test -- --filter=CreateOrderTest
+ * Command: composer test-debug -- --filter=CreateOrderTest
  *
  * @package Connect_Ecommerce
  */
 
 use CLOSE\ConnectEcommerce\Helpers\ORDER;
+use CLOSE\ConnectEcommerce\Helpers\TAXES;
 
 /**
  * Create Product Simple without Errors.
@@ -222,5 +223,98 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
 		$this->assertNotEmpty( $order_data );
 		$this->assertEquals( true, $order_data['approveDoc'] );
+	}
+
+	public function test_create_order_tax_types_without_errors() {
+		// Enable tax calculations in WooCommerce.
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+
+		// Create a tax rate in WooCommerce.
+		$tax_rate_id = \WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'ES',
+				'tax_rate_state'    => '',
+				'tax_rate'          => '21.0000',
+				'tax_rate_name'     => 'IVA',
+				'tax_rate_priority' => 1,
+				'tax_rate_compound' => 0,
+				'tax_rate_shipping' => 1,
+				'tax_rate_order'    => 0,
+				'tax_rate_class'    => '',
+			)
+		);
+
+		// Add erp_tax_type to the tax rate.
+		$erp_tax_type = 'ERP_IVA_21';
+		TAXES::update_tax_type( $tax_rate_id, $erp_tax_type );
+
+		// Create a product with the tax class.
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Test Product with Tax' );
+		$product->set_regular_price( 100 );
+		$product->set_tax_status( 'taxable' );
+		$product->set_tax_class( '' );
+		$product->save();
+
+		// Create an order with the product.
+		$order = new \WC_Order();
+		$order->set_billing_first_name( 'José' );
+		$order->set_billing_last_name( 'García' );
+		$order->set_billing_email( 'jose@example.com' );
+		$order->set_billing_address_1( 'Calle Test 123' );
+		$order->set_billing_city( 'Madrid' );
+		$order->set_billing_postcode( '28001' );
+		$order->set_billing_country( 'ES' );
+		$order->set_billing_state( 'M' );
+		$order->set_status( 'completed' );
+
+		// Add product to order.
+		$item = new \WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		
+		// Set tax data manually for the item.
+		$item->set_taxes(
+			array(
+				'total'    => array( $tax_rate_id => 21 ),
+				'subtotal' => array( $tax_rate_id => 21 ),
+			)
+		);
+		
+		$order->add_item( $item );
+
+		// Calculate totals to apply taxes.
+		$order->calculate_totals();
+		$order->save();
+
+		// Generate order data.
+		$option_prefix = 'conecom-test';
+		$order_data    = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+
+		// Verify order data is generated.
+		$this->assertNotEmpty( $order_data );
+		$this->assertArrayHasKey( 'items', $order_data );
+		$this->assertNotEmpty( $order_data['items'] );
+
+		// Verify the first item has tax information.
+		$first_item = $order_data['items'][0];
+		$this->assertArrayHasKey( 'tax', $first_item );
+		$this->assertEquals( 21, $first_item['tax'] );
+
+		// Verify the first item has erp_tax_type.
+		$this->assertArrayHasKey( 'erp_tax_type', $first_item, 'Item should have erp_tax_type field' );
+		$this->assertEquals( $erp_tax_type, $first_item['erp_tax_type'], 'Item erp_tax_type should match the one set in database' );
+
+		// Verify erp_tax_type is stored correctly in database.
+		$stored_tax_type = TAXES::get_tax_types_map( $tax_rate_id);
+		$this->assertEquals( $erp_tax_type, $stored_tax_type );
+
+		// Clean up.
+		\WC_Tax::_delete_tax_rate( $tax_rate_id );
+		$product->delete( true );
+		$order->delete( true );
 	}
 }

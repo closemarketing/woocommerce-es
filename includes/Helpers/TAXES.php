@@ -41,6 +41,10 @@ class TAXES {
 			$tax_types_map[ (int) $row['tax_rate_id'] ] = $row['erp_tax_type'];
 		}
 
+		if ( $tax_rate_id ) {
+			return $tax_types_map[ $tax_rate_id ];
+		}
+
 		return $tax_types_map;
 	}
 

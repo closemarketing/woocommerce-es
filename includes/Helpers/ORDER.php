@@ -381,12 +381,15 @@ class ORDER {
 		if ( ! empty( $shipping_items ) ) {
 			foreach ( $shipping_items as $shipping_item ) {
 				// Taxes.
-				$item_tax  = (float) $shipping_item->get_total_tax();
-				$taxes     = $tax->get_rates( $shipping_item->get_tax_class() );
-				$tax_rates = array_shift( $taxes );
-				$item_rate = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
+				$item_tax     = (float) $shipping_item->get_total_tax();
+				$taxes        = $tax->get_rates( $shipping_item->get_tax_class() );
+				$tax_rate_id  = ! empty( $taxes ) ? key( $taxes ) : 0;
+				$tax_rates    = array_shift( $taxes );
+				$item_rate    = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
+				$tax_types    = TAXES::get_tax_types_map();
+				$erp_tax_type = isset( $tax_types[ $tax_rate_id ] ) ? $tax_types[ $tax_rate_id ] : '';
 
-				$fields_items[] = array(
+				$shipping_data = array(
 					'name'     => __( 'Shipping:', 'woocommerce-es' ) . ' ' . $shipping_item->get_name(),
 					'desc'     => '',
 					'units'    => 1,
@@ -394,6 +397,13 @@ class ORDER {
 					'tax'      => $item_rate,
 					'sku'      => 'shipping',
 				);
+
+				// Add ERP tax type if available.
+				if ( ! empty( $erp_tax_type ) ) {
+					$shipping_data['erp_tax_type'] = $erp_tax_type;
+				}
+
+				$fields_items[] = $shipping_data;
 			}
 		}
 
@@ -402,12 +412,15 @@ class ORDER {
 		if ( ! empty( $items_fee ) ) {
 			foreach ( $items_fee as $item_fee ) {
 				// Taxes.
-				$item_tax  = (float) $item_fee->get_total_tax();
-				$taxes     = $tax->get_rates( $item_fee->get_tax_class() );
-				$tax_rates = array_shift( $taxes );
-				$item_rate = ! empty( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
+				$item_tax     = (float) $item_fee->get_total_tax();
+				$taxes        = $tax->get_rates( $item_fee->get_tax_class() );
+				$tax_rate_id  = ! empty( $taxes ) ? key( $taxes ) : 0;
+				$tax_rates    = array_shift( $taxes );
+				$item_rate    = ! empty( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
+				$tax_types    = TAXES::get_tax_types_map();
+				$erp_tax_type = isset( $tax_types[ $tax_rate_id ] ) ? $tax_types[ $tax_rate_id ] : '';
 
-				$fields_items[] = array(
+				$fee_data = array(
 					'name'     => $item_fee->get_name(),
 					'desc'     => '',
 					'units'    => 1,
@@ -415,6 +428,13 @@ class ORDER {
 					'tax'      => $item_rate,
 					'sku'      => 'fee',
 				);
+
+				// Add ERP tax type if available.
+				if ( ! empty( $erp_tax_type ) ) {
+					$fee_data['erp_tax_type'] = $erp_tax_type;
+				}
+
+				$fields_items[] = $fee_data;
 			}
 		}
 
