@@ -45,8 +45,7 @@ class TaxesTypesERPTest extends WP_UnitTestCase {
 		global $wpdb;
 
 		// Create instance to trigger column creation.
-		$taxes_erp = new Taxes_Types_ERP( $this->connector );
-		$taxes_erp->check_database_column();
+		TAXES::ensure_tax_type_column();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$column_exists = $wpdb->get_results(

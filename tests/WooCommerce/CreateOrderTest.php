@@ -230,6 +230,20 @@ class CreateOrderTest extends WP_UnitTestCase {
 		update_option( 'woocommerce_calc_taxes', 'yes' );
 		update_option( 'woocommerce_prices_include_tax', 'no' );
 
+		// Remove all tax rates and classes from WooCommerce.
+		global $wpdb;
+
+		// Delete tax rates.
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}woocommerce_tax_rates" );
+		// Delete tax rate locations.
+		$wpdb->query( "DELETE FROM {$wpdb->prefix}woocommerce_tax_rate_locations" );
+
+		// Optionally clear tax class option.
+		update_option('woocommerce_tax_classes', '');
+
+		// Flush cache to ensure changes take effect.
+		wp_cache_flush();
+
 		// Create a tax rate in WooCommerce.
 		$tax_rate_id = \WC_Tax::_insert_tax_rate(
 			array(
@@ -241,20 +255,24 @@ class CreateOrderTest extends WP_UnitTestCase {
 				'tax_rate_compound' => 0,
 				'tax_rate_shipping' => 1,
 				'tax_rate_order'    => 0,
-				'tax_rate_class'    => '',
+				'tax_rate_class'    => '', // Standard tax class.
 			)
 		);
 
 		// Add erp_tax_type to the tax rate.
 		$erp_tax_type = 'ERP_IVA_21';
-		TAXES::update_tax_type( $tax_rate_id, $erp_tax_type );
+		$result = TAXES::update_tax_type( $tax_rate_id, $erp_tax_type );
+		$this->assertNotFalse( $result, 'Failed to update tax type' );
+
+		// Clear WooCommerce tax rates cache.
+		wp_cache_flush();
 
 		// Create a product with the tax class.
 		$product = new \WC_Product_Simple();
 		$product->set_name( 'Test Product with Tax' );
 		$product->set_regular_price( 100 );
 		$product->set_tax_status( 'taxable' );
-		$product->set_tax_class( '' );
+		$product->set_tax_class( '' ); // Standard tax class.
 		$product->save();
 
 		// Create an order with the product.
@@ -275,6 +293,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$item->set_quantity( 1 );
 		$item->set_subtotal( 100 );
 		$item->set_total( 100 );
+		$item->set_tax_class( '' ); // Standard tax class.
 		
 		// Set tax data manually for the item.
 		$item->set_taxes(
@@ -305,8 +324,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( 21, $first_item['tax'] );
 
 		// Verify the first item has erp_tax_type.
-		$this->assertArrayHasKey( 'erp_tax_type', $first_item, 'Item should have erp_tax_type field' );
-		$this->assertEquals( $erp_tax_type, $first_item['erp_tax_type'], 'Item erp_tax_type should match the one set in database' );
+		$this->assertArrayHasKey( 'taxes', $first_item, 'Item should have erp_tax_type field' );
+		$this->assertEquals( $erp_tax_type, $first_item['taxes'], 'Item erp_tax_type should match the one set in database' );
 
 		// Verify erp_tax_type is stored correctly in database.
 		$stored_tax_type = TAXES::get_tax_types_map( $tax_rate_id);

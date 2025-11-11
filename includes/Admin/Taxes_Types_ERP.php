@@ -43,45 +43,11 @@ class Taxes_Types_ERP {
 	public function __construct( $connector ) {
 		$this->connector = $connector;
 
-		// Check and create database column.
-		add_action( 'admin_init', array( $this, 'check_database_column' ) );
-
 		// Enqueue scripts.
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 
 		// Hook into WooCommerce AJAX save to handle our custom field.
 		add_action( 'wp_ajax_woocommerce_tax_rates_save_changes', array( $this, 'intercept_tax_save' ), 5 );
-	}
-
-	/**
-	 * Check if database column exists and create if not.
-	 *
-	 * @return void
-	 */
-	public function check_database_column() {
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$column_exists = $wpdb->get_results(
-			$wpdb->prepare(
-				'SELECT * FROM INFORMATION_SCHEMA.COLUMNS
-				WHERE TABLE_SCHEMA = %s
-				AND TABLE_NAME = %s
-				AND COLUMN_NAME = %s',
-				DB_NAME,
-				$wpdb->prefix . 'woocommerce_tax_rates',
-				'erp_tax_type'
-			)
-		);
-
-		if ( empty( $column_exists ) ) {
-			// Add the column.
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
-			$wpdb->query(
-				"ALTER TABLE {$wpdb->prefix}woocommerce_tax_rates
-				ADD COLUMN erp_tax_type VARCHAR(50) NULL AFTER tax_rate_class"
-			);
-		}
 	}
 
 	/**

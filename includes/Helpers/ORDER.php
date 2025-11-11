@@ -273,7 +273,7 @@ class ORDER {
 		$fields_items = array();
 		$index        = 0;
 		$index_bund   = 0;
-		$has_virtual	= true;
+		$has_virtual  = true;
 		$tax          = new \WC_Tax();
 
 		$coupons         = $order->get_items( 'coupon' );
@@ -343,21 +343,18 @@ class ORDER {
 				$item_qty   = (int) $item->get_quantity();
 				$price_line = $item->get_subtotal() / $item_qty;
 
-				// Taxes.
-				$item_tax  = (float) $item->get_total_tax();
-				$taxes     = $tax->get_rates( $product->get_tax_class() );
-				$rates     = array_shift( $taxes );
-				$item_rate = ! empty( $item_tax ) ? floor( array_shift( $rates ) ) : 0;
-
 				$item_data = array(
 					'name'      => $item->get_name(),
 					'desc'      => get_the_excerpt( $product_id ),
 					'units'     => $item_qty,
 					'subtotal'  => (float) $price_line,
-					'tax'       => $item_rate,
 					'sku'       => ! empty( $product ) ? $product->get_sku() : '',
 					'image_url' => get_the_post_thumbnail_url( $product_id, 'post-thumbnail' ),
 					'permalink' => get_the_permalink( $product_id ),
+				);
+				$item_data = array_merge(
+					$item_data,
+					self::get_taxes( $item, $tax )
 				);
 
 				// Discount.
@@ -372,7 +369,7 @@ class ORDER {
 				}
 
 				$fields_items[] = $item_data;
-				$index++;
+				++$index;
 			}
 		}
 
@@ -380,28 +377,17 @@ class ORDER {
 		$shipping_items = $order->get_items( 'shipping' );
 		if ( ! empty( $shipping_items ) ) {
 			foreach ( $shipping_items as $shipping_item ) {
-				// Taxes.
-				$item_tax     = (float) $shipping_item->get_total_tax();
-				$taxes        = $tax->get_rates( $shipping_item->get_tax_class() );
-				$tax_rate_id  = ! empty( $taxes ) ? key( $taxes ) : 0;
-				$tax_rates    = array_shift( $taxes );
-				$item_rate    = ! empty( $item_tax ) && is_array( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
-				$tax_types    = TAXES::get_tax_types_map();
-				$erp_tax_type = isset( $tax_types[ $tax_rate_id ] ) ? $tax_types[ $tax_rate_id ] : '';
-
 				$shipping_data = array(
 					'name'     => __( 'Shipping:', 'woocommerce-es' ) . ' ' . $shipping_item->get_name(),
 					'desc'     => '',
 					'units'    => 1,
 					'subtotal' => (float) $shipping_item->get_total(),
-					'tax'      => $item_rate,
 					'sku'      => 'shipping',
 				);
-
-				// Add ERP tax type if available.
-				if ( ! empty( $erp_tax_type ) ) {
-					$shipping_data['erp_tax_type'] = $erp_tax_type;
-				}
+				$shipping_data = array_merge(
+					$shipping_data,
+					self::get_taxes( $shipping_item, $tax )
+				);
 
 				$fields_items[] = $shipping_data;
 			}
@@ -411,37 +397,74 @@ class ORDER {
 		$items_fee = $order->get_items( 'fee' );
 		if ( ! empty( $items_fee ) ) {
 			foreach ( $items_fee as $item_fee ) {
-				// Taxes.
-				$item_tax     = (float) $item_fee->get_total_tax();
-				$taxes        = $tax->get_rates( $item_fee->get_tax_class() );
-				$tax_rate_id  = ! empty( $taxes ) ? key( $taxes ) : 0;
-				$tax_rates    = array_shift( $taxes );
-				$item_rate    = ! empty( $item_tax ) ? floor( array_shift( $tax_rates ) ) : 0;
-				$tax_types    = TAXES::get_tax_types_map();
-				$erp_tax_type = isset( $tax_types[ $tax_rate_id ] ) ? $tax_types[ $tax_rate_id ] : '';
-
 				$fee_data = array(
 					'name'     => $item_fee->get_name(),
 					'desc'     => '',
 					'units'    => 1,
 					'subtotal' => (float) $item_fee->get_total(),
-					'tax'      => $item_rate,
 					'sku'      => 'fee',
 				);
-
-				// Add ERP tax type if available.
-				if ( ! empty( $erp_tax_type ) ) {
-					$fee_data['erp_tax_type'] = $erp_tax_type;
-				}
+				$fee_data = array_merge(
+					$fee_data,
+					self::get_taxes( $item_fee, $tax )
+				);
 
 				$fields_items[] = $fee_data;
 			}
 		}
 
-		return [
-			'items'      => $fields_items,
+		return array(
+			'items'       => $fields_items,
 			'has_virtual' => $has_virtual,
-		];
+		);
+	}
+
+	/**
+	 * Get tax rate
+	 *
+	 * @param object $item Item object.
+	 * @param object $tax Tax object.
+	 *
+	 * @return float
+	 */
+	private static function get_taxes( $item, $tax = null ) {
+		$item_taxes = array(
+			'tax' => 0,
+		);
+		if ( empty( $tax ) ) {
+			$tax = new \WC_Tax();
+		}
+		// Get the tax rate ID(s) from the item taxes, if present.
+		$item_tax_data         = $item->get_taxes();
+		$tax_rate_id_from_item = 0;
+		if ( ! empty( $item_tax_data['total'] ) && is_array( $item_tax_data['total'] ) ) {
+			$tax_rate_ids = array_keys(
+				array_filter(
+					$item_tax_data['total'],
+					function ( $tax_amount ) {
+						return $tax_amount > 0;
+					}
+				)
+			);
+			if ( ! empty( $tax_rate_ids ) ) {
+				$tax_rate_id_from_item = $tax_rate_ids[0];
+				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? floor( $item_tax_data['total'][ $tax_rate_id_from_item ] ) : 0;
+			}
+		}
+
+		if ( empty( $item_taxes['tax'] ) ) {
+			$item_taxes['tax'] = (float) $item->get_total_tax();
+		}
+
+		// Get the tax type from the tax rate ID.
+		if ( ! empty( $tax_rate_id_from_item ) ) {
+			$tax_type = TAXES::get_tax_types_map( $tax_rate_id_from_item );
+			if ( ! empty( $tax_type ) ) {
+				$item_taxes['taxes'] = $tax_type;
+			}
+		}
+
+		return $item_taxes;
 	}
 
 	/**
