@@ -159,37 +159,6 @@ class Taxes_Types_ERP {
 	}
 
 	/**
-	 * Get connector instance.
-	 *
-	 * @return object|null Connector instance or null if not available.
-	 */
-	private function get_connector() {
-		if ( null !== $this->connector ) {
-			return $this->connector;
-		}
-
-		$settings = get_option( 'connect_ecommerce', array() );
-		if ( empty( $settings ) ) {
-			return null;
-		}
-
-		// Get first configured ERP.
-		foreach ( $settings as $erp_slug => $erp_settings ) {
-			if ( ! empty( $erp_settings['api'] ) ) {
-				// Get connector class based on ERP type.
-				$connector_class = $this->get_connector_class( $erp_slug );
-				if ( class_exists( $connector_class ) ) {
-					$options_data    = conecom_get_options();
-					$this->connector = new $connector_class( $options_data );
-					return $this->connector;
-				}
-			}
-		}
-
-		return null;
-	}
-
-	/**
 	 * Intercept WooCommerce tax save to add our custom field.
 	 *
 	 * This hooks into the WooCommerce AJAX save with priority 5 (before WC processes at 10)

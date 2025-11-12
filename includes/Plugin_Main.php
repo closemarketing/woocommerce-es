@@ -44,21 +44,21 @@ class Base {
 	 */
 	public function __construct( $options = array() ) {
 		$this->options = $options;
-		$connector     = $this->get_connector( $options );
+		$connector     = self::get_connector( $options );
 
 		if ( is_admin() ) {
-			new Settings( $options );
-			new Import_Products( $options );
-			new Widget_Product( $options );
-			new Widget_Order( $options );
+			new Settings( $connector );
+			new Import_Products( $connector );
+			new Widget_Product( $connector );
+			new Widget_Order( $connector );
 			new Notices();
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );
 		}
 
-		new Orders( $options );
-		new Checkout( $options );
-		new MyAccount( $options );
+		new Orders( $connector );
+		new Checkout( $connector );
+		new MyAccount( $connector );
 	}
 
 	/**
@@ -74,9 +74,9 @@ class Base {
 	 * Get connector of plugin.
 	 *
 	 * @param array $options Options of plugin.
-	 * @return string
+	 * @return array
 	 */
-	public function get_connector( $options ) {
+	public static function get_connector( $options ) {
 		$connector                 = array();
 		$connector['settings_all'] = get_option( 'connect_ecommerce' );
 		$connector['connector']    = isset( $connector['settings_all']['connector'] ) ? $connector['settings_all']['connector'] : '';

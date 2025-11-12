@@ -10,6 +10,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Base;
 use CLOSE\ConnectEcommerce\Helpers\PROD;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
 
@@ -37,26 +38,30 @@ class Import_Products_Command {
 				'ai'     => 'none',
 			)
 		);
-		$settings_all = get_option( 'connect_ecommerce' );
-		$connector    = isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
-		$settings     = $settings_all[ $connector ] ?? array();
-		$time_start   = microtime( true );
+		$conecom_options = conecom_get_options();
+		$connector_data  = Base::get_connector( $conecom_options );
+		$connector       = $connector_data['connector'] ?? '';
+		$settings        = $connector_data['settings'] ?? array();
+		$time_start      = microtime( true );
 
 		if ( empty( $connector ) ) {
 			WP_CLI::line( $this->cli_header_line() . __( 'There is no connector actived' ) );
 			return;
 		}
+		if ( empty( $connector_data['options'] ) || empty( $connector_data['connapi_erp'] ) ) {
+			WP_CLI::line( $this->cli_header_line() . __( 'Connector configuration is not complete', 'woocommerce-es' ) );
+			return;
+		}
 		$subject = sprintf(
-			__( 'Connect Ecommerce: Importing products from %s' ),
+			/* translators: %s connector name. */
+			__( 'Connect Ecommerce: Importing products from %s', 'woocommerce-es' ),
 			$connector
 		);
 		WP_CLI::line( $this->cli_header_line() . $subject );
 
-		$conecom_options = conecom_get_options();
-		$options         = $conecom_options[ $connector ];
-		$apiname         = 'Connect_Ecommerce_' . $options['name'];
-		$connapi_erp     = new $apiname( $options );
-		$api_pagination  = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
+		$options        = $connector_data['options'];
+		$connapi_erp    = $connector_data['connapi_erp'];
+		$api_pagination = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
 		$generate_ai     = $assoc_args['ai'] ?? 'none';
 
 		// Loop Products.
