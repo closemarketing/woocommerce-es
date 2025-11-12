@@ -92,7 +92,7 @@ class Taxes_Types_ERP {
 		$options_html  = '<option value="">';
 		$options_html .= sprintf(
 			/* translators: %s: ERP name */
-			__( '%s Tax', 'woocommerce-es' ),
+			__( 'Select %s Tax', 'woocommerce-es' ),
 			esc_html( $erp_name )
 		);
 		$options_html .= '</option>';
