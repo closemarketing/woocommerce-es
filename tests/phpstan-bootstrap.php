@@ -24,6 +24,10 @@ if (!defined('DOING_AJAX')) {
     define('DOING_AJAX', false);
 }
 
+if (!defined('DB_NAME')) {
+	define('DB_NAME', 'hola');
+}
+
 if (!defined('WP_DEBUG')) {
     define('WP_DEBUG', false);
 }

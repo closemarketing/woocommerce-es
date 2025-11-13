@@ -12,6 +12,7 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Base;
 /**
  * Widget in Orders
  *
@@ -37,17 +38,14 @@ class Widget_Order {
 	/**
 	 * Construct of Class
 	 *
-	 * @param array $options Options of plugin.
+	 * @param array $connector Connector.
 	 */
-	public function __construct( $options = array() ) {
-		$settings_base = get_option( 'connect_ecommerce' );
-		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
-		if ( empty( $connector ) ) {
+	public function __construct( $connector ) {
+		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) || empty( $connector['connapi_erp'] ) ) {
 			return;
 		}
-		$this->options     = $options[ $connector ];
-		$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
-		$this->connapi_erp = new $apiname( $options );
+		$this->options     = $connector['options'];
+		$this->connapi_erp = $connector['connapi_erp'];
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_orders' ) );
 	}

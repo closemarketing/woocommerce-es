@@ -135,32 +135,23 @@ class Settings {
 	/**
 	 * Construct of class
 	 *
-	 * @param array $options Options.
+	 * @param array $connector Connector.
 	 * @return void
 	 */
-	public function __construct( $options = array() ) {
-		$this->payment_methods_page = null;
-		$this->settings_all = get_option( 'connect_ecommerce' );
-		$this->connector    = isset( $this->settings_all['connector'] ) ? $this->settings_all['connector'] : '';
-		$this->settings     = $this->settings_all[ $this->connector ] ?? array();
-		$this->all_options  = $options;
+	public function __construct( $connector ) {
+		$this->settings_all          = $connector['settings_all'];
+		$this->connector             = $connector['connector'] ?? '';
+		$this->settings              = $connector['settings'] ?? array();
+		$this->all_options           = $connector['all_options'];
+		$this->options               = $connector['options'] ?? array();
+		$this->connapi_erp           = $connector['connapi_erp'] ?? null;
+		$this->is_mergevars          = $connector['is_mergevars'] ?? false;
+		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
+		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
+		$this->have_payments_methods = method_exists( $this->connapi_erp, 'get_payment_methods' ) ? true : false;
 
-		if ( ! empty( $this->connector ) ) {
-			$this->options            = $options[ $this->connector ];
-			if ( empty( $this->options['name'] ) ) {
-				$this->settings_all['connector'] = '';
-				update_option( 'connect_ecommerce', $this->settings_all );
-				return;
-			}
-			$apiname                     = 'Connect_Ecommerce_' . $this->options['name'];
-			$this->connapi_erp           = new $apiname( $options );
-			$this->is_mergevars          = method_exists( $this->connapi_erp, 'get_product_attributes' ) ? true : false;
-			$this->have_payments_methods = method_exists( $this->connapi_erp, 'get_payment_methods' ) ? true : false;
-			$this->is_disabled_orders = isset( $this->options['disable_modules'] ) && in_array( 'order', $this->options['disable_modules'], true ) ? true : false;
-			$this->is_disabled_ai     = isset( $this->options['disable_modules'] ) && in_array( 'ai', $this->options['disable_modules'], true ) ? true : false;
-			if ( $this->have_payments_methods ) {
-				$this->payment_methods_page = new Settings_Payment_Methods( $this->connapi_erp, $this->connector, $this->options );
-			}
+		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
+			return;
 		}
 
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
@@ -177,7 +168,7 @@ class Settings {
 			'woocommerce',
 			__( 'Connect Ecommerce', 'woocommerce-es' ),
 			__( 'Connect Ecommerce', 'woocommerce-es' ),
-			'manage_woocommerce',
+			'manage_options',
 			'connect_ecommerce',
 			array( $this, 'create_admin_page' )
 		);
