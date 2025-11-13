@@ -222,23 +222,7 @@ class ORDER {
 		}
 
 		// Payment method.
-		$wc_payment_method = $order->get_payment_method();
-		if ( ! empty( $wc_payment_method ) ) {
-			$order_data['paymentMethod'] = $wc_payment_method;
-		}
-		$settings_prod_mergevars = isset( $setttings['prod_mergevars'] ) ? $setttings['prod_mergevars'] : '';
-		if ( ! empty( $settings_prod_mergevars ) ) {
-			foreach ( $settings_prod_mergevars as $key => $value ) {
-				if ( false === strpos( $key, 'paymentmethods|' ) ) {
-					continue;
-				}
-				$payment_method     = explode( '|', $key );
-				$payment_method_woo = explode( '|', $value );
-				if ( $payment_method_woo[1] === $wc_payment_method ) {
-					$order_data['paymentMethodId'] = $payment_method[1];
-				}
-			}
-		}
+		$order_data = array_merge( $order_data, self::get_equivalent_payment_method( $order, $setttings ) );
 
 		$result_items        = self::review_items( $order, $option_prefix );
 		$order_data['items'] = $result_items['items'];
@@ -258,6 +242,28 @@ class ORDER {
 		}
 
 		return $order_data;
+	}
+
+	/**
+	 * Get equivalent payment method
+	 *
+	 * @param object $order Order.
+	 * @param array $setttings Settings.
+	 *
+	 * @return array
+	 */
+	private static function get_equivalent_payment_method( $order, $setttings ) {
+		$payment_method    = array();
+		$wc_payment_method = $order->get_payment_method();
+		if ( ! empty( $wc_payment_method ) ) {
+			$payment_method['paymentMethod'] = $wc_payment_method;
+		}
+		$get_api_payment_method = isset( $setttings['payment_methods'] ) ? $setttings['payment_methods'] : array();
+
+		if ( ! empty( $get_api_payment_method[ $wc_payment_method ] ) ) {
+			$payment_method['paymentMethodId'] = $get_api_payment_method[ $wc_payment_method ];
+		}
+		return $payment_method;
 	}
 
 	/**

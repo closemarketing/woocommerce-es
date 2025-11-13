@@ -5,7 +5,7 @@
 .DS_Store
 composer.lock
 .wordpress-org
-doc/
+docs/
 changelog.md
 readme.md
 
