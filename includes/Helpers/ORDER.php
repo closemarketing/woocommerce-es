@@ -248,7 +248,7 @@ class ORDER {
 	 * Get equivalent payment method
 	 *
 	 * @param object $order Order.
-	 * @param array $setttings Settings.
+	 * @param array  $setttings Settings.
 	 *
 	 * @return array
 	 */
@@ -431,7 +431,7 @@ class ORDER {
 	 * @param object $item Item object.
 	 * @param object $tax Tax object.
 	 *
-	 * @return float
+	 * @return array
 	 */
 	private static function get_taxes( $item, $tax = null ) {
 		$item_taxes = array(
@@ -475,13 +475,13 @@ class ORDER {
 
 	/**
 	 * Gets Billing VAT info from order
-	 * 
-	 * @param $order Order object to get info
-	 * 
+	 *
+	 * @param object $order Order object to get info.
+	 *
 	 * @return string
 	 */
 	public static function get_billing_vat( $order ) {
-		$code_labels = CONECOM_VAT_FIELD_SLUGS;
+		$code_labels  = CONECOM_VAT_FIELD_SLUGS;
 		$contact_code = '';
 		foreach ( $code_labels as $code_label ) {
 			$contact_code = $order->get_meta( $code_label );

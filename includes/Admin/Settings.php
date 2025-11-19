@@ -154,10 +154,41 @@ class Settings {
 			return;
 		}
 
+		if ( $this->have_payments_methods ) {
+			$this->init_payment_methods_page();
+		}
+
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
 		add_action( 'wp_ajax_connect_ecommerce_test_alert', array( $this, 'test_alert_callback' ) );
 	}
+
+	/**
+	 * Initialize payment methods page handler.
+	 *
+	 * @return void
+	 */
+	private function init_payment_methods_page() {
+		if ( ! is_object( $this->connapi_erp ) ) {
+			return;
+		}
+
+		$connector_options = $this->options;
+		$connector_slug    = '';
+
+		if ( isset( $connector_options['slug'] ) && is_string( $connector_options['slug'] ) ) {
+			$connector_slug = (string) $connector_options['slug'];
+		} elseif ( is_string( $this->connector ) ) {
+			$connector_slug = (string) $this->connector;
+		}
+
+		$this->payment_methods_page = new Settings_Payment_Methods(
+			$this->connapi_erp,
+			$connector_slug,
+			is_array( $connector_options ) ? $connector_options : array()
+		);
+	}
+
 	/**
 	 * Adds plugin page.
 	 *
@@ -238,7 +269,7 @@ class Settings {
 						<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'woocommerce-es' ); ?></a>
 						<?php
 					}
-					
+
 					do_action( 'connect_ecommerce_settings_tabs', $active_tab );
 					?>
 				</h2>
@@ -372,12 +403,6 @@ class Settings {
 					if ( 'payment_methods' === $active_subtab ) {
 						if ( $this->have_payments_methods && is_object( $this->payment_methods_page ) ) {
 							$this->payment_methods_page->render_page();
-						} else {
-							?>
-							<div class="notice notice-warning inline">
-								<p><?php esc_html_e( 'The selected connector does not provide payment methods integration.', 'woocommerce-es' ); ?></p>
-							</div>
-							<?php
 						}
 					}
 					if ( 'ai_products' === $active_subtab ) {

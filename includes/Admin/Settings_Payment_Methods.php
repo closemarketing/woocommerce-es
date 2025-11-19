@@ -80,9 +80,10 @@ class Settings_Payment_Methods {
 
 		$updated_flag = isset( $_GET['pm_updated'] ) ? sanitize_text_field( wp_unslash( $_GET['pm_updated'] ) ) : '';
 
-		$connector_methods = $this->get_connector_methods();
-		$gateways          = $this->get_wc_gateways();
-		$saved_mappings    = $this->get_saved_mappings();
+		$connector_methods    = $this->get_connector_methods();
+		$connector_treasuries = $this->get_connector_treasuries();
+		$gateways             = $this->get_wc_gateways();
+		$saved_mappings       = $this->get_saved_mappings();
 		?>
 		<div class="connect-payment-methods">
 			<h2>
@@ -128,11 +129,17 @@ class Settings_Payment_Methods {
 				<input type="hidden" name="action" value="connect_ecommerce_save_payment_methods" />
 				<input type="hidden" name="connector" value="<?php echo esc_attr( $this->connector_slug ); ?>" />
 				<?php wp_nonce_field( 'connect_ecommerce_save_payment_methods', 'connect_ecommerce_payment_methods_nonce' ); ?>
+				<?php if ( empty( $connector_treasuries ) ) { ?>
+					<div class="notice notice-info inline">
+						<p><?php esc_html_e( 'No treasury accounts were returned by the connector. You can still map payment methods.', 'woocommerce-es' ); ?></p>
+					</div>
+				<?php } ?>
 				<table class="widefat striped">
 					<thead>
 						<tr>
 							<th scope="col"><?php esc_html_e( 'WooCommerce Gateway', 'woocommerce-es' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Connector Payment Method', 'woocommerce-es' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Connector Treasury', 'woocommerce-es' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -169,16 +176,22 @@ class Settings_Payment_Methods {
 							}
 							$gateway_description = wp_strip_all_tags( $gateway_description );
 
-							$selected_method = isset( $saved_mappings[ $sanitized_gateway_id ] ) ? sanitize_text_field( (string) $saved_mappings[ $sanitized_gateway_id ] ) : '';
+							$selected_method   = '';
+							$selected_treasury = '';
+							if ( isset( $saved_mappings[ $sanitized_gateway_id ] ) ) {
+								if ( isset( $saved_mappings[ $sanitized_gateway_id ]['method'] ) ) {
+									$selected_method = sanitize_text_field( (string) $saved_mappings[ $sanitized_gateway_id ]['method'] );
+								}
+								if ( isset( $saved_mappings[ $sanitized_gateway_id ]['treasury'] ) ) {
+									$selected_treasury = sanitize_text_field( (string) $saved_mappings[ $sanitized_gateway_id ]['treasury'] );
+								}
+							}
 							?>
 							<tr>
 								<td>
 									<strong><?php echo esc_html( $gateway_title ); ?></strong>
 									<br />
 									<code><?php echo esc_html( $sanitized_gateway_id ); ?></code>
-									<?php if ( '' !== $gateway_description ) { ?>
-										<p class="description"><?php echo esc_html( $gateway_description ); ?></p>
-									<?php } ?>
 								</td>
 								<td>
 									<select name="payment_methods[<?php echo esc_attr( $sanitized_gateway_id ); ?>]" class="regular-text">
@@ -190,6 +203,22 @@ class Settings_Payment_Methods {
 											?>
 											<option value="<?php echo esc_attr( $sanitized_method_id ); ?>" <?php echo selected( $selected_method, $sanitized_method_id, false ); ?>>
 												<?php echo esc_html( $sanitized_method_label ); ?>
+											</option>
+											<?php
+										}
+										?>
+									</select>
+								</td>
+								<td>
+									<select name="treasury_accounts[<?php echo esc_attr( $sanitized_gateway_id ); ?>]" class="regular-text" <?php disabled( empty( $connector_treasuries ) ); ?>>
+										<option value=""><?php esc_html_e( '— Select —', 'woocommerce-es' ); ?></option>
+										<?php
+										foreach ( $connector_treasuries as $treasury_id => $treasury_label ) {
+											$sanitized_treasury_id    = sanitize_text_field( (string) $treasury_id );
+											$sanitized_treasury_label = sanitize_text_field( (string) $treasury_label );
+											?>
+											<option value="<?php echo esc_attr( $sanitized_treasury_id ); ?>" <?php echo selected( $selected_treasury, $sanitized_treasury_id, false ); ?>>
+												<?php echo esc_html( $sanitized_treasury_label ); ?>
 											</option>
 											<?php
 										}
@@ -222,21 +251,64 @@ class Settings_Payment_Methods {
 
 		$connector = isset( $_POST['connector'] ) ? sanitize_text_field( wp_unslash( $_POST['connector'] ) ) : '';
 
-		$submitted_methods = array();
-		if ( isset( $_POST['payment_methods'] ) && is_array( $_POST['payment_methods'] ) ) {
-			$raw_methods = wp_unslash( $_POST['payment_methods'] );
-			foreach ( $raw_methods as $gateway_id => $method_id ) {
-				$sanitized_gateway_id = sanitize_text_field( (string) $gateway_id );
-				$sanitized_method_id  = sanitize_text_field( (string) $method_id );
+		$raw_methods    = array();
+		$raw_treasuries = array();
 
-				if ( '' === $sanitized_gateway_id ) {
-					continue;
-				}
-				if ( '' === $sanitized_method_id ) {
-					continue;
-				}
+		$post_input = filter_input_array(
+			INPUT_POST,
+			array(
+				'payment_methods'   => array(
+					'filter' => FILTER_DEFAULT,
+					'flags'  => FILTER_REQUIRE_ARRAY,
+				),
+				'treasury_accounts' => array(
+					'filter' => FILTER_DEFAULT,
+					'flags'  => FILTER_REQUIRE_ARRAY,
+				),
+			)
+		);
 
-				$submitted_methods[ $sanitized_gateway_id ] = $sanitized_method_id;
+		if ( isset( $post_input['payment_methods'] ) && is_array( $post_input['payment_methods'] ) ) {
+			$raw_methods = wp_unslash( $post_input['payment_methods'] );
+		}
+
+		if ( isset( $post_input['treasury_accounts'] ) && is_array( $post_input['treasury_accounts'] ) ) {
+			$raw_treasuries = wp_unslash( $post_input['treasury_accounts'] );
+		}
+
+		$submitted_mappings = array();
+		$gateway_ids        = array_unique(
+			array_merge(
+				array_keys( $raw_methods ),
+				array_keys( $raw_treasuries )
+			)
+		);
+
+		foreach ( $gateway_ids as $gateway_id ) {
+			$sanitized_gateway_id = sanitize_text_field( (string) $gateway_id );
+
+			if ( '' === $sanitized_gateway_id ) {
+				continue;
+			}
+
+			$mapping_entry = array();
+
+			if ( isset( $raw_methods[ $gateway_id ] ) ) {
+				$sanitized_method_id = sanitize_text_field( (string) $raw_methods[ $gateway_id ] );
+				if ( '' !== $sanitized_method_id ) {
+					$mapping_entry['method'] = $sanitized_method_id;
+				}
+			}
+
+			if ( isset( $raw_treasuries[ $gateway_id ] ) ) {
+				$sanitized_treasury_id = sanitize_text_field( (string) $raw_treasuries[ $gateway_id ] );
+				if ( '' !== $sanitized_treasury_id ) {
+					$mapping_entry['treasury'] = $sanitized_treasury_id;
+				}
+			}
+
+			if ( ! empty( $mapping_entry ) ) {
+				$submitted_mappings[ $sanitized_gateway_id ] = $mapping_entry;
 			}
 		}
 
@@ -249,12 +321,12 @@ class Settings_Payment_Methods {
 			$connector = $this->connector_slug;
 		}
 
-		if ( empty( $submitted_methods ) ) {
+		if ( empty( $submitted_mappings ) ) {
 			if ( isset( $existing[ $connector ] ) ) {
 				unset( $existing[ $connector ] );
 			}
 		} else {
-			$existing[ $connector ] = $submitted_methods;
+			$existing[ $connector ] = $submitted_mappings;
 		}
 
 		update_option( $this->option_name, $existing );
@@ -335,6 +407,44 @@ class Settings_Payment_Methods {
 	}
 
 	/**
+	 * Get connector treasury accounts.
+	 *
+	 * @return array
+	 */
+	private function get_connector_treasuries() {
+		if ( ! is_object( $this->connector_api ) || ! method_exists( $this->connector_api, 'get_treasury_accounts' ) ) {
+			return array();
+		}
+
+		$treasuries = $this->connector_api->get_treasury_accounts();
+		if ( ! is_array( $treasuries ) || empty( $treasuries ) ) {
+			return array();
+		}
+
+		$sanitized_treasuries = array();
+		foreach ( $treasuries as $treasury_id => $treasury_label ) {
+			if ( ! is_scalar( $treasury_id ) || ! is_scalar( $treasury_label ) ) {
+				continue;
+			}
+
+			$sanitized_treasury_id    = sanitize_text_field( (string) $treasury_id );
+			$sanitized_treasury_label = sanitize_text_field( (string) $treasury_label );
+
+			if ( '' === $sanitized_treasury_id ) {
+				continue;
+			}
+
+			if ( '' === $sanitized_treasury_label ) {
+				continue;
+			}
+
+			$sanitized_treasuries[ $sanitized_treasury_id ] = $sanitized_treasury_label;
+		}
+
+		return $sanitized_treasuries;
+	}
+
+	/**
 	 * Get saved mappings for connector.
 	 *
 	 * @return array
@@ -346,11 +456,50 @@ class Settings_Payment_Methods {
 			return array();
 		}
 
-		if ( isset( $stored[ $this->connector_slug ] ) && is_array( $stored[ $this->connector_slug ] ) ) {
-			return $stored[ $this->connector_slug ];
+		if ( ! isset( $stored[ $this->connector_slug ] ) || ! is_array( $stored[ $this->connector_slug ] ) ) {
+			return array();
 		}
 
-		return array();
+		$prepared = array();
+
+		foreach ( $stored[ $this->connector_slug ] as $gateway_id => $mapping ) {
+			if ( ! is_scalar( $gateway_id ) ) {
+				continue;
+			}
+
+			$sanitized_gateway_id = sanitize_text_field( (string) $gateway_id );
+			if ( '' === $sanitized_gateway_id ) {
+				continue;
+			}
+
+			$entry = array();
+
+			if ( is_array( $mapping ) ) {
+				if ( isset( $mapping['method'] ) && is_scalar( $mapping['method'] ) ) {
+					$sanitized_method = sanitize_text_field( (string) $mapping['method'] );
+					if ( '' !== $sanitized_method ) {
+						$entry['method'] = $sanitized_method;
+					}
+				}
+				if ( isset( $mapping['treasury'] ) && is_scalar( $mapping['treasury'] ) ) {
+					$sanitized_treasury = sanitize_text_field( (string) $mapping['treasury'] );
+					if ( '' !== $sanitized_treasury ) {
+						$entry['treasury'] = $sanitized_treasury;
+					}
+				}
+			} elseif ( is_scalar( $mapping ) ) {
+				$sanitized_method = sanitize_text_field( (string) $mapping );
+				if ( '' !== $sanitized_method ) {
+					$entry['method'] = $sanitized_method;
+				}
+			}
+
+			if ( ! empty( $entry ) ) {
+				$prepared[ $sanitized_gateway_id ] = $entry;
+			}
+		}
+
+		return $prepared;
 	}
 }
 
