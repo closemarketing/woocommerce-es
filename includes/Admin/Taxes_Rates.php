@@ -19,11 +19,20 @@ use CLOSE\ConnectEcommerce\Helpers\TAXES;
  */
 class Taxes_Rates {
 	/**
+	 * Connector options.
+	 *
+	 * @var array
+	 */
+	private $connector;
+
+	/**
 	 * Construct of class
 	 *
+	 * @param array $connector Connector options.
 	 * @return void
 	 */
-	public function __construct() {
+	public function __construct( $connector ) {
+		$this->connector = $connector;
 		add_action( 'wp_ajax_connect_update_tax_rates', array( $this, 'ajax_update_tax_rates' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
 	}

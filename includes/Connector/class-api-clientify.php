@@ -90,6 +90,17 @@ class Connect_Ecommerce_Clientify {
 	}
 
 	/**
+	 * Gets taxes from Clientify/API
+	 *
+	 * @return array Array of taxes with id, name, and code.
+	 */
+	public function get_taxes() {
+		// Clientify may not have a taxes endpoint, return empty array.
+		// Override this in specific ERP connectors that support taxes.
+		return array();
+	}
+
+	/**
 	 * Converts product from API to SYNC
 	 *
 	 * @param array $products_original API Clientify Product.

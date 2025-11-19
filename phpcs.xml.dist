@@ -25,6 +25,7 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
+				<element value="close"/>
 				<element value="conecom"/>
 				<element value="connect_ecommerce"/>
 				<element value="CONECOM"/>

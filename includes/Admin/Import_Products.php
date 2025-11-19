@@ -72,20 +72,17 @@ class Import_Products {
 	/**
 	 * Constructs of class
 	 *
-	 * @param array $options Options of plugin.
+	 * @param array $connector Connector.
 	 * @return void
 	 */
-	public function __construct( $options ) {
-		$settings_base = get_option( 'connect_ecommerce' );
+	public function __construct( $connector ) {
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
-		$connector         = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
-		if ( empty( $connector ) ) {
+		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) ) {
 			return;
 		}
-		$this->options     = $options[ $connector ];
-		$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
-		$this->connapi_erp = new $apiname( $options );
-		$this->settings    = $settings_base[ $connector ] ?? array();
+		$this->options     = $connector['options'];
+		$this->connapi_erp = $connector['connapi_erp'] ?? null;
+		$this->settings    = $connector['settings'] ?? array();
 		$this->sync_period = isset( $this->settings['sync'] ) ? strval( $this->settings['sync'] ) : 'no';
 
 		// Admin Styles.

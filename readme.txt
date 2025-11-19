@@ -123,6 +123,9 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
+= 3.2.2 =
+* Enhancement: Added support to ERP Tax Types.
+
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
 * Fixed: Terms and conditions validation user registration not applies in Admin.

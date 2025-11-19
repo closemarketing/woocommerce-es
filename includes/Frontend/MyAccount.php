@@ -12,6 +12,7 @@ namespace CLOSE\ConnectEcommerce\Frontend;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Base;
 /**
  * My Account.
  *
@@ -63,24 +64,18 @@ class MyAccount {
 	/**
 	 * Construct of Class
 	 *
-	 * @param array $options Options of plugin.
+	 * @param array $connector Connector.
 	 */
-	public function __construct( $options ) {
-		$this->settings_all = get_option( 'connect_ecommerce' );
-		$this->connector    = isset( $this->settings_all['connector'] ) ? $this->settings_all['connector'] : '';
-		$this->settings     = $this->settings_all[ $this->connector ] ?? array();
-		$this->all_options  = $options;
-		$this->connapi_erp  = null;
+	public function __construct( $connector ) {
+		$this->settings_all = $connector['settings_all'] ?? get_option( 'connect_ecommerce' );
+		$this->connector    = $connector['connector'] ?? '';
+		$this->settings     = $connector['settings'] ?? array();
+		$this->all_options  = $connector['all_options'];
+		$this->options      = $connector['options'] ?? array();
+		$this->connapi_erp  = $connector['connapi_erp'] ?? null;
 
-		if ( ! empty( $this->connector ) ) {
-			$this->options            = $options[ $this->connector ];
-			if ( empty( $this->options['name'] ) ) {
-				$this->settings_all['connector'] = '';
-				update_option( 'connect_ecommerce', $this->settings_all );
-				return;
-			}
-			$apiname           = 'Connect_Ecommerce_' . $this->options['name'];
-			$this->connapi_erp = new $apiname( $options );
+		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
+			return;
 		}
 
 		add_filter( 'woocommerce_account_orders_columns', array( $this, 'add_account_orders_column' ), 10, 1 );
@@ -117,7 +112,7 @@ class MyAccount {
 
 		if ( ! empty( $api_doc_id ) ) {
 			$api_doc_type  = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
-			if ( ! method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
+			if ( empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
 				return;
 			}
 			$document_file = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
@@ -144,11 +139,9 @@ class MyAccount {
 		$api_doc_type = isset( $_GET['doc_type'] ) ? sanitize_text_field( wp_unslash( $_GET['doc_type'] ) ) : '';
 
 		$file_document_path = false;
-		if ( $api_doc_id ) {
+		if ( $api_doc_id && $this->connapi_erp ) {
 			$settings           = get_option( $this->options['slug'] );
-			$apiname            = 'Connect_Ecommerce_' . $this->options['name'];
-			$connapi_erp        = new $apiname( $this->options );
-			$file_document_path = $connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
+			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
 		}
 
 		if ( ! file_exists( $file_document_path ) ) {

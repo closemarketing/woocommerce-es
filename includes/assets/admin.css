@@ -150,3 +150,13 @@
 	border-color: #010101;
 	color: white;
 }
+
+.wc_tax_rates th.erp-tax-header,
+.wc_tax_rates td.erp_tax_type {
+	width: 15%;
+}
+
+.wc_tax_rates td.erp_tax_type select {
+	width: 85%;
+	margin: 10px;
+}
