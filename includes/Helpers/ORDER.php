@@ -224,6 +224,9 @@ class ORDER {
 		// Payment method.
 		$order_data = array_merge( $order_data, self::get_equivalent_payment_method( $order, $setttings ) );
 
+		// Treasury.
+		$order_data = array_merge( $order_data, self::get_equivalent_treasury( $order, $setttings ) );
+
 		$result_items        = self::review_items( $order, $option_prefix );
 		$order_data['items'] = $result_items['items'];
 
@@ -266,6 +269,24 @@ class ORDER {
 		return $payment_method;
 	}
 
+	/**
+	 * Get equivalent treasury
+	 *
+	 * @param object $order Order.
+	 * @param array  $setttings Settings.
+	 *
+	 * @return array
+	 */
+	private static function get_equivalent_treasury( $order, $setttings ) {
+		$treasury = array();
+		$wc_treasury = $order->get_payment_method();
+
+		$get_api_treasury = isset( $setttings['treasury_accounts'] ) ? $setttings['treasury_accounts'] : array();
+		if ( ! empty( $get_api_treasury[ $wc_treasury ] ) ) {
+			$treasury['treasuryId'] = $get_api_treasury[ $wc_treasury ];
+		}
+		return $treasury;
+	}
 	/**
 	 * Review items
 	 *
