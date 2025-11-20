@@ -86,13 +86,16 @@ class Base {
 
 		$connector['settings']['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
 
-		// Get payment method mappings.
-		$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
-		$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
-		$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+		// Initialize payment method mappings.
+		$connector['settings']['payment_methods']   = array();
+		$connector['settings']['treasury_accounts'] = array();
 
 		if ( ! empty( $connector['connector'] ) ) {
-			$connector['options'] = $options[ $connector['connector'] ];
+			// Get payment method mappings.
+			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
+			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+			$connector['options']                       = $options[ $connector['connector'] ];
 			if ( empty( $connector['options']['name'] ) ) {
 				$connector['settings_all']['connector'] = '';
 				update_option( 'connect_ecommerce', $connector['settings_all'] );

@@ -65,7 +65,6 @@ class Orders {
 		}
 		$this->options                    = $connector['options'];
 		$this->settings                   = $connector['settings'] ?? array();
-		$this->settings['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
 		$this->connapi_erp                = $connector['connapi_erp'];
 		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
 		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';

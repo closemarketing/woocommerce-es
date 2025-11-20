@@ -174,13 +174,7 @@ class Settings {
 		}
 
 		$connector_options = $this->options;
-		$connector_slug    = '';
-
-		if ( isset( $connector_options['slug'] ) && is_string( $connector_options['slug'] ) ) {
-			$connector_slug = (string) $connector_options['slug'];
-		} elseif ( is_string( $this->connector ) ) {
-			$connector_slug = (string) $this->connector;
-		}
+		$connector_slug    = (string) $this->connector;
 
 		$this->payment_methods_page = new Settings_Payment_Methods(
 			$this->connapi_erp,
