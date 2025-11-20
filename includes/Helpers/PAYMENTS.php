@@ -95,4 +95,90 @@ class PAYMENTS {
 			'treasury_accounts' => $treasury_accounts,
 		);
 	}
+
+	/**
+	 * Get payment method ID for a WooCommerce gateway.
+	 *
+	 * @param string $gateway_id WooCommerce gateway ID.
+	 * @param string $connector_slug Connector slug.
+	 * @return string Payment method ID or empty string.
+	 */
+	public static function get_payment_method_id( $gateway_id, $connector_slug ) {
+		if ( '' === $gateway_id || '' === $connector_slug ) {
+			return '';
+		}
+
+		$mappings = self::get_payment_method_mappings( $connector_slug );
+		return isset( $mappings['payment_methods'][ $gateway_id ] )
+			? $mappings['payment_methods'][ $gateway_id ]
+			: '';
+	}
+
+	/**
+	 * Get treasury account ID for a WooCommerce gateway.
+	 *
+	 * @param string $gateway_id WooCommerce gateway ID.
+	 * @param string $connector_slug Connector slug.
+	 * @return string Treasury account ID or empty string.
+	 */
+	public static function get_treasury_account_id( $gateway_id, $connector_slug ) {
+		if ( '' === $gateway_id || '' === $connector_slug ) {
+			return '';
+		}
+
+		$mappings = self::get_payment_method_mappings( $connector_slug );
+		return isset( $mappings['treasury_accounts'][ $gateway_id ] )
+			? $mappings['treasury_accounts'][ $gateway_id ]
+			: '';
+	}
+
+	/**
+	 * Get equivalent payment method
+	 *
+	 * @param object $order Order.
+	 * @param array  $settings Settings.
+	 *
+	 * @return array
+	 */
+	public static function get_equivalent_payment_method( $order, $settings ) {
+		$payment_method    = array();
+		$wc_payment_method = $order->get_payment_method();
+
+		if ( empty( $wc_payment_method ) ) {
+			return $payment_method;
+		}
+
+		$payment_method['paymentMethod'] = $wc_payment_method;
+
+		$payment_methods = isset( $settings['payment_methods'] ) ? $settings['payment_methods'] : array();
+		if ( ! empty( $payment_methods[ $wc_payment_method ] ) ) {
+			$payment_method['paymentMethodId'] = $payment_methods[ $wc_payment_method ];
+		}
+
+		return $payment_method;
+	}
+
+	/**
+	 * Get equivalent treasury
+	 *
+	 * @param object $order Order.
+	 * @param array  $settings Settings.
+	 *
+	 * @return array
+	 */
+	public static function get_equivalent_treasury( $order, $settings ) {
+		$treasury          = array();
+		$wc_payment_method = $order->get_payment_method();
+
+		if ( empty( $wc_payment_method ) ) {
+			return $treasury;
+		}
+
+		$treasury_accounts = isset( $settings['treasury_accounts'] ) ? $settings['treasury_accounts'] : array();
+		if ( ! empty( $treasury_accounts[ $wc_payment_method ] ) ) {
+			$treasury['treasuryId'] = $treasury_accounts[ $wc_payment_method ];
+		}
+
+		return $treasury;
+	}
 }

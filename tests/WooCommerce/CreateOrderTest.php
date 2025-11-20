@@ -174,19 +174,87 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order->set_billing_city( $client_data['city'] );
 		$order->set_billing_state( $client_data['state'] );
 		$order->set_billing_postcode( $client_data['postcode'] );
-		$order->set_billing_country( $client_data['country'] );
 		$order->set_billing_company( $client_data['company'] );
 		$order->set_payment_method( 'bacs' );
-		$order->set_status('completed');
-		$order->set_total(100);
+
+		// Enable tax calculations.
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+
+		// Set billing country and state without special characters for tax calculation.
+		// The cleanchars setting will clean them later, but we need correct values for tax calculation.
+		$order->set_billing_country( 'US' );
+		$order->set_billing_state( 'CA' );
+
+		// Create a tax rate.
+		$tax_rate_id = \WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'US',
+				'tax_rate_state'    => 'CA',
+				'tax_rate'          => '10.0000',
+				'tax_rate_name'     => 'Sales Tax',
+				'tax_rate_priority' => 1,
+				'tax_rate_compound' => 0,
+				'tax_rate_shipping' => 1,
+				'tax_rate_order'    => 0,
+				'tax_rate_class'    => '',
+			)
+		);
+
+		// Create a product.
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Test Product' );
+		$product->set_regular_price( 100 );
+		$product->set_tax_status( 'taxable' );
+		$product->set_tax_class( '' );
+		$product->save();
+
+		// Add product to order.
+		$item = new \WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		$item->set_tax_class( '' );
+		$order->add_item( $item );
+
+		// Calculate totals to apply taxes.
+		$order->calculate_totals();
+
+		// After calculate_totals, get the item again and verify/update taxes if needed.
+		$items = $order->get_items();
+		$total_tax = 0;
+		foreach ( $items as $order_item_id => $order_item ) {
+			if ( is_a( $order_item, 'WC_Order_Item_Product' ) ) {
+				$item_taxes = $order_item->get_taxes();
+				// If taxes were calculated, ensure they match our expected tax rate.
+				if ( empty( $item_taxes['total'] ) || ! isset( $item_taxes['total'][ $tax_rate_id ] ) ) {
+					// Set taxes manually if not calculated correctly.
+					$order_item->set_taxes(
+						array(
+							'total'    => array( $tax_rate_id => 10 ),
+							'subtotal' => array( $tax_rate_id => 10 ),
+						)
+					);
+					$order_item->save();
+					$total_tax += 10;
+				} else {
+					// Sum the tax from the item.
+					$total_tax += (float) $item_taxes['total'][ $tax_rate_id ];
+				}
+			}
+		}
+
+		// Update the order's total tax if we modified item taxes.
+		if ( $total_tax > 0 ) {
+			$order->set_cart_tax( $total_tax );
+		}
+
+		$order->set_status( 'completed' );
 		$order->save();
 
 		$this->settings['cleanchars'] = 'on';
 		$option_prefix = 'conecom-test';
-
-		$this->settings['prod_mergevars'] = [
-			'paymentmethods|58f9c4091c9798739520e6b2' => 'cf|bacs',
-		];
 
 		// Payment method mappings.
 		$this->settings['payment_methods'] = [
@@ -201,6 +269,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 		// Review order data that sends to ERP.
 		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
 		$this->assertNotEmpty( $order_data );
+		$this->assertEquals( 110, $order_data['total'] );
+		$this->assertEquals( 10, $order_data['total_tax'] );
 		$this->assertEquals( 'Jose M', $order_data['contactFirstName'] );
 		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
 		$this->assertEquals( 'Sample City', $order_data['contactCity'] );

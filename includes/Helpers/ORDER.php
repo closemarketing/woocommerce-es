@@ -195,6 +195,9 @@ class ORDER {
 			'pmtype'                 => null,
 			'items'                  => array(),
 			'approveDoc'             => false,
+			'total'                  => (float) $order->get_total(),
+			'total_tax'              => (float) $order->get_total_tax(),
+			'is_paid'                => $order->is_paid(),
 		);
 
 		// Approve document.
@@ -222,10 +225,10 @@ class ORDER {
 		}
 
 		// Payment method.
-		$order_data = array_merge( $order_data, self::get_equivalent_payment_method( $order, $settings ) );
+		$order_data = array_merge( $order_data, PAYMENTS::get_equivalent_payment_method( $order, $settings ) );
 
 		// Treasury.
-		$order_data = array_merge( $order_data, self::get_equivalent_treasury( $order, $settings ) );
+		$order_data = array_merge( $order_data, PAYMENTS::get_equivalent_treasury( $order, $settings ) );
 
 		$result_items        = self::review_items( $order, $option_prefix );
 		$order_data['items'] = $result_items['items'];
@@ -247,46 +250,6 @@ class ORDER {
 		return $order_data;
 	}
 
-	/**
-	 * Get equivalent payment method
-	 *
-	 * @param object $order Order.
-	 * @param array  $settings Settings.
-	 *
-	 * @return array
-	 */
-	private static function get_equivalent_payment_method( $order, $settings ) {
-		$payment_method    = array();
-		$wc_payment_method = $order->get_payment_method();
-		if ( ! empty( $wc_payment_method ) ) {
-			$payment_method['paymentMethod'] = $wc_payment_method;
-		}
-		$get_api_payment_method = isset( $settings['payment_methods'] ) ? $settings['payment_methods'] : array();
-
-		if ( ! empty( $get_api_payment_method[ $wc_payment_method ] ) ) {
-			$payment_method['paymentMethodId'] = $get_api_payment_method[ $wc_payment_method ];
-		}
-		return $payment_method;
-	}
-
-	/**
-	 * Get equivalent treasury
-	 *
-	 * @param object $order Order.
-	 * @param array  $settings Settings.
-	 *
-	 * @return array
-	 */
-	private static function get_equivalent_treasury( $order, $settings ) {
-		$treasury = array();
-		$wc_treasury = $order->get_payment_method();
-
-		$get_api_treasury = isset( $settings['treasury_accounts'] ) ? $settings['treasury_accounts'] : array();
-		if ( ! empty( $get_api_treasury[ $wc_treasury ] ) ) {
-			$treasury['treasuryId'] = $get_api_treasury[ $wc_treasury ];
-		}
-		return $treasury;
-	}
 	/**
 	 * Review items
 	 *

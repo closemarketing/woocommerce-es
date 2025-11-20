@@ -1,56 +1,22 @@
 <?php
 /**
- * Tests for ORDER payment method mapping.
+ * Tests for PAYMENTS payment method mapping.
  *
  * @package Connect_Ecommerce
  */
 
-use CLOSE\ConnectEcommerce\Helpers\ORDER;
+use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
 
 /**
  * Class OrderPaymentMethodsTest.
  */
 class OrderPaymentMethodsTest extends WP_UnitTestCase {
-	/**
-	 * ReflectionMethod instance for the private helper.
-	 *
-	 * @var ReflectionMethod
-	 */
-	private $payment_method_reflection;
 
 	/**
-	 * Set up test environment.
+	 * Should return empty array when order has no payment method.
 	 *
 	 * @return void
 	 */
-	public function setUp(): void {
-		parent::setUp();
-		$this->payment_method_reflection = new ReflectionMethod( ORDER::class, 'get_equivalent_payment_method' );
-		$this->payment_method_reflection->setAccessible( true );
-	}
-
-	/**
-	 * Tear down environment.
-	 *
-	 * @return void
-	 */
-	public function tearDown(): void {
-		$this->payment_method_reflection = null;
-		parent::tearDown();
-	}
-
-	/**
-	 * Helper to invoke private payment method mapper.
-	 *
-	 * @param WC_Order $order Order instance.
-	 * @param array    $settings Connector settings.
-	 *
-	 * @return array
-	 */
-	private function invoke_payment_method( WC_Order $order, array $settings ): array {
-		return $this->payment_method_reflection->invoke( null, $order, $settings );
-	}
-
 	/**
 	 * Should return empty array when order has no payment method.
 	 *
@@ -61,7 +27,7 @@ class OrderPaymentMethodsTest extends WP_UnitTestCase {
 		$order->set_payment_method( '' );
 		$order->save();
 
-		$result = $this->invoke_payment_method( $order, array() );
+		$result = PAYMENTS::get_equivalent_payment_method( $order, array() );
 
 		$this->assertSame( array(), $result );
 
@@ -78,7 +44,7 @@ class OrderPaymentMethodsTest extends WP_UnitTestCase {
 		$order->set_payment_method( 'cod' );
 		$order->save();
 
-		$result = $this->invoke_payment_method(
+		$result = PAYMENTS::get_equivalent_payment_method(
 			$order,
 			array(
 				'payment_methods' => array(),
@@ -102,7 +68,7 @@ class OrderPaymentMethodsTest extends WP_UnitTestCase {
 		$order->set_payment_method( 'stripe' );
 		$order->save();
 
-		$result = $this->invoke_payment_method(
+		$result = PAYMENTS::get_equivalent_payment_method(
 			$order,
 			array(
 				'payment_methods' => array(
