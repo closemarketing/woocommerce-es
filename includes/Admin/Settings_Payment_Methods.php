@@ -7,6 +7,8 @@
 
 namespace CLOSE\ConnectEcommerce\Admin;
 
+use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -450,52 +452,19 @@ class Settings_Payment_Methods {
 	 * @return array
 	 */
 	private function get_saved_mappings() {
-		$stored = get_option( $this->option_name, array() );
+		$mappings = PAYMENTS::get_payment_method_mappings( $this->connector_slug );
 
-		if ( ! is_array( $stored ) ) {
-			return array();
-		}
-
-		if ( ! isset( $stored[ $this->connector_slug ] ) || ! is_array( $stored[ $this->connector_slug ] ) ) {
-			return array();
-		}
-
+		// Convert to the format expected by render_page.
 		$prepared = array();
+		foreach ( $mappings['payment_methods'] as $gateway_id => $method_id ) {
+			$prepared[ $gateway_id ] = array( 'method' => $method_id );
+		}
 
-		foreach ( $stored[ $this->connector_slug ] as $gateway_id => $mapping ) {
-			if ( ! is_scalar( $gateway_id ) ) {
-				continue;
-			}
-
-			$sanitized_gateway_id = sanitize_text_field( (string) $gateway_id );
-			if ( '' === $sanitized_gateway_id ) {
-				continue;
-			}
-
-			$entry = array();
-
-			if ( is_array( $mapping ) ) {
-				if ( isset( $mapping['method'] ) && is_scalar( $mapping['method'] ) ) {
-					$sanitized_method = sanitize_text_field( (string) $mapping['method'] );
-					if ( '' !== $sanitized_method ) {
-						$entry['method'] = $sanitized_method;
-					}
-				}
-				if ( isset( $mapping['treasury'] ) && is_scalar( $mapping['treasury'] ) ) {
-					$sanitized_treasury = sanitize_text_field( (string) $mapping['treasury'] );
-					if ( '' !== $sanitized_treasury ) {
-						$entry['treasury'] = $sanitized_treasury;
-					}
-				}
-			} elseif ( is_scalar( $mapping ) ) {
-				$sanitized_method = sanitize_text_field( (string) $mapping );
-				if ( '' !== $sanitized_method ) {
-					$entry['method'] = $sanitized_method;
-				}
-			}
-
-			if ( ! empty( $entry ) ) {
-				$prepared[ $sanitized_gateway_id ] = $entry;
+		foreach ( $mappings['treasury_accounts'] as $gateway_id => $treasury_id ) {
+			if ( isset( $prepared[ $gateway_id ] ) ) {
+				$prepared[ $gateway_id ]['treasury'] = $treasury_id;
+			} else {
+				$prepared[ $gateway_id ] = array( 'treasury' => $treasury_id );
 			}
 		}
 

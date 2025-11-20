@@ -20,6 +20,7 @@ use CLOSE\ConnectEcommerce\Admin\Orders;
 use CLOSE\ConnectEcommerce\Admin\Notices;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Rates;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Types_ERP;
+use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
 
@@ -82,6 +83,13 @@ class Base {
 		$connector['connector']    = isset( $connector['settings_all']['connector'] ) ? $connector['settings_all']['connector'] : '';
 		$connector['settings']     = $connector['settings_all'][ $connector['connector'] ] ?? array();
 		$connector['all_options']  = $options;
+
+		$connector['settings']['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
+
+		// Get payment method mappings.
+		$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
+		$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+		$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
 
 		if ( ! empty( $connector['connector'] ) ) {
 			$connector['options'] = $options[ $connector['connector'] ];

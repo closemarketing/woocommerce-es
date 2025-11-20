@@ -110,13 +110,13 @@ class ORDER {
 	/**
 	 * Generate data for Order ERP
 	 *
-	 * @param object $setttings Settings data.
+	 * @param object $settings Settings data.
 	 * @param object $order Order data from WooCommerce.
 	 * @param string $option_prefix Option prefix.
 	 *
 	 * @return array
 	 */
-	public static function generate_order_data( $setttings, $order, $option_prefix ) {
+	public static function generate_order_data( $settings, $order, $option_prefix ) {
 		$order_label_id = is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order->get_id() : $order->get_id();
 		$doclang        = $order->get_billing_country() !== 'ES' ? 'en' : 'es';
 		$shop_url       = wc_get_endpoint_url( 'shop' );
@@ -136,7 +136,7 @@ class ORDER {
 		$billing_country_code = $order->get_billing_country();
 
 		// Clean special chars.
-		if ( isset( $setttings['cleanchars'] ) && 'on' === $setttings['cleanchars'] ) {
+		if ( isset( $settings['cleanchars'] ) && 'on' === $settings['cleanchars'] ) {
 			$contact_name         = self::clean_special_chars( $contact_name );
 			$first_name           = self::clean_special_chars( $first_name );
 			$last_name            = self::clean_special_chars( $last_name );
@@ -198,34 +198,34 @@ class ORDER {
 		);
 
 		// Approve document.
-		$approve_document = isset( $setttings['approve_document'] ) ? $setttings['approve_document'] : 'no';
+		$approve_document = isset( $settings['approve_document'] ) ? $settings['approve_document'] : 'no';
 		if ( 'yes' === $approve_document ) {
 			$order_data['approveDoc'] = true;
 		}
 
 		// DesignID.
-		$design_id = isset( $setttings['design_id'] ) ? $setttings['design_id'] : '';
+		$design_id = isset( $settings['design_id'] ) ? $settings['design_id'] : '';
 		if ( $design_id ) {
 			$order_data['designId'] = $design_id;
 		}
 
 		// Series ID.
-		$series_number = isset( $setttings['series'] ) ? $setttings['series'] : '';
+		$series_number = isset( $settings['series'] ) ? $settings['series'] : '';
 		if ( ! empty( $series_number ) && 'default' !== $series_number ) {
 			$order_data['numSerieId'] = $series_number;
 		}
 
 		// Visitor Key.
-		$visitor_key = isset( $setttings['clientify_vk'] ) ? $setttings['clientify_vk'] : '';
+		$visitor_key = isset( $settings['clientify_vk'] ) ? $settings['clientify_vk'] : '';
 		if ( ! empty( $visitor_key ) ) {
 			$order_data['clientify_vk'] = $visitor_key;
 		}
 
 		// Payment method.
-		$order_data = array_merge( $order_data, self::get_equivalent_payment_method( $order, $setttings ) );
+		$order_data = array_merge( $order_data, self::get_equivalent_payment_method( $order, $settings ) );
 
 		// Treasury.
-		$order_data = array_merge( $order_data, self::get_equivalent_treasury( $order, $setttings ) );
+		$order_data = array_merge( $order_data, self::get_equivalent_treasury( $order, $settings ) );
 
 		$result_items        = self::review_items( $order, $option_prefix );
 		$order_data['items'] = $result_items['items'];
@@ -251,17 +251,17 @@ class ORDER {
 	 * Get equivalent payment method
 	 *
 	 * @param object $order Order.
-	 * @param array  $setttings Settings.
+	 * @param array  $settings Settings.
 	 *
 	 * @return array
 	 */
-	private static function get_equivalent_payment_method( $order, $setttings ) {
+	private static function get_equivalent_payment_method( $order, $settings ) {
 		$payment_method    = array();
 		$wc_payment_method = $order->get_payment_method();
 		if ( ! empty( $wc_payment_method ) ) {
 			$payment_method['paymentMethod'] = $wc_payment_method;
 		}
-		$get_api_payment_method = isset( $setttings['payment_methods'] ) ? $setttings['payment_methods'] : array();
+		$get_api_payment_method = isset( $settings['payment_methods'] ) ? $settings['payment_methods'] : array();
 
 		if ( ! empty( $get_api_payment_method[ $wc_payment_method ] ) ) {
 			$payment_method['paymentMethodId'] = $get_api_payment_method[ $wc_payment_method ];
@@ -273,15 +273,15 @@ class ORDER {
 	 * Get equivalent treasury
 	 *
 	 * @param object $order Order.
-	 * @param array  $setttings Settings.
+	 * @param array  $settings Settings.
 	 *
 	 * @return array
 	 */
-	private static function get_equivalent_treasury( $order, $setttings ) {
+	private static function get_equivalent_treasury( $order, $settings ) {
 		$treasury = array();
 		$wc_treasury = $order->get_payment_method();
 
-		$get_api_treasury = isset( $setttings['treasury_accounts'] ) ? $setttings['treasury_accounts'] : array();
+		$get_api_treasury = isset( $settings['treasury_accounts'] ) ? $settings['treasury_accounts'] : array();
 		if ( ! empty( $get_api_treasury[ $wc_treasury ] ) ) {
 			$treasury['treasuryId'] = $get_api_treasury[ $wc_treasury ];
 		}
