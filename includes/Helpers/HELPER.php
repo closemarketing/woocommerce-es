@@ -240,14 +240,22 @@ class HELPER {
 			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
 			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
 			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
-			$connector['options']                       = $options[ $connector['connector'] ];
+
+			if ( ! isset( $options[ $connector['connector'] ] ) ) {
+				return $connector;
+			}
+
+			$connector['options'] = $options[ $connector['connector'] ];
 			if ( empty( $connector['options']['name'] ) ) {
 				$connector['settings_all']['connector'] = '';
 				update_option( 'connect_ecommerce', $connector['settings_all'] );
-				return;
+				return $connector;
 			}
 			$apiname = 'Connect_Ecommerce_' . $connector['options']['name'];
 
+			if ( ! class_exists( $apiname ) ) {
+				return $connector;
+			}
 			$connector['connapi_erp']        = new $apiname( $options );
 			$connector['is_mergevars']       = method_exists( $connector['connapi_erp'], 'get_product_attributes' ) ? true : false;
 			$connector['is_disabled_orders'] = isset( $connector['options']['disable_modules'] ) && in_array( 'order', $connector['options']['disable_modules'], true ) ? true : false;
