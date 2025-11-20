@@ -148,7 +148,7 @@ class Settings {
 		$this->is_mergevars          = $connector['is_mergevars'] ?? false;
 		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
 		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
-		$this->have_payments_methods = method_exists( $this->connapi_erp, 'get_payment_methods' ) ? true : false;
+		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
 
 		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
 			return;
