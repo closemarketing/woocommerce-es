@@ -188,6 +188,16 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'paymentmethods|58f9c4091c9798739520e6b2' => 'cf|bacs',
 		];
 
+		// Payment method mappings.
+		$this->settings['payment_methods'] = [
+			'bacs' => '58f9c4091c9798739520e6b2',
+		];
+
+		// Treasury account mappings.
+		$this->settings['treasury_accounts'] = [
+			'bacs' => 'treasury_account_123',
+		];
+
 		// Review order data that sends to ERP.
 		$order_data = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
 		$this->assertNotEmpty( $order_data );
@@ -199,6 +209,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( '90001', $order_data['contactCp'] );
 		$this->assertEquals( 'bacs', $order_data['paymentMethod'] );
 		$this->assertEquals( '58f9c4091c9798739520e6b2', $order_data['paymentMethodId'] );
+		$this->assertEquals( 'treasury_account_123', $order_data['treasuryId'] );
 	}
 
 	public function test_create_order_approve_document_without_errors() {

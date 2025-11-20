@@ -10,7 +10,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-use CLOSE\ConnectEcommerce\Base;
 use CLOSE\ConnectEcommerce\Helpers\PROD;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
 
@@ -39,7 +38,7 @@ class Import_Products_Command {
 			)
 		);
 		$conecom_options = conecom_get_options();
-		$connector_data  = Base::get_connector( $conecom_options );
+		$connector_data  = HELPER::get_connector( $conecom_options );
 		$connector       = $connector_data['connector'] ?? '';
 		$settings        = $connector_data['settings'] ?? array();
 		$time_start      = microtime( true );
