@@ -192,7 +192,6 @@ class ORDER {
 			'saleschannel'           => null,
 			'currency'               => get_woocommerce_currency(),
 			'language'               => $doclang,
-			'pmtype'                 => null,
 			'items'                  => array(),
 			'approveDoc'             => false,
 			'total'                  => (float) $order->get_total(),
