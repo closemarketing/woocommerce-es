@@ -411,45 +411,43 @@ class ORDER {
 	/**
 	 * Get tax rate
 	 *
+	 * - Strategy: "Key Only".
+	 * - Gets the key configured in WooCommerce (e.g.: s_ivait22).
+	 * - Sends ONLY the 'taxes' array.
+	 * - Explicitly REMOVES the 'tax' field to avoid precedence conflicts in Holded.
+	 *
 	 * @param object $item Item object.
 	 * @param object $tax Tax object.
 	 *
 	 * @return array
 	 */
 	private static function get_taxes( $item, $tax = null ) {
-		$item_taxes = array(
-			'tax' => 0,
-		);
+		$item_taxes = array();
+
 		if ( empty( $tax ) ) {
 			$tax = new \WC_Tax();
 		}
-		// Get the tax rate ID(s) from the item taxes, if present.
-		$item_tax_data         = $item->get_taxes();
-		$tax_rate_id_from_item = 0;
+		
+		// Get the taxes applied to the line of the order
+		$item_tax_data = $item->get_taxes();
+		
 		if ( ! empty( $item_tax_data['total'] ) && is_array( $item_tax_data['total'] ) ) {
-			$tax_rate_ids = array_keys(
-				array_filter(
-					$item_tax_data['total'],
-					function ( $tax_amount ) {
-						return $tax_amount > 0;
-					}
-				)
-			);
+			$tax_rate_ids = array_keys( $item_tax_data['total'] );
+			
 			if ( ! empty( $tax_rate_ids ) ) {
 				$tax_rate_id_from_item = $tax_rate_ids[0];
-				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? floor( $item_tax_data['total'][ $tax_rate_id_from_item ] ) : 0;
-			}
-		}
-
-		if ( empty( $item_taxes['tax'] ) ) {
-			$item_taxes['tax'] = (float) $item->get_total_tax();
-		}
-
-		// Get the tax type from the tax rate ID.
-		if ( ! empty( $tax_rate_id_from_item ) ) {
-			$tax_type = TAXES::get_tax_types_map( $tax_rate_id_from_item );
-			if ( ! empty( $tax_type ) ) {
-				$item_taxes['taxes'] = $tax_type;
+				
+				// Get the KEY of text configured in the plugin (Database)
+				$tax_key = '';
+				if ( class_exists( __NAMESPACE__ . '\\TAXES' ) ) {
+					$tax_key = TAXES::get_tax_types_map( $tax_rate_id_from_item );
+				}
+					
+				if ( ! empty( $tax_key ) ) {
+					$item_taxes['taxes'] = array( trim( $tax_key ) );
+				} else {
+					$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? floor( $item_tax_data['total'][ $tax_rate_id_from_item ] ) : 0;
+				}
 			}
 		}
 
@@ -466,13 +464,14 @@ class ORDER {
 	public static function get_billing_vat( $order ) {
 		$code_labels  = CONECOM_VAT_FIELD_SLUGS;
 		$contact_code = '';
+
 		foreach ( $code_labels as $code_label ) {
 			$contact_code = $order->get_meta( $code_label );
 			if ( ! empty( $contact_code ) ) {
 				break;
 			}
 		}
-		return $contact_code;
+		return sanitize_text_field( $contact_code );
 	}
 
 	/**
@@ -519,5 +518,4 @@ class ORDER {
 
 		return $ascii;
 	}
-	
 }

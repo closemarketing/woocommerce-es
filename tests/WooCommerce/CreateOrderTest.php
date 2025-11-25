@@ -401,18 +401,31 @@ class CreateOrderTest extends WP_UnitTestCase {
 
 		// Verify the first item has tax information.
 		$first_item = $order_data['items'][0];
+		$this->assertArrayHasKey( 'taxes', $first_item );
+		$this->assertEquals( 'ERP_IVA_21', $first_item['taxes'][0] );
+
+		// Verify erp_tax_type is stored correctly in database.
+		$stored_tax_type = TAXES::get_tax_types_map( $tax_rate_id );
+		$this->assertEquals( $erp_tax_type, $stored_tax_type );
+
+		// Test tax in array item.
+		$result = TAXES::update_tax_type( $tax_rate_id, null );
+		$this->assertNotFalse( $result, 'Failed to update tax type' );
+
+		$option_prefix = 'conecom-test';
+		$order_data    = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+
+		// Verify order data is generated.
+		$this->assertNotEmpty( $order_data );
+		$this->assertArrayHasKey( 'items', $order_data );
+		$this->assertNotEmpty( $order_data['items'] );
+
+		// Verify the first item has tax information.
+		$first_item = $order_data['items'][0];
 		$this->assertArrayHasKey( 'tax', $first_item );
 		$this->assertEquals( 21, $first_item['tax'] );
 
-		// Verify the first item has erp_tax_type.
-		$this->assertArrayHasKey( 'taxes', $first_item, 'Item should have erp_tax_type field' );
-		$this->assertEquals( $erp_tax_type, $first_item['taxes'], 'Item erp_tax_type should match the one set in database' );
-
-		// Verify erp_tax_type is stored correctly in database.
-		$stored_tax_type = TAXES::get_tax_types_map( $tax_rate_id);
-		$this->assertEquals( $erp_tax_type, $stored_tax_type );
-
-		// Clean up.
+		// Clean up
 		\WC_Tax::_delete_tax_rate( $tax_rate_id );
 		$product->delete( true );
 		$order->delete( true );
