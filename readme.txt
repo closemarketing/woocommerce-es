@@ -123,8 +123,9 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
-= 3.2.2 =
+= 3.3.0 =
 * Enhancement: Added support to ERP Tax Types.
+* Enhancement: Added support to payment methods from API.
 
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
