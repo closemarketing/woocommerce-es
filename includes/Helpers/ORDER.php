@@ -433,21 +433,19 @@ class ORDER {
 		
 		if ( ! empty( $item_tax_data['total'] ) && is_array( $item_tax_data['total'] ) ) {
 			$tax_rate_ids = array_keys( $item_tax_data['total'] );
+
+			$tax_rate_id_from_item = $tax_rate_ids[0];
 			
-			if ( ! empty( $tax_rate_ids ) ) {
-				$tax_rate_id_from_item = $tax_rate_ids[0];
+			// Get the KEY of text configured in the plugin (Database)
+			$tax_key = '';
+			if ( class_exists( __NAMESPACE__ . '\\TAXES' ) ) {
+				$tax_key = TAXES::get_tax_types_map( $tax_rate_id_from_item );
+			}
 				
-				// Get the KEY of text configured in the plugin (Database)
-				$tax_key = '';
-				if ( class_exists( __NAMESPACE__ . '\\TAXES' ) ) {
-					$tax_key = TAXES::get_tax_types_map( $tax_rate_id_from_item );
-				}
-					
-				if ( ! empty( $tax_key ) ) {
-					$item_taxes['taxes'] = array( trim( $tax_key ) );
-				} else {
-					$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? floor( $item_tax_data['total'][ $tax_rate_id_from_item ] ) : 0;
-				}
+			if ( ! empty( $tax_key ) ) {
+				$item_taxes['taxes'] = array( trim( $tax_key ) );
+			} else {
+				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? floor( $item_tax_data['total'][ $tax_rate_id_from_item ] ) : 0;
 			}
 		}
 
