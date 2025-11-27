@@ -8,6 +8,7 @@ composer.lock
 docs/
 changelog.md
 readme.md
+.cursor
 
 # PHP Unit
 .github
