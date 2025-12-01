@@ -21,10 +21,16 @@
 		<exclude name="WordPress.NamingConventions.ValidFunctionName"/>
 	</rule>
 
+	<!-- Ignore legacy PHPCompatibility warning for null coalesce operator -->
+	<rule ref="PHPCompatibility">
+		<exclude name="PHPCompatibility.PHP.NewOperators.Coalesce"/>
+	</rule>
+
 	<!-- Define plugin prefix -->
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
+				<element value="close"/>
 				<element value="conecom"/>
 				<element value="connect_ecommerce"/>
 				<element value="CONECOM"/>
@@ -72,4 +78,10 @@
 	<rule ref="WordPress.Docs.IncorrectParamType"/>
 	<rule ref="WordPress.Docs.MissingParamType"/>
 	<rule ref="WordPress.Docs.MissingReturnType"/>
+
+	<rule ref="PHPCompatibility">
+		<properties>
+			<property name="testVersion" value="7.4-"/>
+		</properties>
+	</rule>
 </ruleset>

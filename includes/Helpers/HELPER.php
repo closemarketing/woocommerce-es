@@ -10,6 +10,8 @@
 
 namespace CLOSE\ConnectEcommerce\Helpers;
 
+use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -150,7 +152,6 @@ class HELPER {
 						UNIQUE KEY prod_id (prod_id)
 				) $charset_collate;";
 
-		// @phpstan-ignore-next-line
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 	}
@@ -212,5 +213,54 @@ class HELPER {
 		}
 		update_option( 'connect_ecommerce_public', $new_settings );
 		delete_option( 'wces_settings' );
+	}
+
+	/**
+	 * Get connector of plugin.
+	 *
+	 * @param array $options Options of plugin.
+	 * @return array
+	 */
+	public static function get_connector( $options ) {
+		$connector                 = array();
+		$connector['settings_all'] = get_option( 'connect_ecommerce' );
+		$connector['connector']    = isset( $connector['settings_all']['connector'] ) ? $connector['settings_all']['connector'] : '';
+		$connector['settings']     = $connector['settings_all'][ $connector['connector'] ] ?? array();
+		$connector['all_options']  = $options;
+
+		$connector['settings']['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
+
+		// Initialize payment method mappings.
+		$connector['settings']['payment_methods']   = array();
+		$connector['settings']['treasury_accounts'] = array();
+
+		if ( ! empty( $connector['connector'] ) ) {
+			// Get payment method mappings.
+			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
+			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+
+			if ( ! isset( $options[ $connector['connector'] ] ) ) {
+				return $connector;
+			}
+
+			$connector['options'] = $options[ $connector['connector'] ];
+			if ( empty( $connector['options']['name'] ) ) {
+				$connector['settings_all']['connector'] = '';
+				update_option( 'connect_ecommerce', $connector['settings_all'] );
+				return $connector;
+			}
+			$apiname = 'Connect_Ecommerce_' . $connector['options']['name'];
+
+			if ( ! class_exists( $apiname ) ) {
+				return $connector;
+			}
+			$connector['connapi_erp']        = new $apiname( $options );
+			$connector['is_mergevars']       = method_exists( $connector['connapi_erp'], 'get_product_attributes' ) ? true : false;
+			$connector['is_disabled_orders'] = isset( $connector['options']['disable_modules'] ) && in_array( 'order', $connector['options']['disable_modules'], true ) ? true : false;
+			$connector['is_disabled_ai']     = isset( $connector['options']['disable_modules'] ) && in_array( 'ai', $connector['options']['disable_modules'], true ) ? true : false;
+		}
+
+		return $connector;
 	}
 }

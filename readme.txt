@@ -1,12 +1,12 @@
-=== Connect Ecommerce - Connect WooCommerce Shop to ERP/CRM and EU/VAT Compliance ===
+=== Connect WooCommerce Shop to ERP/CRM and EU/VAT Compliance ===
 Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.8
-Stable tag: 3.2.1
-Version: 3.2.1
+Tested up to: 6.9
+Stable tag: 3.3.0
+Version: 3.3.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -123,8 +123,12 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
-= 3.2.2 =
+= n.e.x.t. =
 * Fixed: Error getting companies from API.
+
+= 3.3.0 =
+* Enhancement: Added support to ERP Tax Types.
+* Enhancement: Added support to payment methods from API.
 
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
