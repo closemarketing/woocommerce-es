@@ -4,7 +4,7 @@ Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.8
+Tested up to: 6.9
 Stable tag: 3.3.0
 Version: 3.3.0
 License: GPL2
@@ -122,6 +122,9 @@ Supported Services:
 The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
 
 == Changelog ==
+
+= n.e.x.t. =
+* Fixed: Error getting companies from API.
 
 = 3.3.0 =
 * Enhancement: Added support to ERP Tax Types.
