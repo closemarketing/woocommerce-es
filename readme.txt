@@ -1,12 +1,12 @@
-=== Connect Ecommerce - Connect WooCommerce Shop to ERP/CRM and EU/VAT Compliance ===
+=== Connect WooCommerce Shop to ERP/CRM and EU/VAT Compliance ===
 Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.8
-Stable tag: 3.2.1
-Version: 3.2.1
+Tested up to: 6.9
+Stable tag: 3.3.0
+Version: 3.3.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -17,6 +17,7 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 **Functionalities**
 
 - Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
+- Supports WooCommerce PDF Invoices & Packing Slips for VAT info in invoices.
 - EU/VAT Compliance: Import European Taxes and check VAT compliance.
 - **NEW: Validate VAT numbers via VIES** (VAT Information Exchange System) - Automatically verify EU VAT numbers during checkout using the official European Commission service.
 - (optional) Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
@@ -143,14 +144,23 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= 3.2.1 =
-* Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
+= n.e.x.t. =
+* Fixed: Error getting companies from API.
 * Enhancement: Added VAT number validation via VIES (VAT Information Exchange System).
 * Enhancement: Integrated dragonbe/vies library for EU VAT number validation.
 * Enhancement: VIES validation enabled by default with configurable mandatory/optional modes.
 * Enhancement: Added caching mechanism for VIES responses to improve performance.
 * Enhancement: VAT validation results stored in order metadata for compliance tracking.
 * Enhancement: Graceful handling of VIES service unavailability.
+
+= 3.3.0 =
+* Enhancement: Added support to ERP Tax Types.
+* Enhancement: Added support to payment methods from API.
+
+= 3.2.1 =
+* Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
+* Fixed: Terms and conditions validation user registration not applies in Admin.
+* Fixed: Error in VAT info in WooCommerce PDF Invoices & Packing Slips.
 
 = 3.2.0.2 =
 * Fixed: Error updating tax rates.

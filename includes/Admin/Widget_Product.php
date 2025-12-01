@@ -12,6 +12,7 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Base;
 /**
  * Mejoras productos.
  *
@@ -37,16 +38,14 @@ class Widget_Product {
 	/**
 	 * Construct of Class
 	 *
-	 * @param array $options Options of plugin.
+	 * @param array $connector Connector.
 	 */
-	public function __construct( $options = array() ) {
-		$settings_base = get_option( 'connect_ecommerce' );
-		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
-		if ( empty( $connector ) ) {
+	public function __construct( $connector ) {
+		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) ) {
 			return;
 		}
-		$this->options        = $options[ $connector ];
-		$this->is_disabled_ai = isset( $this->options['disable_modules'] ) && in_array( 'ai', $this->options['disable_modules'], true ) ? true : false;
+		$this->options        = $connector['options'];
+		$this->is_disabled_ai = $connector['is_disabled_ai'] ?? false;
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_products' ) );
 	}

@@ -58,19 +58,15 @@ class Orders {
 	/**
 	 * Init and hook in the integration.
 	 *
-	 * @param array $options Options of plugin.
+	 * @param array $connector Connector.
 	 */
-	public function __construct( $options ) {
-		$settings_base = get_option( 'connect_ecommerce' );
-		$connector     = ! empty( $settings_base['connector'] ) ? $settings_base['connector'] : '';
-		if ( empty( $connector ) ) {
+	public function __construct( $connector ) {
+		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) || empty( $connector['connapi_erp'] ) ) {
 			return;
 		}
-		$this->options                    = $options[ $connector ];
-		$this->settings                   = get_option( 'connect_ecommerce' )[ $connector ] ?? array();
-		$this->settings['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
-		$apiname                          = 'Connect_Ecommerce_' . $this->options['name'];
-		$this->connapi_erp                = new $apiname( $options );
+		$this->options                    = $connector['options'];
+		$this->settings                   = $connector['settings'] ?? array();
+		$this->connapi_erp                = $connector['connapi_erp'];
 		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
 		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
 

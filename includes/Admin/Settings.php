@@ -84,6 +84,13 @@ class Settings {
 	private $is_mergevars;
 
 	/**
+	 * Have payments methods
+	 *
+	 * @var boolean
+	 */
+	private $have_payments_methods;
+
+	/**
 	 * Settings slug
 	 *
 	 * @var string
@@ -119,35 +126,63 @@ class Settings {
 	private $is_disabled_ai;
 
 	/**
+	 * Payment methods page handler.
+	 *
+	 * @var Settings_Payment_Methods|null
+	 */
+	private $payment_methods_page;
+
+	/**
 	 * Construct of class
 	 *
-	 * @param array $options Options.
+	 * @param array $connector Connector.
 	 * @return void
 	 */
-	public function __construct( $options = array() ) {
-		$this->settings_all = get_option( 'connect_ecommerce' );
-		$this->connector    = isset( $this->settings_all['connector'] ) ? $this->settings_all['connector'] : '';
-		$this->settings     = $this->settings_all[ $this->connector ] ?? array();
-		$this->all_options  = $options;
+	public function __construct( $connector ) {
+		$this->settings_all          = $connector['settings_all'];
+		$this->connector             = $connector['connector'] ?? '';
+		$this->settings              = $connector['settings'] ?? array();
+		$this->all_options           = $connector['all_options'];
+		$this->options               = $connector['options'] ?? array();
+		$this->connapi_erp           = $connector['connapi_erp'] ?? null;
+		$this->is_mergevars          = $connector['is_mergevars'] ?? false;
+		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
+		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
+		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
 
-		if ( ! empty( $this->connector ) ) {
-			$this->options            = $options[ $this->connector ];
-			if ( empty( $this->options['name'] ) ) {
-				$this->settings_all['connector'] = '';
-				update_option( 'connect_ecommerce', $this->settings_all );
-				return;
-			}
-			$apiname                  = 'Connect_Ecommerce_' . $this->options['name'];
-			$this->connapi_erp        = new $apiname( $options );
-			$this->is_mergevars       = method_exists( $this->connapi_erp, 'get_product_attributes' ) ? true : false;
-			$this->is_disabled_orders = isset( $this->options['disable_modules'] ) && in_array( 'order', $this->options['disable_modules'], true ) ? true : false;
-			$this->is_disabled_ai     = isset( $this->options['disable_modules'] ) && in_array( 'ai', $this->options['disable_modules'], true ) ? true : false;
+		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
+			return;
+		}
+
+		if ( $this->have_payments_methods ) {
+			$this->init_payment_methods_page();
 		}
 
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
 		add_action( 'wp_ajax_connect_ecommerce_test_alert', array( $this, 'test_alert_callback' ) );
 	}
+
+	/**
+	 * Initialize payment methods page handler.
+	 *
+	 * @return void
+	 */
+	private function init_payment_methods_page() {
+		if ( ! is_object( $this->connapi_erp ) ) {
+			return;
+		}
+
+		$connector_options = $this->options;
+		$connector_slug    = (string) $this->connector;
+
+		$this->payment_methods_page = new Settings_Payment_Methods(
+			$this->connapi_erp,
+			$connector_slug,
+			is_array( $connector_options ) ? $connector_options : array()
+		);
+	}
+
 	/**
 	 * Adds plugin page.
 	 *
@@ -158,7 +193,7 @@ class Settings {
 			'woocommerce',
 			__( 'Connect Ecommerce', 'woocommerce-es' ),
 			__( 'Connect Ecommerce', 'woocommerce-es' ),
-			'manage_woocommerce',
+			'manage_options',
 			'connect_ecommerce',
 			array( $this, 'create_admin_page' )
 		);
@@ -228,7 +263,7 @@ class Settings {
 						<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'woocommerce-es' ); ?></a>
 						<?php
 					}
-					
+
 					do_action( 'connect_ecommerce_settings_tabs', $active_tab );
 					?>
 				</h2>
@@ -262,6 +297,11 @@ class Settings {
 						if ( $this->connector && $this->is_mergevars ) {
 							?>
 							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
+							<?php
+						}
+						if ( $this->connector && $this->have_payments_methods ) {
+							?>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
 							<?php
 						}
 						if ( ! $this->is_disabled_ai && $this->connector ) {
@@ -354,6 +394,11 @@ class Settings {
 						<?php
 					}
 
+					if ( 'payment_methods' === $active_subtab ) {
+						if ( $this->have_payments_methods && is_object( $this->payment_methods_page ) ) {
+							$this->payment_methods_page->render_page();
+						}
+					}
 					if ( 'ai_products' === $active_subtab ) {
 						?>
 						<form method="post" action="options.php">
@@ -748,8 +793,12 @@ class Settings {
 			}
 
 			if ( ! empty( $this->options['product_weight_equivalence'] ) ) {
-				$attribute_fields = $this->connapi_erp->get_product_attributes();
-				if ( ! empty( $attribute_fields ) ) {
+				$attributes = get_transient( 'conecom_query_attributes' );
+				if ( false === $attributes ) { // Query attributes.
+					$attributes = $this->connapi_erp->get_product_attributes();
+					set_transient( 'conecom_query_attributes', $attributes, HOUR_IN_SECONDS * 3 );
+				}
+				if ( ! empty( $attributes ) ) {
 					add_settings_field(
 						'wcpimh_product_weight_equivalence',
 						__( 'Custom field for Equivalence with weight', 'woocommerce-es' ),
@@ -1321,12 +1370,14 @@ class Settings {
 	 */
 	public function company_select_callback() {
 		if ( ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
-			return esc_html__( 'By default', 'woocommerce-es' );
+			echo '<p>' . esc_html__( 'By default', 'woocommerce-es' ) . '</p>';
+			return;
 		}
-		$companies_options = $this->connapi_erp->get_companies();
-		if ( empty( $companies_options ) || 'error' === $companies_options['status'] ) {
-			$message = ! empty( $companies_options['message'] ) ? $companies_options['message'] : '';
-			$message = empty( $message ) && ! empty( $companies_options['data'] ) ? $companies_options['data'] : $message;
+		$result_companies = $this->connapi_erp->get_companies();
+		if ( empty( $result_companies ) || 'error' === $result_companies['status'] || empty( $result_companies['data'] ) ) {
+			$message = ! empty( $result_companies['message'] ) ? $result_companies['message'] : '';
+			$message = empty( $message ) && ! empty( $result_companies['data'] ) ? $result_companies['data'] : $message;
+			$message = empty( $message ) ? esc_html__( 'Error getting companies', 'woocommerce-es' ) : $message;
 			echo '<p>' . esc_html__( 'Error', 'woocommerce-es' ) . ': ' . esc_html( $message ) . '</p>';
 			return;
 		}
@@ -1334,7 +1385,7 @@ class Settings {
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][company_id]" id="wcpimh_company_id">
 			<?php
-			foreach ( $companies_options as $value => $label ) {
+			foreach ( $result_companies['data'] as $value => $label ) {
 				echo '<option value="' . esc_html( $value ) . '" ';
 				selected( $value, $saved_attr );
 				echo '>' . esc_html( $label ) . '</option>';
@@ -1830,8 +1881,6 @@ class Settings {
 		$custom_taxonomies   = TAX::get_all_custom_taxonomies();
 		$product_cat_terms   = TAX::get_terms_product_cat();
 		$attribute_fields    = $this->connapi_erp->get_product_attributes();
-		$payment_methods_api = method_exists( $this->connapi_erp, 'get_payment_methods' ) ? $this->connapi_erp->get_payment_methods() : array();
-		$payment_methods     = WC()->payment_gateways()->get_available_payment_gateways();
 
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
@@ -1883,21 +1932,6 @@ class Settings {
 									<?php
 								}
 								?>
-								<?php if ( ! empty( $payment_methods_api ) ) { ?>
-									<optgroup label="<?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?>">
-										<?php
-										foreach ( $payment_methods_api as $key => $value ) {
-											echo '<option value="' . esc_html( $key ) . '" ';
-											selected( $key, $attrprod );
-											echo '>' . esc_html( $value ) . '</option>';
-
-											if ( $key === $attrprod ) {
-												$attrprod_label = __( 'Payment Method', 'woocommerce-es' );
-											}
-										}
-										?>
-									</optgroup>
-								<?php } ?>
 							</select>
 						</div>
 						<span class="attrprod-label">
@@ -1956,16 +1990,6 @@ class Settings {
 								echo '<option value="custom">' . esc_html__( 'Customized', 'woocommerce-es' ) . '</option>';
 								?>
 								</optgroup>
-								<?php if ( ! empty( $payment_methods_api ) ) { ?>
-									<optgroup label="<?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?>">
-										<?php
-										foreach ( $payment_methods as $method ) {
-											$key = 'cf|' . $method->id;
-											?>
-											<option value="<?php echo esc_html( $key ); ?>" <?php selected( $key, $saved_custom_field ); ?>><?php echo esc_html( $method->title ); ?></option>
-										<?php } ?>
-									</optgroup>
-								<?php } ?>
 							</select>
 						</div>
 						<div class="save-item">

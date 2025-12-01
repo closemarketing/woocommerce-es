@@ -19,7 +19,7 @@
 
 	<!-- Rules: Check PHP version compatibility -->
 	<!-- https://github.com/PHPCompatibility/PHPCompatibility#sniffing-your-code-for-compatibility-with-specific-php-versions -->
-	<config name="testVersion" value="5.6-"/>
+	<config name="testVersion" value="7.4-"/>
 	<!-- https://github.com/PHPCompatibility/PHPCompatibilityWP -->
 	<rule ref="PHPCompatibilityWP"/>
 
@@ -27,10 +27,16 @@
 	<!-- https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards -->
 	<!-- https://github.com/WordPress-Coding-Standards/WordPress-Coding-Standards/wiki/Customizable-sniff-properties -->
 	<config name="minimum_supported_wp_version" value="4.6"/>
-	<rule ref="WordPress"/>
+	<rule ref="WordPress">
+		<!-- Allow short array syntax [] -->
+		<exclude name="Generic.Arrays.DisallowShortArraySyntax"/>
+		<!-- Exclude filename rules for Plugin_Main.php -->
+		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
+		<exclude name="WordPress.Files.FileName.InvalidClassFileName"/>
+	</rule>
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
-			<property name="prefixes" type="array" value="conecom"/>
+			<property name="prefixes" type="array" value="conecom, CLOSE"/>
 		</properties>
 	</rule>
 	<rule ref="WordPress.WP.I18n">
