@@ -67,7 +67,7 @@ class Taxes_Rates {
 			'reduced-rate'       => 'reduced_rate',
 			'reduced-rate-alt'   => 'reduced_rate_alt',
 			'super-reduced-rate' => 'super_reduced_rate',
-			'zero-rate'          => 'standard_rate',
+			'zero-rate'          => 'zero_rate',
 		);
 
 		// Get the default rate type based on section.
@@ -95,6 +95,7 @@ class Taxes_Rates {
 							<option value=\"reduced_rate\">" . esc_html__( 'Reduced Rate', 'woocommerce-es' ) . "</option>
 							<option value=\"reduced_rate_alt\">" . esc_html__( 'Reduced Rate Alt', 'woocommerce-es' ) . "</option>
 							<option value=\"super_reduced_rate\">" . esc_html__( 'Super Reduced Rate', 'woocommerce-es' ) . "</option>
+							<option value=\"zero_rate\">" . esc_html__( 'Zero Rate', 'woocommerce-es' ) . "</option>
 							<option value=\"all\">" . esc_html__( 'All Rates', 'woocommerce-es' ) . "</option>
 						</select>
 						<button type=\"button\" id=\"connect-update-tax-rates\" class=\"button button-primary\">
@@ -207,8 +208,6 @@ class Taxes_Rates {
 	 * @return array|\WP_Error
 	 */
 	private function update_woocommerce_tax_rates( $rate_type = 'all', $tax_class = '' ) {
-		global $wpdb;
-
 		// EU country codes.
 		$eu_countries = array(
 			'AT',
@@ -246,7 +245,29 @@ class Taxes_Rates {
 		$updated_count = 0;
 		$tax_class     = 'standard' === $tax_class ? '' : $tax_class;
 
+		$shop_country = get_option( 'woocommerce_default_country' );
+		if ( strpos( $shop_country, ':' ) !== false ) {
+			$shop_country = explode( ':', $shop_country )[0];
+		}
+
 		foreach ( $eu_countries as $country_code ) {
+			// Zero rate.
+			if ( 'zero_rate' === $rate_type && $shop_country !== $country_code ) {
+				$this->insert_or_update_tax_rate(
+					$country_code,
+					0.00,
+					__( 'Zero VAT', 'woocommerce-es' ),
+					1,
+					'',
+					$tax_class
+				);
+				++$updated_count;
+				continue;
+			} elseif ( 'zero_rate' === $rate_type && $shop_country === $country_code ) {
+				continue;
+			}
+
+			// Standard rate.
 			$rates = TAXES::get_rates_by_country( $country_code );
 
 			if ( empty( $rates ) ) {
