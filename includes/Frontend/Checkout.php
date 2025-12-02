@@ -84,6 +84,20 @@ class Checkout {
 			
 			// Gutenberg Blocks checkout validation.
 			add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'validate_vat_number_checkout_blocks' ), 10, 2 );
+			
+			// Real-time VAT validation.
+			$vat_realtime = isset( $this->setttings_public['vat_realtime_validation'] ) ? $this->setttings_public['vat_realtime_validation'] : 'yes';
+			if ( 'yes' === $vat_realtime ) {
+				add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_vat_validation_scripts' ) );
+			}
+			
+			// Initialize AJAX hooks.
+			VAT::init_ajax_hooks();
+			
+			// Apply zero-rate tax class when VAT exempt.
+			add_filter( 'woocommerce_product_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
+			add_filter( 'woocommerce_product_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
+			add_filter( 'woocommerce_product_variation_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
 		}
 	}
 
@@ -413,6 +427,30 @@ class Checkout {
 		// Store validation result in session for later use.
 		WC()->session->set( 'vat_validation_result', $validation_result );
 
+		// Apply or remove VAT exemption based on validation result.
+		$is_valid = isset( $validation_result['valid'] ) && $validation_result['valid'];
+		
+		if ( $is_valid ) {
+			// Apply VAT exemption if conditions are met.
+			VAT::apply_vat_exemption( $country_code, $vat_number, true );
+			
+			// Check if exemption was applied.
+			if ( VAT::is_customer_vat_exempt() ) {
+				wc_add_notice(
+					sprintf(
+						// translators: 1: VAT number, 2: country code.
+						__( 'VAT exemption applied. Valid B2B transaction for %1$s (%2$s).', 'woocommerce-es' ),
+						$vat_number,
+						$country_code
+					),
+					'success'
+				);
+			}
+		} else {
+			// Remove any existing exemption.
+			VAT::remove_vat_exemption();
+		}
+
 		// Check if validation is mandatory.
 		$vat_vies_mandatory = isset( $this->setttings_public['vat_vies_mandatory'] ) ? $this->setttings_public['vat_vies_mandatory'] : 'no';
 
@@ -454,6 +492,109 @@ class Checkout {
 			// Clear session.
 			WC()->session->set( 'vat_validation_result', null );
 		}
+
+		// Save VAT exemption info if applied.
+		if ( VAT::is_customer_vat_exempt() ) {
+			$exemption_info = VAT::get_vat_exemption_info();
+			
+			if ( $exemption_info ) {
+				update_post_meta( $order_id, '_vat_exempt_applied', 'yes' );
+				update_post_meta( $order_id, '_vat_exempt_country', $exemption_info['country'] );
+				update_post_meta( $order_id, '_vat_exempt_vat_number', $exemption_info['vat_number'] );
+				
+				// Add order note.
+				$order = wc_get_order( $order_id );
+				if ( $order ) {
+					$order->add_order_note(
+						sprintf(
+							// translators: 1: VAT number, 2: country code.
+							__( 'VAT exemption applied for B2B intra-community transaction. VAT: %1$s (%2$s)', 'woocommerce-es' ),
+							$exemption_info['vat_number'],
+							$exemption_info['country']
+						)
+					);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Enqueue VAT validation scripts and styles
+	 *
+	 * @return void
+	 */
+	public function enqueue_vat_validation_scripts() {
+		// Only load on checkout page.
+		if ( ! is_checkout() ) {
+			return;
+		}
+
+		$plugin_url = plugin_dir_url( dirname( dirname( __FILE__ ) ) );
+		$version    = defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : '1.0.0';
+
+		// Enqueue CSS.
+		wp_enqueue_style(
+			'conecom-vat-validation',
+			$plugin_url . 'includes/assets/vat-validation.css',
+			array(),
+			$version
+		);
+
+		// Enqueue JavaScript.
+		wp_enqueue_script(
+			'conecom-vat-validation',
+			$plugin_url . 'includes/assets/vat-validation.js',
+			array(),
+			$version,
+			true
+		);
+
+		// Prepare configuration and messages.
+		$config = array(
+			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
+			'nonce'   => wp_create_nonce( 'conecom_vat_validation' ),
+			'enabled' => true,
+			'minLengths' => array(
+				'ES' => 9,
+				'FR' => 11,
+				'DE' => 9,
+				'IT' => 11,
+				'PT' => 9,
+				'NL' => 12,
+				'BE' => 10,
+				'AT' => 9,
+				'SE' => 12,
+				'PL' => 10,
+			),
+			'messages' => array(
+				'checking'       => __( 'Validating VAT number...', 'woocommerce-es' ),
+				'valid'          => __( 'Valid VAT number', 'woocommerce-es' ),
+				'invalid'        => __( 'Invalid VAT number', 'woocommerce-es' ),
+				'too_short'      => __( 'VAT number is too short', 'woocommerce-es' ),
+				'invalid_format' => __( 'Invalid VAT number format', 'woocommerce-es' ),
+				'unknown'        => __( 'Could not validate VAT number', 'woocommerce-es' ),
+				'error'          => __( 'Error validating VAT number', 'woocommerce-es' ),
+			),
+		);
+
+		// Localize script with configuration.
+		wp_localize_script( 'conecom-vat-validation', 'conecomVATConfig', $config );
+	}
+
+	/**
+	 * Apply zero-rate tax class to products when VAT exempt
+	 *
+	 * @param string            $tax_class Tax class.
+	 * @param \WC_Product|mixed $product Product object.
+	 * @return string
+	 */
+	public function apply_zero_rate_tax_class( $tax_class, $product = null ) {
+		// Check if customer has VAT exemption applied.
+		if ( VAT::is_customer_vat_exempt() ) {
+			return 'zero-rate';
+		}
+
+		return $tax_class;
 	}
 
 	/**
@@ -494,6 +635,33 @@ class Checkout {
 
 		// Save validation result to order meta.
 		VAT::save_vat_validation_result( $order->get_id(), $validation_result );
+
+		// Apply or remove VAT exemption based on validation result.
+		$is_valid = isset( $validation_result['valid'] ) && $validation_result['valid'];
+		
+		if ( $is_valid ) {
+			// Apply VAT exemption if conditions are met.
+			VAT::apply_vat_exemption( $country_code, $vat_number, true );
+			
+			// Save exemption info to order if applied.
+			if ( VAT::is_customer_vat_exempt() ) {
+				update_post_meta( $order->get_id(), '_vat_exempt_applied', 'yes' );
+				update_post_meta( $order->get_id(), '_vat_exempt_country', $country_code );
+				update_post_meta( $order->get_id(), '_vat_exempt_vat_number', $vat_number );
+				
+				$order->add_order_note(
+					sprintf(
+						// translators: 1: VAT number, 2: country code.
+						__( 'VAT exemption applied for B2B intra-community transaction. VAT: %1$s (%2$s)', 'woocommerce-es' ),
+						$vat_number,
+						$country_code
+					)
+				);
+			}
+		} else {
+			// Remove any existing exemption.
+			VAT::remove_vat_exemption();
+		}
 
 		// Check if validation is mandatory.
 		$vat_vies_mandatory = isset( $this->setttings_public['vat_vies_mandatory'] ) ? $this->setttings_public['vat_vies_mandatory'] : 'no';
