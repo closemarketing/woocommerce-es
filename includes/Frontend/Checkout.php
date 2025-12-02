@@ -98,6 +98,9 @@ class Checkout {
 			add_filter( 'woocommerce_product_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
 			add_filter( 'woocommerce_product_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
 			add_filter( 'woocommerce_product_variation_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
+			
+			// Remove exemption when checkout is updated and VAT field is empty or country changes.
+			add_action( 'woocommerce_checkout_update_order_review', array( $this, 'maybe_remove_vat_exemption_on_update' ) );
 		}
 	}
 
@@ -439,7 +442,7 @@ class Checkout {
 				wc_add_notice(
 					sprintf(
 						// translators: 1: VAT number, 2: country code.
-						__( 'VAT exemption applied. Valid B2B transaction for %1$s (%2$s).', 'woocommerce-es' ),
+						__( 'VAT exemption applied. Valid B2B intra-community transaction for %1$s (%2$s). Zero VAT rate applied.', 'woocommerce-es' ),
 						$vat_number,
 						$country_code
 					),
@@ -447,8 +450,23 @@ class Checkout {
 				);
 			}
 		} else {
-			// Remove any existing exemption.
+			// Remove any existing exemption and restore normal VAT.
 			VAT::remove_vat_exemption();
+			
+			// Clear any stored exemption data.
+			WC()->session->set( 'vat_validation_result', null );
+			
+			// Add notice that normal VAT will apply.
+			if ( ! empty( $vat_number ) ) {
+				wc_add_notice(
+					sprintf(
+						// translators: %s is the country code.
+						__( 'VAT number could not be validated. Standard VAT rate will apply for %s.', 'woocommerce-es' ),
+						$country_code
+					),
+					'notice'
+				);
+			}
 		}
 
 		// Check if validation is mandatory.
@@ -594,7 +612,54 @@ class Checkout {
 			return 'zero-rate';
 		}
 
+		// If not exempt, return original tax class (standard VAT applies).
 		return $tax_class;
+	}
+
+	/**
+	 * Maybe remove VAT exemption when checkout is updated
+	 *
+	 * @param string $post_data Posted data from checkout update.
+	 * @return void
+	 */
+	public function maybe_remove_vat_exemption_on_update( $post_data ) {
+		// Parse posted data.
+		parse_str( $post_data, $data );
+
+		// Get current exemption info.
+		$exemption_info = VAT::get_vat_exemption_info();
+
+		if ( ! $exemption_info ) {
+			return; // No exemption to remove.
+		}
+
+		// Check if VAT field is empty.
+		$vat_number = '';
+		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
+			if ( isset( $data[ $field ] ) && ! empty( $data[ $field ] ) ) {
+				$vat_number = sanitize_text_field( $data[ $field ] );
+				break;
+			}
+		}
+
+		// Check custom field.
+		if ( empty( $vat_number ) && isset( $data['connect_ecommerce/billing_vat'] ) ) {
+			$vat_number = sanitize_text_field( $data['connect_ecommerce/billing_vat'] );
+		}
+
+		// If VAT field is now empty, remove exemption.
+		if ( empty( $vat_number ) ) {
+			VAT::remove_vat_exemption();
+			return;
+		}
+
+		// Check if country changed.
+		$billing_country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
+
+		if ( ! empty( $billing_country ) && $billing_country !== $exemption_info['country'] ) {
+			// Country changed - remove exemption and force revalidation.
+			VAT::remove_vat_exemption();
+		}
 	}
 
 	/**

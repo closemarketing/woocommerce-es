@@ -458,8 +458,20 @@ class VAT {
 				}
 			}
 		} else {
+			// Validation failed - remove any exemption and restore normal VAT.
 			self::remove_vat_exemption();
 			$response['vat_exempt'] = false;
+			$response['exempt_message'] = sprintf(
+				// translators: %s is the country code.
+				__( 'VAT validation failed - Standard VAT rate applies for %s', 'woocommerce-es' ),
+				$country_code
+			);
+			
+			self::log_debug( sprintf(
+				'VAT Exemption REMOVED - Validation failed for %s: %s',
+				$country_code,
+				$vat_clean
+			) );
 		}
 
 		wp_send_json_success( $response );

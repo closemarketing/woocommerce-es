@@ -306,11 +306,19 @@
 					// Add exemption message if applicable.
 					if ( vat_exempt && exempt_message ) {
 						feedbackMessage += '. ' + exempt_message;
+					} else if ( exempt_message ) {
+						// Show message even if not exempt (e.g., domestic transaction).
+						feedbackMessage += '. ' + exempt_message;
 					}
 					break;
 
 				case 'invalid':
 					feedbackMessage = message || messages.invalid || 'Invalid VAT number';
+					
+					// Add info about standard VAT applying.
+					if ( exempt_message ) {
+						feedbackMessage += '. ' + exempt_message;
+					}
 					break;
 
 				case 'too_short':
