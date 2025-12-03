@@ -76,7 +76,7 @@ define(
 		'billing_vat',
 		'billing_nif',
 		'billing_vat_number',
-		'VAT Number', // Support to SIMBA Hosting plugin.
+		'VAT Number',
 	)
 );
 ```
