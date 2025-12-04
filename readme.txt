@@ -19,7 +19,7 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 - Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
 - Supports WooCommerce PDF Invoices & Packing Slips for VAT info in invoices.
 - EU/VAT Compliance: Import European Taxes and check VAT compliance.
-- **NEW: Validate VAT numbers via VIES** (VAT Information Exchange System) - Automatically verify EU VAT numbers during checkout using the official European Commission service.
+- **NEW: Real-time VAT validation** with dual API system (VIES + VATSense) - Live validation as customer types with automatic B2B intra-community zero-rate application for different EU countries.
 - (optional) Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
 - Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
 - You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
@@ -32,15 +32,37 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 
 You can use this feature alone if you need it. You can import European Taxes and check VAT compliance.
 
-**VAT Number Validation via VIES**
+**VAT Number Validation via VIES & VATSense**
 
-The plugin now integrates with the VIES (VAT Information Exchange System) service to automatically validate EU VAT numbers during checkout. This feature:
-- Verifies VAT numbers in real-time against the official European Commission database
-- Can be configured as mandatory (blocking checkout) or optional (showing warnings)
-- Caches validation results to avoid overloading the VIES service
-- Handles service unavailability gracefully
-- Stores validation results in order metadata for compliance tracking
-- Enabled by default and can be disabled in settings if needed
+The plugin includes advanced real-time VAT validation during checkout with the following features:
+
+**Real-time Validation:**
+- Live validation as customer types (800ms debounce)
+- Modern Vanilla JavaScript (no jQuery dependency)
+- Visual feedback with status icons (checking, valid, invalid)
+- Works with both classic shortcode and Gutenberg blocks checkout
+- Automatic checkout recalculation when VAT status changes
+
+**Dual API System:**
+- Primary: VIES (official EU service, free)
+- Fallback: VATSense (commercial service, optional, higher reliability)
+- Automatic failover if primary service is down
+- Supports EU countries + Norway & Switzerland (via VATSense)
+- Results cached for 24 hours to optimize performance
+
+**B2B Intra-community Zero-Rate:**
+- Automatic 0% VAT rate for valid B2B transactions between different EU countries
+- Uses WooCommerce tax class system (not simple exemption)
+- Fiscally correct: shows "Zero Rate [Country]" on invoices
+- Complies with EU VAT Directive 2006/112/EC
+- Automatic restoration of standard VAT when validation fails
+
+**Additional Features:**
+- Validates format and minimum length per country before API call
+- Can be configured as mandatory (blocks checkout) or optional (warnings only)
+- Stores validation results and exemption data in order metadata
+- Detailed logging for debugging and audit compliance
+- Graceful handling of service unavailability
 
 **Connect your WooCommerce store to your ERP or CRM software.**
 Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
@@ -108,10 +130,35 @@ By default, the product disappears from the store catalog but remains visible to
 Yes, it does. It makes the order data more readable for Verifactu.
 
 = How does the VAT validation work? =
-The plugin integrates with the VIES (VAT Information Exchange System) service from the European Commission. When a customer enters their VAT number during checkout, the plugin validates it in real-time. You can configure it as mandatory (blocking invalid VAT numbers) or optional (showing warnings). The validation results are cached and stored with the order for compliance purposes.
+The plugin includes advanced real-time VAT validation with a dual API system:
+- **Primary service**: VIES (official EU service, free) validates VAT numbers against the European Commission database
+- **Fallback service**: VATSense (optional commercial service) provides enhanced reliability when VIES is unavailable
+- **Real-time feedback**: Validation happens as the customer types (800ms debounce) with visual status indicators
+- **Smart caching**: Results cached for 24 hours (valid) or 1 hour (invalid) to optimize performance
+- **Compliance tracking**: All validation results stored in order metadata for audit purposes
 
-= What happens if the VIES service is unavailable? =
-If the VIES service is unavailable, the plugin will gracefully accept the VAT number and allow the order to proceed. This ensures that temporary service issues don't block legitimate orders.
+You can configure validation as mandatory (blocking invalid VAT) or optional (showing warnings only).
+
+= What happens if VIES service is unavailable? =
+The plugin uses an intelligent fallback system:
+1. If VIES fails and VATSense is configured, it automatically uses VATSense as fallback
+2. If both services are unavailable, the VAT number is accepted with a warning and standard VAT applies
+3. All service failures are logged for monitoring and debugging
+This multi-service approach ensures that temporary service issues don't block legitimate orders.
+
+= How does B2B intra-community zero-rate work? =
+When a valid VAT number is provided for a B2B transaction between different EU countries:
+- The system automatically applies a "zero-rate" tax class (0% VAT)
+- This is fiscally correct: invoices show "Zero Rate [Country]: €0.00"
+- The exemption only applies when: both countries are in EU, countries are different, and VAT is successfully validated
+- For same-country (domestic) transactions, standard VAT applies even with valid VAT number
+- If validation fails or field is emptied, standard VAT is automatically restored
+
+= Does it work with WooCommerce Gutenberg Blocks checkout? =
+Yes, fully supported. The real-time VAT validation works seamlessly with both:
+- Classic shortcode-based checkout
+- Modern Gutenberg blocks checkout
+The same validation logic, visual feedback, and tax exemption rules apply to both checkout types.
 
 == Installation ==
 
@@ -156,6 +203,27 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 = 3.3.0 =
 * Enhancement: Added support to ERP Tax Types.
 * Enhancement: Added support to payment methods from API.
+* **MAJOR: Real-time VAT validation** - Live validation as customer types with 800ms debounce, visual feedback, and automatic checkout updates.
+* **MAJOR: Dual API system** - VIES (primary, official EU, free) + VATSense (fallback, commercial, higher reliability).
+* **MAJOR: B2B intra-community zero-rate** - Automatic 0% VAT for valid B2B transactions between different EU countries using tax class system.
+* Enhancement: Modern Vanilla JavaScript implementation (no jQuery dependency) with Fetch API and AbortController.
+* Enhancement: WooCommerce Gutenberg Blocks full support with MutationObserver for React field detection.
+* Enhancement: VATSense integration for enhanced reliability (optional, free tier: 500 validations/month).
+* Enhancement: Tax class "zero-rate" automatically created with 0% rates for all EU countries.
+* Enhancement: VAT exemption properly applied using WooCommerce tax class system (fiscally correct).
+* Enhancement: Automatic restoration of standard VAT when validation fails or field is emptied.
+* Enhancement: Detailed logging system for debugging and compliance auditing.
+* Enhancement: Country-specific minimum VAT length validation before API calls.
+* Enhancement: Visual feedback system with status icons (checking, valid, invalid, warning).
+* Enhancement: Clean minimal CSS design without backgrounds.
+* Enhancement: Duplicate feedback container cleanup to prevent UI issues.
+* Enhancement: Cache system: 24h for valid results, 1h for invalid results.
+* Enhancement: Session management for VAT exemption persistence across checkout updates.
+* Enhancement: Order metadata includes validation results, exemption status, and service used.
+* Enhancement: Comprehensive English documentation for all VAT features.
+* Fixed: VAT exemption incorrectly applied for same-country (domestic) transactions.
+* Fixed: Tax not restored when VAT field is emptied or validation fails.
+* Fixed: Multiple feedback messages not properly cleared.
 
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.

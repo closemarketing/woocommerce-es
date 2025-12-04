@@ -89,6 +89,10 @@
 
 			// Listen to WooCommerce checkout updates.
 			document.body.addEventListener( 'updated_checkout', () => this.reattachListeners() );
+			
+			// Listen to WooCommerce Blocks checkout updates.
+			document.body.addEventListener( 'wc-blocks_added_to_cart', () => this.reattachListeners() );
+			document.body.addEventListener( 'wc-blocks_removed_from_cart', () => this.reattachListeners() );
 
 			console.log( 'WooCommerce ES: VAT validator initialized' );
 		},
@@ -99,11 +103,13 @@
 		 * @return {HTMLElement|null}
 		 */
 		getVATField() {
-			// Try multiple selectors for compatibility.
+			// Try multiple selectors for compatibility (classic + blocks).
 			const selectors = [
 				'#billing_vat',
 				'input[name="billing_vat"]',
 				'input[name="connect_ecommerce/billing_vat"]',
+				'input[id*="billing_vat"]',
+				'input[id*="billing-vat"]',
 			];
 
 			for ( const selector of selectors ) {
@@ -122,8 +128,22 @@
 		 * @return {HTMLElement|null}
 		 */
 		getCountryField() {
-			return document.querySelector( '#billing_country' ) || 
-				   document.querySelector( 'select[name="billing_country"]' );
+			// Try multiple selectors for compatibility (classic + blocks).
+			const selectors = [
+				'#billing_country',
+				'select[name="billing_country"]',
+				'select[id*="billing-country"]',
+				'select[id*="billing_country"]',
+			];
+
+			for ( const selector of selectors ) {
+				const field = document.querySelector( selector );
+				if ( field ) {
+					return field;
+				}
+			}
+
+			return null;
 		},
 
 		/**
@@ -186,9 +206,17 @@
 				this.state.currentRequest.abort();
 			}
 
-			// Empty field - clear feedback.
+			// Empty field - clear feedback and restore standard VAT.
 			if ( ! vatValue ) {
 				this.showFeedback( '', 'empty' );
+				
+				// If field was previously filled, update checkout to restore standard VAT.
+				if ( this.state.lastVAT ) {
+					this.state.lastVAT = '';
+					this.state.lastCountry = '';
+					this.updateCheckoutTotals();
+				}
+				
 				return;
 			}
 

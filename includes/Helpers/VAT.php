@@ -36,7 +36,7 @@ class VAT {
 	const CACHE_EXPIRATION = DAY_IN_SECONDS;
 
 	/**
-	 * Validate VAT number using VIES service
+	 * Validate VAT number using VIES (primary) with VATSense fallback
 	 *
 	 * @param string $vat_number VAT number to validate.
 	 * @param string $country_code Country code (2 letters).
@@ -54,7 +54,39 @@ class VAT {
 			);
 		}
 
-		// Clean VAT number.
+		// Try VIES first (official and free).
+		self::log_debug( 'Using VIES as primary validation service' );
+		$result = self::validate_with_vies( $vat_number, $country_code );
+
+		// If VIES failed or unavailable, try VATSense as fallback (if configured).
+		if ( ! isset( $result['valid'] ) || ! $result['valid'] ) {
+			if ( self::is_vatsense_configured() ) {
+				self::log_debug( 'VIES validation failed or returned invalid, trying VATSense fallback' );
+				$vatsense_result = self::validate_with_vatsense( $vat_number, $country_code );
+
+				// If VATSense succeeded, use its result.
+				if ( isset( $vatsense_result['valid'] ) ) {
+					$vatsense_result['service_used'] = 'vatsense';
+					return $vatsense_result;
+				}
+			} else {
+				self::log_debug( 'VIES validation failed but VATSense not configured' );
+			}
+		}
+
+		// Return VIES result (either successful or failed).
+		$result['service_used'] = 'vies';
+		return $result;
+	}
+
+	/**
+	 * Validate VAT number using official VIES service
+	 *
+	 * @param string $vat_number VAT number to validate.
+	 * @param string $country_code Country code (2 letters).
+	 * @return array Validation result with status and message.
+	 */
+	private static function validate_with_vies( $vat_number, $country_code = '' ) {
 		$vat_number = self::clean_vat_number( $vat_number );
 
 		if ( empty( $vat_number ) ) {
@@ -70,7 +102,6 @@ class VAT {
 			$vat_number   = substr( $vat_number, 2 );
 		}
 
-		// Check cache first.
 		$cache_key    = md5( $country_code . $vat_number );
 		$cached_result = wp_cache_get( $cache_key, self::CACHE_GROUP );
 
@@ -159,16 +190,175 @@ class VAT {
 	}
 
 	/**
+	 * Validate VAT number using VATSense API service
+	 *
+	 * @param string $vat_number VAT number to validate.
+	 * @param string $country_code Country code (2 letters).
+	 * @return array Validation result with status and message.
+	 */
+	private static function validate_with_vatsense( $vat_number, $country_code = '' ) {
+		$api_key = self::get_vatsense_api_key();
+
+		if ( empty( $api_key ) ) {
+			return array(
+				'valid'   => false,
+				'message' => __( 'VATSense API key not configured', 'woocommerce-es' ),
+			);
+		}
+
+		// Clean VAT number.
+		$vat_clean = self::clean_vat_number( $vat_number );
+
+		// Extract country code from VAT number if not provided.
+		if ( empty( $country_code ) ) {
+			$country_code = self::extract_country_code( $vat_clean );
+			$vat_clean    = substr( $vat_clean, 2 );
+		}
+
+		// Build full VAT number with country prefix.
+		$full_vat = $country_code . $vat_clean;
+
+		// Check cache first.
+		$cache_key     = 'vatsense_' . md5( $full_vat );
+		$cached_result = get_transient( $cache_key );
+
+		if ( false !== $cached_result ) {
+			$cached_result['cached'] = true;
+			return $cached_result;
+		}
+
+		// Make API request to VATSense.
+		$api_url = 'https://api.vatsense.com/1.0/validate?vat_number=' . urlencode( $full_vat );
+
+		$response = wp_remote_get(
+			$api_url,
+			array(
+				'headers' => array(
+					'Authorization' => 'Basic ' . base64_encode( 'user:' . $api_key ),
+				),
+				'timeout' => 10,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			self::log_error( 'VATSense API Error: ' . $response->get_error_message() );
+			return array(
+				'valid'   => false,
+				'message' => __( 'VATSense service error', 'woocommerce-es' ),
+			);
+		}
+
+		$http_code = wp_remote_retrieve_response_code( $response );
+		$body      = wp_remote_retrieve_body( $response );
+
+		// Check for authentication error.
+		if ( $http_code >= 400 && $http_code < 500 ) {
+			self::log_error( 'VATSense Authentication Error: HTTP ' . $http_code );
+			return array(
+				'valid'   => false,
+				'message' => __( 'VATSense authentication failed. Check API key.', 'woocommerce-es' ),
+			);
+		}
+
+		// Check for server error.
+		if ( $http_code >= 500 ) {
+			self::log_error( 'VATSense Server Error: HTTP ' . $http_code );
+			return array(
+				'valid'   => false,
+				'message' => __( 'VATSense service temporarily unavailable', 'woocommerce-es' ),
+			);
+		}
+
+		// Parse JSON response.
+		$api_result = json_decode( $body, true );
+
+		if ( ! is_array( $api_result ) || ! isset( $api_result['success'] ) ) {
+			self::log_error( 'VATSense Invalid Response: ' . $body );
+			return array(
+				'valid'   => false,
+				'message' => __( 'VATSense returned invalid response', 'woocommerce-es' ),
+			);
+		}
+
+		// Check if validation was successful.
+		if ( ! $api_result['success'] ) {
+			// Check if it's an invalid VAT number (not a service error).
+			if ( isset( $api_result['data']['error']['title'] ) &&
+				 false !== stristr( $api_result['data']['error']['title'], 'invalid' ) ) {
+				$result = array(
+					'valid'   => false,
+					'message' => __( 'VAT number is invalid (verified by VATSense)', 'woocommerce-es' ),
+					'cached'  => false,
+				);
+				set_transient( $cache_key, $result, HOUR_IN_SECONDS );
+				return $result;
+			}
+
+			return array(
+				'valid'   => false,
+				'message' => $api_result['data']['error']['title'] ?? __( 'VATSense validation error', 'woocommerce-es' ),
+			);
+		}
+
+		// Successful validation.
+		$is_valid = isset( $api_result['data']['valid'] ) ? (bool) $api_result['data']['valid'] : false;
+
+		$result = array(
+			'valid'        => $is_valid,
+			'country_code' => $country_code,
+			'vat_number'   => $vat_clean,
+			'message'      => $is_valid ? __( 'VAT number is valid (verified by VATSense)', 'woocommerce-es' ) : __( 'VAT number is invalid (verified by VATSense)', 'woocommerce-es' ),
+			'cached'       => false,
+		);
+
+		// Add company information if available.
+		if ( isset( $api_result['data']['company_name'] ) && ! empty( $api_result['data']['company_name'] ) ) {
+			$result['name'] = $api_result['data']['company_name'];
+		}
+
+		if ( isset( $api_result['data']['company_address'] ) && ! empty( $api_result['data']['company_address'] ) ) {
+			$result['address'] = $api_result['data']['company_address'];
+		}
+
+		// Cache the result (only cache valid results or definitive invalid ones).
+		if ( $is_valid ) {
+			set_transient( $cache_key, $result, DAY_IN_SECONDS );
+		} elseif ( isset( $api_result['data']['valid'] ) ) {
+			set_transient( $cache_key, $result, HOUR_IN_SECONDS );
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Check if VATSense is configured
+	 *
+	 * @return bool
+	 */
+	private static function is_vatsense_configured() {
+		$api_key = self::get_vatsense_api_key();
+		return ! empty( $api_key );
+	}
+
+	/**
+	 * Get VATSense API key from settings
+	 *
+	 * @return string
+	 */
+	private static function get_vatsense_api_key() {
+		$settings = get_option( 'connect_ecommerce_public' );
+		return isset( $settings['vatsense_api_key'] ) ? trim( $settings['vatsense_api_key'] ) : '';
+	}
+
+	/**
 	 * Clean VAT number from spaces and special characters
 	 *
 	 * @param string $vat_number VAT number.
 	 * @return string Cleaned VAT number.
 	 */
 	public static function clean_vat_number( $vat_number ) {
-		// Remove spaces, dots, dashes.
 		$vat_number = str_replace( array( ' ', '.', '-', '/' ), '', $vat_number );
 
-		// Convert to uppercase.
 		return strtoupper( trim( $vat_number ) );
 	}
 
@@ -376,10 +566,14 @@ class VAT {
 
 		// Early validations.
 		if ( empty( $vat_number ) ) {
+			// Remove any existing VAT exemption.
+			self::remove_vat_exemption();
+			
 			wp_send_json_success(
 				array(
-					'status'  => 'empty',
-					'message' => '',
+					'status'     => 'empty',
+					'message'    => '',
+					'vat_exempt' => false,
 				)
 			);
 		}
@@ -391,27 +585,36 @@ class VAT {
 		if ( empty( $country_code ) ) {
 			$country_code = self::extract_country_code( $vat_clean );
 			if ( empty( $country_code ) ) {
+				// Remove any existing VAT exemption.
+				self::remove_vat_exemption();
+				
 				wp_send_json_success(
 					array(
-						'status'  => 'invalid_format',
-						'message' => __( 'Please enter a valid VAT number with country code (e.g., ES12345678A)', 'woocommerce-es' ),
+						'status'     => 'invalid_format',
+						'message'    => __( 'Please enter a valid VAT number with country code (e.g., ES12345678A)', 'woocommerce-es' ),
+						'vat_exempt' => false,
 					)
 				);
 			}
 			$vat_clean = substr( $vat_clean, 2 );
 		}
+		$vat_clean = str_replace( $country_code, '', $vat_clean ); 
 
 		// Check minimum length.
 		$min_length = self::get_min_vat_length( $country_code );
 		if ( strlen( $vat_clean ) < $min_length ) {
+			// Remove any existing VAT exemption.
+			self::remove_vat_exemption();
+			
 			wp_send_json_success(
 				array(
-					'status'  => 'too_short',
-					'message' => sprintf(
+					'status'     => 'too_short',
+					'message'    => sprintf(
 						// translators: %d is the minimum number of characters.
 						__( 'VAT number is too short. Minimum %d characters required.', 'woocommerce-es' ),
 						$min_length
 					),
+					'vat_exempt' => false,
 				)
 			);
 		}
@@ -556,11 +759,6 @@ class VAT {
 		// Ensure zero-rate tax class exists.
 		self::ensure_zero_rate_tax_class();
 
-		// Set customer tax class to zero-rate for the specific country.
-		if ( WC()->customer ) {
-			WC()->customer->set_taxable_address( $customer_country, '', '', '' );
-		}
-
 		// Store in session for persistence.
 		if ( WC()->session ) {
 			WC()->session->set( 'vat_exempt_applied', true );
@@ -636,12 +834,12 @@ class VAT {
 		global $wpdb;
 
 		// Check if zero-rate tax class exists.
-		$tax_classes = WC_Tax::get_tax_classes();
+		$tax_classes = \WC_Tax::get_tax_classes();
 		$tax_classes = array_map( 'sanitize_title', $tax_classes );
 
 		if ( ! in_array( 'zero-rate', $tax_classes, true ) ) {
 			// Add zero-rate tax class.
-			$tax_classes = WC_Tax::get_tax_class_slugs();
+			$tax_classes = \WC_Tax::get_tax_class_slugs();
 			$tax_classes['Zero Rate'] = 'zero-rate';
 			update_option( 'woocommerce_tax_classes', implode( "\n", array_keys( $tax_classes ) ) );
 		}
@@ -683,7 +881,7 @@ class VAT {
 		}
 
 		// Clear WooCommerce tax cache.
-		WC_Cache_Helper::invalidate_cache_group( 'taxes' );
+		\WC_Cache_Helper::invalidate_cache_group( 'taxes' );
 		delete_transient( 'wc_tax_rates' );
 	}
 }

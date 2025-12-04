@@ -943,6 +943,14 @@ class Settings {
 		);
 
 		add_settings_field(
+			'wcpimh_vatsense_api_key',
+			__( 'VATSense API Key (Optional)', 'woocommerce-es' ),
+			array( $this, 'vatsense_api_key_callback' ),
+			'connect_ecommerce_public',
+			'imhset_pub_setting_section'
+		);
+
+		add_settings_field(
 			'wcpimh_vat_vies_mandatory',
 			__( 'Mandatory VAT validation for checkout?', 'woocommerce-es' ),
 			array( $this, 'vat_vies_mandatory_callback' ),
@@ -2282,6 +2290,10 @@ class Settings {
 			$sanitary_values['vat_vies_enabled'] = $input['vat_vies_enabled'];
 		}
 
+		if ( isset( $input['vatsense_api_key'] ) ) {
+			$sanitary_values['vatsense_api_key'] = sanitize_text_field( $input['vatsense_api_key'] );
+		}
+
 		if ( isset( $input['vat_vies_mandatory'] ) ) {
 			$sanitary_values['vat_vies_mandatory'] = $input['vat_vies_mandatory'];
 		}
@@ -2400,6 +2412,36 @@ class Settings {
 		</select>
 		<p class="description">
 			<?php esc_html_e( 'If enabled, customers will not be able to complete their order if the VAT number is invalid. If disabled, invalid VAT numbers will be accepted with a warning.', 'woocommerce-es' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * VATSense API Key callback
+	 *
+	 * @return void
+	 */
+	public function vatsense_api_key_callback() {
+		$vatsense_api_key = isset( $this->settings_public['vatsense_api_key'] ) ? $this->settings_public['vatsense_api_key'] : '';
+		?>
+		<input 
+			type="text" 
+			name="connect_ecommerce_public[vatsense_api_key]" 
+			id="vatsense_api_key" 
+			value="<?php echo esc_attr( $vatsense_api_key ); ?>" 
+			size="40"
+			placeholder="<?php esc_attr_e( 'Enter your VATSense API key', 'woocommerce-es' ); ?>"
+		/>
+		<p class="description">
+			<?php
+			echo wp_kses_post(
+				sprintf(
+					// translators: 1: VATSense link.
+					__( 'VATSense is a commercial VAT validation service with higher reliability than VIES. Used as fallback if VIES fails. Also supports Norway and Switzerland. <a href="%s" target="_blank">Sign up for VATSense</a> (free tier available).', 'woocommerce-es' ),
+					'https://vatsense.com/signup?referral=CLOSEMARKETING'
+				)
+			);
+			?>
 		</p>
 		<?php
 	}

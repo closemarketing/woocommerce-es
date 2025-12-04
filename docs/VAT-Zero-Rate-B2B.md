@@ -12,7 +12,44 @@ For VAT exemption to apply, **all** these conditions must be met:
 2. ✅ **Customer country** must be in the EU
 3. ✅ **Different countries** (store ≠ customer)
 4. ✅ **VAT number provided** by customer
-5. ✅ **VAT validated** correctly via VIES
+5. ✅ **VAT validated** correctly via VIES or VATSense
+
+## How It Works
+
+### Tax Class System
+
+Instead of using WooCommerce's `set_is_vat_exempt()`, this implementation uses a **zero-rate tax class** which is fiscally more correct:
+
+```
+Standard Transaction:
+- Base: €100
+- VAT 21%: €21
+- Total: €121
+
+B2B Intra-community:
+- Base: €100
+- Zero Rate FR (0%): €0
+- Total: €100
+```
+
+### Automatic Tax Class Creation
+
+The system automatically creates:
+
+1. **Tax class**: "Zero Rate"
+2. **Tax rates**: 0% for each EU country
+3. **Database entries**: In `woocommerce_tax_rates` table
+
+```sql
+-- Example entries created
+INSERT INTO woocommerce_tax_rates
+(tax_rate_country, tax_rate, tax_rate_name, tax_rate_class)
+VALUES
+('FR', '0.0000', 'Zero Rate FR', 'zero-rate'),
+('DE', '0.0000', 'Zero Rate DE', 'zero-rate'),
+('IT', '0.0000', 'Zero Rate IT', 'zero-rate'),
+...
+```
 
 ## Operation Flow
 
@@ -25,7 +62,7 @@ Real-time validation (JavaScript)
     ↓
 AJAX → ajax_validate_vat()
     ↓
-VIES Validation
+VATSense (if configured) or VIES validation
 ```
 
 ### 2. Exemption Evaluation
@@ -51,9 +88,11 @@ If all conditions are met:
 ```php
 apply_vat_exemption($customer_country, $vat_number, true)
     ↓
-WC()->customer->set_is_vat_exempt(true)
+ensure_zero_rate_tax_class() // Creates tax class if needed
     ↓
-WC()->session->set('vat_exempt_applied', true)
+WC()->session->set('customer_tax_class', 'zero-rate')
+    ↓
+Filter applies: woocommerce_product_tax_class → 'zero-rate'
     ↓
 Recalculate checkout (taxes = 0)
 ```
@@ -102,6 +141,7 @@ public static function should_apply_vat_exemption(
 2. Verifies both countries are in EU
 3. Verifies countries are different
 4. Verifies VAT is validated
+5. Logs decision for debugging
 
 #### `VAT::apply_vat_exemption()`
 
@@ -113,50 +153,44 @@ public static function apply_vat_exemption(
     $vat_number, 
     $is_validated 
 ) {
-    // Sets customer as VAT exempt
+    // Removes any existing exemption first
+    // Creates zero-rate tax class if needed
+    // Sets customer tax class to 'zero-rate'
     // Stores in session
 }
 ```
 
 **Effects:**
-- `WC()->customer->set_is_vat_exempt(true)`
+- Session tax class set to `zero-rate`
 - Session updated with exemption data
 - Automatic tax recalculation
+- Filters apply zero-rate to all products
 
 #### `VAT::remove_vat_exemption()`
 
-Removes VAT exemption.
+Removes VAT exemption and restores standard VAT.
 
 ```php
 public static function remove_vat_exemption() {
-    // Removes exemption
-    // Clears session
+    // Resets tax class to standard
+    // Clears session data
+    // Triggers checkout update
 }
 ```
 
-#### `VAT::is_customer_vat_exempt()`
+#### `VAT::ensure_zero_rate_tax_class()`
 
-Checks if current customer has exemption.
+Creates zero-rate tax class and rates for EU countries.
 
 ```php
-public static function is_customer_vat_exempt() {
-    // Returns: bool
+public static function ensure_zero_rate_tax_class() {
+    // Creates 'Zero Rate' tax class
+    // Creates 0% rate for each EU country
+    // Clears tax cache
 }
 ```
 
-#### `VAT::get_vat_exemption_info()`
-
-Gets current exemption information.
-
-```php
-public static function get_vat_exemption_info() {
-    // Returns: array|null
-    // [
-    //     'country' => 'FR',
-    //     'vat_number' => 'FR12345678901'
-    // ]
-}
-```
+Called automatically when exemption is applied.
 
 ### Frontend (JavaScript)
 
@@ -169,8 +203,10 @@ public static function get_vat_exemption_info() {
     country_code: 'FR',
     vat_number: '12345678901',
     company_name: 'Example SAS',
-    vat_exempt: true,  // ← NEW
-    exempt_message: 'B2B intra-community transaction - Zero VAT rate applied (FR)'  // ← NEW
+    company_address: '123 Rue...',
+    vat_exempt: true,
+    exempt_message: 'B2B intra-community transaction - Zero VAT rate applied (FR)',
+    service_used: 'vatsense' // or 'vies'
 }
 ```
 
@@ -189,7 +225,7 @@ Called automatically when:
 
 ## Usage Examples
 
-### Example 1: Store in Spain, Customer in France
+### Example 1: Store in Spain, Customer in France (B2B)
 
 **Configuration:**
 - Base country: ES
@@ -199,11 +235,19 @@ Called automatically when:
 **Result:**
 ```
 ✅ Exemption applied
-Tax: 0%
+Tax class: Zero Rate FR
+Tax rate: 0%
 Message: "B2B intra-community transaction - Zero VAT rate applied (FR)"
 ```
 
-### Example 2: Store in Spain, Customer in Spain
+**Invoice shows:**
+```
+Subtotal: €100.00
+Zero Rate FR (0%): €0.00
+Total: €100.00
+```
+
+### Example 2: Store in Spain, Customer in Spain (Domestic)
 
 **Configuration:**
 - Base country: ES
@@ -213,11 +257,19 @@ Message: "B2B intra-community transaction - Zero VAT rate applied (FR)"
 **Result:**
 ```
 ❌ Exemption NOT applied
-Tax: 21% (standard)
-Reason: Same country (domestic transaction)
+Tax class: Standard
+Tax rate: 21%
+Message: "Domestic transaction - Standard VAT rate applies"
 ```
 
-### Example 3: Store in Spain, Customer in USA
+**Invoice shows:**
+```
+Subtotal: €100.00
+IVA (21%): €21.00
+Total: €121.00
+```
+
+### Example 3: Store in Spain, Customer in USA (Export)
 
 **Configuration:**
 - Base country: ES
@@ -227,7 +279,7 @@ Reason: Same country (domestic transaction)
 **Result:**
 ```
 ❌ Exemption NOT applied
-Tax: 0% (export)
+Tax: 0% (export rules)
 Reason: USA not in EU
 ```
 
@@ -241,8 +293,9 @@ Reason: USA not in EU
 **Result:**
 ```
 ❌ Exemption NOT applied
-Tax: 21%
-Reason: VAT not validated correctly
+Tax class: Standard
+Tax rate: 21%
+Message: "VAT validation failed - Standard VAT rate applies for FR"
 ```
 
 ## Order Metadata
@@ -257,6 +310,11 @@ _vat_exempt_vat_number: 'FR12345678901'
 _vat_validation_result: [complete array]
 _vat_number_validated: 'yes'
 _vat_validation_date: '2025-01-15'
+
+// Tax line items
+tax_rate_id: 2
+tax_rate_code: 'FR-ZERO RATE FR-1'
+tax_amount: 0.00
 ```
 
 ## Order Notes
@@ -266,21 +324,6 @@ A note is added to the order:
 ```
 VAT exemption applied for B2B intra-community transaction. 
 VAT: FR12345678901 (FR)
-```
-
-## Special CSS Styles
-
-When there's exemption, visual feedback is special:
-
-```css
-.conecom-vat-feedback.valid.vat-exempt {
-    font-weight: 500;
-}
-
-.conecom-vat-feedback.valid.vat-exempt::before {
-    content: '✓✓';  /* Double check */
-    color: #059669;
-}
 ```
 
 ## WooCommerce Integration
@@ -299,65 +342,20 @@ add_action('woocommerce_store_api_checkout_update_order_from_request',
 // Save to order
 add_action('woocommerce_checkout_order_processed',
     array($this, 'save_vat_validation_result'), 10, 1);
+
+// Apply tax class
+add_filter('woocommerce_product_tax_class',
+    array($this, 'apply_zero_rate_tax_class'), 10, 2);
 ```
 
 ### Tax System
 
-WooCommerce uses `$customer->get_is_vat_exempt()` to:
+The system uses WooCommerce's native tax class system:
 
-1. **Calculate taxes**: If `true`, applies 0% rate
-2. **Show totals**: Shows "VAT exempt" line
-3. **Invoices**: Indicates exemption on documents
-
-## Testing
-
-### Manual Test
-
-1. **Configure store in EU country** (e.g., Spain)
-2. **At checkout:**
-   - Country: Other EU country (e.g., France)
-   - VAT: Valid French VAT (e.g., FR12345678901)
-3. **Verify:**
-   - ✓✓ Green exemption message
-   - Tax = 0€
-   - Total without VAT
-
-### Programmatic Test
-
-```php
-// Test should_apply_vat_exemption
-$result = VAT::should_apply_vat_exemption('FR', 'FR12345678901', true);
-// Expected: true (if store is ES or other different EU country)
-
-// Test apply_vat_exemption
-VAT::apply_vat_exemption('FR', 'FR12345678901', true);
-$is_exempt = VAT::is_customer_vat_exempt();
-// Expected: true
-
-// Test remove_vat_exemption
-VAT::remove_vat_exemption();
-$is_exempt = VAT::is_customer_vat_exempt();
-// Expected: false
-```
-
-### AJAX Test
-
-```javascript
-// In browser console (checkout page)
-fetch(ajaxurl, {
-    method: 'POST',
-    body: new FormData()
-        .set('action', 'conecom_validate_vat')
-        .set('security', nonce)
-        .set('vat_number', 'FR12345678901')
-        .set('country_code', 'FR')
-})
-.then(r => r.json())
-.then(data => {
-    console.log('VAT Exempt:', data.data.vat_exempt);
-    // Expected: true
-});
-```
+1. **Filter tax class**: All products get `zero-rate` class when exempt
+2. **WC calculates**: Uses 0% rate for customer's country
+3. **Invoice shows**: "Zero Rate [Country]" line with €0.00
+4. **Reports**: Properly categorized as B2B transactions
 
 ## Legal Considerations
 
@@ -365,41 +363,44 @@ fetch(ajaxurl, {
 
 This implementation follows **VAT Directive 2006/112/EC**:
 
-- **Article 194**: Reverse charge
+- **Article 194**: Reverse charge mechanism
 - **Article 196**: Exempt intra-community supplies
 - **Article 138**: Conditions for exemption
 
 ### Seller Obligations
 
-1. ✅ **Validate VAT**: Mandatory via VIES
+1. ✅ **Validate VAT**: Mandatory via VIES or equivalent
 2. ✅ **Save proof**: Record validation and date
-3. ✅ **Correct invoice**: Indicate "Reverse charge"
-4. ✅ **Declaration**: Include in VAT declaration (model 303/349)
+3. ✅ **Correct invoice**: Show "Zero Rate [Country]" line
+4. ✅ **Declaration**: Include in VAT declaration (EC Sales List)
 
 ### Liability
 
 - **If VAT is valid**: Legitimate exemption
 - **If VAT is invalid but exemption was applied**: Tax risk for seller
-- **Therefore VIES validation is MANDATORY**
+- **Therefore validation via VIES/VATSense is MANDATORY**
 
 ## Troubleshooting
 
 ### Exemption not applying
 
 **Verify:**
-1. Is store country in `get_eu_countries()`?
-2. Is customer country in `get_eu_countries()`?
+1. Is store country in EU?
+2. Is customer country in EU?
 3. Are they different countries?
-4. Was VAT validated correctly?
-5. Is `$validation_result['valid']` `true`?
+4. Was VAT validated successfully?
+5. Check debug logs for decision
 
 **Debug:**
 ```php
 add_action('wp_footer', function() {
-    if (is_checkout()) {
+    if (is_checkout() && WP_DEBUG) {
         $info = VAT::get_vat_exemption_info();
-        echo '<pre>VAT Exemption Info: ';
-        var_dump($info);
+        $is_exempt = VAT::is_customer_vat_exempt();
+        echo '<pre>';
+        echo 'VAT Exempt: ' . ($is_exempt ? 'YES' : 'NO') . "\n";
+        echo 'Info: ';
+        print_r($info);
         echo '</pre>';
     }
 });
@@ -407,40 +408,43 @@ add_action('wp_footer', function() {
 
 ### Taxes not recalculating
 
-**Verify:**
-1. Is `jQuery('body').trigger('update_checkout')` called?
-2. Are there conflicts with other tax plugins?
+**Check:**
+1. Is `update_checkout` triggered?
+2. Any conflicts with other tax plugins?
 3. Is cache active preventing recalculation?
 
-**Solution:**
+**Force update:**
 ```javascript
-// Force recalculation
+// In browser console
 jQuery('body').trigger('update_checkout', {update_shipping_method: true});
 ```
 
-### Exemption persists after changing country
+### Exemption persists after VAT removal
 
-**Cause:** Session not cleared.
-
-**Solution:** Add listener for country change:
+**Solution:** The `maybe_remove_vat_exemption_on_update()` hook handles this:
 
 ```php
-add_action('woocommerce_checkout_update_order_review', function($post_data) {
-    parse_str($post_data, $data);
-    $country = $data['billing_country'] ?? '';
-    
-    // If country changes, reevaluate exemption
-    $prev_country = WC()->session->get('vat_exempt_country');
-    if ($country !== $prev_country) {
-        VAT::remove_vat_exemption();
-    }
-});
+// Automatically removes exemption if:
+// - VAT field is emptied
+// - Country changes
+// - VAT number changes
 ```
+
+### Zero-rate class not visible in admin
+
+**Create manually if needed:**
+
+1. WooCommerce → Settings → Tax → Tax Classes
+2. Add "Zero Rate" to the list
+3. Create rates for EU countries with 0%
+
+Or let the system create it automatically on first B2B transaction.
 
 ## Performance
 
-- **VIES Validation**: 500-1000ms
+- **Validation**: 300ms-3s (depends on service)
 - **Apply exemption**: <5ms
+- **Create tax class**: <50ms (one-time)
 - **Recalculate taxes**: 50-200ms
 - **Total perceived**: ~1 second
 
@@ -449,48 +453,19 @@ add_action('woocommerce_checkout_update_order_review', function($post_data) {
 1. ✅ **Nonce verification** in AJAX
 2. ✅ **Input sanitization**
 3. ✅ **Backend validation** (not just frontend)
-4. ✅ **VIES results cache** (24h)
-5. ✅ **Logging** of exemption applications
+4. ✅ **Cache with expiration** (24h valid, 1h invalid)
+5. ✅ **Logging** of all exemption applications
+6. ✅ **Automatic removal** on validation failure
 
-## Debugging
+## Best Practices
 
-### Enable Debug Logs
-
-In `wp-config.php`:
-
-```php
-define('WP_DEBUG', true);
-define('WP_DEBUG_LOG', true);
-define('WP_DEBUG_DISPLAY', false);
-```
-
-### View Logs
-
-```bash
-tail -f /path/to/wp-content/debug.log
-```
-
-### Search for Lines
-
-```
-[WooCommerce ES - VAT Debug] VAT Exemption Check
-```
-
-### Complete Log Example
-
-#### Case Spain → Spain (Should NOT exempt)
-```
-[WooCommerce ES - VAT Debug] VAT Exemption Check - Base: ES, Customer: ES, VAT: ESB12345678, Validated: yes
-[WooCommerce ES - VAT Debug] VAT Exemption NOT applied - Same country (domestic transaction)
-```
-
-#### Case Spain → France (Should exempt)
-```
-[WooCommerce ES - VAT Debug] VAT Exemption Check - Base: ES, Customer: FR, VAT: FR12345678901, Validated: yes
-[WooCommerce ES - VAT Debug] VAT Exemption APPLIED - All conditions met
-```
+1. **Configure VATSense** for better reliability (even free tier)
+2. **Enable debug logging** during initial setup
+3. **Monitor exemption applications** via order notes
+4. **Test with real VAT numbers** before going live
+5. **Review tax reports** regularly to ensure correct categorization
 
 ## Conclusion
 
-This implementation provides a complete and EU regulation-compliant solution for managing intra-community B2B transactions, automatically applying 0% VAT rate when appropriate and saving all necessary information to comply with tax obligations.
+This implementation provides a complete and EU regulation-compliant solution for managing intra-community B2B transactions, automatically applying 0% VAT rate when appropriate using WooCommerce's native tax class system, and saving all necessary information to comply with tax obligations.
 

@@ -416,8 +416,9 @@ class Checkout {
 			$vat_number = sanitize_text_field( wp_unslash( $_POST['connect_ecommerce/billing_vat'] ) );
 		}
 
-		// If no VAT number provided, skip validation.
+		// If no VAT number provided, remove any existing exemption and skip validation.
 		if ( empty( $vat_number ) ) {
+			VAT::remove_vat_exemption();
 			return;
 		}
 
@@ -537,6 +538,31 @@ class Checkout {
 	}
 
 	/**
+	 * Check if WooCommerce Checkout Block is active
+	 *
+	 * @return bool
+	 */
+	private function is_checkout_block_active() {
+		if ( ! function_exists( 'has_block' ) ) {
+			return false;
+		}
+
+		// Check if current page has checkout block.
+		global $post;
+		if ( $post && has_block( 'woocommerce/checkout', $post ) ) {
+			return true;
+		}
+
+		// Check if checkout page uses blocks.
+		$checkout_page_id = wc_get_page_id( 'checkout' );
+		if ( $checkout_page_id && has_block( 'woocommerce/checkout', $checkout_page_id ) ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
 	 * Enqueue VAT validation scripts and styles
 	 *
 	 * @return void
@@ -567,12 +593,26 @@ class Checkout {
 			true
 		);
 
+		// Enqueue Blocks integration if Gutenberg checkout is active.
+		if ( has_block( 'woocommerce/checkout' ) || $this->is_checkout_block_active() ) {
+			wp_enqueue_script(
+				'conecom-vat-validation-blocks',
+				$plugin_url . 'includes/assets/vat-validation-blocks.js',
+				array( 'conecom-vat-validation', 'wc-blocks-checkout' ),
+				$version,
+				true
+			);
+		}
+
 		// Prepare configuration and messages.
+		$vat_vies_mandatory = isset( $this->setttings_public['vat_vies_mandatory'] ) ? $this->setttings_public['vat_vies_mandatory'] : 'no';
+		
 		$config = array(
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'nonce'   => wp_create_nonce( 'conecom_vat_validation' ),
-			'enabled' => true,
-			'minLengths' => array(
+			'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+			'nonce'         => wp_create_nonce( 'conecom_vat_validation' ),
+			'enabled'       => true,
+			'vat_mandatory' => 'yes' === $vat_vies_mandatory,
+			'minLengths'    => array(
 				'ES' => 9,
 				'FR' => 11,
 				'DE' => 9,
@@ -687,8 +727,9 @@ class Checkout {
 			$vat_number = sanitize_text_field( $billing_address['connect_ecommerce/billing_vat'] );
 		}
 
-		// If no VAT number provided, skip validation.
+		// If no VAT number provided, remove any existing exemption and skip validation.
 		if ( empty( $vat_number ) ) {
+			VAT::remove_vat_exemption();
 			return;
 		}
 
