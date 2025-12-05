@@ -112,6 +112,41 @@ class Settings {
 	private $all_options;
 
 	/**
+	 * Connector type slug.
+	 *
+	 * @var string
+	 */
+	private $connector_type = '';
+
+	/**
+	 * Connector identifier.
+	 *
+	 * @var string
+	 */
+	private $connector_id = '';
+
+	/**
+	 * All configured connectors.
+	 *
+	 * @var array
+	 */
+	private $connectors = array();
+
+	/**
+	 * Connectors metadata.
+	 *
+	 * @var array
+	 */
+	private $connectors_meta = array();
+
+	/**
+	 * Workflow keys.
+	 *
+	 * @var array
+	 */
+	private $workflows = array();
+
+	/**
 	 * Settings slug
 	 *
 	 * @var string
@@ -133,21 +168,43 @@ class Settings {
 	private $payment_methods_page;
 
 	/**
+	 * Available connector definitions.
+	 *
+	 * @var array
+	 */
+	private $connector_definitions = array();
+
+	/**
 	 * Construct of class
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connectors_data Connectors payload from HELPER.
 	 * @return void
 	 */
-	public function __construct( $connector ) {
-		$this->settings_all          = $connector['settings_all'];
-		$this->connector             = $connector['connector'] ?? '';
-		$this->settings              = $connector['settings'] ?? array();
-		$this->all_options           = $connector['all_options'];
-		$this->options               = $connector['options'] ?? array();
-		$this->connapi_erp           = $connector['connapi_erp'] ?? null;
-		$this->is_mergevars          = $connector['is_mergevars'] ?? false;
-		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
-		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
+	public function __construct( $connectors_data ) {
+		$this->settings_all    = $connectors_data['settings_all'] ?? get_option( 'connect_ecommerce' );
+		$this->connectors      = $connectors_data['items'] ?? array();
+		$this->connectors_meta = $connectors_data['meta'] ?? array();
+		$this->workflows       = array_fill_keys( HELPER::get_workflows(), true );
+
+		$this->connector_id = $connectors_data['active'] ?? '';
+		if ( empty( $this->connector_id ) && ! empty( $this->connectors ) ) {
+			$this->connector_id = array_key_first( $this->connectors );
+		}
+
+		$current_connector      = $this->connectors[ $this->connector_id ] ?? array();
+		$this->connector        = $current_connector['id'] ?? $this->connector_id;
+		$this->connector_type   = $current_connector['connector'] ?? '';
+		$this->settings         = $current_connector['settings'] ?? array();
+		$this->all_options      = $current_connector['all_options'] ?? array();
+		$this->connector_definitions = $this->all_options;
+		if ( empty( $this->connector_definitions ) && function_exists( 'conecom_get_options' ) ) {
+			$this->connector_definitions = conecom_get_options();
+		}
+		$this->options          = $current_connector['options'] ?? array();
+		$this->connapi_erp      = $current_connector['connapi_erp'] ?? null;
+		$this->is_mergevars     = $current_connector['is_mergevars'] ?? false;
+		$this->is_disabled_orders = $current_connector['is_disabled_orders'] ?? false;
+		$this->is_disabled_ai   = $current_connector['is_disabled_ai'] ?? false;
 		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
 
 		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
@@ -175,11 +232,13 @@ class Settings {
 
 		$connector_options = $this->options;
 		$connector_slug    = (string) $this->connector;
+		$connector_type    = (string) $this->connector_type;
 
 		$this->payment_methods_page = new Settings_Payment_Methods(
 			$this->connapi_erp,
 			$connector_slug,
-			is_array( $connector_options ) ? $connector_options : array()
+			is_array( $connector_options ) ? $connector_options : array(),
+			$connector_type
 		);
 	}
 
@@ -351,12 +410,21 @@ class Settings {
 						<form method="post" action="options.php">
 							<?php
 								settings_fields( 'connect_ecommerce_settings' );
-								do_settings_sections( 'connect_ecommerce_admin' );
-								submit_button(
-									__( 'Save settings', 'woocommerce-es' ),
-									'primary',
-									'submit_settings'
-								);
+								$this->render_connector_manager();
+								if ( empty( $this->connector ) ) {
+									submit_button(
+										__( 'Save connectors', 'woocommerce-es' ),
+										'primary',
+										'submit_settings'
+									);
+								} else {
+									do_settings_sections( 'connect_ecommerce_admin' );
+									submit_button(
+										__( 'Save settings', 'woocommerce-es' ),
+										'primary',
+										'submit_settings'
+									);
+								}
 							?>
 						</form>
 						<?php
@@ -1131,61 +1199,24 @@ class Settings {
 	 * @return array
 	 */
 	public function sanitize_fields_settings( $input ) {
-		$sanitary_values = array();
-		$imh_settings    = get_option( 'connect_ecommerce' );
-		$connector       = isset( $input['connector'] ) ? $input['connector'] : '';
+		$input  = is_array( $input ) ? $input : array();
+		$stored = get_option( 'connect_ecommerce' );
+		$stored = is_array( $stored ) ? $stored : array();
 
-		$admin_settings = [
-			$connector => [
-				'api'                => '',
-				'idcentre'           => '',
-				'url'                => '',
-				'username'           => '',
-				'password'           => '',
-				'company'            => '',
-				'company_id'         => '',
-				'domain'             => '',
-				'dbname'             => '',
-				'stock'              => 'no',
-				'prodst'             => 'draft',
-				'virtual'            => 'no',
-				'backorders'         => 'no',
-				'catsep'             => '',
-				'catattr'            => '',
-				'filter'             => '',
-				'pricesale_discount' => '',
-				'filter_sku'         => '',
-				'tax_option'         => 'no',
-				'rates'              => 'default',
-				'catnp'              => 'yes',
-				'doctype'            => 'invoice',
-				'cleanchars'         => '',
-				'approve_document'   => 'no',
-				'series'             => '',
-				'freeorder'          => 'no',
-				'ecstatus'           => 'all',
-				'order_tags'         => '',
-				'design_id'          => '',
-				'sync'               => 'no',
-				'sync_num'           => 5,
-				'sync_email'         => 'yes',
-				'prod_weight_eq'     => '',
-				'debug_log'          => 'no',
-			],
-		];
+		$updated = $this->sanitize_connector_manager_inputs( $input, $stored );
 
-		foreach ( $admin_settings[ $connector ] as $setting => $default_value ) {
-			if ( isset( $input[ $connector ][ $setting ] ) ) {
-				$sanitary_values[ $connector ][ $setting ] = sanitize_text_field( $input[ $connector ][ $setting ] );
-			} elseif ( isset( $imh_settings[ $connector ][ $setting ] ) ) {
-				$sanitary_values[ $connector ][ $setting ] = $imh_settings[ $connector ][ $setting ];
-			} else {
-				$sanitary_values[ $connector ][ $setting ] = $default_value;
-			}
+		$connector_id = isset( $input['connector'] ) ? sanitize_key( $input['connector'] ) : ( $updated['connector'] ?? '' );
+		if ( empty( $connector_id ) && ! empty( $updated['connectors_meta'] ) ) {
+			$connector_id = array_key_first( $updated['connectors_meta'] );
 		}
-		$sanitary_values['connector'] = $connector;
+		$updated['connector'] = $connector_id;
 
-		return $sanitary_values;
+		if ( ! empty( $connector_id ) && isset( $input[ $connector_id ] ) ) {
+			$current_settings            = $updated[ $connector_id ] ?? array();
+			$updated[ $connector_id ] = $this->sanitize_connector_settings_values( $input[ $connector_id ], $current_settings );
+		}
+
+		return $updated;
 	}
 
 	/**
@@ -1249,16 +1280,21 @@ class Settings {
 	 */
 	public function connector_callback() {
 		$connector = isset( $this->connector ) ? $this->connector : '';
+		if ( empty( $this->connectors_meta ) ) {
+			echo '<p>' . esc_html__( 'Add a connector to configure its settings.', 'woocommerce-es' ) . '</p>';
+			return;
+		}
 		?>
 		<select name="connect_ecommerce[connector]" id="wcpimh_connector" onchange="this.form.submit();">
-			<option value="" <?php selected( $connector, '' ); ?>><?php esc_html_e( 'Select the ERP/CRM that you wish to connect', 'woocommerce-es' ); ?></option>
-			<?php
-			foreach ( $this->all_options as $key => $option ) {
-				?>
-				<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $connector, $key ); ?>><?php echo esc_html( $option['name'] ); ?></option>
+			<?php foreach ( $this->connectors_meta as $id => $meta ) : ?>
 				<?php
-			}
-			?>
+				$type_label = $meta['type'] ?? $id;
+				$label      = $meta['label'] ?? $type_label;
+				?>
+				<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $connector, $id ); ?>>
+					<?php echo esc_html( $label . ' (' . $type_label . ')' ); ?>
+				</option>
+			<?php endforeach; ?>
 		</select>
 		<?php
 	}
@@ -2272,6 +2308,269 @@ class Settings {
 	 */
 	public function section_info_public() {
 		esc_html_e( 'Please select the following settings in order customize your eCommerce. ', 'woocommerce-es' );
+	}
+
+	/**
+	 * Outputs the connector management fields.
+	 *
+	 * @return void
+	 */
+	private function render_connector_manager() {
+		?>
+		<div class="card connector-manager">
+			<h3><?php esc_html_e( 'Connectors', 'woocommerce-es' ); ?></h3>
+			<p><?php esc_html_e( 'Manage the connectors available for this store. Only the active connector will be used for synchronisation.', 'woocommerce-es' ); ?></p>
+			<?php if ( ! empty( $this->connectors_meta ) ) : ?>
+				<table class="widefat striped">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'ID', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Label', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Type', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Workflows', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Remove', 'woocommerce-es' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $this->connectors_meta as $connector_id => $meta ) : ?>
+							<tr>
+								<td>
+									<code><?php echo esc_html( $connector_id ); ?></code>
+									<?php if ( $this->connector === $connector_id ) : ?>
+										<br/><span class="dashicons dashicons-yes"></span> <?php esc_html_e( 'Active', 'woocommerce-es' ); ?>
+									<?php endif; ?>
+								</td>
+								<td>
+									<input type="text" class="regular-text" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][label]" value="<?php echo esc_attr( $meta['label'] ?? '' ); ?>"/>
+									<input type="hidden" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][type]" value="<?php echo esc_attr( $meta['type'] ?? $connector_id ); ?>"/>
+								</td>
+								<td>
+									<?php
+									$type = $meta['type'] ?? $connector_id;
+									echo esc_html( $this->connector_definitions[ $type ]['name'] ?? ucfirst( $type ) );
+									?>
+								</td>
+								<td>
+									<?php foreach ( HELPER::get_workflows() as $workflow ) : ?>
+										<?php $enabled = isset( $meta['workflows'][ $workflow ] ) ? $meta['workflows'][ $workflow ] : 'yes'; ?>
+										<label style="display:block;">
+											<input type="hidden" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="no"/>
+											<input type="checkbox" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="yes" <?php checked( 'yes', $enabled ); ?>/>
+											<?php echo esc_html( $this->get_workflow_label( $workflow ) ); ?>
+										</label>
+									<?php endforeach; ?>
+								</td>
+								<td>
+									<select name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][status]">
+										<option value="active" <?php selected( 'active', $meta['status'] ?? 'active' ); ?>><?php esc_html_e( 'Active', 'woocommerce-es' ); ?></option>
+										<option value="inactive" <?php selected( 'inactive', $meta['status'] ?? 'active' ); ?>><?php esc_html_e( 'Inactive', 'woocommerce-es' ); ?></option>
+									</select>
+								</td>
+								<td>
+									<label>
+										<input type="checkbox" name="connect_ecommerce[remove_connectors][]" value="<?php echo esc_attr( $connector_id ); ?>"/>
+										<?php esc_html_e( 'Remove', 'woocommerce-es' ); ?>
+									</label>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php else : ?>
+				<div class="notice notice-info inline">
+					<p><?php esc_html_e( 'No connectors have been configured yet.', 'woocommerce-es' ); ?></p>
+				</div>
+			<?php endif; ?>
+			<hr/>
+			<h4><?php esc_html_e( 'Add connector', 'woocommerce-es' ); ?></h4>
+			<?php if ( empty( $this->connector_definitions ) ) : ?>
+				<div class="notice notice-warning inline">
+					<p><?php esc_html_e( 'No connector types are available in this installation.', 'woocommerce-es' ); ?></p>
+				</div>
+			<?php else : ?>
+				<p>
+					<label for="connector-type"><?php esc_html_e( 'Connector type', 'woocommerce-es' ); ?></label><br/>
+					<select id="connector-type" name="connect_ecommerce[new_connector][type]">
+						<option value=""><?php esc_html_e( 'Select…', 'woocommerce-es' ); ?></option>
+						<?php foreach ( $this->connector_definitions as $type_key => $definition ) : ?>
+							<option value="<?php echo esc_attr( $type_key ); ?>"><?php echo esc_html( $definition['name'] ?? ucfirst( $type_key ) ); ?></option>
+						<?php endforeach; ?>
+					</select>
+				</p>
+				<p>
+					<label for="connector-label"><?php esc_html_e( 'Display name', 'woocommerce-es' ); ?></label><br/>
+					<input type="text" id="connector-label" name="connect_ecommerce[new_connector][label]" class="regular-text"/>
+				</p>
+				<p>
+					<label for="connector-custom-id"><?php esc_html_e( 'Custom identifier (optional)', 'woocommerce-es' ); ?></label><br/>
+					<input type="text" id="connector-custom-id" name="connect_ecommerce[new_connector][id]" class="regular-text" placeholder="<?php esc_attr_e( 'Auto generated when empty', 'woocommerce-es' ); ?>"/>
+				</p>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Returns a translated workflow label.
+	 *
+	 * @param string $workflow Workflow key.
+	 * @return string
+	 */
+	private function get_workflow_label( $workflow ) {
+		switch ( $workflow ) {
+			case 'orders':
+				return __( 'Orders', 'woocommerce-es' );
+			case 'products':
+				return __( 'Products', 'woocommerce-es' );
+			default:
+				return ucfirst( $workflow );
+		}
+	}
+
+	/**
+	 * Sanitize connector metadata and handle add/remove operations.
+	 *
+	 * @param array $input  Raw input.
+	 * @param array $stored Stored settings.
+	 * @return array
+	 */
+	private function sanitize_connector_manager_inputs( array $input, array $stored ) {
+		$meta = $stored['connectors_meta'] ?? array();
+
+		if ( ! empty( $input['remove_connectors'] ) && is_array( $input['remove_connectors'] ) ) {
+			foreach ( $input['remove_connectors'] as $remove_id ) {
+				$remove_id = sanitize_key( $remove_id );
+				if ( empty( $remove_id ) ) {
+					continue;
+				}
+				unset( $meta[ $remove_id ], $stored[ $remove_id ] );
+				if ( isset( $stored['connector'] ) && $stored['connector'] === $remove_id ) {
+					$stored['connector'] = '';
+				}
+			}
+		}
+
+		if ( isset( $input['connectors_meta'] ) && is_array( $input['connectors_meta'] ) ) {
+			foreach ( $input['connectors_meta'] as $connector_id => $meta_input ) {
+				$connector_id = sanitize_key( $connector_id );
+				if ( empty( $connector_id ) || ! isset( $meta[ $connector_id ] ) ) {
+					continue;
+				}
+
+				$meta[ $connector_id ]['label']  = sanitize_text_field( $meta_input['label'] ?? $meta[ $connector_id ]['label'] );
+				$meta[ $connector_id ]['status'] = isset( $meta_input['status'] ) && 'inactive' === $meta_input['status'] ? 'inactive' : 'active';
+
+				foreach ( HELPER::get_workflows() as $workflow ) {
+					$value = isset( $meta_input['workflows'][ $workflow ] ) && 'yes' === $meta_input['workflows'][ $workflow ] ? 'yes' : 'no';
+					$meta[ $connector_id ]['workflows'][ $workflow ] = $value;
+				}
+			}
+		}
+
+		if ( ! empty( $input['new_connector'] ) && is_array( $input['new_connector'] ) ) {
+			$type  = sanitize_key( $input['new_connector']['type'] ?? '' );
+			$label = sanitize_text_field( $input['new_connector']['label'] ?? '' );
+			$custom_id = sanitize_key( $input['new_connector']['id'] ?? '' );
+
+			if ( $type && isset( $this->connector_definitions[ $type ] ) ) {
+				$new_id = $custom_id ?: sanitize_key( $type . '-' . $label );
+				if ( empty( $new_id ) || isset( $meta[ $new_id ] ) ) {
+					$new_id = sanitize_key( $type . '-' . uniqid() );
+				}
+
+				$meta[ $new_id ] = array(
+					'type'      => $type,
+					'label'     => $label ?: ( $this->connector_definitions[ $type ]['name'] ?? ucfirst( $type ) ),
+					'status'    => 'active',
+					'workflows' => array(),
+				);
+
+				foreach ( HELPER::get_workflows() as $workflow ) {
+					$meta[ $new_id ]['workflows'][ $workflow ] = 'yes';
+				}
+
+				$stored[ $new_id ] = isset( $stored[ $new_id ] ) ? $stored[ $new_id ] : array();
+				$stored['connector'] = $new_id;
+			}
+		}
+
+		$stored['connectors_meta'] = $meta;
+
+		if ( ! empty( $stored['connector'] ) && ! isset( $meta[ $stored['connector'] ] ) ) {
+			$stored['connector'] = '';
+		}
+		if ( empty( $stored['connector'] ) && ! empty( $meta ) ) {
+			$stored['connector'] = array_key_first( $meta );
+		}
+
+		return $stored;
+	}
+
+	/**
+	 * Sanitize connector-specific settings.
+	 *
+	 * @param array $input    Connector input.
+	 * @param array $existing Existing values.
+	 * @return array
+	 */
+	private function sanitize_connector_settings_values( array $input, array $existing ) {
+		$defaults = $this->get_connector_default_settings();
+		$sanitized = $existing;
+
+		foreach ( $defaults as $key => $default_value ) {
+			if ( isset( $input[ $key ] ) ) {
+				$sanitized[ $key ] = sanitize_text_field( $input[ $key ] );
+			} elseif ( ! isset( $sanitized[ $key ] ) ) {
+				$sanitized[ $key ] = $default_value;
+			}
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Default settings for a connector block.
+	 *
+	 * @return array
+	 */
+	private function get_connector_default_settings() {
+		return array(
+			'api'                => '',
+			'idcentre'           => '',
+			'url'                => '',
+			'username'           => '',
+			'password'           => '',
+			'company'            => '',
+			'company_id'         => '',
+			'domain'             => '',
+			'dbname'             => '',
+			'stock'              => 'no',
+			'prodst'             => 'draft',
+			'virtual'            => 'no',
+			'backorders'         => 'no',
+			'catsep'             => '',
+			'catattr'            => '',
+			'filter'             => '',
+			'pricesale_discount' => '',
+			'filter_sku'         => '',
+			'tax_option'         => 'no',
+			'rates'              => 'default',
+			'catnp'              => 'yes',
+			'doctype'            => 'invoice',
+			'cleanchars'         => '',
+			'approve_document'   => 'no',
+			'series'             => '',
+			'freeorder'          => 'no',
+			'ecstatus'           => 'all',
+			'order_tags'         => '',
+			'design_id'          => '',
+			'sync'               => 'no',
+			'sync_num'           => 5,
+			'sync_email'         => 'yes',
+			'prod_weight_eq'     => '',
+			'debug_log'          => 'no',
+		);
 	}
 
 	/**

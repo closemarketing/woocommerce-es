@@ -36,7 +36,7 @@ class Base {
 	 *
 	 * @var array
 	 */
-	private $options = array();
+	private $options  = array();
 
 	/**
 	 * Construct of class
@@ -44,11 +44,12 @@ class Base {
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options = array() ) {
-		$this->options = $options;
-		$connector     = HELPER::get_connector( $options );
+		$this->options        = $options;
+		$connectors_data      = HELPER::get_connectors( $options );
+		$connector            = HELPER::get_connector( $options );
 
 		if ( is_admin() ) {
-			new Settings( $connector );
+			new Settings( $connectors_data );
 			new Import_Products( $connector );
 			new Widget_Product( $connector );
 			new Widget_Order( $connector );
@@ -70,4 +71,5 @@ class Base {
 	public function get_options() {
 		return $this->options;
 	}
+
 }

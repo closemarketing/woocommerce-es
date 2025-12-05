@@ -21,6 +21,13 @@ defined( 'ABSPATH' ) || exit;
  */
 class HELPER {
 	/**
+	 * Default workflows supported by the plugin.
+	 *
+	 * @var array
+	 */
+	private static $default_workflows = array( 'products', 'orders' );
+
+	/**
 	 * Emails products with errors
 	 *
 	 * @param array  $product_errors Array of errors.
@@ -216,51 +223,220 @@ class HELPER {
 	}
 
 	/**
-	 * Get connector of plugin.
+	 * Retrieves the list of workflows supported by connectors.
+	 *
+	 * @return array
+	 */
+	public static function get_workflows() {
+		return self::$default_workflows;
+	}
+
+	/**
+	 * Get connector of plugin (legacy helper).
 	 *
 	 * @param array $options Options of plugin.
 	 * @return array
 	 */
 	public static function get_connector( $options ) {
-		$connector                 = array();
-		$connector['settings_all'] = get_option( 'connect_ecommerce' );
-		$connector['connector']    = isset( $connector['settings_all']['connector'] ) ? $connector['settings_all']['connector'] : '';
-		$connector['settings']     = $connector['settings_all'][ $connector['connector'] ] ?? array();
-		$connector['all_options']  = $options;
+		$connectors_data = self::get_connectors( $options );
+		$connectors      = $connectors_data['items'];
 
-		$connector['settings']['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
-
-		// Initialize payment method mappings.
-		$connector['settings']['payment_methods']   = array();
-		$connector['settings']['treasury_accounts'] = array();
-
-		if ( ! empty( $connector['connector'] ) ) {
-			// Get payment method mappings.
-			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
-			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
-			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
-
-			if ( ! isset( $options[ $connector['connector'] ] ) ) {
-				return $connector;
-			}
-
-			$connector['options'] = $options[ $connector['connector'] ];
-			if ( empty( $connector['options']['name'] ) ) {
-				$connector['settings_all']['connector'] = '';
-				update_option( 'connect_ecommerce', $connector['settings_all'] );
-				return $connector;
-			}
-			$apiname = 'Connect_Ecommerce_' . $connector['options']['name'];
-
-			if ( ! class_exists( $apiname ) ) {
-				return $connector;
-			}
-			$connector['connapi_erp']        = new $apiname( $options );
-			$connector['is_mergevars']       = method_exists( $connector['connapi_erp'], 'get_product_attributes' ) ? true : false;
-			$connector['is_disabled_orders'] = isset( $connector['options']['disable_modules'] ) && in_array( 'order', $connector['options']['disable_modules'], true ) ? true : false;
-			$connector['is_disabled_ai']     = isset( $connector['options']['disable_modules'] ) && in_array( 'ai', $connector['options']['disable_modules'], true ) ? true : false;
+		if ( empty( $connectors ) ) {
+			return array(
+				'id'           => '',
+				'connector'    => '',
+				'settings_all' => $connectors_data['settings_all'],
+				'settings'     => array(
+					'prod_mergevars'    => get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array(),
+					'payment_methods'   => array(),
+					'treasury_accounts' => array(),
+				),
+				'all_options'  => $options,
+			);
 		}
 
+		$active_id = $connectors_data['active'];
+		if ( empty( $active_id ) || ! isset( $connectors[ $active_id ] ) ) {
+			$active_id = array_key_first( $connectors );
+		}
+
+		return $connectors[ $active_id ];
+	}
+
+	/**
+	 * Returns every connector context configured in the site.
+	 *
+	 * @param array $options Connector definitions.
+	 * @return array
+	 */
+	public static function get_connectors( $options ) {
+		$settings_all = get_option( 'connect_ecommerce', array() );
+		$normalized   = self::normalize_connectors_structure( $settings_all, $options );
+
+		if ( $normalized['dirty'] ) {
+			update_option( 'connect_ecommerce', $normalized['settings_all'] );
+		}
+
+		$connectors    = array();
+		$meta          = $normalized['connectors_meta'];
+		$active        = $normalized['active_connector'];
+		$prod_mergevar = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
+
+		foreach ( $meta as $connector_id => $connector_meta ) {
+			$connectors[ $connector_id ] = self::build_connector_context(
+				$connector_id,
+				$connector_meta,
+				$options,
+				$normalized['settings_all'],
+				$prod_mergevar
+			);
+		}
+
+		return array(
+			'items'        => $connectors,
+			'active'       => $active,
+			'settings_all' => $normalized['settings_all'],
+			'meta'         => $meta,
+		);
+	}
+
+	/**
+	 * Normalize connectors setup to the new structure.
+	 *
+	 * @param array $settings_all Raw option value.
+	 * @param array $options Connector definitions.
+	 * @return array
+	 */
+	private static function normalize_connectors_structure( $settings_all, $options ) {
+		$settings_all   = is_array( $settings_all ) ? $settings_all : array();
+		$connectors_meta = $settings_all['connectors_meta'] ?? array();
+		$dirty           = false;
+
+		if ( empty( $connectors_meta ) ) {
+			$legacy_connector = isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
+			if ( $legacy_connector && isset( $settings_all[ $legacy_connector ] ) ) {
+				$connectors_meta[ $legacy_connector ] = array(
+					'type'      => $legacy_connector,
+					'label'     => $options[ $legacy_connector ]['name'] ?? ucfirst( $legacy_connector ),
+					'workflows' => array(
+						'products' => 'yes',
+						'orders'   => 'yes',
+					),
+					'status'    => 'active',
+				);
+				$dirty = true;
+			}
+		}
+
+		// Ensure every connector meta entry has defaults.
+		foreach ( $connectors_meta as $connector_id => $meta ) {
+			$new_meta = array(
+				'type'      => $meta['type'] ?? $connector_id,
+				'label'     => $meta['label'] ?? ( $options[ $meta['type'] ?? $connector_id ]['name'] ?? $connector_id ),
+				'workflows' => $meta['workflows'] ?? array(),
+				'status'    => $meta['status'] ?? 'active',
+			);
+
+			foreach ( self::$default_workflows as $workflow ) {
+				if ( ! isset( $new_meta['workflows'][ $workflow ] ) ) {
+					$new_meta['workflows'][ $workflow ] = 'yes';
+				}
+			}
+
+			if ( $new_meta !== $meta ) {
+				$connectors_meta[ $connector_id ] = $new_meta;
+				$dirty                            = true;
+			}
+		}
+
+		$settings_all['connectors_meta'] = $connectors_meta;
+
+		if ( empty( $settings_all['connector'] ) && ! empty( $connectors_meta ) ) {
+			$settings_all['connector'] = array_key_first( $connectors_meta );
+			$dirty                     = true;
+		}
+
+		return array(
+			'settings_all'    => $settings_all,
+			'connectors_meta' => $connectors_meta,
+			'active_connector'=> $settings_all['connector'] ?? '',
+			'dirty'           => $dirty,
+		);
+	}
+
+	/**
+	 * Build connector context consumed across the plugin.
+	 *
+	 * @param string $connector_id Connector identifier.
+	 * @param array  $meta         Metadata for connector.
+	 * @param array  $options      Connector definitions.
+	 * @param array  $settings_all Raw settings option.
+	 * @param array  $prod_mergevar Merge vars settings.
+	 * @return array
+	 */
+	private static function build_connector_context( $connector_id, $meta, $options, $settings_all, $prod_mergevar ) {
+		$connector_type   = $meta['type'] ?? $connector_id;
+		$connector_options = $options[ $connector_type ] ?? array();
+		$connector         = array(
+			'id'            => $connector_id,
+			'connector'     => $connector_type,
+			'meta'          => $meta,
+			'settings_all'  => $settings_all,
+			'settings'      => $settings_all[ $connector_id ] ?? array(),
+			'all_options'   => $options,
+		);
+
+		$connector['settings']['prod_mergevars']    = $prod_mergevar;
+		$connector['settings']['payment_methods']   = array();
+		$connector['settings']['treasury_accounts'] = array();
+		$connector['is_disabled_orders']            = false;
+		$connector['is_disabled_ai']                = false;
+		$connector['is_mergevars']                  = false;
+
+		$payment_mappings = PAYMENTS::get_payment_method_mappings( $connector_id, $connector_type );
+		$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+		$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+
+		if ( empty( $connector_options ) || empty( $connector_options['name'] ) ) {
+			$connector['actions'] = array(
+				'sync_products' => self::get_connector_action_name( 'connect_ecommerce_sync_products', $connector_id ),
+				'sync_orders'   => self::get_connector_action_name( 'connect_ecommerce_sync_orders', $connector_id ),
+				'single_order'  => self::get_connector_action_name( 'sync_erp_order', $connector_id ),
+			);
+			return $connector;
+		}
+
+		$connector['options']          = $connector_options;
+		$apiname                       = 'Connect_Ecommerce_' . $connector_options['name'];
+		$connector['is_disabled_orders'] = isset( $connector_options['disable_modules'] ) && in_array( 'order', $connector_options['disable_modules'], true );
+		$connector['is_disabled_ai']     = isset( $connector_options['disable_modules'] ) && in_array( 'ai', $connector_options['disable_modules'], true );
+
+		if ( class_exists( $apiname ) ) {
+			$connector['connapi_erp']  = new $apiname( $options, $connector_id );
+			$connector['is_mergevars'] = method_exists( $connector['connapi_erp'], 'get_product_attributes' );
+		}
+
+		$connector['actions'] = array(
+			'sync_products' => self::get_connector_action_name( 'connect_ecommerce_sync_products', $connector_id ),
+			'sync_orders'   => self::get_connector_action_name( 'connect_ecommerce_sync_orders', $connector_id ),
+			'single_order'  => self::get_connector_action_name( 'sync_erp_order', $connector_id ),
+		);
+
 		return $connector;
+	}
+
+	/**
+	 * Generates a sanitized action name for a connector.
+	 *
+	 * @param string $base_action Base action name.
+	 * @param string $connector_id Connector identifier.
+	 * @return string
+	 */
+	public static function get_connector_action_name( $base_action, $connector_id ) {
+		$connector_id = sanitize_key( $connector_id );
+		if ( empty( $connector_id ) ) {
+			return sanitize_key( $base_action );
+		}
+		return sanitize_key( $base_action . '_' . $connector_id );
 	}
 }
