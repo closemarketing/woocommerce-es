@@ -95,7 +95,6 @@ class Checkout {
 			VAT::init_ajax_hooks();
 			
 			// Apply zero-rate tax class when VAT exempt.
-			add_filter( 'woocommerce_product_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
 			add_filter( 'woocommerce_product_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
 			add_filter( 'woocommerce_product_variation_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
 			
