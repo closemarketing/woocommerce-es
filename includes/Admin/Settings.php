@@ -604,18 +604,27 @@ class Settings {
 				);
 			}
 
-			// Company Select.
-			if ( in_array( 'company_id', $settings_fields, true ) ) {
-				add_settings_field(
-					'wcpimh_company_select',
-					__( 'Company', 'woocommerce-es' ),
-					array( $this, 'company_select_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-				);
-			}
+		// Company Select.
+		if ( in_array( 'company_id', $settings_fields, true ) ) {
+			add_settings_field(
+				'wcpimh_company_select',
+				__( 'Company', 'woocommerce-es' ),
+				array( $this, 'company_select_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+		}
 
-			if ( $this->options['product_option_stock'] ) {
+		// API Connection Status.
+		add_settings_field(
+			'wcpimh_api_status',
+			__( 'Connection Status', 'woocommerce-es' ),
+			array( $this, 'api_status_callback' ),
+			'connect_ecommerce_admin',
+			'connect_woocommerce_setting_section'
+		);
+
+		if ( $this->options['product_option_stock'] ) {
 				add_settings_field(
 					'wcpimh_stock',
 					__( 'Import stock?', 'woocommerce-es' ),
@@ -1763,6 +1772,37 @@ class Settings {
 		echo '<label for="connwoo_debug_log_checkbox" class="description">';
 		esc_html_e( 'Activates debug mode to save logs.', 'woocommerce-es' );
 		echo '</label>';
+	}
+
+	/**
+	 * API Status callback
+	 *
+	 * @return void
+	 */
+	public function api_status_callback() {
+		if ( empty( $this->connapi_erp ) ) {
+			echo '<span style="color: #666;">' . esc_html__( 'No connector configured.', 'woocommerce-es' ) . '</span>';
+			return;
+		}
+
+		// Test the API connection using check_can_sync which uses login internally.
+		$login_api = $this->connapi_erp->check_can_sync();
+
+		if ( is_array( $login_api ) ) {
+			$message  = $login_api['message'] ?? __( 'Connection successful', 'woocommerce-es' );
+			$can_sync = 'ok' === ( $login_api['status'] ?? '' ) ? true : false;
+
+			if ( $can_sync ) {
+				echo '<span style="color: green; font-weight: bold;">✓ ' . esc_html( $message ) . '</span>';
+			} else {
+				$message = $login_api['message'] ?? __( 'Connection failed. Please check your credentials.', 'woocommerce-es' );
+				echo '<span style="color: red; font-weight: bold;">✗ ' . esc_html( $message ) . '</span>';
+			}
+		} elseif ( true === $login_api ) {
+			echo '<span style="color: green; font-weight: bold;">✓ ' . esc_html__( 'Connection successful! Credentials are valid.', 'woocommerce-es' ) . '</span>';
+		} else {
+			echo '<span style="color: red; font-weight: bold;">✗ ' . esc_html__( 'Connection failed. Please check your credentials.', 'woocommerce-es' ) . '</span>';
+		}
 	}
 
 	/**
