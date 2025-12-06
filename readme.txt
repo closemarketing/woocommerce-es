@@ -125,6 +125,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 = n.e.x.t. =
 * Fixed: Error getting companies from API.
+* Added: Show API connection status in settings.
 
 = 3.3.0 =
 * Enhancement: Added support to ERP Tax Types.
