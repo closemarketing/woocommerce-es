@@ -1133,17 +1133,52 @@ class Settings {
 					</div>
 					<?php
 				} else {
+					$is_orders = 'sync_orders' === $type;
+					$item_type = $is_orders ? __( 'Orders', 'woocommerce-es' ) : __( 'Products', 'woocommerce-es' );
 				?>
 					<h2>
 						<?php
 						echo sprintf(
-							esc_html__( 'Import Products from %s', 'woocommerce-es' ),
+							/* translators: %1$s: Item type (Products/Orders), %2$s: Connector name */
+							esc_html__( 'Import %1$s from %2$s', 'woocommerce-es' ),
+							esc_html( $item_type ),
 							esc_html( $this->options['name'] )
 						);
 						?>
 					</h2>
-					<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'woocommerce-es' ); ?>
+					<p>
+						<?php
+						echo sprintf(
+							/* translators: %s: Item type (products/orders) */
+							esc_html__( 'After you fillup the API settings, use the button below to import the %s. The importing process may take a while and you need to keep this page open to complete it.', 'woocommerce-es' ),
+							esc_html( strtolower( $item_type ) )
+						);
+						?>
 					</p>
+					<?php if ( ! empty( $this->connectors_meta ) && count( $this->connectors_meta ) > 1 ) : ?>
+						<p>
+							<label for="connector-select"><?php esc_html_e( 'Select connector:', 'woocommerce-es' ); ?></label>
+							<select name="connwoo-connector-select" id="connector-select">
+								<?php foreach ( $this->connectors_meta as $connector_id => $meta ) : ?>
+									<?php if ( 'active' === ( $meta['status'] ?? 'active' ) ) : ?>
+										<?php
+										$connector_label = $meta['label'] ?? $connector_id;
+										$connector_type  = $meta['type'] ?? $connector_id;
+										$connector_name  = $this->connector_definitions[ $connector_type ]['name'] ?? ucfirst( $connector_type );
+										$display_text    = sprintf(
+											'%s (%s)',
+											$connector_label,
+											$connector_name
+										);
+										?>
+										<option value="<?php echo esc_attr( $connector_id ); ?>" <?php selected( $this->connector, $connector_id ); ?>>
+											<?php echo esc_html( $display_text ); ?>
+										</option>
+									<?php endif; ?>
+								<?php endforeach; ?>
+							</select>
+						</p>
+					<?php endif; ?>
 					<br/>
 					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" ><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
 					<?php if ( ! $this->is_disabled_ai ) { ?>
@@ -2383,29 +2418,34 @@ class Settings {
 				</div>
 			<?php endif; ?>
 			<hr/>
-			<h4><?php esc_html_e( 'Add connector', 'woocommerce-es' ); ?></h4>
 			<?php if ( empty( $this->connector_definitions ) ) : ?>
+				<h4><?php esc_html_e( 'Add connector', 'woocommerce-es' ); ?></h4>
 				<div class="notice notice-warning inline">
 					<p><?php esc_html_e( 'No connector types are available in this installation.', 'woocommerce-es' ); ?></p>
 				</div>
 			<?php else : ?>
-				<p>
-					<label for="connector-type"><?php esc_html_e( 'Connector type', 'woocommerce-es' ); ?></label><br/>
-					<select id="connector-type" name="connect_ecommerce[new_connector][type]">
-						<option value=""><?php esc_html_e( 'Select…', 'woocommerce-es' ); ?></option>
-						<?php foreach ( $this->connector_definitions as $type_key => $definition ) : ?>
-							<option value="<?php echo esc_attr( $type_key ); ?>"><?php echo esc_html( $definition['name'] ?? ucfirst( $type_key ) ); ?></option>
-						<?php endforeach; ?>
-					</select>
-				</p>
-				<p>
-					<label for="connector-label"><?php esc_html_e( 'Display name', 'woocommerce-es' ); ?></label><br/>
-					<input type="text" id="connector-label" name="connect_ecommerce[new_connector][label]" class="regular-text"/>
-				</p>
-				<p>
-					<label for="connector-custom-id"><?php esc_html_e( 'Custom identifier (optional)', 'woocommerce-es' ); ?></label><br/>
-					<input type="text" id="connector-custom-id" name="connect_ecommerce[new_connector][id]" class="regular-text" placeholder="<?php esc_attr_e( 'Auto generated when empty', 'woocommerce-es' ); ?>"/>
-				</p>
+				<div class="add-connector-wrapper">
+					<h4 class="add-connector-title"><?php esc_html_e( 'Add connector', 'woocommerce-es' ); ?></h4>
+					<div class="add-connector-row">
+						<div class="add-connector-field">
+							<label for="connector-type"><?php esc_html_e( 'Connector type', 'woocommerce-es' ); ?></label>
+							<select id="connector-type" name="connect_ecommerce[new_connector][type]">
+								<option value=""><?php esc_html_e( 'Select…', 'woocommerce-es' ); ?></option>
+								<?php foreach ( $this->connector_definitions as $type_key => $definition ) : ?>
+									<option value="<?php echo esc_attr( $type_key ); ?>"><?php echo esc_html( $definition['name'] ?? ucfirst( $type_key ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						<div class="add-connector-field">
+							<label for="connector-label"><?php esc_html_e( 'Display name', 'woocommerce-es' ); ?></label>
+							<input type="text" id="connector-label" name="connect_ecommerce[new_connector][label]" class="regular-text"/>
+						</div>
+						<div class="add-connector-field">
+							<label for="connector-custom-id"><?php esc_html_e( 'Custom identifier (optional)', 'woocommerce-es' ); ?></label>
+							<input type="text" id="connector-custom-id" name="connect_ecommerce[new_connector][id]" class="regular-text" placeholder="<?php esc_attr_e( 'Auto generated when empty', 'woocommerce-es' ); ?>"/>
+						</div>
+					</div>
+				</div>
 			<?php endif; ?>
 		</div>
 		<?php

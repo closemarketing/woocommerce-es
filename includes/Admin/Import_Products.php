@@ -175,11 +175,33 @@ class Import_Products {
 		$res_message    = '';
 		$generate_ai    = ! empty( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
 		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
-		$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
+
+		// Get connector from request or use default.
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+		if ( ! empty( $connector_id ) ) {
+			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
+			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
+				$connapi_erp    = $connector_data['connapi_erp'];
+				$settings       = $connector_data['settings'];
+				$options        = $connector_data['options'];
+				$api_pagination = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
+			} else {
+				$connapi_erp    = $this->connapi_erp;
+				$settings       = $this->settings;
+				$options        = $this->options;
+				$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
+			}
+		} else {
+			$connapi_erp    = $this->connapi_erp;
+			$settings       = $this->settings;
+			$options        = $this->options;
+			$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
+		}
 
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {
-			$result_api = $this->connapi_erp->get_products( $product_erp_id );
+			$result_api = $connapi_erp->get_products( $product_erp_id );
 			if ( isset( $result_api['status'] ) && 'error' === $result_api['status'] ) {
 				wp_send_json_error( array( 'message' => __( 'Error getting product', 'woocommerce-es' ) . ': ' . $result_api['message'] ) );
 			}
@@ -187,8 +209,8 @@ class Import_Products {
 				wp_send_json_error( array( 'message' => 'No products' ) );
 			}
 			$api_products = array( -1 => $result_api );
-		} elseif ( ! empty( $product_sku ) && method_exists( $this->connapi_erp, 'get_product_by_sku' ) ) {
-			$result_api = $this->connapi_erp->get_product_by_sku( $product_sku );
+		} elseif ( ! empty( $product_sku ) && method_exists( $connapi_erp, 'get_product_by_sku' ) ) {
+			$result_api = $connapi_erp->get_product_by_sku( $product_sku );
 			if ( empty( $result_api ) ) {
 				wp_send_json_error( array( 'message' => 'No products' ) );
 			}
@@ -206,9 +228,9 @@ class Import_Products {
 		}
 
 		if ( 0 === $sync_loop || ( $api_pagination && 0 === $loop_page ) ) {
-			$api_products                     = $this->connapi_erp->get_products( null, $sync_loop );
+			$api_products                     = $connapi_erp->get_products( null, $sync_loop );
 			$_SESSION['conecom_api_products'] = HELPER::sanitize_array_recursive( $api_products );
-			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
+			$res_message                     .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
 		} elseif ( 0 < $sync_loop ) {
 			$api_products = isset( $_SESSION['conecom_api_products'] ) ? HELPER::sanitize_array_recursive( $_SESSION['conecom_api_products'] ) : array();
 		}
@@ -225,7 +247,7 @@ class Import_Products {
 		$item                     = $api_products[ $sync_loop - ( $api_pagination * $page ) ];
 		$this->msg_error_products = array();
 
-		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, $generate_ai, $product_id );
+		$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $generate_ai, $product_id );
 		$post_id     = $result_sync['post_id'] ?? 0;
 		if ( 'error' === $result_sync['status'] ) {
 			$this->error_product_import[] = array(
@@ -277,7 +299,7 @@ class Import_Products {
 		);
 		if ( $finish && 0 < $sync_loop ) {
 			// Email errors.
-			HELPER::send_product_errors( $this->error_product_import, $this->options['slug'] );
+			HELPER::send_product_errors( $this->error_product_import, $options['slug'] );
 		}
 		wp_send_json_success( $args );
 	}

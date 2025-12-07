@@ -2,6 +2,7 @@ function syncManualItems( element, action, loop = 0 ) {
 	element.classList.add('disabled');
 	element.innerHTML = ConEcom_ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
 	const productAI = document.querySelector('select[name="connwoo-sync-product-ai"]')?.value || '';
+	const connectorId = document.querySelector('select[name="connwoo-connector-select"]')?.value || '';
 
 	const isOdd = number => number % 2 !== 0;
 	class_task = isOdd(loop) ? 'odd' : 'even';
@@ -14,7 +15,7 @@ function syncManualItems( element, action, loop = 0 ) {
 			'Content-Type': 'application/x-www-form-urlencoded',
 			'Cache-Control': 'no-cache',
 		},
-		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI,
+		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI + '&connector_id=' + connectorId,
 	})
 	.then( (resp) => resp.json() )
 	.then( function(results) {

@@ -264,6 +264,24 @@ class HELPER {
 	}
 
 	/**
+	 * Returns a specific connector by ID.
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @param array  $options Connector definitions.
+	 * @return array|null Connector data or null if not found.
+	 */
+	public static function get_connector_by_id( $connector_id, $options ) {
+		$connectors_data = self::get_connectors( $options );
+		$connectors      = $connectors_data['items'];
+
+		if ( ! isset( $connectors[ $connector_id ] ) ) {
+			return null;
+		}
+
+		return $connectors[ $connector_id ];
+	}
+
+	/**
 	 * Returns every connector context configured in the site.
 	 *
 	 * @param array $options Connector definitions.
