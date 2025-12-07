@@ -13,33 +13,19 @@ defined( 'ABSPATH' ) || exit;
 /**
  * LoadsAPI.
  *
- * API Holded.
+ * API Clientify.
  *
  * @since 1.0
  */
-class Connect_Ecommerce_Clientify {
-	/**
-	 * Options of plugin.
-	 *
-	 * @var array
-	 */
-	private $settings;
-
-	/**
-	 * Options of plugin.
-	 *
-	 * @var array
-	 */
-	private $options;
-
+class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 	/**
 	 * Constructor.
 	 *
-	 * @param array $options Options of plugin.
+	 * @param array  $options Options of plugin.
+	 * @param string $connector_id Connector identifier.
 	 */
-	public function __construct( $options ) {
-		$this->options  = $options['clientify'];
-		$this->settings = get_option( 'connect_ecommerce' )['clientify'] ?? array();
+	public function __construct( $options, $connector_id = '' ) {
+		parent::__construct( $options, $connector_id );
 
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'clientify_cookie_checkout_field' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
@@ -51,7 +37,7 @@ class Connect_Ecommerce_Clientify {
 	 *
 	 * @return boolean
 	 */
-	public function check_can_sync() {
+	public function check_can_sync( $settings = array() ) {
 		if ( ! isset( $this->settings['api'] ) ) {
 			return false;
 		}

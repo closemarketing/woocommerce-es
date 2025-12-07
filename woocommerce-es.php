@@ -92,6 +92,7 @@ add_action( 'init', 'conecom_loads' );
  */
 function conecom_loads() {
 	require_once CONECOM_PLUGIN_PATH . 'includes/Plugin_Main.php';
+	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/Abstract_Connector_API.php';
 	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-clientify.php';
 
 	$conecom_options = conecom_get_options();

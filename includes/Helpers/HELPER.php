@@ -255,7 +255,23 @@ class HELPER {
 			if ( ! class_exists( $apiname ) ) {
 				return $connector;
 			}
-			$connector['connapi_erp']        = new $apiname( $options );
+
+			// Instantiate the connector API class.
+			$connector['connapi_erp'] = new $apiname( $options, $connector['connector'] );
+
+			// Verify that the connector extends CONECOM_Abstract_Connector_API.
+			if ( class_exists( 'CONECOM_Abstract_Connector_API' ) && ! $connector['connapi_erp'] instanceof CONECOM_Abstract_Connector_API ) {
+				$logger = wc_get_logger();
+				$logger->warning(
+					sprintf(
+						/* translators: %s: API class name */
+						__( 'Connector class %s does not extend CONECOM_Abstract_Connector_API. This may cause compatibility issues.', 'woocommerce-es' ),
+						$apiname
+					),
+					array( 'source' => 'woocommerce-es-connectors' )
+				);
+			}
+
 			$connector['is_mergevars']       = method_exists( $connector['connapi_erp'], 'get_product_attributes' ) ? true : false;
 			$connector['is_disabled_orders'] = isset( $connector['options']['disable_modules'] ) && in_array( 'order', $connector['options']['disable_modules'], true ) ? true : false;
 			$connector['is_disabled_ai']     = isset( $connector['options']['disable_modules'] ) && in_array( 'ai', $connector['options']['disable_modules'], true ) ? true : false;
