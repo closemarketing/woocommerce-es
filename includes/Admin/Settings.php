@@ -264,6 +264,20 @@ class Settings {
 						<?php
 					}
 
+					// Support for connect_ecommerce_settings_tabs (custom tabs).
+					$custom_tabs = apply_filters( 'connect_ecommerce_settings_tabs', array() );
+					if ( ! empty( $custom_tabs ) ) {
+						foreach ( $custom_tabs as $custom_tab ) {
+							$tab_slug  = isset( $custom_tab['tab'] ) ? $custom_tab['tab'] : '';
+							$tab_label = isset( $custom_tab['label'] ) ? $custom_tab['label'] : '';
+							if ( ! empty( $tab_slug ) && ! empty( $tab_label ) ) {
+								?>
+								<a href="?page=connect_ecommerce&tab=<?php echo esc_attr( $tab_slug ); ?>" class="nav-tab <?php echo esc_attr( $tab_slug ) === $active_tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $tab_label ); ?></a>
+								<?php
+							}
+						}
+					}
+
 					do_action( 'connect_ecommerce_settings_tabs', $active_tab );
 					?>
 				</h2>
@@ -478,6 +492,19 @@ class Settings {
 				// Subscriptions Tab (kept separate as it's not part of the two main tabs).
 				if ( 'subscriptions' === $active_tab ) {
 					$this->page_get_subscriptions();
+				}
+
+				// Render content of customized tabs.
+				$conecom_tabs = apply_filters( 'connect_ecommerce_settings_tabs', array() );
+				if ( ! empty( $conecom_tabs ) ) {
+					foreach ( $conecom_tabs as $conecom_tab ) {
+						$tab_slug    = isset( $conecom_tab['tab'] ) ? $conecom_tab['tab'] : '';
+						$action_hook = isset( $conecom_tab['action'] ) ? $conecom_tab['action'] : '';
+
+						if ( $tab_slug === $active_tab && ! empty( $action_hook ) ) {
+							do_action( $action_hook );
+						}
+					}
 				}
 
 				do_action( 'connect_ecommerce_settings_tabs_content', $active_tab, $active_subtab );
