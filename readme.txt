@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.0
-Version: 3.3.0
+Stable tag: 3.3.1
+Version: 3.3.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -123,9 +123,10 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
-= n.e.x.t. =
+= 3.3.1 =
 * Fixed: Error getting companies from API.
 * Added: Show API connection status in settings.
+* Added: Support to custom tabs in settings.
 
 = 3.3.0 =
 * Enhancement: Added support to ERP Tax Types.
