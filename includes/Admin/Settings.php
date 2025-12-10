@@ -1394,11 +1394,18 @@ class Settings {
 			return;
 		}
 		$result_companies = $this->connapi_erp->get_companies();
-		$saved_attr       = isset( $this->settings['company_id'] ) ? $this->settings['company_id'] : '';
+		if ( empty( $result_companies ) || 'error' === $result_companies['status'] || empty( $result_companies['data'] ) ) {
+			$message = ! empty( $result_companies['message'] ) ? $result_companies['message'] : '';
+			$message = empty( $message ) && ! empty( $result_companies['data'] ) ? $result_companies['data'] : $message;
+			$message = empty( $message ) ? esc_html__( 'Error getting companies', 'woocommerce-es' ) : $message;
+			echo '<p>' . esc_html__( 'Error', 'woocommerce-es' ) . ': ' . esc_html( $message ) . '</p>';
+			return;
+		}
+		$saved_attr = isset( $this->settings['company_id'] ) ? $this->settings['company_id'] : '';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][company_id]" id="wcpimh_company_id">
 			<?php
-			foreach ( $result_companies as $value => $label ) {
+			foreach ( $result_companies['data'] as $value => $label ) {
 				echo '<option value="' . esc_html( $value ) . '" ';
 				selected( $value, $saved_attr );
 				echo '>' . esc_html( $label ) . '</option>';
