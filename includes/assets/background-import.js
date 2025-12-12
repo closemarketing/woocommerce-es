@@ -16,6 +16,7 @@
 		pollInterval: null,
 		logOffset: 0,
 		isPolling: false,
+		isInitialLoad: true,
 
 		/**
 		 * Initialize the background import handler
@@ -67,14 +68,32 @@
 		 * Check if there's an existing active process
 		 */
 		checkExistingProcess: function() {
+			this.isInitialLoad = true;
+			this.logOffset = 0; // Start from beginning to load all logs.
+			
 			this.getStatus(null, (data) => {
-				if (data.status && ['running', 'paused'].includes(data.status)) {
+				if (data.status && ['running', 'paused', 'completed', 'stopped'].includes(data.status)) {
 					this.processId = data.process_id;
+					
+					// Load all existing logs on initial load.
+					if (data.logs && data.logs.length > 0) {
+						this.clearLogs();
+						this.updateLogs(data.logs);
+					}
+					
 					this.logOffset = data.logs_offset || 0;
 					this.updateUI(data);
 					
+					// Only start polling if running.
 					if (data.status === 'running') {
+						this.isInitialLoad = false;
 						this.startPolling();
+					} else if (data.status === 'completed') {
+						// Show completion message.
+						this.addLog('Import completed. You can start a new import.', 'info');
+					} else if (data.status === 'stopped') {
+						// Show stopped message.
+						this.addLog('Import was stopped. You can start a new import or resume if available.', 'info');
 					}
 				}
 			});
@@ -88,6 +107,7 @@
 			
 			this.showLoader(true);
 			this.logOffset = 0;
+			this.isInitialLoad = true;
 			this.clearLogs();
 			
 			fetch(ConEcom_ajaxAction.url, {
@@ -105,6 +125,7 @@
 					this.processId = data.data.process_id;
 					this.addLog(data.data.message, 'info');
 					this.updateButtons('running');
+					this.isInitialLoad = false;
 					this.startPolling();
 				} else {
 					this.addLog('Error: ' + (data.data?.error || 'Unknown error'), 'error');
@@ -234,6 +255,8 @@
 		 */
 		getStatus: function(processId, callback) {
 			const pid = processId || this.processId || '';
+			// On initial load, get all logs from the beginning.
+			const offset = this.isInitialLoad ? 0 : this.logOffset;
 
 			fetch(ConEcom_ajaxAction.url, {
 				method: 'POST',
@@ -242,7 +265,7 @@
 					'Content-Type': 'application/x-www-form-urlencoded',
 					'Cache-Control': 'no-cache',
 				},
-				body: 'action=conecom_get_import_status&nonce=' + ConEcom_ajaxAction.nonce + '&process_id=' + pid + '&log_offset=' + this.logOffset,
+				body: 'action=conecom_get_import_status&nonce=' + ConEcom_ajaxAction.nonce + '&process_id=' + pid + '&log_offset=' + offset,
 			})
 			.then(resp => resp.json())
 			.then(data => {

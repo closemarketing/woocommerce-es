@@ -1116,7 +1116,7 @@ class Settings {
 					<div class="conecom-import-controls">
 						<div class="conecom-import-buttons">
 							<button id="conecom-start-background-import" class="button button-large button-primary">
-								<?php esc_html_e( 'Start Background Import', 'woocommerce-es' ); ?>
+								<?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?>
 							</button>
 							<button id="conecom-pause-import" class="button button-large" style="display: none;">
 								<?php esc_html_e( 'Pause', 'woocommerce-es' ); ?>
@@ -1143,10 +1143,6 @@ class Settings {
 						
 						<div id="conecom-import-progress" class="conecom-import-progress"></div>
 					</div>
-					
-					<h3><?php esc_html_e( 'Legacy Manual Import (Foreground)', 'woocommerce-es' ); ?></h3>
-					<p class="description"><?php esc_html_e( 'Use this option only if background import has issues. You must keep the page open.', 'woocommerce-es' ); ?></p>
-					<div id="sync-products" name="sync-products" class="button button-secondary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" ><?php esc_html_e( 'Start Manual Import', 'woocommerce-es' ); ?></div>
 				</div>
 				<fieldset id="logwrapper">
 					<legend><?php esc_html_e( 'Import Log', 'woocommerce-es' ); ?></legend>
