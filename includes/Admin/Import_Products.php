@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
 use CLOSE\ConnectEcommerce\Helpers\PROD;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
 use CLOSE\ConnectEcommerce\Helpers\CRON;
-use CLOSE\ConnectEcommerce\Helpers\Background_Process_Handler;
+use CLOSE\ConnectEcommerce\Helpers\BACKGR;
 
 /**
  * Library for WooCommerce Settings
@@ -380,7 +380,7 @@ class Import_Products {
 			'api_pagination' => $api_pagination,
 		);
 
-		$handler    = new Background_Process_Handler();
+		$handler    = new BACKGR();
 		$process_id = $handler->start( $config );
 
 		wp_send_json_success(
@@ -414,7 +414,7 @@ class Import_Products {
 			return;
 		}
 
-		$handler = new Background_Process_Handler( $process_id );
+		$handler = new BACKGR( $process_id );
 		$result  = $handler->pause();
 
 		if ( $result ) {
@@ -447,7 +447,7 @@ class Import_Products {
 			return;
 		}
 
-		$handler = new Background_Process_Handler( $process_id );
+		$handler = new BACKGR( $process_id );
 		$result  = $handler->resume();
 
 		if ( $result ) {
@@ -480,7 +480,7 @@ class Import_Products {
 			return;
 		}
 
-		$handler = new Background_Process_Handler( $process_id );
+		$handler = new BACKGR( $process_id );
 		$result  = $handler->stop();
 
 		if ( $result ) {
@@ -511,9 +511,9 @@ class Import_Products {
 
 		// Get active process if no process_id provided.
 		if ( empty( $process_id ) ) {
-			$state = Background_Process_Handler::get_state();
+			$state = BACKGR::get_state();
 		} else {
-			$state = Background_Process_Handler::get_state( $process_id );
+			$state = BACKGR::get_state( $process_id );
 		}
 
 		if ( ! $state ) {
@@ -527,7 +527,7 @@ class Import_Products {
 		}
 
 		$process_id = isset( $state['process_id'] ) ? $state['process_id'] : $process_id;
-		$logs       = Background_Process_Handler::get_logs( $process_id, $log_offset, 50 );
+		$logs       = BACKGR::get_logs( $process_id, $log_offset, 50 );
 
 		wp_send_json_success(
 			array(

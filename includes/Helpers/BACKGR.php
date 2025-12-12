@@ -1,6 +1,6 @@
 <?php
 /**
- * Background Process Handler
+ * Background Process
  *
  * Manages background import processes with pause/stop/resume functionality
  *
@@ -15,11 +15,11 @@ namespace CLOSE\ConnectEcommerce\Helpers;
 defined( 'ABSPATH' ) || exit;
 
 /**
- * Background Process Handler for product imports.
+ * Background Process for product imports.
  *
  * @since 1.0.0
  */
-class Background_Process_Handler {
+class BACKGR {
 	/**
 	 * Process ID for current import session
 	 *
