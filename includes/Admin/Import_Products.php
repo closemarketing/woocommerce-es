@@ -133,6 +133,25 @@ class Import_Products {
 				'label_syncing'       => __( 'Syncing', 'woocommerce-es' ),
 				'label_sync_complete' => __( 'Finished', 'woocommerce-es' ),
 				'nonce'               => wp_create_nonce( 'conecom_manual_import_nonce' ),
+				'importer'            => array(
+					'nonce'          => wp_create_nonce( 'conecom_importer_nonce' ),
+					'poll_interval'  => 2500,
+					'actions'        => array(
+						'start'  => 'conecom_importer_start',
+						'pause'  => 'conecom_importer_pause',
+						'stop'   => 'conecom_importer_stop',
+						'resume' => 'conecom_importer_resume',
+						'status' => 'conecom_importer_status',
+					),
+					'labels'         => array(
+						'status_running'   => __( 'Running', 'woocommerce-es' ),
+						'status_paused'    => __( 'Paused', 'woocommerce-es' ),
+						'status_stopped'   => __( 'Stopped', 'woocommerce-es' ),
+						'status_completed' => __( 'Completed', 'woocommerce-es' ),
+						'status_failed'    => __( 'Failed', 'woocommerce-es' ),
+						'status_idle'      => __( 'Idle', 'woocommerce-es' ),
+					),
+				),
 			)
 		);
 

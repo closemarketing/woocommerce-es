@@ -120,4 +120,5 @@ register_activation_hook( __FILE__, 'conecom_move_settings' );
  */
 function conecom_move_settings() {
 	CLOSE\ConnectEcommerce\Helpers\HELPER::move_settings();
+	CLOSE\ConnectEcommerce\Helpers\Importer_Background::install_tables();
 }

@@ -21,6 +21,7 @@ use CLOSE\ConnectEcommerce\Admin\Notices;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Rates;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Types_ERP;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\Importer_Background;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
 
@@ -56,6 +57,9 @@ class Base {
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );
 		}
+
+		// Background importer (manual imports with pause/stop/resume).
+		new Importer_Background( $options );
 
 		new Orders( $connector );
 		new Checkout( $connector );

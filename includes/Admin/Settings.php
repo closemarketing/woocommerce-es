@@ -1079,6 +1079,7 @@ class Settings {
 		$ajax_action = 'connect_ecommerce_' . $type;
 		$login_api   = $this->connapi_erp->check_can_sync();
 		$can_sync    = false;
+		$import_type = ( 'sync_orders' === $type ) ? 'orders' : 'products';
 		if ( is_array( $login_api ) ) {
 			$message  = $login_api['message'] ?? '';
 			$can_sync = 'ok' === $login_api['status'] ? true : false;
@@ -1104,17 +1105,39 @@ class Settings {
 				?>
 					<h2>
 						<?php
-						echo sprintf(
-							esc_html__( 'Import Products from %s', 'woocommerce-es' ),
-							esc_html( $this->options['name'] )
-						);
+						if ( 'orders' === $import_type ) {
+							echo sprintf(
+								esc_html__( 'Sync Orders with %s', 'woocommerce-es' ),
+								esc_html( $this->options['name'] )
+							);
+						} else {
+							echo sprintf(
+								esc_html__( 'Import Products from %s', 'woocommerce-es' ),
+								esc_html( $this->options['name'] )
+							);
+						}
 						?>
 					</h2>
-					<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'woocommerce-es' ); ?>
+					<p>
+						<?php esc_html_e( 'Use the controls below to import in the background. You can safely close this page; progress and logs will be available when you come back.', 'woocommerce-es' ); ?>
 					</p>
 					<br/>
-					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" ><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
-					<?php if ( ! $this->is_disabled_ai ) { ?>
+					<div id="conecom-importer" class="conecom-importer" data-type="<?php echo esc_attr( $import_type ); ?>">
+						<div class="conecom-importer__controls">
+							<button type="button" id="conecom-importer-start" class="button button-large button-primary">
+								<?php echo esc_html( 'orders' === $import_type ? __( 'Start Orders Sync', 'woocommerce-es' ) : __( 'Start Import', 'woocommerce-es' ) ); ?>
+							</button>
+							<button type="button" id="conecom-importer-pause" class="button button-large"><?php esc_html_e( 'Pause', 'woocommerce-es' ); ?></button>
+							<button type="button" id="conecom-importer-stop" class="button button-large"><?php esc_html_e( 'Stop', 'woocommerce-es' ); ?></button>
+							<button type="button" id="conecom-importer-resume" class="button button-large button-secondary"><?php esc_html_e( 'Resume', 'woocommerce-es' ); ?></button>
+						</div>
+						<p class="conecom-importer__status">
+							<strong><?php esc_html_e( 'Status:', 'woocommerce-es' ); ?></strong>
+							<span id="conecom-importer-status-text"><?php esc_html_e( 'Idle', 'woocommerce-es' ); ?></span>
+							<span id="conecom-importer-status-meta"></span>
+						</p>
+					</div>
+					<?php if ( ! $this->is_disabled_ai && 'products' === $import_type ) { ?>
 						<p>
 						<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
 						<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
