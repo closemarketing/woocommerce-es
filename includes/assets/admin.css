@@ -160,3 +160,80 @@
 	width: 85%;
 	margin: 10px;
 }
+
+/* Background Import Controls */
+.connect-ecommerce-settings .conecom-import-controls {
+	background: #f8f9fa;
+	padding: 20px;
+	margin: 20px 0;
+	border: 1px solid #ddd;
+	border-radius: 4px;
+}
+
+.connect-ecommerce-settings .conecom-import-buttons {
+	margin-bottom: 15px;
+}
+
+.connect-ecommerce-settings .conecom-import-buttons button {
+	margin-right: 10px;
+}
+
+.connect-ecommerce-settings .conecom-ai-options {
+	margin: 15px 0;
+}
+
+.connect-ecommerce-settings .conecom-import-progress {
+	margin-top: 15px;
+	padding: 10px;
+	background: white;
+	border: 1px solid #ddd;
+	border-radius: 3px;
+	display: none;
+}
+
+.connect-ecommerce-settings .conecom-import-progress.active {
+	display: block;
+}
+
+.connect-ecommerce-settings .conecom-progress-info {
+	display: flex;
+	gap: 20px;
+	font-size: 14px;
+}
+
+.connect-ecommerce-settings .conecom-progress-info span {
+	padding: 5px 10px;
+	background: #f0f0f0;
+	border-radius: 3px;
+}
+
+.connect-ecommerce-settings .conecom-progress-info span.errors {
+	background: #fef0f0;
+	color: #d63638;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine #loglist>p.log-error {
+	background: #fef0f0;
+	color: #d63638;
+	border-left: 3px solid #d63638;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine #loglist>p.log-success {
+	background: #f0f6fc;
+	border-left: 3px solid #2271b1;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine #loglist>p.log-warning {
+	background: #fff8e5;
+	color: #a45700;
+	border-left: 3px solid #dba617;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine #loglist>p.log-info {
+	background: #f7f7f7;
+	border-left: 3px solid #888;
+}
+
+.connect-ecommerce-settings .conecom-import-loader {
+	margin-left: 10px;
+}

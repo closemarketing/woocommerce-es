@@ -1110,23 +1110,46 @@ class Settings {
 						);
 						?>
 					</h2>
-					<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'woocommerce-es' ); ?>
+					<p><?php esc_html_e( 'Use the button below to start importing products. The import runs in the background, so you can close this page and return later to check progress.', 'woocommerce-es' ); ?>
 					</p>
-					<br/>
-					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" ><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
-					<?php if ( ! $this->is_disabled_ai ) { ?>
-						<p>
-						<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
-						<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
-							<option value="none"><?php esc_html_e( 'None', 'woocommerce-es' ); ?></option>
-							<option value="new"><?php esc_html_e( 'NEW Products', 'woocommerce-es' ); ?></option>
-							<option value="all"><?php esc_html_e( 'ALL Products', 'woocommerce-es' ); ?></option>
-						</select>
-						</p>
-					<?php } ?>
+					
+					<div class="conecom-import-controls">
+						<div class="conecom-import-buttons">
+							<button id="conecom-start-background-import" class="button button-large button-primary">
+								<?php esc_html_e( 'Start Background Import', 'woocommerce-es' ); ?>
+							</button>
+							<button id="conecom-pause-import" class="button button-large" style="display: none;">
+								<?php esc_html_e( 'Pause', 'woocommerce-es' ); ?>
+							</button>
+							<button id="conecom-resume-import" class="button button-large button-primary" style="display: none;">
+								<?php esc_html_e( 'Resume', 'woocommerce-es' ); ?>
+							</button>
+							<button id="conecom-stop-import" class="button button-large" style="display: none;">
+								<?php esc_html_e( 'Stop', 'woocommerce-es' ); ?>
+							</button>
+							<span class="conecom-import-loader spinner" style="display: none; float: none; visibility: visible;"></span>
+						</div>
+						
+						<?php if ( ! $this->is_disabled_ai ) { ?>
+							<div class="conecom-ai-options">
+								<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
+								<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
+									<option value="none"><?php esc_html_e( 'None', 'woocommerce-es' ); ?></option>
+									<option value="new"><?php esc_html_e( 'NEW Products', 'woocommerce-es' ); ?></option>
+									<option value="all"><?php esc_html_e( 'ALL Products', 'woocommerce-es' ); ?></option>
+								</select>
+							</div>
+						<?php } ?>
+						
+						<div id="conecom-import-progress" class="conecom-import-progress"></div>
+					</div>
+					
+					<h3><?php esc_html_e( 'Legacy Manual Import (Foreground)', 'woocommerce-es' ); ?></h3>
+					<p class="description"><?php esc_html_e( 'Use this option only if background import has issues. You must keep the page open.', 'woocommerce-es' ); ?></p>
+					<div id="sync-products" name="sync-products" class="button button-secondary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" ><?php esc_html_e( 'Start Manual Import', 'woocommerce-es' ); ?></div>
 				</div>
 				<fieldset id="logwrapper">
-					<legend><?php esc_html_e( 'Log', 'woocommerce-es' ); ?></legend>
+					<legend><?php esc_html_e( 'Import Log', 'woocommerce-es' ); ?></legend>
 					<div id="loglist"></div>
 				</fieldset>
 				<?php

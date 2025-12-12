@@ -15,6 +15,7 @@ defined( 'ABSPATH' ) || exit;
 use CLOSE\ConnectEcommerce\Helpers\PROD;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
 use CLOSE\ConnectEcommerce\Helpers\CRON;
+use CLOSE\ConnectEcommerce\Helpers\Background_Process_Handler;
 
 /**
  * Library for WooCommerce Settings
@@ -88,6 +89,13 @@ class Import_Products {
 		// Admin Styles.
 		add_action( 'wp_ajax_connect_ecommerce_sync_products', array( $this, 'sync_products' ) );
 
+		// Background import AJAX endpoints.
+		add_action( 'wp_ajax_conecom_start_background_import', array( $this, 'ajax_start_background_import' ) );
+		add_action( 'wp_ajax_conecom_pause_import', array( $this, 'ajax_pause_import' ) );
+		add_action( 'wp_ajax_conecom_resume_import', array( $this, 'ajax_resume_import' ) );
+		add_action( 'wp_ajax_conecom_stop_import', array( $this, 'ajax_stop_import' ) );
+		add_action( 'wp_ajax_conecom_get_import_status', array( $this, 'ajax_get_import_status' ) );
+
 		// Schedule.
 		if ( $this->sync_period && 'no' !== $this->sync_period ) {
 			$this->cron_products();
@@ -124,6 +132,15 @@ class Import_Products {
 			true
 		);
 
+		// Background import script.
+		wp_enqueue_script(
+			'connect-ecommerce-background-import',
+			CONECOM_PLUGIN_URL . 'includes/assets/background-import.js',
+			array(),
+			CONECOM_VERSION,
+			true
+		);
+
 		wp_localize_script(
 			'connect-ecommerce-import',
 			'ConEcom_ajaxAction',
@@ -132,6 +149,10 @@ class Import_Products {
 				'label_sync'          => __( 'Sync', 'woocommerce-es' ),
 				'label_syncing'       => __( 'Syncing', 'woocommerce-es' ),
 				'label_sync_complete' => __( 'Finished', 'woocommerce-es' ),
+				'label_progress'      => __( 'Progress', 'woocommerce-es' ),
+				'label_synced'        => __( 'Synced', 'woocommerce-es' ),
+				'label_errors'        => __( 'Errors', 'woocommerce-es' ),
+				'confirm_stop'        => __( 'Are you sure you want to stop the import? Progress will be saved and you can resume later.', 'woocommerce-es' ),
 				'nonce'               => wp_create_nonce( 'conecom_manual_import_nonce' ),
 			)
 		);
@@ -332,5 +353,194 @@ class Import_Products {
 				}
 			}
 		}
+	}
+
+	/**
+	 * AJAX handler to start background import
+	 *
+	 * @return void
+	 */
+	public function ajax_start_background_import() {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'error' => 'Insufficient permissions' ) );
+			return;
+		}
+
+		$generate_ai    = ! empty( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
+		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
+		$api_pagination = ! empty( $this->options['api_pagination'] ) ? (int) $this->options['api_pagination'] : 50;
+
+		$config = array(
+			'generate_ai'    => $generate_ai,
+			'api_pagination' => $api_pagination,
+		);
+
+		$handler    = new Background_Process_Handler();
+		$process_id = $handler->start( $config );
+
+		wp_send_json_success(
+			array(
+				'process_id' => $process_id,
+				'message'    => __( 'Background import started', 'woocommerce-es' ),
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler to pause import
+	 *
+	 * @return void
+	 */
+	public function ajax_pause_import() {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'error' => 'Insufficient permissions' ) );
+			return;
+		}
+
+		$process_id = isset( $_POST['process_id'] ) ? sanitize_text_field( wp_unslash( $_POST['process_id'] ) ) : '';
+
+		if ( empty( $process_id ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid process ID' ) );
+			return;
+		}
+
+		$handler = new Background_Process_Handler( $process_id );
+		$result  = $handler->pause();
+
+		if ( $result ) {
+			wp_send_json_success( array( 'message' => __( 'Import paused', 'woocommerce-es' ) ) );
+		} else {
+			wp_send_json_error( array( 'error' => __( 'Could not pause import', 'woocommerce-es' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler to resume import
+	 *
+	 * @return void
+	 */
+	public function ajax_resume_import() {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'error' => 'Insufficient permissions' ) );
+			return;
+		}
+
+		$process_id = isset( $_POST['process_id'] ) ? sanitize_text_field( wp_unslash( $_POST['process_id'] ) ) : '';
+
+		if ( empty( $process_id ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid process ID' ) );
+			return;
+		}
+
+		$handler = new Background_Process_Handler( $process_id );
+		$result  = $handler->resume();
+
+		if ( $result ) {
+			wp_send_json_success( array( 'message' => __( 'Import resumed', 'woocommerce-es' ) ) );
+		} else {
+			wp_send_json_error( array( 'error' => __( 'Could not resume import', 'woocommerce-es' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler to stop import
+	 *
+	 * @return void
+	 */
+	public function ajax_stop_import() {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'error' => 'Insufficient permissions' ) );
+			return;
+		}
+
+		$process_id = isset( $_POST['process_id'] ) ? sanitize_text_field( wp_unslash( $_POST['process_id'] ) ) : '';
+
+		if ( empty( $process_id ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid process ID' ) );
+			return;
+		}
+
+		$handler = new Background_Process_Handler( $process_id );
+		$result  = $handler->stop();
+
+		if ( $result ) {
+			wp_send_json_success( array( 'message' => __( 'Import stopped', 'woocommerce-es' ) ) );
+		} else {
+			wp_send_json_error( array( 'error' => __( 'Could not stop import', 'woocommerce-es' ) ) );
+		}
+	}
+
+	/**
+	 * AJAX handler to get import status and logs
+	 *
+	 * @return void
+	 */
+	public function ajax_get_import_status() {
+		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
+			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( array( 'error' => 'Insufficient permissions' ) );
+			return;
+		}
+
+		$process_id = isset( $_POST['process_id'] ) ? sanitize_text_field( wp_unslash( $_POST['process_id'] ) ) : '';
+		$log_offset = isset( $_POST['log_offset'] ) ? (int) $_POST['log_offset'] : 0;
+
+		// Get active process if no process_id provided.
+		if ( empty( $process_id ) ) {
+			$state = Background_Process_Handler::get_state();
+		} else {
+			$state = Background_Process_Handler::get_state( $process_id );
+		}
+
+		if ( ! $state ) {
+			wp_send_json_success(
+				array(
+					'status' => 'none',
+					'logs'   => array(),
+				)
+			);
+			return;
+		}
+
+		$process_id = isset( $state['process_id'] ) ? $state['process_id'] : $process_id;
+		$logs       = Background_Process_Handler::get_logs( $process_id, $log_offset, 50 );
+
+		wp_send_json_success(
+			array(
+				'status'        => $state['status'],
+				'process_id'    => $process_id,
+				'current_loop'  => isset( $state['current_loop'] ) ? $state['current_loop'] : 0,
+				'synced_count'  => isset( $state['synced_count'] ) ? $state['synced_count'] : 0,
+				'error_count'   => isset( $state['error_count'] ) ? $state['error_count'] : 0,
+				'total'         => isset( $state['total_products'] ) ? $state['total_products'] : 0,
+				'started_at'    => isset( $state['started_at'] ) ? $state['started_at'] : '',
+				'logs'          => $logs,
+				'logs_offset'   => $log_offset + count( $logs ),
+			)
+		);
 	}
 }
