@@ -41,8 +41,8 @@ The Connect Ecommerce plugin has been enhanced with a robust background import p
 
 ### Components
 
-#### 1. Background_Process_Handler Class
-**Location**: `/includes/Helpers/Background_Process_Handler.php`
+#### 1. BACKGR Class
+**Location**: `/includes/Helpers/BACKGR.php`
 
 **Key Methods**:
 - `start($config)`: Initializes a new import process
@@ -94,7 +94,7 @@ The UI includes:
    ```
    User clicks "Start" 
    → AJAX call to conecom_start_background_import
-   → Background_Process_Handler creates process
+   → BACKGR creates process
    → Schedules first batch in Action Scheduler
    → Returns process_id to frontend
    → JavaScript starts polling for status
@@ -103,7 +103,7 @@ The UI includes:
 2. **Processing Products**:
    ```
    Action Scheduler executes conecom_process_import_batch
-   → Background_Process_Handler::process_batch()
+   → BACKGR::process_batch()
    → Gets product from API
    → Calls PROD::sync_product_item()
    → Logs result
@@ -187,7 +187,7 @@ To monitor Action Scheduler jobs:
 Old processes are automatically cleaned up after 7 days. To manually trigger cleanup:
 
 ```php
-CLOSE\ConnectEcommerce\Helpers\Background_Process_Handler::cleanup_old_processes( 7 );
+CLOSE\ConnectEcommerce\Helpers\BACKGR::cleanup_old_processes( 7 );
 ```
 
 ## Usage
@@ -206,29 +206,35 @@ CLOSE\ConnectEcommerce\Helpers\Background_Process_Handler::cleanup_old_processes
 #### Starting a Custom Import Programmatically
 
 ```php
-use CLOSE\ConnectEcommerce\Helpers\Background_Process_Handler;
+use CLOSE\ConnectEcommerce\Helpers\BACKGR;
 
 $config = array(
-    'generate_ai'    => 'none', // 'none', 'new', or 'all'
-    'api_pagination' => 50,
+	'generate_ai'    => 'none', // 'none', 'new', or 'all'.
+	'api_pagination' => 50,
 );
 
-$handler = new Background_Process_Handler();
+$handler    = new BACKGR();
 $process_id = $handler->start( $config );
 ```
 
 #### Getting Import Status
 
 ```php
-$state = Background_Process_Handler::get_state( $process_id );
-// or get the most recent active process
-$state = Background_Process_Handler::get_state();
+// Get specific process state.
+$state = BACKGR::get_state( $process_id );
+
+// Or get the most recent active process.
+$state = BACKGR::get_state();
 ```
 
 #### Getting Logs
 
 ```php
-$logs = Background_Process_Handler::get_logs( $process_id, $offset = 0, $limit = 100 );
+// Get logs with pagination.
+$logs = BACKGR::get_logs( $process_id, $offset = 0, $limit = 100 );
+
+// On page load, start from offset 0 to get all logs.
+$all_logs = BACKGR::get_logs( $process_id, 0, 500 );
 ```
 
 ## Troubleshooting
@@ -267,9 +273,15 @@ $logs = Background_Process_Handler::get_logs( $process_id, $offset = 0, $limit =
 - Input sanitization on all user-provided data
 - Safe handling of API responses
 
-## Backward Compatibility
+## Log Updates
 
-The legacy manual import functionality remains available as a fallback option. Users can still use the "Start Manual Import" button if they prefer or if there are issues with background processing.
+The import logs update in real-time while the import is running:
+- JavaScript polls for status every 2 seconds
+- New log entries are fetched incrementally
+- When you return to the page, all previous logs are loaded from the beginning
+- Logs are preserved even after closing and reopening the browser
+
+This ensures you always see the complete import history, whether you stay on the page or return later.
 
 ## Future Enhancements
 

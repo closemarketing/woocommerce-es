@@ -30,12 +30,13 @@
 
 ### Test 1: Basic Import Start
 1. Navigate to: `WooCommerce > Connect Ecommerce > Synchronization > Products`
-2. Click "Start Background Import"
+2. Click "Start Import"
 3. **Expected**: 
    - Button changes to "Pause" and "Stop"
    - Progress information appears
-   - Logs start appearing in real-time
+   - Logs start appearing in real-time (every 2 seconds)
    - Products are being imported
+   - Logs show color-coded messages
 
 ### Test 2: Pause and Resume
 1. Start an import (Test 1)
@@ -120,13 +121,15 @@
    - User B sees the same import progress
    - Both see same logs and status
 
-### Test 10: Legacy Import (Fallback)
-1. Scroll to "Legacy Manual Import"
-2. Click "Start Manual Import"
-3. **Expected**:
-   - Old import method still works
-   - Must keep page open
-   - Logs update synchronously
+### Test 10: Log Persistence on Page Reload
+1. Start an import
+2. Wait for several products to be imported
+3. **Reload the page** (F5 or Ctrl+R)
+4. **Expected**:
+   - All previous logs are displayed immediately
+   - Import continues in background
+   - New logs continue to appear
+   - Progress information is correct
 
 ## Verification Checklist
 
@@ -321,22 +324,22 @@ Add PHPUnit tests for:
 // tests/Unit/BackgroundProcessHandlerTest.php
 class BackgroundProcessHandlerTest extends WP_UnitTestCase {
     public function test_start_creates_process() {
-        $handler = new Background_Process_Handler();
+        $handler = new BACKGR();
         $process_id = $handler->start(['api_pagination' => 50]);
         
         $this->assertNotEmpty($process_id);
-        $state = Background_Process_Handler::get_state($process_id);
+        $state = BACKGR::get_state($process_id);
         $this->assertEquals('running', $state['status']);
     }
     
     public function test_pause_changes_status() {
-        $handler = new Background_Process_Handler();
+        $handler = new BACKGR();
         $process_id = $handler->start(['api_pagination' => 50]);
         
         $result = $handler->pause();
         $this->assertTrue($result);
         
-        $state = Background_Process_Handler::get_state($process_id);
+        $state = BACKGR::get_state($process_id);
         $this->assertEquals('paused', $state['status']);
     }
     

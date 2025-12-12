@@ -28,7 +28,7 @@ This document summarizes the implementation of the background import process enh
 
 ## Files Created
 
-### 1. `/includes/Helpers/Background_Process_Handler.php`
+### 1. `/includes/Helpers/BACKGR.php`
 **Purpose**: Core background process management class
 
 **Key Features**:
@@ -86,7 +86,7 @@ This document summarizes the implementation of the background import process enh
 
 ### 1. `/includes/Admin/Import_Products.php`
 **Changes**:
-- Added `use` statement for `Background_Process_Handler`
+- Added `use` statement for `BACKGR`
 - Registered 5 new AJAX endpoints:
   - `conecom_start_background_import` - Start background import
   - `conecom_pause_import` - Pause import
@@ -100,11 +100,11 @@ This document summarizes the implementation of the background import process enh
 ### 2. `/includes/Admin/Settings.php`
 **Changes**:
 - Updated `page_get_sync()` method UI
-- Added background import control buttons
-- Added progress display area
-- Added separate section for legacy manual import
+- Added background import control buttons (Start, Pause, Resume, Stop)
+- Added progress display area with real-time updates
 - Enhanced log viewer with better labels
-- Improved user instructions
+- Improved user instructions for background processing
+- Removed legacy manual import (now only background import)
 
 ### 3. `/includes/assets/admin.css`
 **Changes**:
@@ -137,7 +137,7 @@ This document summarizes the implementation of the background import process enh
        │
        ▼
 ┌─────────────────────────────┐
-│  Background_Process_Handler │
+│  BACKGR │
 │  - Creates process state    │
 │  - Schedules first batch    │
 └──────┬──────────────────────┘
@@ -374,7 +374,7 @@ Stores logs for all imports (max 500 per process):
 
 ### Automated Testing
 The following tests should be added:
-- Unit tests for `Background_Process_Handler` methods
+- Unit tests for `BACKGR` methods
 - Integration tests for AJAX endpoints
 - JavaScript tests for UI interactions
 - Mock Action Scheduler for isolated testing
@@ -402,17 +402,24 @@ Potential improvements for future versions:
 
 ## Migration Notes
 
-### From Legacy Manual Import
-- Legacy manual import remains available as fallback
-- No changes to existing import functionality
-- Users can switch between methods
+### From Manual Import
+- Previous manual import has been replaced with background import
+- Background import provides better user experience
+- No need to keep browser tab open
+- All import state and logs are preserved
 - No database migrations required
 
+### Log Persistence
+- When you leave the page during import, the process continues
+- When you return, all previous logs are loaded automatically
+- Logs are fetched from the beginning on page load
+- Real-time updates continue via 2-second polling
+
 ### Backward Compatibility
-- All existing functionality preserved
 - No breaking changes to API
 - Plugin can be safely updated
-- Rollback is safe (loses only new features)
+- AJAX endpoints use same authentication
+- Existing imports will need to be restarted with new system
 
 ## Support Information
 
