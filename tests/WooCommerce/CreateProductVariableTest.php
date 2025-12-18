@@ -131,7 +131,8 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		foreach ( $variations as $variation_id ) {
 			$prod_variation = new WC_Product_Variation( $variation_id );
 			$this->assertEquals( $item['variants'][$index]['price'], (float) $prod_variation->get_regular_price() );
-			$this->assertEquals( $item['variants'][$index]['stock'], $prod_variation->get_stock_quantity() );
+			// Stock should NOT be imported when stock setting is 'no'.
+			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled when stock import is disabled' );
 			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
 
 			$images = [
@@ -260,5 +261,174 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertEquals( 'ok', $result_sync_upd['status'] );
 		$this->assertIsInt( $result_sync_upd['post_id'] );
 		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
+	}
+
+	/**
+	 * Test that stock is NOT imported for variable products when stock setting is 'no'.
+	 */
+	public function test_variable_product_stock_not_imported_when_disabled() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		// Ensure stock import is disabled.
+		$this->settings['stock'] = 'no';
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		// Test images.
+		$image_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url' => $image_path,
+			'file' => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images'] = [ $image_dummy ];
+		$item['variants'][0]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy;
+
+		// Set stock values in variants to test they are not imported.
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		// Sync product.
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertIsInt( $result_prod_id );
+
+		$product = wc_get_product( $result_prod_id );
+		$this->assertInstanceOf( 'WC_Product_Variable', $product );
+
+		// Check all variations.
+		$variations = $product->get_children();
+		$this->assertNotEmpty( $variations );
+
+		foreach ( $variations as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			// Stock management should be disabled.
+			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled when stock import is disabled' );
+			// Stock quantity should be null or 0 when not managing stock.
+			$this->assertNull( $prod_variation->get_stock_quantity(), 'Stock quantity should be null when stock import is disabled' );
+		}
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test
+	}
+
+	/**
+	 * Test that stock IS imported for variable products when stock setting is 'yes'.
+	 */
+	public function test_variable_product_stock_imported_when_enabled() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		// Enable stock import.
+		$this->settings['stock'] = 'yes';
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		// Test images.
+		$image_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url' => $image_path,
+			'file' => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images'] = [ $image_dummy ];
+		$item['variants'][0]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy;
+
+		// Set stock values in variants to test they are imported.
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		// Sync product.
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertIsInt( $result_prod_id );
+
+		$product = wc_get_product( $result_prod_id );
+		$this->assertInstanceOf( 'WC_Product_Variable', $product );
+
+		// Check all variations.
+		$variations = $product->get_children();
+		$this->assertNotEmpty( $variations );
+
+		$index = 0;
+		foreach ( $variations as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			// Stock management should be enabled.
+			$this->assertTrue( $prod_variation->get_manage_stock(), 'Stock management should be enabled when stock import is enabled' );
+			// Stock quantity should match the imported value.
+			$this->assertEquals( $item['variants'][$index]['stock'], $prod_variation->get_stock_quantity(), 'Stock quantity should match imported value' );
+			// Stock status should be correct.
+			$expected_status = 0 === (int) $item['variants'][$index]['stock'] ? 'outofstock' : 'instock';
+			$this->assertEquals( $expected_status, $prod_variation->get_stock_status(), 'Stock status should match stock quantity' );
+			$index++;
+		}
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test
+	}
+
+	/**
+	 * Test that stock import setting is respected when updating existing variable products.
+	 */
+	public function test_variable_product_stock_respected_on_update() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		// Test images.
+		$image_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url' => $image_path,
+			'file' => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images'] = [ $image_dummy ];
+		$item['variants'][0]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy;
+
+		// First, create product with stock import enabled.
+		$this->settings['stock'] = 'yes';
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		// Verify stock was imported.
+		$product = wc_get_product( $result_prod_id );
+		$variations = $product->get_children();
+		$first_variation = new WC_Product_Variation( $variations[0] );
+		$this->assertTrue( $first_variation->get_manage_stock() );
+		$this->assertEquals( 10, $first_variation->get_stock_quantity() );
+
+		// Now update with stock import disabled.
+		$this->settings['stock'] = 'no';
+		$item['variants'][0]['stock'] = 20; // Changed value that should NOT be imported.
+		$item['variants'][1]['stock'] = 15; // Changed value that should NOT be imported.
+
+		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+
+		$this->assertEquals( 'ok', $result_sync_upd['status'] );
+
+		// Verify stock management is now disabled and values were not updated.
+		$product_updated = wc_get_product( $result_prod_id );
+		$variations_updated = $product_updated->get_children();
+		foreach ( $variations_updated as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			// Stock management should now be disabled.
+			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled after update when stock import is disabled' );
+		}
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test
 	}
 }
