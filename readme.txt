@@ -14,6 +14,27 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 
 == Description ==
 
+**Streamline Your E-commerce Operations with Professional ERP/CRM Integration and Complete EU VAT Compliance**
+
+Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance is the ultimate solution for WooCommerce store owners who need seamless integration with their business management systems while ensuring full compliance with European tax regulations.
+
+Whether you're managing a small online store or a large e-commerce operation, this powerful plugin eliminates manual data entry, reduces errors, and saves countless hours of administrative work. Automatically synchronize your products, customers, and orders between WooCommerce and your ERP or CRM system, ensuring your inventory, customer database, and sales data are always up-to-date across all platforms.
+
+**Complete EU VAT Compliance Made Simple**
+
+Stay compliant with European tax regulations effortlessly. The plugin includes comprehensive VAT number validation using the official VIES service, with optional VATSense integration for enhanced reliability. Real-time validation during checkout ensures accurate B2B transactions, automatically applying zero VAT rates for valid intra-community transactions while maintaining full compliance with EU directives.
+
+**Key Benefits:**
+
+* **Save Time & Reduce Errors**: Automate product, customer, and order synchronization between WooCommerce and your ERP/CRM
+* **EU VAT Compliance**: Full compliance with European tax regulations, including real-time VAT validation and automatic tax rate application
+* **Verifactu Ready**: Built-in support for Verifactu regulations, ensuring your invoices meet Spanish legal requirements
+* **GDPR Compliant**: Direct connection architecture ensures customer data never passes through third-party servers
+* **AI-Powered**: Generate compelling product descriptions automatically using AI technology
+* **Professional Integration**: Connect with leading ERP and CRM systems through our premium connector plugins
+
+Perfect for businesses selling across Europe, B2B e-commerce operations, and any WooCommerce store that needs professional-grade integration and tax compliance capabilities.
+
 **Functionalities**
 
 - Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
@@ -201,15 +222,15 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Added: Support to FacturaDirecta connector.
 * Fixed: General setting not import Inventory was not working in variable products.
 * Fixed: Error cleaning special chars in order data.
-
-= 3.3.1 =
-* Fixed: Error getting companies from API.
 * Enhancement: Added VAT number validation via VIES (VAT Information Exchange System).
 * Enhancement: Integrated dragonbe/vies library for EU VAT number validation.
 * Enhancement: VIES validation enabled by default with configurable mandatory/optional modes.
 * Enhancement: Added caching mechanism for VIES responses to improve performance.
 * Enhancement: VAT validation results stored in order metadata for compliance tracking.
 * Enhancement: Graceful handling of VIES service unavailability.
+
+= 3.3.1 =
+* Fixed: Error getting companies from API.
 * Added: Show API connection status in settings.
 * Added: Support to custom tabs in settings.
 
