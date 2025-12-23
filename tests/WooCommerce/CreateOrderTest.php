@@ -90,6 +90,9 @@ class CreateOrderTest extends WP_UnitTestCase {
 			'Francisco Araújo da Conceição' => 'Francisco Araujo da Conceiçao',
 			'áéíóúüñçğÁÉÍÓÚÜÑÇĞåÅäÄæÆøØöÖèêëÈÊËïîÏÎôöÔÖùûÙÛßłŁ' => 'aeiouuñçgAEIOUUÑÇGaAaAaeAEoOoOeeeEEEiiIIooOOuuUUsslL',
 			'Gödöllő' => 'Godollo',
+			'Augustina Lubė' => 'Augustina Lube',
+			'Ėrika' => 'Erika',
+			'įĮ' => 'iI',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {
