@@ -123,6 +123,7 @@ $products['variants'][] = array(
 	'name'                  => Name of the variation
 	'barcode'               => EAN Code
 	'sku'                   => SKU Name
+	'stock'                 => Stock
 	'categoryFields'        => [
 		[
 			/* IMPORTANT THEY DON'T HAVE TO BE IN ATTRIBUTES */

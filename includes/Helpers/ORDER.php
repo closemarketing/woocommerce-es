@@ -460,11 +460,11 @@ class ORDER {
 	 * @return string
 	 */
 	public static function get_billing_vat( $order ) {
-		$code_labels  = CONECOM_VAT_FIELD_SLUGS;
 		$contact_code = '';
-
-		foreach ( $code_labels as $code_label ) {
-			$contact_code = $order->get_meta( $code_label );
+		foreach ( CONECOM_VAT_FIELD_SLUGS as $code_label ) {
+			// Add underscore prefix for meta fields.
+			$meta_key = 'VAT Number' === $code_label ? $code_label : '_' . $code_label;
+			$contact_code = $order->get_meta( $meta_key );
 			if ( ! empty( $contact_code ) ) {
 				break;
 			}

@@ -22,3 +22,4 @@ phpcs.xml.dist
 phpstan.neon.dist
 tests/
 bin/
+docs/

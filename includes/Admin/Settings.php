@@ -972,6 +972,30 @@ class Settings {
 			'imhset_pub_setting_section'
 		);
 
+		add_settings_field(
+			'wcpimh_vat_vies_enabled',
+			__( 'Enable VAT validation via VIES?', 'woocommerce-es' ),
+			array( $this, 'vat_vies_enabled_callback' ),
+			'connect_ecommerce_public',
+			'imhset_pub_setting_section'
+		);
+
+		add_settings_field(
+			'wcpimh_vatsense_api_key',
+			__( 'VATSense API Key (Optional)', 'woocommerce-es' ),
+			array( $this, 'vatsense_api_key_callback' ),
+			'connect_ecommerce_public',
+			'imhset_pub_setting_section'
+		);
+
+		add_settings_field(
+			'wcpimh_vat_vies_mandatory',
+			__( 'Mandatory VAT validation for checkout?', 'woocommerce-es' ),
+			array( $this, 'vat_vies_mandatory_callback' ),
+			'connect_ecommerce_public',
+			'imhset_pub_setting_section'
+		);
+
 		/**
 		 * ## AI
 		 * --------------------------- */
@@ -2331,6 +2355,18 @@ class Settings {
 			$sanitary_values['remove_free'] = $input['remove_free'];
 		}
 
+		if ( isset( $input['vat_vies_enabled'] ) ) {
+			$sanitary_values['vat_vies_enabled'] = $input['vat_vies_enabled'];
+		}
+
+		if ( isset( $input['vatsense_api_key'] ) ) {
+			$sanitary_values['vatsense_api_key'] = sanitize_text_field( $input['vatsense_api_key'] );
+		}
+
+		if ( isset( $input['vat_vies_mandatory'] ) ) {
+			$sanitary_values['vat_vies_mandatory'] = $input['vat_vies_mandatory'];
+		}
+
 		return $sanitary_values;
 	}
 
@@ -2410,6 +2446,72 @@ class Settings {
 		<select name="connect_ecommerce_public[remove_free]" id="remove_free">
 			<option value="no" <?php selected( $remove_free, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $remove_free, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
+		<?php
+	}
+
+	/**
+	 * VAT VIES validation enabled callback
+	 *
+	 * @return void
+	 */
+	public function vat_vies_enabled_callback() {
+		$vat_vies_enabled = isset( $this->settings_public['vat_vies_enabled'] ) ? $this->settings_public['vat_vies_enabled'] : 'yes';
+		?>
+		<select name="connect_ecommerce_public[vat_vies_enabled]" id="vat_vies_enabled">
+			<option value="no" <?php selected( $vat_vies_enabled, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<option value="yes" <?php selected( $vat_vies_enabled, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description">
+			<?php esc_html_e( 'Enable VAT number validation through the VIES (VAT Information Exchange System) service. Requires dragonbe/vies library.', 'woocommerce-es' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * VAT VIES validation mandatory callback
+	 *
+	 * @return void
+	 */
+	public function vat_vies_mandatory_callback() {
+		$vat_vies_mandatory = isset( $this->settings_public['vat_vies_mandatory'] ) ? $this->settings_public['vat_vies_mandatory'] : 'no';
+		?>
+		<select name="connect_ecommerce_public[vat_vies_mandatory]" id="vat_vies_mandatory">
+			<option value="no" <?php selected( $vat_vies_mandatory, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<option value="yes" <?php selected( $vat_vies_mandatory, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description">
+			<?php esc_html_e( 'If enabled, customers will not be able to complete their order if the VAT number is invalid. If disabled, invalid VAT numbers will be accepted with a warning.', 'woocommerce-es' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * VATSense API Key callback
+	 *
+	 * @return void
+	 */
+	public function vatsense_api_key_callback() {
+		$vatsense_api_key = isset( $this->settings_public['vatsense_api_key'] ) ? $this->settings_public['vatsense_api_key'] : '';
+		?>
+		<input 
+			type="text" 
+			name="connect_ecommerce_public[vatsense_api_key]" 
+			id="vatsense_api_key" 
+			value="<?php echo esc_attr( $vatsense_api_key ); ?>" 
+			size="40"
+			placeholder="<?php esc_attr_e( 'Enter your VATSense API key', 'woocommerce-es' ); ?>"
+		/>
+		<p class="description">
+			<?php
+			echo wp_kses_post(
+				sprintf(
+					// translators: 1: VATSense link.
+					__( 'VATSense is a commercial VAT validation service with higher reliability than VIES. Used as fallback if VIES fails. Also supports Norway and Switzerland. <a href="%s" target="_blank">Sign up for VATSense</a> (free tier available).', 'woocommerce-es' ),
+					'https://vatsense.com/signup?referral=CLOSEMARKETING'
+				)
+			);
+			?>
+		</p>
 		<?php
 	}
 }

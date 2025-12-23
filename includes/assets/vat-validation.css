@@ -1,0 +1,168 @@
+/**
+ * VAT Validation Styles
+ *
+ * @package WordPress
+ * @author  David Perez <david@close.technology>
+ */
+
+.conecom-vat-feedback {
+	margin-top: 8px;
+	padding: 10px 0;
+	font-size: 14px;
+	line-height: 1.5;
+	transition: all 0.3s ease;
+	display: none;
+}
+
+.conecom-vat-feedback.empty {
+	display: none !important;
+}
+
+.conecom-vat-feedback.checking {
+	color: #1e40af;
+	display: flex;
+	align-items: center;
+}
+
+.conecom-vat-feedback.checking::before {
+	content: '';
+	width: 16px;
+	height: 16px;
+	margin-right: 8px;
+	border: 2px solid #3b82f6;
+	border-top-color: transparent;
+	border-radius: 50%;
+	animation: conecom-vat-spin 0.8s linear infinite;
+}
+
+@keyframes conecom-vat-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.conecom-vat-feedback.valid {
+	color: #047857;
+	display: flex;
+	align-items: center;
+}
+
+.conecom-vat-feedback.valid::before {
+	content: '✓';
+	font-size: 18px;
+	font-weight: bold;
+	margin-right: 8px;
+	color: #10b981;
+}
+
+/* VAT Exempt special styling */
+.conecom-vat-feedback.valid.vat-exempt {
+	font-weight: 500;
+}
+
+.conecom-vat-feedback.valid.vat-exempt::before {
+	content: '✓✓';
+	color: #059669;
+}
+
+.conecom-vat-feedback.invalid,
+.conecom-vat-feedback.error {
+	color: #b91c1c;
+	display: flex;
+	align-items: center;
+}
+
+.conecom-vat-feedback.invalid::before,
+.conecom-vat-feedback.error::before {
+	content: '✕';
+	font-size: 18px;
+	font-weight: bold;
+	margin-right: 8px;
+	color: #ef4444;
+}
+
+.conecom-vat-feedback.too_short,
+.conecom-vat-feedback.invalid_format {
+	color: #92400e;
+	display: flex;
+	align-items: center;
+}
+
+.conecom-vat-feedback.too_short::before,
+.conecom-vat-feedback.invalid_format::before {
+	content: '⚠';
+	font-size: 18px;
+	font-weight: bold;
+	margin-right: 8px;
+	color: #f59e0b;
+}
+
+.conecom-vat-feedback.unknown {
+	color: #374151;
+	display: flex;
+	align-items: center;
+}
+
+.conecom-vat-feedback.unknown::before {
+	content: 'i';
+	font-size: 16px;
+	font-weight: bold;
+	margin-right: 8px;
+	color: #6b7280;
+	display: inline-block;
+	width: 20px;
+	height: 20px;
+	line-height: 20px;
+	text-align: center;
+	border: 2px solid #6b7280;
+	border-radius: 50%;
+}
+
+/* Input field states */
+#billing_vat:focus {
+	outline: none;
+	border-color: #3b82f6;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+#billing_vat.vat-valid {
+	border-color: #10b981;
+}
+
+#billing_vat.vat-invalid {
+	border-color: #ef4444;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+	.conecom-vat-feedback {
+		font-size: 13px;
+		padding: 8px 0;
+	}
+	
+	.conecom-vat-feedback::before {
+		font-size: 16px;
+	}
+}
+
+/* Dark mode support (optional) */
+@media (prefers-color-scheme: dark) {
+	.conecom-vat-feedback.checking {
+		color: #93c5fd;
+	}
+	
+	.conecom-vat-feedback.valid {
+		color: #6ee7b7;
+	}
+	
+	.conecom-vat-feedback.invalid,
+	.conecom-vat-feedback.error {
+		color: #fca5a5;
+	}
+	
+	.conecom-vat-feedback.too_short,
+	.conecom-vat-feedback.invalid_format {
+		color: #fbbf24;
+	}
+}
+
