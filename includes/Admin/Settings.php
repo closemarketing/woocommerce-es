@@ -235,7 +235,7 @@ class Settings {
 
 				<?php
 				// Main tabs.
-				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'settings';
+				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
 
 				// Subtabs.
 				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
@@ -249,7 +249,6 @@ class Settings {
 				}
 				?>
 				<h2 class="nav-tab-wrapper">
-					<a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'woocommerce-es' ); ?></a>
 					<?php
 					if ( $this->connector ) {
 						?>
@@ -257,6 +256,7 @@ class Settings {
 						<?php
 					}
 					?>
+					<a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'woocommerce-es' ); ?></a>
 					<?php
 					if ( $this->connector && in_array( 'subscriptions', $special_tabs, true ) ) {
 						?>
