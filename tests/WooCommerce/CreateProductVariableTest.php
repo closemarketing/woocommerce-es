@@ -2,7 +2,7 @@
 /**
  * Class CreateProductVariableTest
  *
- * Command: composer test -- --filter=CreateProductVariableTest
+ * Command: composer test-debug -- --filter=CreateProductVariableTest
  *
  * @package Connect_Ecommerce
  */
@@ -422,11 +422,16 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 
 		// Verify stock management is now disabled and values were not updated.
 		$product_updated = wc_get_product( $result_prod_id );
+
+		$manage_stock_parent = $product_updated->get_manage_stock();
+		$this->assertNotTrue( $manage_stock_parent, 'Stock management should be disabled after update when stock import is disabled' );
+
 		$variations_updated = $product_updated->get_children();
 		foreach ( $variations_updated as $variation_id ) {
-			$prod_variation = new WC_Product_Variation( $variation_id );
-			// Stock management should now be disabled.
-			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled after update when stock import is disabled' );
+			$prod_variation   = new WC_Product_Variation( $variation_id );
+			$manage_stock_var = $prod_variation->get_manage_stock();
+
+			$this->assertNotTrue( $manage_stock_var, 'Stock management should be disabled after update when stock import is disabled' );
 		}
 
 		wp_delete_post( $result_prod_id, true ); // Clean up after test

@@ -578,6 +578,13 @@ class PROD {
 					$attributes_prod[ 'attribute_pa_' . $attribute_name ] = wc_sanitize_taxonomy_name( $category_fields['field'] );
 				}
 			}
+			// Set stock parent product.
+			if ( 'yes' === $import_stock ) {
+				$product->set_manage_stock( true );
+			} else {
+				$product->set_manage_stock( false );
+			}
+			
 			// Make Variations.
 			$variation_price   = self::get_rate_price( $variant, $rate_id );
 			$variation_props = array(
@@ -1139,8 +1146,6 @@ class PROD {
 			return '';
 		}
 	}
-
-
 
 	/**
 	 * Get attribute category ID
