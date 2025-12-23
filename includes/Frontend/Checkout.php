@@ -457,7 +457,7 @@ class Checkout {
 			WC()->session->set( 'vat_validation_result', null );
 			
 			// Add notice that normal VAT will apply.
-			if ( ! empty( $vat_number ) ) {
+			if ( ! $vat_number ) {
 				wc_add_notice(
 					sprintf(
 						// translators: %s is the country code.

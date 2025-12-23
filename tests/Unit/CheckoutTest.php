@@ -2,13 +2,12 @@
 /**
  * Class CheckoutTest
  *
- * Command: composer test -- --filter=CheckoutTest
+ * Command: composer test-debug -- --filter=CheckoutTest
  *
  * @package Connect_Ecommerce
  */
 
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
-use CLOSE\ConnectEcommerce\Helpers\ORDER;
 
 /**
  * Mock document class for testing.
@@ -232,8 +231,9 @@ class CheckoutTest extends WP_UnitTestCase {
 		$order->save();
 
 		// Create a mock document with order.
-		$document        = new stdClass();
+		$document        = new Mock_Document();
 		$document->order = $order;
+		$document->set_custom_field( '_billing_vat', 'ES22222222B' );
 
 		$address = 'Emily White<br>777 Birch St';
 		$result  = $this->checkout->add_vat_invoices( $address, $document );

@@ -459,7 +459,7 @@ class ORDER {
 	 *
 	 * @return string
 	 */
-	private static function get_billing_vat( $order ) {
+	public static function get_billing_vat( $order ) {
 		$contact_code = '';
 		foreach ( CONECOM_VAT_FIELD_SLUGS as $code_label ) {
 			// Add underscore prefix for meta fields.
