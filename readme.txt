@@ -74,6 +74,7 @@ You will need to add Payment methods to merge variables to send the payment meth
 
 Premium connectors include:
 - [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+- [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
 - [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
 - [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
 - [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
@@ -129,6 +130,8 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 == Changelog ==
 
 = n.e.x.t =
+* Added: Support to FacturaDirecta connector.
+* Fixed: General setting not import Inventory was not working in variable products.
 * Fixed: Error cleaning special chars in order data.
 
 = 3.3.1 =

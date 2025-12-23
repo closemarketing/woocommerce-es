@@ -782,7 +782,7 @@ class Settings {
 				);
 			}
 
-			if ( 'Holded' === $this->options['name'] ) {
+			if ( 'Holded' === $this->options['name'] || in_array( 'doctype', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
 					__( 'Document to create after order completed?', 'woocommerce-es' ),
@@ -790,7 +790,9 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
+			}
 
+			if ( 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_design_id',
 					__( 'ID Holded design for document', 'woocommerce-es' ),
