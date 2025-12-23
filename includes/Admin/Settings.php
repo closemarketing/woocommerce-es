@@ -235,7 +235,7 @@ class Settings {
 
 				<?php
 				// Main tabs.
-				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'settings';
+				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
 
 				// Subtabs.
 				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
@@ -249,7 +249,6 @@ class Settings {
 				}
 				?>
 				<h2 class="nav-tab-wrapper">
-					<a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'woocommerce-es' ); ?></a>
 					<?php
 					if ( $this->connector ) {
 						?>
@@ -257,11 +256,26 @@ class Settings {
 						<?php
 					}
 					?>
+					<a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'woocommerce-es' ); ?></a>
 					<?php
 					if ( $this->connector && in_array( 'subscriptions', $special_tabs, true ) ) {
 						?>
 						<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'woocommerce-es' ); ?></a>
 						<?php
+					}
+
+					// Support for connect_ecommerce_settings_tabs (custom tabs).
+					$custom_tabs = apply_filters( 'connect_ecommerce_settings_tabs', array() );
+					if ( ! empty( $custom_tabs ) ) {
+						foreach ( $custom_tabs as $custom_tab ) {
+							$tab_slug  = isset( $custom_tab['tab'] ) ? $custom_tab['tab'] : '';
+							$tab_label = isset( $custom_tab['label'] ) ? $custom_tab['label'] : '';
+							if ( ! empty( $tab_slug ) && ! empty( $tab_label ) ) {
+								?>
+								<a href="?page=connect_ecommerce&tab=<?php echo esc_attr( $tab_slug ); ?>" class="nav-tab <?php echo esc_attr( $tab_slug ) === $active_tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $tab_label ); ?></a>
+								<?php
+							}
+						}
 					}
 
 					do_action( 'connect_ecommerce_settings_tabs', $active_tab );
@@ -480,6 +494,19 @@ class Settings {
 					$this->page_get_subscriptions();
 				}
 
+				// Render content of customized tabs.
+				$conecom_tabs = apply_filters( 'connect_ecommerce_settings_tabs', array() );
+				if ( ! empty( $conecom_tabs ) ) {
+					foreach ( $conecom_tabs as $conecom_tab ) {
+						$tab_slug    = isset( $conecom_tab['tab'] ) ? $conecom_tab['tab'] : '';
+						$action_hook = isset( $conecom_tab['action'] ) ? $conecom_tab['action'] : '';
+
+						if ( $tab_slug === $active_tab && ! empty( $action_hook ) ) {
+							do_action( $action_hook );
+						}
+					}
+				}
+
 				do_action( 'connect_ecommerce_settings_tabs_content', $active_tab, $active_subtab );
 				?>
 			</div>
@@ -604,18 +631,27 @@ class Settings {
 				);
 			}
 
-			// Company Select.
-			if ( in_array( 'company_id', $settings_fields, true ) ) {
-				add_settings_field(
-					'wcpimh_company_select',
-					__( 'Company', 'woocommerce-es' ),
-					array( $this, 'company_select_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-				);
-			}
+		// Company Select.
+		if ( in_array( 'company_id', $settings_fields, true ) ) {
+			add_settings_field(
+				'wcpimh_company_select',
+				__( 'Company', 'woocommerce-es' ),
+				array( $this, 'company_select_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+		}
 
-			if ( $this->options['product_option_stock'] ) {
+		// API Connection Status.
+		add_settings_field(
+			'wcpimh_api_status',
+			__( 'Connection Status', 'woocommerce-es' ),
+			array( $this, 'api_status_callback' ),
+			'connect_ecommerce_admin',
+			'connect_woocommerce_setting_section'
+		);
+
+		if ( $this->options['product_option_stock'] ) {
 				add_settings_field(
 					'wcpimh_stock',
 					__( 'Import stock?', 'woocommerce-es' ),
@@ -746,7 +782,7 @@ class Settings {
 				);
 			}
 
-			if ( 'Holded' === $this->options['name'] ) {
+			if ( 'Holded' === $this->options['name'] || in_array( 'doctype', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
 					__( 'Document to create after order completed?', 'woocommerce-es' ),
@@ -754,7 +790,9 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
+			}
 
+			if ( 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_design_id',
 					__( 'ID Holded design for document', 'woocommerce-es' ),
@@ -1787,6 +1825,37 @@ class Settings {
 		echo '<label for="connwoo_debug_log_checkbox" class="description">';
 		esc_html_e( 'Activates debug mode to save logs.', 'woocommerce-es' );
 		echo '</label>';
+	}
+
+	/**
+	 * API Status callback
+	 *
+	 * @return void
+	 */
+	public function api_status_callback() {
+		if ( empty( $this->connapi_erp ) ) {
+			echo '<span style="color: #666;">' . esc_html__( 'No connector configured.', 'woocommerce-es' ) . '</span>';
+			return;
+		}
+
+		// Test the API connection using check_can_sync which uses login internally.
+		$login_api = $this->connapi_erp->check_can_sync();
+
+		if ( is_array( $login_api ) ) {
+			$message  = $login_api['message'] ?? __( 'Connection successful', 'woocommerce-es' );
+			$can_sync = 'ok' === ( $login_api['status'] ?? '' ) ? true : false;
+
+			if ( $can_sync ) {
+				echo '<span style="color: green; font-weight: bold;">✓ ' . esc_html( $message ) . '</span>';
+			} else {
+				$message = $login_api['message'] ?? __( 'Connection failed. Please check your credentials.', 'woocommerce-es' );
+				echo '<span style="color: red; font-weight: bold;">✗ ' . esc_html( $message ) . '</span>';
+			}
+		} elseif ( true === $login_api ) {
+			echo '<span style="color: green; font-weight: bold;">✓ ' . esc_html__( 'Connection successful! Credentials are valid.', 'woocommerce-es' ) . '</span>';
+		} else {
+			echo '<span style="color: red; font-weight: bold;">✗ ' . esc_html__( 'Connection failed. Please check your credentials.', 'woocommerce-es' ) . '</span>';
+		}
 	}
 
 	/**

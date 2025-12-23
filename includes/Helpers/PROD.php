@@ -527,6 +527,7 @@ class PROD {
 		$parent_sku      = $product->get_sku();
 		$product_id      = $product->get_id();
 		$is_virtual      = ( isset( $settings['virtual'] ) && 'yes' === $settings['virtual'] ) ? true : false;
+		$import_stock    = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
 		$message         = '';
 
 		if ( ! $is_new_product ) {
@@ -577,6 +578,13 @@ class PROD {
 					$attributes_prod[ 'attribute_pa_' . $attribute_name ] = wc_sanitize_taxonomy_name( $category_fields['field'] );
 				}
 			}
+			// Set stock parent product.
+			if ( 'yes' === $import_stock ) {
+				$product->set_manage_stock( true );
+			} else {
+				$product->set_manage_stock( false );
+			}
+			
 			// Make Variations.
 			$variation_price   = self::get_rate_price( $variant, $rate_id );
 			$variation_props = array(
@@ -614,13 +622,15 @@ class PROD {
 			}
 			$variation->set_props( $variation_props );
 			// Stock.
-			if ( isset( $variant['stock'] ) ) {
-				$stock_status = 0 === (int) $variant['stock'] ? 'outofstock' : 'instock';
-				$variation->set_stock_quantity( (int) $variant['stock'] );
+			if ( 'yes' === $import_stock && isset( $variant['stock'] ) ) {
+				$item_stock   = (int) $variant['stock'];
+				$stock_status = 0 === $item_stock ? 'outofstock' : 'instock';
+				$variation->set_stock_quantity( $item_stock );
 				$variation->set_manage_stock( true );
 				$variation->set_stock_status( $stock_status );
 			} else {
 				$variation->set_manage_stock( false );
+				$variation->set_stock_status( 'instock' );
 			}
 			$variation_prevent_id = self::find_product( $variant['sku'] );
 			if ( ! empty( $variation_prevent_id ) ) {
@@ -1136,8 +1146,6 @@ class PROD {
 			return '';
 		}
 	}
-
-
 
 	/**
 	 * Get attribute category ID

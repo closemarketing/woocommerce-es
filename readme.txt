@@ -1,12 +1,12 @@
-=== Connect WooCommerce Shop to ERP/CRM and EU/VAT Compliance ===
+=== Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance ===
 Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.0
-Version: 3.3.0
+Stable tag: 3.3.1
+Version: 3.3.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -107,6 +107,7 @@ You will need to add Payment methods to merge variables to send the payment meth
 
 Premium connectors include:
 - [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+- [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
 - [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
 - [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
 - [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
@@ -122,6 +123,11 @@ Connect Ecommerce allows you to import products from an ERP/CRM to your WooComme
 Products are synced from the ERP/CRM to WooCommerce because the ERP should always contain the most up-to-date business information. This ensures accurate management of products, prices, and other business data.
 
 Orders are synced from WooCommerce to the ERP/CRM so that every time a customer places an order, it is sent to your ERP for proper order and invoice management.
+
+= What happens when a product already exists in WooCommerce? =
+If the product already exists in WooCommerce, it will be updated with the new data from the ERP/CRM. It does not update marketing information like description, title, url, slug, etc. but it will update the product data like price, stock, etc.
+
+Products are matched by SKU. If the SKU is the same, the product will be updated. If the SKU is not the same, the product will be created as a new product.
 
 = What happens when a product is out of stock? =
 By default, the product disappears from the store catalog but remains visible to search engines. This is intentional and matches the expected store behavior.
@@ -191,7 +197,12 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= n.e.x.t. =
+= n.e.x.t =
+* Added: Support to FacturaDirecta connector.
+* Fixed: General setting not import Inventory was not working in variable products.
+* Fixed: Error cleaning special chars in order data.
+
+= 3.3.1 =
 * Fixed: Error getting companies from API.
 * Enhancement: Added VAT number validation via VIES (VAT Information Exchange System).
 * Enhancement: Integrated dragonbe/vies library for EU VAT number validation.
@@ -199,6 +210,8 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Enhancement: Added caching mechanism for VIES responses to improve performance.
 * Enhancement: VAT validation results stored in order metadata for compliance tracking.
 * Enhancement: Graceful handling of VIES service unavailability.
+* Added: Show API connection status in settings.
+* Added: Support to custom tabs in settings.
 
 = 3.3.0 =
 * Enhancement: Added support to ERP Tax Types.
