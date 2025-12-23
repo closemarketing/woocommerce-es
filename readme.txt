@@ -91,6 +91,11 @@ Products are synced from the ERP/CRM to WooCommerce because the ERP should alway
 
 Orders are synced from WooCommerce to the ERP/CRM so that every time a customer places an order, it is sent to your ERP for proper order and invoice management.
 
+= What happens when a product already exists in WooCommerce? =
+If the product already exists in WooCommerce, it will be updated with the new data from the ERP/CRM. It does not update marketing information like description, title, url, slug, etc. but it will update the product data like price, stock, etc.
+
+Products are matched by SKU. If the SKU is the same, the product will be updated. If the SKU is not the same, the product will be created as a new product.
+
 = What happens when a product is out of stock? =
 By default, the product disappears from the store catalog but remains visible to search engines. This is intentional and matches the expected store behavior.
 
@@ -127,6 +132,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 = n.e.x.t =
 * Added: Support to FacturaDirecta connector.
 * Fixed: General setting not import Inventory was not working in variable products.
+* Fixed: Error cleaning special chars in order data.
 
 = 3.3.1 =
 * Fixed: Error getting companies from API.
