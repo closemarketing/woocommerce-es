@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.1
-Version: 3.3.1
+Stable tag: 3.3.2
+Version: 3.3.2
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -218,7 +218,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= n.e.x.t =
+= 3.3.2 =
 * Added: Support to FacturaDirecta connector.
 * Fixed: General setting not import Inventory was not working in variable products.
 * Fixed: Error cleaning special chars in order data.
