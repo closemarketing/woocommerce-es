@@ -128,6 +128,9 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 
 == Changelog ==
 
+= n.e.x.t =
+* Fixed: Error cleaning special chars in order data.
+
 = 3.3.1 =
 * Fixed: Error getting companies from API.
 * Added: Show API connection status in settings.
