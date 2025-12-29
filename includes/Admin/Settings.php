@@ -631,25 +631,36 @@ class Settings {
 				);
 			}
 
-		// Company Select.
-		if ( in_array( 'company_id', $settings_fields, true ) ) {
+			// Sale Center.
+			if ( in_array( 'sale_center', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_sale_center',
+					__( 'Sale Center', 'woocommerce-es' ),
+					array( $this, 'sale_center_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			// Company Select.
+			if ( in_array( 'company_id', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_company_select',
+					__( 'Company', 'woocommerce-es' ),
+					array( $this, 'company_select_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			// API Connection Status.
 			add_settings_field(
-				'wcpimh_company_select',
-				__( 'Company', 'woocommerce-es' ),
-				array( $this, 'company_select_callback' ),
+				'wcpimh_api_status',
+				__( 'Connection Status', 'woocommerce-es' ),
+				array( $this, 'api_status_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
 			);
-		}
-
-		// API Connection Status.
-		add_settings_field(
-			'wcpimh_api_status',
-			__( 'Connection Status', 'woocommerce-es' ),
-			array( $this, 'api_status_callback' ),
-			'connect_ecommerce_admin',
-			'connect_woocommerce_setting_section'
-		);
 
 		if ( $this->options['product_option_stock'] ) {
 				add_settings_field(
@@ -1407,6 +1418,38 @@ class Settings {
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][company]" id="wcpimh_company" value="%s">',
 			isset( $this->settings['company'] ) ? esc_attr( $this->settings['company'] ) : ''
 		);
+	}
+
+	/**
+	 * Get companies and select them
+	 *
+	 * @return void
+	 */
+	public function sale_center_callback() {
+		if ( ! method_exists( $this->connapi_erp, 'get_sale_centers' ) ) {
+			echo '<p>' . esc_html__( 'By default', 'woocommerce-es' ) . '</p>';
+			return;
+		}
+		$result_sale_centers = $this->connapi_erp->get_sale_centers();
+		if ( empty( $result_sale_centers ) || 'error' === $result_sale_centers['status'] || empty( $result_sale_centers['data'] ) ) {
+			$message = ! empty( $result_sale_centers['message'] ) ? $result_sale_centers['message'] : '';
+			$message = empty( $message ) && ! empty( $result_sale_centers['data'] ) ? $result_sale_centers['data'] : $message;
+			$message = empty( $message ) ? esc_html__( 'Error getting sale centers', 'woocommerce-es' ) : $message;
+			echo '<p>' . esc_html__( 'Error', 'woocommerce-es' ) . ': ' . esc_html( $message ) . '</p>';
+			return;
+		}
+		$saved_attr = isset( $this->settings['sale_center'] ) ? $this->settings['sale_center'] : '';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][sale_center]" id="wcpimh_sale_center">
+			<?php
+			foreach ( $result_sale_centers['data'] as $value => $label ) {
+				echo '<option value="' . esc_html( $value ) . '" ';
+				selected( $value, $saved_attr );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			?>
+		</select>
+		<?php
 	}
 
 	/**
