@@ -219,7 +219,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = n.e.x.t =
-* Fixed: Tax class "parent" for new variations. That fixes the issue of not applying the tax class to the variation.
+* Fixed: Variations now inherit parent tax class correctly by setting tax_class to "parent" on creation.
+* Fixed: Tax class "parent" is preserved when products are re-synced/updated, preventing tax calculation inconsistencies.
+* Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
 
 = 3.3.2 =
 * Added: Support to FacturaDirecta connector.
