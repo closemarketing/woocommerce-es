@@ -218,6 +218,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
+= n.e.x.t =
+* Fixed: Tax class "parent" for new variations. That fixes the issue of not applying the tax class to the variation.
+
 = 3.3.2 =
 * Added: Support to FacturaDirecta connector.
 * Fixed: General setting not import Inventory was not working in variable products.

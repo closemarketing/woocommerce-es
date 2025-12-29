@@ -135,6 +135,9 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled when stock import is disabled' );
 			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
 
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
+
 			$images = [
 				'dummy-image.png',
 				'dummy-image-alt.png',
@@ -245,6 +248,10 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertEquals( $item['variants'][$index]['price'], (float) $prod_variation->get_regular_price() );
 			$this->assertEquals( $item['variants'][$index]['sku'], $prod_variation->get_sku() );
 			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
+
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
+
 			$index++;
 		}
 
@@ -311,6 +318,9 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled when stock import is disabled' );
 			// Stock quantity should be null or 0 when not managing stock.
 			$this->assertNull( $prod_variation->get_stock_quantity(), 'Stock quantity should be null when stock import is disabled' );
+
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
 		}
 
 		wp_delete_post( $result_prod_id, true ); // Clean up after test
@@ -368,6 +378,10 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			// Stock status should be correct.
 			$expected_status = 0 === (int) $item['variants'][$index]['stock'] ? 'outofstock' : 'instock';
 			$this->assertEquals( $expected_status, $prod_variation->get_stock_status(), 'Stock status should match stock quantity' );
+
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
+
 			$index++;
 		}
 

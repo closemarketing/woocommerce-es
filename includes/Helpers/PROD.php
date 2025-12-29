@@ -584,9 +584,9 @@ class PROD {
 			} else {
 				$product->set_manage_stock( false );
 			}
-			
+
 			// Make Variations.
-			$variation_price   = self::get_rate_price( $variant, $rate_id );
+			$variation_price = self::get_rate_price( $variant, $rate_id );
 			$variation_props = array(
 				'parent_id'     => $product_id,
 				'attributes'    => $attributes_prod,
@@ -601,7 +601,7 @@ class PROD {
 				// New variation.
 				$variation_props_new = array(
 					'tax_status'   => 'taxable',
-					'tax_class'    => '',
+					'tax_class'    => 'parent',
 					'weight'       => '',
 					'length'       => '',
 					'width'        => '',
@@ -612,7 +612,7 @@ class PROD {
 				);
 				$variation_props     = array_merge( $variation_props, $variation_props_new );
 			}
-			$variation    = new \WC_Product_Variation( $variation_id );
+			$variation = new \WC_Product_Variation( $variation_id );
 			if ( ! empty( $variant['barcode'] ) ) {
 				try {
 					$variation->set_global_unique_id( $variant['barcode'] );
