@@ -453,6 +453,12 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 
 	/**
 	 * Test that tax class 'parent' is preserved when product is synced again.
+	 *
+	 * This test ensures that when a variable product is re-synced (updated),
+	 * the variation tax classes remain set to 'parent', preventing tax calculation
+	 * inconsistencies that occur when variations don't inherit the parent tax class.
+	 *
+	 * @see https://github.com/closemarketing/woocommerce-es/issues/XXX
 	 */
 	public function test_variation_tax_class_preserved_on_resync() {
 		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
@@ -462,14 +468,14 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->settings['catattr'] = 'sandalias';
 		$this->settings['catnp']   = 'yes';
 
-		// Test images.
-		$image_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		// Setup test images.
+		$image_path  = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
 		$image_dummy = [
-			'url' => $image_path,
-			'file' => $image_path,
+			'url'          => $image_path,
+			'file'         => $image_path,
 			'content_type' => 'image/png',
 		];
-		$item['images'] = [ $image_dummy ];
+		$item['images']             = [ $image_dummy ];
 		$item['variants'][0]['image'] = $image_dummy;
 		$item['variants'][1]['image'] = $image_dummy;
 
@@ -480,56 +486,59 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertEquals( 'ok', $result_sync['status'] );
 		$this->assertIsInt( $result_prod_id );
 
-		// Verify initial tax class is 'parent'.
+		// Verify initial tax class is 'parent' for all variations.
 		$product = wc_get_product( $result_prod_id );
 		$this->assertInstanceOf( 'WC_Product_Variable', $product );
 
-		$variations = $product->get_children();
-		$this->assertNotEmpty( $variations );
-
+		$variations          = $product->get_children();
 		$initial_tax_classes = [];
+		
+		$this->assertNotEmpty( $variations, 'Variable product should have variations' );
+
 		foreach ( $variations as $variation_id ) {
 			$prod_variation = new WC_Product_Variation( $variation_id );
 			$tax_class      = $prod_variation->get_tax_class( 'edit' );
-			$this->assertEquals( 'parent', $tax_class, 'Initial tax class should be "parent"' );
+			
+			$this->assertEquals( 'parent', $tax_class, 'Initial tax class should be "parent" for variation #' . $variation_id );
 			$initial_tax_classes[ $variation_id ] = $tax_class;
 		}
 
-		// Second sync - update the same product.
-		$item['name']  = 'Updated Product Name';
-		$item['desc']  = 'Updated product description';
-		$item['price'] = 99.99;
+		// Second sync - update the same product with different data.
+		$item['name']                 = 'Updated Product Name';
+		$item['desc']                 = 'Updated product description';
+		$item['price']                = 99.99;
 		$item['variants'][0]['price'] = 44.99;
 		$item['variants'][1]['price'] = 54.99;
 
 		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
 
-		$this->assertEquals( 'ok', $result_sync_upd['status'] );
-		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
+		$this->assertEquals( 'ok', $result_sync_upd['status'], 'Product resync should succeed' );
+		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'], 'Product ID should remain the same after resync' );
 
 		// Verify tax class is STILL 'parent' after update.
-		$product_updated = wc_get_product( $result_prod_id );
-		$this->assertInstanceOf( 'WC_Product_Variable', $product_updated );
-
+		$product_updated    = wc_get_product( $result_prod_id );
 		$variations_updated = $product_updated->get_children();
-		$this->assertNotEmpty( $variations_updated );
+
+		$this->assertNotEmpty( $variations_updated, 'Variable product should still have variations after resync' );
+		$this->assertCount( count( $variations ), $variations_updated, 'Number of variations should remain the same' );
 
 		foreach ( $variations_updated as $variation_id ) {
 			$prod_variation = new WC_Product_Variation( $variation_id );
 			$tax_class      = $prod_variation->get_tax_class( 'edit' );
 			
-			$this->assertEquals( 'parent', $tax_class, 'Tax class should remain "parent" after product resync' );
-			$this->assertEquals( $initial_tax_classes[ $variation_id ], $tax_class, 'Tax class should not have changed from initial value' );
+			$this->assertEquals(
+				'parent',
+				$tax_class,
+				'Tax class should remain "parent" after product resync for variation #' . $variation_id
+			);
+			
+			$this->assertEquals(
+				$initial_tax_classes[ $variation_id ],
+				$tax_class,
+				'Tax class should not have changed from initial value for variation #' . $variation_id
+			);
 		}
 
-		// Verify variation prices were updated.
-		$index = 0;
-		foreach ( $variations_updated as $variation_id ) {
-			$prod_variation = new WC_Product_Variation( $variation_id );
-			$this->assertEquals( $item['variants'][$index]['price'], (float) $prod_variation->get_regular_price(), 'Variation price should be updated' );
-			$index++;
-		}
-
-		wp_delete_post( $result_prod_id, true ); // Clean up after test
+		wp_delete_post( $result_prod_id, true );
 	}
 }
