@@ -338,15 +338,31 @@ class Orders {
 		$order_id = isset( $_POST['order_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['order_id'] ) ) : 0;
 		$type     = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
 
+		$result = array(
+			'status'  => 'error',
+			'message' => __( 'Invalid request type', 'woocommerce-es' ),
+		);
+
 		if ( 'erp-post' === $type ) {
 			$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true );
 		}
-		wp_send_json_success(
-			array(
-				'message'  => $result['message'] ?? '',
-				'order_id' => $order_id,
-			)
-		);
+
+		// Check result status and respond accordingly.
+		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
+			wp_send_json_error(
+				array(
+					'message'  => $result['message'] ?? __( 'Unknown error occurred', 'woocommerce-es' ),
+					'order_id' => $order_id,
+				)
+			);
+		} else {
+			wp_send_json_success(
+				array(
+					'message'  => $result['message'] ?? __( 'Order sent successfully', 'woocommerce-es' ),
+					'order_id' => $order_id,
+				)
+			);
+		}
 	}
 }
 

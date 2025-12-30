@@ -221,7 +221,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 = n.e.x.t =
 * Fixed: Variations now inherit parent tax class correctly by setting tax_class to "parent" on creation.
 * Fixed: Tax class "parent" is preserved when products are re-synced/updated, preventing tax calculation inconsistencies.
+* Fixed: Plugin no longer shows alerts for successful order submissions to API - alerts now only appear on actual errors.
 * Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
+* Enhancement: Improved order sync UI feedback - success messages are shown in green and auto-hide after 5 seconds, errors show alerts.
 
 = 3.3.2 =
 * Added: Support to FacturaDirecta connector.
