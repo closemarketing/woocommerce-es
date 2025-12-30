@@ -135,6 +135,9 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled when stock import is disabled' );
 			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
 
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
+
 			$images = [
 				'dummy-image.png',
 				'dummy-image-alt.png',
@@ -245,6 +248,10 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertEquals( $item['variants'][$index]['price'], (float) $prod_variation->get_regular_price() );
 			$this->assertEquals( $item['variants'][$index]['sku'], $prod_variation->get_sku() );
 			$this->assertEquals( $item['variants'][$index]['barcode'], $prod_variation->get_global_unique_id() );
+
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
+
 			$index++;
 		}
 
@@ -311,6 +318,9 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$this->assertFalse( $prod_variation->get_manage_stock(), 'Stock management should be disabled when stock import is disabled' );
 			// Stock quantity should be null or 0 when not managing stock.
 			$this->assertNull( $prod_variation->get_stock_quantity(), 'Stock quantity should be null when stock import is disabled' );
+
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
 		}
 
 		wp_delete_post( $result_prod_id, true ); // Clean up after test
@@ -368,6 +378,10 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			// Stock status should be correct.
 			$expected_status = 0 === (int) $item['variants'][$index]['stock'] ? 'outofstock' : 'instock';
 			$this->assertEquals( $expected_status, $prod_variation->get_stock_status(), 'Stock status should match stock quantity' );
+
+			// Assert tax class is set to 'parent' for new variations.
+			$this->assertEquals( 'parent', $prod_variation->get_tax_class( 'edit' ), 'Variation should have "parent" tax class when created' );
+
 			$index++;
 		}
 
@@ -435,5 +449,96 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		}
 
 		wp_delete_post( $result_prod_id, true ); // Clean up after test
+	}
+
+	/**
+	 * Test that tax class 'parent' is preserved when product is synced again.
+	 *
+	 * This test ensures that when a variable product is re-synced (updated),
+	 * the variation tax classes remain set to 'parent', preventing tax calculation
+	 * inconsistencies that occur when variations don't inherit the parent tax class.
+	 *
+	 * @see https://github.com/closemarketing/woocommerce-es/issues/XXX
+	 */
+	public function test_variation_tax_class_preserved_on_resync() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		// Setup test images.
+		$image_path  = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url'          => $image_path,
+			'file'         => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images']             = [ $image_dummy ];
+		$item['variants'][0]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy;
+
+		// First sync - create the product.
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertIsInt( $result_prod_id );
+
+		// Verify initial tax class is 'parent' for all variations.
+		$product = wc_get_product( $result_prod_id );
+		$this->assertInstanceOf( 'WC_Product_Variable', $product );
+
+		$variations          = $product->get_children();
+		$initial_tax_classes = [];
+		
+		$this->assertNotEmpty( $variations, 'Variable product should have variations' );
+
+		foreach ( $variations as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			$tax_class      = $prod_variation->get_tax_class( 'edit' );
+			
+			$this->assertEquals( 'parent', $tax_class, 'Initial tax class should be "parent" for variation #' . $variation_id );
+			$initial_tax_classes[ $variation_id ] = $tax_class;
+		}
+
+		// Second sync - update the same product with different data.
+		$item['name']                 = 'Updated Product Name';
+		$item['desc']                 = 'Updated product description';
+		$item['price']                = 99.99;
+		$item['variants'][0]['price'] = 44.99;
+		$item['variants'][1]['price'] = 54.99;
+
+		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+
+		$this->assertEquals( 'ok', $result_sync_upd['status'], 'Product resync should succeed' );
+		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'], 'Product ID should remain the same after resync' );
+
+		// Verify tax class is STILL 'parent' after update.
+		$product_updated    = wc_get_product( $result_prod_id );
+		$variations_updated = $product_updated->get_children();
+
+		$this->assertNotEmpty( $variations_updated, 'Variable product should still have variations after resync' );
+		$this->assertCount( count( $variations ), $variations_updated, 'Number of variations should remain the same' );
+
+		foreach ( $variations_updated as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			$tax_class      = $prod_variation->get_tax_class( 'edit' );
+			
+			$this->assertEquals(
+				'parent',
+				$tax_class,
+				'Tax class should remain "parent" after product resync for variation #' . $variation_id
+			);
+			
+			$this->assertEquals(
+				$initial_tax_classes[ $variation_id ],
+				$tax_class,
+				'Tax class should not have changed from initial value for variation #' . $variation_id
+			);
+		}
+
+		wp_delete_post( $result_prod_id, true );
 	}
 }
