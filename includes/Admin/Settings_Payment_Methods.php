@@ -140,6 +140,7 @@ class Settings_Payment_Methods {
 					<thead>
 						<tr>
 							<th scope="col"><?php esc_html_e( 'WooCommerce Gateway', 'woocommerce-es' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Status', 'woocommerce-es' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Connector Payment Method', 'woocommerce-es' ); ?></th>
 							<th scope="col"><?php esc_html_e( 'Connector Treasury', 'woocommerce-es' ); ?></th>
 						</tr>
@@ -194,6 +195,16 @@ class Settings_Payment_Methods {
 									<strong><?php echo esc_html( $gateway_title ); ?></strong>
 									<br />
 									<code><?php echo esc_html( $sanitized_gateway_id ); ?></code>
+								</td>
+								<td>
+									<?php
+									$is_enabled = isset( $gateway->enabled ) && 'yes' === $gateway->enabled;
+									if ( $is_enabled ) {
+										echo '<span class="status-enabled" style="color: #2271b1; font-weight: 600;">' . esc_html__( 'Active', 'woocommerce-es' ) . '</span>';
+									} else {
+										echo '<span class="status-disabled" style="color: #d63638; font-weight: 600;">' . esc_html__( 'Inactive', 'woocommerce-es' ) . '</span>';
+									}
+									?>
 								</td>
 								<td>
 									<select name="payment_methods[<?php echo esc_attr( $sanitized_gateway_id ); ?>]" class="regular-text">
@@ -366,6 +377,21 @@ class Settings_Payment_Methods {
 		if ( ! is_array( $gateways ) ) {
 			return array();
 		}
+
+		// Sort gateways: active first.
+		uasort(
+			$gateways,
+			function ( $a, $b ) {
+				$a_enabled = isset( $a->enabled ) && 'yes' === $a->enabled ? 1 : 0;
+				$b_enabled = isset( $b->enabled ) && 'yes' === $b->enabled ? 1 : 0;
+
+				if ( $a_enabled === $b_enabled ) {
+					return 0;
+				}
+
+				return ( $a_enabled > $b_enabled ) ? -1 : 1;
+			}
+		);
 
 		return $gateways;
 	}
