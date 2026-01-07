@@ -31,7 +31,7 @@
 		"phpstan/extension-installer": "^1.4",
 		"php-stubs/wordpress-stubs": "^6.8",
 		"php-stubs/woocommerce-stubs": "^10.1",
-		"phpunit/phpunit": "^9.6"
+		"phpunit/phpunit": "^12.5"
 	},
 	"scripts": {
     "behat": "BEHAT_FEATURES_FOLDER=tests/behat/features run-behat-tests",
