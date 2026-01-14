@@ -418,6 +418,8 @@ class PROD {
 				$field_slug = isset( $field_key[1] ) ? $field_key[1] : $field_key;
 				if ( isset( $item[ $custom_field ] ) && 'cf' === $field_type ) {
 					$product->update_meta_data( $field_slug, $item[ $custom_field ] );
+				} elseif ( isset( $item[ $source_key ] ) && 'cf' === $field_type ) {
+					$product->update_meta_data( $field_slug, $item[ $source_key ] );
 				} elseif ( isset( $item[ $custom_field ] ) && 'tax' === $field_type ) {
 					TAX::set_terms_taxonomy( $settings, $field_slug, $item[ $custom_field ], $product_id );
 				} elseif ( isset( $item[ $custom_field ] ) && 'prod' === $field_type ) {

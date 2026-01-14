@@ -225,6 +225,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Fixed: Product importer now correctly detects end of paginated product list, preventing unnecessary API calls beyond last product.
 * Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
 * Enhancement: Added pagination end detection tests for product import with various edge cases (102/100, exact pages, multiple pages).
+* Enhancement: Added support to import custom fields from API to WooCommerce.
 
 = 3.3.2 =
 * Added: Support to FacturaDirecta connector.
