@@ -1110,12 +1110,15 @@ class Settings {
 			$can_sync = 'ok' === $login_api['status'] ? true : false;
 		} else {
 			$can_sync = $login_api;
-			$message = $login_api ? '' : __( 'We couln\'t connect to the API', 'woocommerce-es' );
+			$message  = $login_api ? '' : __( 'We couln\'t connect to the API', 'woocommerce-es' );
 		}
+
+		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_all_product_skus' );
+		$api_pagination           = ! empty( $this->options['api_pagination'] ) ? (int) $this->options['api_pagination'] : 100;
 		?>
-		<div class="connwoo-sync-engine">
+		<div class="connwoo-sync-engine connwoo-sync-with-stats">
 			<div class="sync-wrapper">
-				<?php 
+				<?php
 				if ( empty( $can_sync ) ) {
 					?>
 					<div class="error notice">
@@ -1127,38 +1130,228 @@ class Settings {
 					</div>
 					<?php
 				} else {
+					$this->render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus );
+				}
 				?>
-					<h2>
-						<?php
-						echo sprintf(
-							esc_html__( 'Import Products from %s', 'woocommerce-es' ),
-							esc_html( $this->options['name'] )
-						);
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Renders import UI with tabs, sync type selection and optional stats (stats only when get_all_product_skus exists).
+	 *
+	 * @param string $ajax_action AJAX action name.
+	 * @param int    $api_pagination Products per page for sync.
+	 * @param bool   $has_get_all_product_skus Whether connector has get_all_product_skus (shows indicators).
+	 * @return void
+	 */
+	private function render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus = false ) {
+		$cron_enabled = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
+		?>
+		<h2>
+			<?php
+			printf(
+				/* translators: %s: Name of the connector */
+				esc_html__( 'Import Products from %s', 'woocommerce-es' ),
+				esc_html( $this->options['name'] )
+			);
+			?>
+		</h2>
+
+		<?php
+		if ( $has_get_all_product_skus ) {
+			?>
+		<!-- Import Statistics (only when get_all_product_skus exists) -->
+		<div class="conecom-import-stats">
+			<div class="conecom-stat-card">
+				<div class="conecom-stat-icon conecom-icon-api">
+					<span class="dashicons dashicons-cloud"></span>
+				</div>
+				<div class="conecom-stat-content">
+					<div class="conecom-stat-value" id="stat-available-count">--</div>
+					<div class="conecom-stat-label"><?php esc_html_e( 'Available in API', 'woocommerce-es' ); ?></div>
+				</div>
+			</div>
+
+			<div class="conecom-stat-card">
+				<div class="conecom-stat-icon conecom-icon-wp">
+					<span class="dashicons dashicons-cart"></span>
+				</div>
+				<div class="conecom-stat-content">
+					<div class="conecom-stat-value" id="stat-wp-count">--</div>
+					<div class="conecom-stat-label"><?php esc_html_e( 'Products in WooCommerce', 'woocommerce-es' ); ?></div>
+					<div class="conecom-stat-sublabel"><?php esc_html_e( 'Synced products', 'woocommerce-es' ); ?></div>
+				</div>
+			</div>
+
+			<div class="conecom-stat-card conecom-stat-import">
+				<div class="conecom-stat-icon conecom-icon-import">
+					<span class="dashicons dashicons-download"></span>
+				</div>
+				<div class="conecom-stat-content">
+					<div class="conecom-stat-value" id="stat-import-count">--</div>
+					<div class="conecom-stat-label"><?php esc_html_e( 'To Import/Update', 'woocommerce-es' ); ?></div>
+					<div class="conecom-stat-sublabel">
+						<span id="stat-new-count">--</span> <?php esc_html_e( 'new', 'woocommerce-es' ); ?> +
+						<span id="stat-outdated-count">--</span> <?php esc_html_e( 'outdated', 'woocommerce-es' ); ?>
+					</div>
+				</div>
+			</div>
+
+			<div class="conecom-stat-card conecom-stat-delete">
+				<div class="conecom-stat-icon conecom-icon-delete">
+					<span class="dashicons dashicons-trash"></span>
+				</div>
+				<div class="conecom-stat-content">
+					<div class="conecom-stat-value" id="stat-delete-count">--</div>
+					<div class="conecom-stat-label"><?php esc_html_e( 'To Remove', 'woocommerce-es' ); ?></div>
+					<div class="conecom-stat-sublabel"><?php esc_html_e( 'Not in API', 'woocommerce-es' ); ?></div>
+				</div>
+			</div>
+		</div>
+			<?php
+		}
+		?>
+
+		<!-- Two columns: Automatic Sync + Manual Import -->
+		<div class="conecom-two-columns">
+			<div class="conecom-cron-logs">
+				<h3>
+					<span class="dashicons dashicons-clock" style="vertical-align: middle;"></span>
+					<?php esc_html_e( 'Automatic Sync (Cron)', 'woocommerce-es' ); ?>
+					<?php if ( $cron_enabled ) : ?>
+						<span style="color: green; font-size: 0.8em; font-weight: normal;">● <?php esc_html_e( 'Enabled', 'woocommerce-es' ); ?></span>
+					<?php else : ?>
+						<span style="color: #999; font-size: 0.8em; font-weight: normal;">○ <?php esc_html_e( 'Disabled', 'woocommerce-es' ); ?></span>
+					<?php endif; ?>
+				</h3>
+				<p style="color: #646970; font-size: 14px; margin-top: 10px;">
+					<?php esc_html_e( 'Configure sync frequency in the Automate tab.', 'woocommerce-es' ); ?>
+				</p>
+			</div>
+
+			<div class="conecom-manual-import">
+				<h3>
+					<span class="dashicons dashicons-upload" style="vertical-align: middle;"></span>
+					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
+				</h3>
+
+				<div class="import-button-wrapper">
+					<select id="import-mode" class="import-mode-select">
+						<option value="updated"><?php esc_html_e( 'Products to update', 'woocommerce-es' ); ?></option>
+						<option value="all"><?php esc_html_e( 'All products', 'woocommerce-es' ); ?></option>
+					</select>
+					<button type="button" id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItemsWithMode(this, '<?php echo esc_attr( $ajax_action ); ?>', 0, <?php echo (int) $api_pagination; ?>);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></button>
+					<?php
+					if ( $has_get_all_product_skus ) {
 						?>
-					</h2>
-					<p><?php esc_html_e( 'After you fillup the API settings, use the button below to import the products. The importing process may take a while and you need to keep this page open to complete it.', 'woocommerce-es' ); ?>
-					</p>
-					<br/>
-					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);" ><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
-					<?php if ( ! $this->is_disabled_ai ) { ?>
-						<p>
-						<label for="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
-						<select name="connwoo-sync-product-ai" id="<?php echo esc_attr( 'connect_ecommerce_ai' ); ?>">
+					<button type="button" id="refresh_stats" name="refresh_stats" class="button button-large" onclick="loadImportStats();">
+						<span class="dashicons dashicons-update"></span>
+						<?php esc_html_e( 'Refresh Statistics', 'woocommerce-es' ); ?>
+					</button>
+						<?php
+					}
+					?>
+					<span class="spinner"></span>
+				</div>
+				<?php
+				if ( ! $this->is_disabled_ai ) {
+					?>
+					<p style="margin-top: 10px;">
+						<label for="connect_ecommerce_ai_stats"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
+						<select name="connwoo-sync-product-ai" id="connect_ecommerce_ai_stats">
 							<option value="none"><?php esc_html_e( 'None', 'woocommerce-es' ); ?></option>
 							<option value="new"><?php esc_html_e( 'NEW Products', 'woocommerce-es' ); ?></option>
 							<option value="all"><?php esc_html_e( 'ALL Products', 'woocommerce-es' ); ?></option>
 						</select>
-						</p>
-					<?php } ?>
-				</div>
-				<fieldset id="logwrapper">
-					<legend><?php esc_html_e( 'Log', 'woocommerce-es' ); ?></legend>
-					<div id="loglist"></div>
-				</fieldset>
-				<?php
+					</p>
+					<?php
 				}
 				?>
+			</div>
 		</div>
+
+		<!-- Log container with tabs -->
+		<div class="conecom-log-container">
+			<div class="conecom-log-tabs">
+				<button class="conecom-tab-button active" data-tab="automatic">
+					<span class="dashicons dashicons-clock"></span>
+					<?php esc_html_e( 'Automatic Sync', 'woocommerce-es' ); ?>
+				</button>
+				<button class="conecom-tab-button" data-tab="manual">
+					<span class="dashicons dashicons-upload"></span>
+					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
+				</button>
+			</div>
+
+			<div class="conecom-tab-content">
+				<div class="conecom-tab-pane active" id="tab-automatic">
+					<p style="color: #666; font-style: italic; padding: 20px; text-align: center;">
+						<?php esc_html_e( 'Automatic sync runs in the background. Check WooCommerce logs for details.', 'woocommerce-es' ); ?>
+					</p>
+				</div>
+				<div class="conecom-tab-pane" id="tab-manual">
+					<fieldset id="logwrapper" style="border: none; padding: 0; margin: 0;">
+						<div id="loglist"></div>
+					</fieldset>
+				</div>
+			</div>
+		</div>
+
+		<script type="text/javascript">
+		function loadImportStats() {
+			if ( typeof ConEcom_ajaxAction === 'undefined' || ! ConEcom_ajaxAction.has_get_all_product_skus ) {
+				return;
+			}
+			var btn = document.getElementById('refresh_stats');
+			var cards = document.querySelectorAll('.conecom-stat-card');
+			if ( btn ) { btn.disabled = true; }
+			if ( cards.length ) { cards.forEach(function(c){ c.classList.add('loading'); }); }
+
+			fetch(ConEcom_ajaxAction.url, {
+				method: 'POST',
+				credentials: 'same-origin',
+				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+				body: 'action=connect_ecommerce_get_import_stats&security=' + encodeURIComponent(ConEcom_ajaxAction.stats_nonce)
+			})
+			.then(function(r){ return r.json(); })
+			.then(function(response) {
+				if ( response.success && response.data ) {
+					var d = response.data;
+					var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = (typeof val === 'number') ? val.toLocaleString() : val; };
+					set('stat-available-count', d.available_count);
+					set('stat-wp-count', d.wp_count);
+					set('stat-import-count', d.import_count);
+					set('stat-new-count', d.new_count);
+					set('stat-outdated-count', d.outdated_count);
+					set('stat-delete-count', d.delete_count);
+				}
+			})
+			.catch(function() {})
+			.finally(function() {
+				if ( btn ) { btn.disabled = false; }
+				if ( cards.length ) { cards.forEach(function(c){ c.classList.remove('loading'); }); }
+			});
+		}
+		document.addEventListener('DOMContentLoaded', function() {
+			var tabButtons = document.querySelectorAll('.conecom-tab-button');
+			var tabPanes = document.querySelectorAll('.conecom-tab-pane');
+			tabButtons.forEach(function(btn) {
+				btn.addEventListener('click', function() {
+					var targetTab = this.getAttribute('data-tab');
+					tabButtons.forEach(function(b){ b.classList.remove('active'); });
+					tabPanes.forEach(function(p){ p.classList.remove('active'); });
+					this.classList.add('active');
+					var pane = document.getElementById('tab-' + targetTab);
+					if ( pane ) pane.classList.add('active');
+				});
+			});
+			if ( typeof ConEcom_ajaxAction !== 'undefined' && ConEcom_ajaxAction.has_get_all_product_skus ) {
+				loadImportStats();
+			}
+		});
+		</script>
 		<?php
 	}
 

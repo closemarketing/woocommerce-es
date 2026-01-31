@@ -219,6 +219,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = n.e.x.t =
+* Enhancement: Improved import products from API. Stats now shows the number of products fetched from the API.
 * Enhancement: Added payment method status to payment method mapping.
 * Fixed: Variations now inherit parent tax class correctly by setting tax_class to "parent" on creation.
 * Fixed: Tax class "parent" is preserved when products are re-synced/updated, preventing tax calculation inconsistencies.

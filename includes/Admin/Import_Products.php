@@ -87,6 +87,7 @@ class Import_Products {
 
 		// Admin Styles.
 		add_action( 'wp_ajax_connect_ecommerce_sync_products', array( $this, 'sync_products' ) );
+		add_action( 'wp_ajax_connect_ecommerce_get_import_stats', array( $this, 'get_import_stats' ) );
 
 		// Schedule.
 		if ( $this->sync_period && 'no' !== $this->sync_period ) {
@@ -111,7 +112,7 @@ class Import_Products {
 
 		$products_synced = $sync_loop + 1;
 
-		if ( $api_pagination ) {
+		if ( $api_pagination && $api_pagination > 0 ) {
 			// Calculate position within current page (0-indexed).
 			$loop_page = $sync_loop % $api_pagination;
 
@@ -133,12 +134,31 @@ class Import_Products {
 	 * @return void
 	 */
 	public function admin_enqueues() {
+		// Check if we're on connect_ecommerce page.
+		$is_connect_ecommerce_page = isset( $_GET['page'] ) && 'connect_ecommerce' === $_GET['page'];
+		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
+		$current_subtab            = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : 'sync_products';
+
+		$is_sync_products_page = $is_connect_ecommerce_page
+			&& 'synchronization' === $current_tab
+			&& 'sync_products' === $current_subtab;
+
 		wp_enqueue_style(
 			'woocommerce-es',
 			CONECOM_PLUGIN_URL . 'includes/assets/admin.css',
 			array(),
 			CONECOM_VERSION
 		);
+
+		// Import page layout (tabs, two columns) is always used on sync products; stats are optional.
+		if ( $is_sync_products_page ) {
+			wp_enqueue_style(
+				'conecom-admin-import',
+				CONECOM_PLUGIN_URL . 'includes/assets/admin-import.css',
+				array(),
+				CONECOM_VERSION
+			);
+		}
 
 		wp_enqueue_script(
 			'connect-ecommerce-repeat',
@@ -156,15 +176,19 @@ class Import_Products {
 			true
 		);
 
+		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_all_product_skus' );
+
 		wp_localize_script(
 			'connect-ecommerce-import',
 			'ConEcom_ajaxAction',
 			array(
-				'url'                 => admin_url( 'admin-ajax.php' ),
-				'label_sync'          => __( 'Sync', 'woocommerce-es' ),
-				'label_syncing'       => __( 'Syncing', 'woocommerce-es' ),
-				'label_sync_complete' => __( 'Finished', 'woocommerce-es' ),
-				'nonce'               => wp_create_nonce( 'conecom_manual_import_nonce' ),
+				'url'                      => admin_url( 'admin-ajax.php' ),
+				'label_sync'               => __( 'Sync', 'woocommerce-es' ),
+				'label_syncing'            => __( 'Syncing', 'woocommerce-es' ),
+				'label_sync_complete'      => __( 'Finished', 'woocommerce-es' ),
+				'nonce'                    => wp_create_nonce( 'conecom_manual_import_nonce' ),
+				'has_get_all_product_skus' => $has_get_all_product_skus,
+				'stats_nonce'              => wp_create_nonce( 'conecom_import_stats_nonce' ),
 			)
 		);
 
@@ -206,6 +230,9 @@ class Import_Products {
 		$message        = '';
 		$res_message    = '';
 		$generate_ai    = ! empty( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
+		$mode           = isset( $_POST['mode'] ) ? sanitize_text_field( wp_unslash( $_POST['mode'] ) ) : 'all';
+		// Mode (updated|all) can be used in future to filter products to sync when get_all_product_skus exists.
+		$mode = in_array( $mode, array( 'updated', 'all' ), true ) ? $mode : 'all';
 		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
 		$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
 
@@ -232,12 +259,12 @@ class Import_Products {
 			session_start();
 		}
 		$page = 1;
-		if ( $api_pagination ) {
+		if ( $api_pagination && $api_pagination > 0 ) {
 			$loop_page = $sync_loop % $api_pagination;
 			$page      = intval( $sync_loop / $api_pagination, 0 );
 		}
 
-		if ( 0 === $sync_loop || ( $api_pagination && 0 === $loop_page ) ) {
+		if ( 0 === $sync_loop || ( $api_pagination && $api_pagination > 0 && 0 === $loop_page ) ) {
 			$api_products                     = $this->connapi_erp->get_products( null, $sync_loop );
 			$_SESSION['conecom_api_products'] = HELPER::sanitize_array_recursive( $api_products );
 			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
@@ -308,6 +335,37 @@ class Import_Products {
 			HELPER::send_product_errors( $this->error_product_import, $this->options['slug'] );
 		}
 		wp_send_json_success( $args );
+	}
+
+	/**
+	 * Get import statistics (only when connector has get_all_product_skus).
+	 *
+	 * @return void
+	 */
+	public function get_import_stats() {
+		if ( ! check_ajax_referer( 'conecom_import_stats_nonce', 'security', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid nonce', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		$result = PROD::get_import_stats( $this->connapi_erp, $this->options );
+
+		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
+			return;
+		}
+
+		wp_send_json_success(
+			array(
+				'api_count'       => $result['api_count'],
+				'available_count' => $result['available_count'],
+				'wp_count'        => $result['wp_count'],
+				'import_count'    => $result['import_count'],
+				'new_count'       => $result['new_count'],
+				'outdated_count'  => $result['outdated_count'],
+				'delete_count'    => $result['delete_count'],
+			)
+		);
 	}
 
 	/**
