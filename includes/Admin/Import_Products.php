@@ -199,6 +199,10 @@ class Import_Products {
 			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
 			return;
 		}
+		if ( empty( $this->connapi_erp ) ) {
+			wp_send_json_error( array( 'message' => __( 'No connector configured', 'woocommerce-es' ) ) );
+			return;
+		}
 		$sync_loop      = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$product_erp_id = isset( $_POST['product_erp_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_erp_id'] ) ) : '';
 		$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( wp_unslash( $_POST['product_sku'] ) ) : '';
@@ -332,6 +336,9 @@ class Import_Products {
 	 * @return void
 	 */
 	public function cron_sync_products() {
+		if ( empty( $this->connapi_erp ) ) {
+			return;
+		}
 		$is_table_sync = ! empty( $this->options['table_sync'] ) ? true : false;
 		if ( $is_table_sync ) {
 			HELPER::check_table_sync( $this->options['table_sync'] );
