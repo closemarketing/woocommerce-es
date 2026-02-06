@@ -1205,8 +1205,7 @@ class Settings {
 				</div>
 				<div class="conecom-stat-content">
 					<div class="conecom-stat-value" id="stat-delete-count">--</div>
-					<div class="conecom-stat-label"><?php esc_html_e( 'To Remove', 'woocommerce-es' ); ?></div>
-					<div class="conecom-stat-sublabel"><?php esc_html_e( 'Not in API', 'woocommerce-es' ); ?></div>
+					<div class="conecom-stat-label"><?php esc_html_e( 'Not in API', 'woocommerce-es' ); ?></div>
 				</div>
 			</div>
 		</div>
