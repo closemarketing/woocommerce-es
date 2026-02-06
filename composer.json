@@ -24,14 +24,14 @@
 		"sirbrillig/phpcs-variable-analysis": "^2",
 		"wp-coding-standards/wpcs": "^3.1",
 		"phpcsstandards/phpcsutils": "^1.x-dev",
-		"yoast/phpunit-polyfills": "^4.0",
-		"wp-phpunit/wp-phpunit": "^6.8",
+		"yoast/phpunit-polyfills": "^1.0",
+		"wp-phpunit/wp-phpunit": "^6.6",
 		"phpstan/phpstan": "^2.1",
 		"szepeviktor/phpstan-wordpress": "^2.0",
 		"phpstan/extension-installer": "^1.4",
 		"php-stubs/wordpress-stubs": "^6.8",
 		"php-stubs/woocommerce-stubs": "^10.1",
-		"phpunit/phpunit": "^12.5"
+		"phpunit/phpunit": "^9.6"
 	},
 	"scripts": {
     "behat": "BEHAT_FEATURES_FOLDER=tests/behat/features run-behat-tests",
