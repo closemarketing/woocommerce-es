@@ -117,7 +117,7 @@ class CRON {
 		if ( empty( $options['table_sync'] ) ) {
 			$period              = self::get_active_period( $settings );
 			$modified_since_date = isset( $period['interval'] ) ? strtotime( '-' . $period['interval'] . ' seconds' ) : strtotime( '-1 day' );
-			if ( ! method_exists( $connapi_erp, 'get_products_ids_since' ) ) {
+			if ( empty( $connapi_erp ) || ! method_exists( $connapi_erp, 'get_products_ids_since' ) ) {
 				return false;
 			}
 			return $connapi_erp->get_products_ids_since( $modified_since_date );
