@@ -434,4 +434,327 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$product->delete( true );
 		$order->delete( true );
 	}
+
+	/**
+	 * Test rounding precision for taxes (Issue #138)
+	 * 
+	 * Verifies that tax values are rounded to 2 decimals instead of 0 decimals.
+	 * This prevents total mismatches between WooCommerce and Holded.
+	 */
+	public function test_order_tax_rounding_precision() {
+		// Enable tax calculations.
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+
+		// Create a tax rate with decimal precision (21.5%).
+		$tax_rate_id = \WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'ES',
+				'tax_rate_state'    => '',
+				'tax_rate'          => '21.5000',
+				'tax_rate_name'     => 'IVA',
+				'tax_rate_priority' => 1,
+				'tax_rate_compound' => 0,
+				'tax_rate_shipping' => 1,
+				'tax_rate_order'    => 0,
+				'tax_rate_class'    => '',
+			)
+		);
+
+		// Test different price scenarios that generate decimal tax values.
+		$test_cases = array(
+			array(
+				'price'         => 49.99,
+				'quantity'      => 1,
+				'expected_tax'  => 10.75, // 49.99 * 0.215 = 10.74785 rounded to 10.75
+			),
+			array(
+				'price'         => 33.33,
+				'quantity'      => 1,
+				'expected_tax'  => 7.17, // 33.33 * 0.215 = 7.16595 rounded to 7.17
+			),
+			array(
+				'price'         => 12.45,
+				'quantity'      => 3,
+				'expected_tax'  => 8.03, // 37.35 * 0.215 = 8.03025 rounded to 8.03
+			),
+		);
+
+		foreach ( $test_cases as $index => $test_case ) {
+			// Create a product.
+			$product = new \WC_Product_Simple();
+			$product->set_name( 'Test Product ' . $index );
+			$product->set_regular_price( $test_case['price'] );
+			$product->set_tax_status( 'taxable' );
+			$product->set_tax_class( '' );
+			$product->save();
+
+			// Create an order.
+			$order = new \WC_Order();
+			$order->set_billing_country( 'ES' );
+			$order->set_billing_state( 'M' );
+			$order->set_billing_city( 'Madrid' );
+			$order->set_billing_email( 'test@example.com' );
+			$order->set_status( 'completed' );
+
+			// Add product to order.
+			$item = new \WC_Order_Item_Product();
+			$item->set_product( $product );
+			$item->set_quantity( $test_case['quantity'] );
+			$subtotal = $test_case['price'] * $test_case['quantity'];
+			$item->set_subtotal( $subtotal );
+			$item->set_total( $subtotal );
+			
+			// Set tax data.
+			$tax_amount = $subtotal * 0.215;
+			$item->set_taxes(
+				array(
+					'total'    => array( $tax_rate_id => $tax_amount ),
+					'subtotal' => array( $tax_rate_id => $tax_amount ),
+				)
+			);
+			
+			$order->add_item( $item );
+			$order->calculate_totals();
+			$order->save();
+
+			// Generate order data.
+			$option_prefix = 'conecom-test';
+			$order_data    = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+
+			// Verify tax is rounded to 2 decimals.
+			$this->assertNotEmpty( $order_data['items'] );
+			$first_item = $order_data['items'][0];
+			
+			if ( isset( $first_item['tax'] ) ) {
+				// Verify the tax value has proper decimal precision.
+				$this->assertIsFloat( $first_item['tax'] );
+				$this->assertEquals( 
+					$test_case['expected_tax'], 
+					round( $subtotal * 0.215, 2 ),
+					"Tax should be rounded to 2 decimals for price {$test_case['price']}"
+				);
+			}
+
+			// Clean up.
+			$product->delete( true );
+			$order->delete( true );
+		}
+
+		\WC_Tax::_delete_tax_rate( $tax_rate_id );
+	}
+
+	/**
+	 * Test rounding precision for discounts (Issue #138)
+	 * 
+	 * Verifies that discount percentages are rounded to 2 decimals instead of 0 decimals.
+	 */
+	public function test_order_discount_rounding_precision() {
+		// Create products with prices that generate decimal discounts.
+		$test_cases = array(
+			array(
+				'price'              => 47.85,
+				'discount_amount'    => 7.18, // 15% of 47.85 = 7.1775 rounded to 7.18
+				'expected_discount'  => 15.01, // Percentage: (7.18 / 47.85) * 100 = 15.01
+			),
+			array(
+				'price'              => 123.45,
+				'discount_amount'    => 12.35, // ~10% discount
+				'expected_discount'  => 10.00, // Percentage: (12.35 / 123.45) * 100 = 10.00
+			),
+			array(
+				'price'              => 99.99,
+				'discount_amount'    => 24.50, // ~24.5% discount
+				'expected_discount'  => 24.50, // Percentage: (24.50 / 99.99) * 100 = 24.50
+			),
+		);
+
+		foreach ( $test_cases as $index => $test_case ) {
+			// Create a product.
+			$product = new \WC_Product_Simple();
+			$product->set_name( 'Discount Test Product ' . $index );
+			$product->set_regular_price( $test_case['price'] );
+			$product->save();
+
+			// Create a coupon.
+			$coupon = new \WC_Coupon();
+			$coupon->set_code( 'test_discount_' . $index );
+			$coupon->set_discount_type( 'fixed_cart' );
+			$coupon->set_amount( $test_case['discount_amount'] );
+			$coupon->save();
+
+			// Create an order.
+			$order = new \WC_Order();
+			$order->set_billing_email( 'test@example.com' );
+			$order->set_status( 'completed' );
+
+			// Add product to order.
+			$item = new \WC_Order_Item_Product();
+			$item->set_product( $product );
+			$item->set_quantity( 1 );
+			$item->set_subtotal( $test_case['price'] );
+			$item->set_total( $test_case['price'] - $test_case['discount_amount'] );
+			$order->add_item( $item );
+
+			// Add coupon to order.
+			$coupon_item = new \WC_Order_Item_Coupon();
+			$coupon_item->set_code( 'test_discount_' . $index );
+			$coupon_item->set_discount( $test_case['discount_amount'] );
+			$order->add_item( $coupon_item );
+
+			$order->calculate_totals();
+			$order->save();
+
+			// Generate order data.
+			$option_prefix = 'conecom-test';
+			$order_data    = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+
+			// Verify discount is rounded to 2 decimals.
+			$this->assertNotEmpty( $order_data['items'] );
+			$first_item = $order_data['items'][0];
+			
+			if ( isset( $first_item['discount'] ) ) {
+				// Calculate expected discount percentage.
+				$expected_percentage = round( ( $test_case['discount_amount'] * 100 ) / $test_case['price'], 2 );
+				
+				// Verify the discount has proper decimal precision (2 decimals).
+				$this->assertEquals(
+					$expected_percentage,
+					$first_item['discount'],
+					"Discount should be rounded to 2 decimals for price {$test_case['price']}, delta: 0.01"
+				);
+				
+				// Verify it's not rounded to 0 decimals.
+				$this->assertNotEquals(
+					round( ( $test_case['discount_amount'] * 100 ) / $test_case['price'], 0 ),
+					$first_item['discount'],
+					"Discount should NOT be rounded to 0 decimals"
+				);
+			}
+
+			// Clean up.
+			$product->delete( true );
+			$coupon->delete( true );
+			$order->delete( true );
+		}
+	}
+
+	/**
+	 * Test total matching with decimal precision (Issue #138)
+	 * 
+	 * Verifies that order totals match correctly when items have proper decimal precision.
+	 */
+	public function test_order_total_matching_with_decimals() {
+		// Enable tax calculations.
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+
+		// Create a tax rate.
+		$tax_rate_id = \WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'ES',
+				'tax_rate_state'    => '',
+				'tax_rate'          => '21.0000',
+				'tax_rate_name'     => 'IVA',
+				'tax_rate_priority' => 1,
+				'tax_rate_compound' => 0,
+				'tax_rate_shipping' => 0,
+				'tax_rate_order'    => 0,
+				'tax_rate_class'    => '',
+			)
+		);
+
+		// Test case: Multiple items with decimal prices that should sum correctly.
+		$items_data = array(
+			array( 'price' => 19.99, 'qty' => 2 ), // 39.98 + 8.40 tax = 48.38
+			array( 'price' => 33.33, 'qty' => 1 ), // 33.33 + 6.99 tax = 40.32
+			array( 'price' => 12.45, 'qty' => 3 ), // 37.35 + 7.84 tax = 45.19
+		);
+
+		// Create an order.
+		$order = new \WC_Order();
+		$order->set_billing_country( 'ES' );
+		$order->set_billing_state( 'M' );
+		$order->set_billing_email( 'test@example.com' );
+		$order->set_status( 'completed' );
+
+		$expected_subtotal = 0;
+		$expected_tax      = 0;
+
+		foreach ( $items_data as $index => $item_data ) {
+			// Create a product.
+			$product = new \WC_Product_Simple();
+			$product->set_name( 'Test Product ' . $index );
+			$product->set_regular_price( $item_data['price'] );
+			$product->set_tax_status( 'taxable' );
+			$product->set_tax_class( '' );
+			$product->save();
+
+			// Add product to order.
+			$item     = new \WC_Order_Item_Product();
+			$subtotal = $item_data['price'] * $item_data['qty'];
+			$tax      = round( $subtotal * 0.21, 2 );
+			
+			$item->set_product( $product );
+			$item->set_quantity( $item_data['qty'] );
+			$item->set_subtotal( $subtotal );
+			$item->set_total( $subtotal );
+			$item->set_taxes(
+				array(
+					'total'    => array( $tax_rate_id => $tax ),
+					'subtotal' => array( $tax_rate_id => $tax ),
+				)
+			);
+			
+			$order->add_item( $item );
+
+			$expected_subtotal += $subtotal;
+			$expected_tax      += $tax;
+		}
+
+		$order->calculate_totals();
+		$order->save();
+
+		$expected_total = $expected_subtotal + $expected_tax;
+
+		// Generate order data.
+		$option_prefix = 'conecom-test';
+		$order_data    = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+
+		// Verify totals match with proper decimal precision.
+		$this->assertEquals(
+			round( $expected_total, 2 ),
+			round( $order_data['total'], 2 ),
+			'Order total should match expected total with 2 decimal precision'
+		);
+
+		$this->assertEquals(
+			round( $expected_tax, 2 ),
+			round( $order_data['total_tax'], 2 ),
+			'Order tax should match expected tax with 2 decimal precision'
+		);
+
+		// Verify items have proper decimal values.
+		$this->assertCount( 3, $order_data['items'] );
+		
+		foreach ( $order_data['items'] as $index => $item ) {
+			$this->assertIsFloat( $item['subtotal'] );
+			// Verify subtotal has proper decimal precision.
+			$this->assertEquals(
+				round( $items_data[ $index ]['price'] * $items_data[ $index ]['qty'], 2 ),
+				round( $item['subtotal'] * $item['units'], 2 ),
+				"Item {$index} subtotal should have 2 decimal precision"
+			);
+		}
+
+		// Clean up.
+		foreach ( $order->get_items() as $item ) {
+			$product = $item->get_product();
+			if ( $product ) {
+				$product->delete( true );
+			}
+		}
+		$order->delete( true );
+		\WC_Tax::_delete_tax_rate( $tax_rate_id );
+	}
 }
