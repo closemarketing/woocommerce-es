@@ -351,10 +351,13 @@ class ORDER {
 				if ( $line_discount > 0 ) {
 					$coupon = array_search( (string) $line_discount, array_column( $order_discounts, 'discount' ), true );
 					if ( false !== $coupon ) {
-						$item_data['discount'] = 'percent' !== $order_discounts[ $coupon ]['type'] ? ( $item->get_subtotal() * $order_discounts[ $coupon ]['amount'] ) / 100 : $order_discounts[ $coupon ]['amount'];
-					} else {
-						$item_data['discount'] = round( ( $line_discount * 100 ) / $item->get_subtotal(), 2 );
+						$coupon_type = $order_discounts[ $coupon ]['type'];
+						if ( 'percent' === $coupon_type ) {
+							// Percentage discount.
+							$line_discount = (float) $order_discounts[ $coupon ]['amount'];
+						}
 					}
+					$item_data['discount'] = round( ( $line_discount * 100 ) / $item->get_subtotal(), 2 );
 				}
 
 				$fields_items[] = $item_data;

@@ -432,11 +432,11 @@ class Checkout {
 
 		// Apply or remove VAT exemption based on validation result.
 		$is_valid = isset( $validation_result['valid'] ) && $validation_result['valid'];
-		
+
 		if ( $is_valid ) {
 			// Apply VAT exemption if conditions are met.
 			VAT::apply_vat_exemption( $country_code, $vat_number, true );
-			
+
 			// Check if exemption was applied.
 			if ( VAT::is_customer_vat_exempt() ) {
 				wc_add_notice(

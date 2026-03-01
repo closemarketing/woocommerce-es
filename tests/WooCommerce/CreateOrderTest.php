@@ -559,8 +559,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 			),
 			array(
 				'price'              => 123.45,
-				'discount_amount'    => 12.35, // ~10% discount
-				'expected_discount'  => 10.00, // Percentage: (12.35 / 123.45) * 100 = 10.00
+				'discount_amount'    => 12.59, // ~10.2% discount
+				'expected_discount'  => 10.20, // Percentage: (12.59 / 123.45) * 100 = 10.20
 			),
 			array(
 				'price'              => 99.99,
