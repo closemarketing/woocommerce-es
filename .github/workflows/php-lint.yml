@@ -38,14 +38,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
 
       - name: Install PHP dependencies
-        uses: ramsey/composer-install@a2636af0004d1c0499ffca16ac0b4cc94df70565
+        uses: ramsey/composer-install@3cf229dc2919194e9e36783941438d17239e8520
         with:
           composer-options: '--prefer-dist'
 

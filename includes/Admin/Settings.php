@@ -1103,19 +1103,23 @@ class Settings {
 	 */
 	public function page_get_sync( $type = 'sync_products' ) {
 		$ajax_action = 'connect_ecommerce_' . $type;
-		$login_api   = $this->connapi_erp->check_can_sync();
-		$can_sync    = false;
+		if ( empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'check_can_sync' ) ) {
+			echo '<div class="notice notice-warning"><p>' . esc_html__( 'No connector configured. Please configure a connector in the Settings tab.', 'woocommerce-es' ) . '</p></div>';
+			return;
+		}
+		$login_api = $this->connapi_erp->check_can_sync();
+		$can_sync  = false;
 		if ( is_array( $login_api ) ) {
 			$message  = $login_api['message'] ?? '';
 			$can_sync = 'ok' === $login_api['status'] ? true : false;
 		} else {
 			$can_sync = $login_api;
-			$message = $login_api ? '' : __( 'We couln\'t connect to the API', 'woocommerce-es' );
+			$message  = $login_api ? '' : __( 'We couln\'t connect to the API', 'woocommerce-es' );
 		}
 		?>
 		<div class="connwoo-sync-engine">
 			<div class="sync-wrapper">
-				<?php 
+				<?php
 				if ( empty( $can_sync ) ) {
 					?>
 					<div class="error notice">
@@ -1127,10 +1131,11 @@ class Settings {
 					</div>
 					<?php
 				} else {
-				?>
+					?>
 					<h2>
 						<?php
-						echo sprintf(
+						printf(
+							/* translators: %s connector name. */
 							esc_html__( 'Import Products from %s', 'woocommerce-es' ),
 							esc_html( $this->options['name'] )
 						);
@@ -1150,12 +1155,12 @@ class Settings {
 						</select>
 						</p>
 					<?php } ?>
-				</div>
-				<fieldset id="logwrapper">
-					<legend><?php esc_html_e( 'Log', 'woocommerce-es' ); ?></legend>
-					<div id="loglist"></div>
-				</fieldset>
-				<?php
+					</div>
+					<fieldset id="logwrapper">
+						<legend><?php esc_html_e( 'Log', 'woocommerce-es' ); ?></legend>
+						<div id="loglist"></div>
+					</fieldset>
+					<?php
 				}
 				?>
 		</div>
@@ -1415,7 +1420,7 @@ class Settings {
 	 * @return void
 	 */
 	public function company_select_callback() {
-		if ( ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
+		if ( empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
 			echo '<p>' . esc_html__( 'By default', 'woocommerce-es' ) . '</p>';
 			return;
 		}

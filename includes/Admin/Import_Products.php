@@ -96,6 +96,38 @@ class Import_Products {
 	}
 
 	/**
+	 * Determines if product import should finish based on pagination status.
+	 *
+	 * @param int      $sync_loop       Current loop iteration (0-indexed).
+	 * @param int      $products_count  Number of products in current batch/page.
+	 * @param int|bool $api_pagination  Products per page, or false for non-paginated.
+	 * @return bool True if import should finish, false otherwise.
+	 */
+	public static function should_finish_import( $sync_loop, $products_count, $api_pagination = false ) {
+		// Special case: single product import with sync_loop = -1.
+		if ( -1 === $sync_loop ) {
+			return true;
+		}
+
+		$products_synced = $sync_loop + 1;
+
+		if ( $api_pagination ) {
+			// Calculate position within current page (0-indexed).
+			$loop_page = $sync_loop % $api_pagination;
+
+			// Finish when:
+			// 1. Current page has fewer products than pagination size (last page).
+			// 2. We've processed all products on this page.
+			$finish = $products_count < $api_pagination && ( $loop_page + 1 ) === $products_count;
+		} else {
+			// Non-paginated: finish when all products are synced.
+			$finish = $products_count === $products_synced;
+		}
+
+		return $finish;
+	}
+
+	/**
 	 * Enqueues Styles for admin
 	 *
 	 * @return void
@@ -165,6 +197,10 @@ class Import_Products {
 	public function sync_products() {
 		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
 			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
+			return;
+		}
+		if ( empty( $this->connapi_erp ) ) {
+			wp_send_json_error( array( 'message' => __( 'No connector configured', 'woocommerce-es' ) ) );
 			return;
 		}
 		$sync_loop      = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
@@ -238,12 +274,8 @@ class Import_Products {
 		$message .= $result_sync['message'];
 
 		$products_synced = $sync_loop + 1;
-		if ( $api_pagination ) {
-			$finish = $products_count < $api_pagination && $products_count === $sync_loop ? true : false;
-		} else {
-			$finish = $products_count === $sync_loop ? true : false;
-		}
-		$finish       = -1 === $sync_loop ? true : $finish;
+		$finish          = self::should_finish_import( $sync_loop, $products_count, $api_pagination );
+
 		$res_message .= '[' . date_i18n( 'H:i:s' ) . ']';
 		if ( 0 <= $sync_loop ) {
 			$res_message .= '[' . $products_synced;
@@ -304,6 +336,9 @@ class Import_Products {
 	 * @return void
 	 */
 	public function cron_sync_products() {
+		if ( empty( $this->connapi_erp ) ) {
+			return;
+		}
 		$is_table_sync = ! empty( $this->options['table_sync'] ) ? true : false;
 		if ( $is_table_sync ) {
 			HELPER::check_table_sync( $this->options['table_sync'] );
