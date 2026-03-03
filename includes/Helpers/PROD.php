@@ -1278,7 +1278,7 @@ class PROD {
 	 * @param array  $options Plugin options.
 	 * @return array Import statistics.
 	 */
-	public static function get_import_stats( $connapi_erp, $options ) {
+	public static function get_import_stats( $connapi_erp, $options, $settings = array() ) {
 		if ( empty( $connapi_erp ) || ! method_exists( $connapi_erp, 'get_all_product_skus' ) ) {
 			return array(
 				'status'  => 'error',
@@ -1306,9 +1306,10 @@ class PROD {
 			);
 		}
 
-		// Normalize API result: array of SKUs or array of items with 'sku' (and optionally 'last_updated').
+		// Normalize API result: array of SKUs or array of items with 'sku' (and optionally 'last_updated', 'tags').
 		$api_skus         = array();
 		$api_skus_updated = array();
+		$api_skus_tags    = array();
 		if ( isset( $api_result['data'] ) && is_array( $api_result['data'] ) ) {
 			$raw = $api_result['data'];
 		} elseif ( is_array( $api_result ) ) {
@@ -1321,12 +1322,39 @@ class PROD {
 			if ( is_string( $item ) ) {
 				$api_skus[ $item ] = true;
 			} elseif ( is_array( $item ) && ! empty( $item['sku'] ) ) {
-				$sku = $item['sku'];
+				$sku              = $item['sku'];
 				$api_skus[ $sku ] = true;
 				if ( ! empty( $item['last_updated'] ) ) {
 					$api_skus_updated[ $sku ] = $item['last_updated'];
 				}
+				if ( ! empty( $item['tags'] ) ) {
+					$api_skus_tags[ $sku ] = (array) $item['tags'];
+				}
 			}
+		}
+
+		$api_total_count = count( $api_skus );
+
+		// Apply tag filter if configured (mirrors PROD::filter_product() logic).
+		$filter_tag = ! empty( $settings['filter'] ) ? $settings['filter'] : '';
+		if ( ! empty( $filter_tag ) ) {
+			$tags_option           = array_map( 'sanitize_text_field', array_map( 'trim', explode( ',', $filter_tag ) ) );
+			$filtered_skus         = array();
+			$filtered_skus_updated = array();
+
+			foreach ( $api_skus as $sku => $dummy ) {
+				$product_tags = isset( $api_skus_tags[ $sku ] ) ? $api_skus_tags[ $sku ] : array();
+				$product_tags = array_map( 'sanitize_text_field', array_map( 'trim', (array) $product_tags ) );
+				if ( ! empty( array_intersect( $tags_option, $product_tags ) ) ) {
+					$filtered_skus[ $sku ] = true;
+					if ( isset( $api_skus_updated[ $sku ] ) ) {
+						$filtered_skus_updated[ $sku ] = $api_skus_updated[ $sku ];
+					}
+				}
+			}
+
+			$api_skus         = $filtered_skus;
+			$api_skus_updated = $filtered_skus_updated;
 		}
 
 		$api_count = count( $api_skus );
@@ -1364,7 +1392,9 @@ class PROD {
 		return array(
 			'status'          => 'success',
 			'api_count'       => $api_count,
+			'api_total_count' => $api_total_count,
 			'available_count' => $api_count,
+			'filter_tag'      => $filter_tag,
 			'wp_count'        => $wp_count,
 			'import_count'    => $import_count,
 			'new_count'       => $new_count,

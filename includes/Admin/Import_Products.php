@@ -88,6 +88,7 @@ class Import_Products {
 		// Admin Styles.
 		add_action( 'wp_ajax_connect_ecommerce_sync_products', array( $this, 'sync_products' ) );
 		add_action( 'wp_ajax_connect_ecommerce_get_import_stats', array( $this, 'get_import_stats' ) );
+		add_action( 'wp_ajax_connect_ecommerce_get_as_logs', array( $this, 'get_as_logs' ) );
 
 		// Schedule.
 		if ( $this->sync_period && 'no' !== $this->sync_period ) {
@@ -189,6 +190,7 @@ class Import_Products {
 				'nonce'                    => wp_create_nonce( 'conecom_manual_import_nonce' ),
 				'has_get_all_product_skus' => $has_get_all_product_skus,
 				'stats_nonce'              => wp_create_nonce( 'conecom_import_stats_nonce' ),
+				'as_logs_nonce'            => wp_create_nonce( 'conecom_as_logs_nonce' ),
 			)
 		);
 
@@ -348,7 +350,7 @@ class Import_Products {
 			return;
 		}
 
-		$result = PROD::get_import_stats( $this->connapi_erp, $this->options );
+		$result = PROD::get_import_stats( $this->connapi_erp, $this->options, $this->settings );
 
 		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
 			wp_send_json_error( array( 'message' => $result['message'] ) );
@@ -358,7 +360,9 @@ class Import_Products {
 		wp_send_json_success(
 			array(
 				'api_count'       => $result['api_count'],
+				'api_total_count' => $result['api_total_count'],
 				'available_count' => $result['available_count'],
+				'filter_tag'      => $result['filter_tag'],
 				'wp_count'        => $result['wp_count'],
 				'import_count'    => $result['import_count'],
 				'new_count'       => $result['new_count'],
@@ -366,6 +370,32 @@ class Import_Products {
 				'delete_count'    => $result['delete_count'],
 			)
 		);
+	}
+
+	/**
+	 * AJAX handler: returns recent Action Scheduler runs for conecom_sync_* hooks.
+	 *
+	 * @return void
+	 */
+	public function get_as_logs() {
+		if ( ! check_ajax_referer( 'conecom_as_logs_nonce', 'security', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid nonce', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		$result = CRON::get_sync_logs();
+
+		if ( 'error' === $result['status'] ) {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
+			return;
+		}
+
+		wp_send_json_success( $result['actions'] );
 	}
 
 	/**

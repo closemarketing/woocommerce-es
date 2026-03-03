@@ -1170,7 +1170,16 @@ class Settings {
 				</div>
 				<div class="conecom-stat-content">
 					<div class="conecom-stat-value" id="stat-available-count">--</div>
-					<div class="conecom-stat-label"><?php esc_html_e( 'Available in API', 'woocommerce-es' ); ?></div>
+					<div class="conecom-stat-label">
+						<?php
+						printf(
+							/* translators: %s: Name of the ERP connector */
+							esc_html__( 'Available in %s', 'woocommerce-es' ),
+							esc_html( $this->options['name'] )
+						);
+						?>
+					</div>
+					<div class="conecom-stat-sublabel" id="stat-available-sublabel" style="display:none;"></div>
 				</div>
 			</div>
 
@@ -1285,11 +1294,13 @@ class Settings {
 			</div>
 
 			<div class="conecom-tab-content">
-				<div class="conecom-tab-pane active" id="tab-automatic">
+			<div class="conecom-tab-pane active" id="tab-automatic">
+				<div id="conecom-as-logs-container">
 					<p style="color: #666; font-style: italic; padding: 20px; text-align: center;">
-						<?php esc_html_e( 'Automatic sync runs in the background. Check WooCommerce logs for details.', 'woocommerce-es' ); ?>
+						<?php esc_html_e( 'Loading...', 'woocommerce-es' ); ?>
 					</p>
 				</div>
+			</div>
 				<div class="conecom-tab-pane" id="tab-manual">
 					<fieldset id="logwrapper" style="border: none; padding: 0; margin: 0;">
 						<div id="loglist"></div>
@@ -1315,42 +1326,140 @@ class Settings {
 				body: 'action=connect_ecommerce_get_import_stats&security=' + encodeURIComponent(ConEcom_ajaxAction.stats_nonce)
 			})
 			.then(function(r){ return r.json(); })
-			.then(function(response) {
-				if ( response.success && response.data ) {
-					var d = response.data;
-					var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = (typeof val === 'number') ? val.toLocaleString() : val; };
-					set('stat-available-count', d.available_count);
-					set('stat-wp-count', d.wp_count);
-					set('stat-import-count', d.import_count);
-					set('stat-new-count', d.new_count);
-					set('stat-outdated-count', d.outdated_count);
-					set('stat-delete-count', d.delete_count);
+		.then(function(response) {
+			if ( response.success && response.data ) {
+				var d = response.data;
+				var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = (typeof val === 'number') ? val.toLocaleString() : val; };
+				set('stat-available-count', d.available_count);
+				set('stat-wp-count', d.wp_count);
+				set('stat-import-count', d.import_count);
+				set('stat-new-count', d.new_count);
+				set('stat-outdated-count', d.outdated_count);
+				set('stat-delete-count', d.delete_count);
+
+				var sublabel = document.getElementById('stat-available-sublabel');
+				if ( sublabel ) {
+					if ( d.filter_tag && d.api_total_count !== undefined && d.api_total_count !== d.available_count ) {
+						sublabel.style.display = '';
+						sublabel.innerHTML = '<?php esc_html_e( 'Tag:', 'woocommerce-es' ); ?> <strong>' + d.filter_tag + '</strong>'
+							+ '<br><small><?php esc_html_e( 'Total:', 'woocommerce-es' ); ?> ' + Number(d.api_total_count).toLocaleString() + '</small>';
+					} else {
+						sublabel.style.display = 'none';
+						sublabel.innerHTML = '';
+					}
 				}
-			})
+			}
+		})
 			.catch(function() {})
 			.finally(function() {
 				if ( btn ) { btn.disabled = false; }
 				if ( cards.length ) { cards.forEach(function(c){ c.classList.remove('loading'); }); }
 			});
 		}
-		document.addEventListener('DOMContentLoaded', function() {
-			var tabButtons = document.querySelectorAll('.conecom-tab-button');
-			var tabPanes = document.querySelectorAll('.conecom-tab-pane');
-			tabButtons.forEach(function(btn) {
-				btn.addEventListener('click', function() {
-					var targetTab = this.getAttribute('data-tab');
-					tabButtons.forEach(function(b){ b.classList.remove('active'); });
-					tabPanes.forEach(function(p){ p.classList.remove('active'); });
-					this.classList.add('active');
-					var pane = document.getElementById('tab-' + targetTab);
-					if ( pane ) pane.classList.add('active');
-				});
-			});
-			if ( typeof ConEcom_ajaxAction !== 'undefined' && ConEcom_ajaxAction.has_get_all_product_skus ) {
-				loadImportStats();
+	function loadAsLogs() {
+		if ( typeof ConEcom_ajaxAction === 'undefined' ) { return; }
+		var container = document.getElementById('conecom-as-logs-container');
+		if ( ! container ) { return; }
+		container.innerHTML = '<p style="color:#666;font-style:italic;padding:20px;text-align:center;"><?php esc_html_e( 'Loading…', 'woocommerce-es' ); ?></p>';
+
+		fetch(ConEcom_ajaxAction.url, {
+			method: 'POST',
+			credentials: 'same-origin',
+			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+			body: 'action=connect_ecommerce_get_as_logs&security=' + encodeURIComponent(ConEcom_ajaxAction.as_logs_nonce)
+		})
+		.then(function(r){ return r.json(); })
+		.then(function(response) {
+			if ( ! response.success ) {
+				container.innerHTML = '<p style="color:#d63638;padding:20px;">' + ( response.data && response.data.message ? response.data.message : '<?php esc_html_e( 'Error loading logs.', 'woocommerce-es' ); ?>' ) + '</p>';
+				return;
 			}
+			var actions = response.data;
+			if ( ! actions || actions.length === 0 ) {
+				container.innerHTML = '<p style="color:#666;font-style:italic;padding:20px;text-align:center;"><?php esc_html_e( 'No sync runs recorded yet.', 'woocommerce-es' ); ?></p>';
+				return;
+			}
+
+			var statusLabels = {
+				'complete':    '<?php esc_html_e( 'Complete', 'woocommerce-es' ); ?>',
+				'failed':      '<?php esc_html_e( 'Failed', 'woocommerce-es' ); ?>',
+				'pending':     '<?php esc_html_e( 'Pending', 'woocommerce-es' ); ?>',
+				'in-progress': '<?php esc_html_e( 'Running', 'woocommerce-es' ); ?>',
+				'canceled':    '<?php esc_html_e( 'Canceled', 'woocommerce-es' ); ?>'
+			};
+			var statusColors = {
+				'complete':    '#00a32a',
+				'failed':      '#d63638',
+				'pending':     '#dba617',
+				'in-progress': '#2271b1',
+				'canceled':    '#787c82'
+			};
+
+			var html = '<table class="widefat striped" style="margin:0;">'
+				+ '<thead><tr>'
+				+ '<th style="width:160px;"><?php esc_html_e( 'Date', 'woocommerce-es' ); ?></th>'
+				+ '<th style="width:100px;"><?php esc_html_e( 'Status', 'woocommerce-es' ); ?></th>'
+				+ '<th style="width:130px;"><?php esc_html_e( 'Frequency', 'woocommerce-es' ); ?></th>'
+				+ '<th><?php esc_html_e( 'Last log', 'woocommerce-es' ); ?></th>'
+				+ '</tr></thead><tbody>';
+
+			actions.forEach(function(action) {
+				var status      = action.status || 'pending';
+				var color       = statusColors[status] || '#787c82';
+				var statusLabel = statusLabels[status] || status;
+				var lastLog     = action.logs && action.logs.length ? action.logs[action.logs.length - 1].message : '—';
+				var rowId       = 'as-log-row-' + action.id;
+				var detailId    = 'as-log-detail-' + action.id;
+				var hasLogs     = action.logs && action.logs.length > 1;
+
+				html += '<tr id="' + rowId + '" style="cursor:' + ( hasLogs ? 'pointer' : 'default' ) + ';" '
+					+ ( hasLogs ? 'onclick="document.getElementById(\'' + detailId + '\').style.display = document.getElementById(\'' + detailId + '\').style.display === \'none\' ? \'\' : \'none\';"' : '' )
+					+ '>'
+					+ '<td style="white-space:nowrap;font-size:12px;">' + action.scheduled_date + '</td>'
+					+ '<td><span style="color:' + color + ';font-weight:600;">' + statusLabel + '</span></td>'
+					+ '<td style="font-size:12px;">' + action.hook_label + '</td>'
+					+ '<td style="font-size:12px;color:#50575e;">' + lastLog + '</td>'
+					+ '</tr>';
+
+				if ( hasLogs ) {
+					html += '<tr id="' + detailId + '" style="display:none;background:#f6f7f7;">'
+						+ '<td colspan="4" style="padding:8px 16px;">'
+						+ '<ol style="margin:0;padding-left:20px;">';
+					action.logs.forEach(function(log) {
+						html += '<li style="font-size:12px;margin-bottom:2px;"><span style="color:#50575e;">[' + log.date + ']</span> ' + log.message + '</li>';
+					});
+					html += '</ol></td></tr>';
+				}
+			});
+
+			html += '</tbody></table>';
+			container.innerHTML = html;
+		})
+		.catch(function() {
+			container.innerHTML = '<p style="color:#d63638;padding:20px;"><?php esc_html_e( 'Error loading logs.', 'woocommerce-es' ); ?></p>';
 		});
-		</script>
+	}
+
+	document.addEventListener('DOMContentLoaded', function() {
+		var tabButtons = document.querySelectorAll('.conecom-tab-button');
+		var tabPanes = document.querySelectorAll('.conecom-tab-pane');
+		tabButtons.forEach(function(btn) {
+			btn.addEventListener('click', function() {
+				var targetTab = this.getAttribute('data-tab');
+				tabButtons.forEach(function(b){ b.classList.remove('active'); });
+				tabPanes.forEach(function(p){ p.classList.remove('active'); });
+				this.classList.add('active');
+				var pane = document.getElementById('tab-' + targetTab);
+				if ( pane ) pane.classList.add('active');
+				if ( 'automatic' === targetTab ) { loadAsLogs(); }
+			});
+		});
+		if ( typeof ConEcom_ajaxAction !== 'undefined' && ConEcom_ajaxAction.has_get_all_product_skus ) {
+			loadImportStats();
+		}
+		loadAsLogs();
+	});
+	</script>
 		<?php
 	}
 
