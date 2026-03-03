@@ -57,7 +57,7 @@ class CRON {
 
 		// Get ALL products from API.
 		$products       = array();
-		$api_pagination = ! empty( $options['api_pagination'] ) ? (int) $options['api_pagination'] : false;
+		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 		if ( $api_pagination ) {
 			$sync_loop = 0;
 
@@ -124,7 +124,7 @@ class CRON {
 		}
 		// Method with table sync.
 		global $wpdb;
-		$limit = isset( $settings['sync_num'] ) ? (int) $settings['sync_num'] : 50;
+		$limit = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
@@ -221,7 +221,8 @@ class CRON {
 	 */
 	public static function send_sync_ended_products( $settings, $table_sync, $option_name, $option_prefix ) {
 		global $wpdb;
-		$send_email  = isset( $settings['sync_email'] ) ? strval( $settings['sync_email'] ) : 'yes';
+		$alerts      = get_option( 'connect_ecommerce_alerts', array() );
+		$send_email  = isset( $alerts['alert_product_synced'] ) ? strval( $alerts['alert_product_synced'] ) : 'no';
 		$total_count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync WHERE synced = 1" );
 
 		if ( $total_count > 0 && 'yes' === $send_email ) {

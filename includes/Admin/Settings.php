@@ -287,15 +287,14 @@ class Settings {
 				if ( 'synchronization' === $active_tab && $this->connector ) {
 					?>
 					<ul class="subsubsub">
-						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a> | </li>
+						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ''; ?></li>
 						<?php
 						if ( ! $this->is_disabled_orders ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a> | </li>
+							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a></li>
 							<?php
 						}
 						?>
-						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=automate" class="<?php echo 'automate' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Automate', 'woocommerce-es' ); ?></a></li>
 					</ul>
 					<br class="clear">
 					<?php
@@ -339,22 +338,6 @@ class Settings {
 				if ( 'synchronization' === $active_tab ) {
 					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
 						$this->page_get_sync( $active_subtab );
-					}
-
-					if ( 'automate' === $active_subtab ) {
-						?>
-						<form method="post" action="options.php">
-							<?php
-							settings_fields( 'connect_ecommerce_settings' );
-							do_settings_sections( 'connect_ecommerce_automate' );
-							submit_button(
-								__( 'Save automate', 'woocommerce-es' ),
-								'primary',
-								'submit_automate'
-							);
-							?>
-						</form>
-						<?php
 					}
 				}
 
@@ -856,42 +839,6 @@ class Settings {
 		}
 
 		/**
-		 * ## Automate
-		 * --------------------------- */
-
-		add_settings_section(
-			'connect_woocommerce_setting_automate',
-			__( 'Automate', 'woocommerce-es' ),
-			array( $this, 'section_automate' ),
-			'connect_ecommerce_automate'
-		);
-
-		add_settings_field(
-			'wcpimh_sync',
-			__( 'When do you want to sync?', 'woocommerce-es' ),
-			array( $this, 'sync_callback' ),
-			'connect_ecommerce_automate',
-			'connect_woocommerce_setting_automate'
-		);
-
-		if ( ! empty( $this->options['table_sync'] ) ) {
-			add_settings_field(
-				'wcpimh_sync_num',
-				__( 'How many products do you want to sync each time?', 'woocommerce-es' ),
-				array( $this, 'sync_num_callback' ),
-				'connect_ecommerce_automate',
-				'connect_woocommerce_setting_automate'
-			);
-			add_settings_field(
-				'wcpimh_sync_email',
-				__( 'Do you want to receive an email when all products are synced?', 'woocommerce-es' ),
-				array( $this, 'sync_email_callback' ),
-				'connect_ecommerce_automate',
-				'connect_woocommerce_setting_automate'
-			);
-		}
-
-		/**
 		 * ## Merge Vars
 		 * --------------------------- */
 
@@ -1071,6 +1018,14 @@ class Settings {
 		);
 
 		add_settings_field(
+			'connect_ecommerce_alert_product_synced',
+			__( 'Enable Alerts Product synced', 'woocommerce-es' ),
+			array( $this, 'alert_product_synced_callback' ),
+			'connect_ecommerce_alerts',
+			'connect_ecommerce_alerts_section'
+		);
+
+		add_settings_field(
 			'connect_ecommerce_alert_method',
 			__( 'Alert Method', 'woocommerce-es' ),
 			array( $this, 'alert_method_callback' ),
@@ -1114,7 +1069,7 @@ class Settings {
 		}
 
 		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_all_product_skus' );
-		$api_pagination           = ! empty( $this->options['api_pagination'] ) ? (int) $this->options['api_pagination'] : 100;
+		$api_pagination           = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 		?>
 		<div class="connwoo-sync-engine connwoo-sync-with-stats">
 			<div class="sync-wrapper">
@@ -1235,8 +1190,17 @@ class Settings {
 					<?php endif; ?>
 				</h3>
 				<p style="color: #646970; font-size: 14px; margin-top: 10px;">
-					<?php esc_html_e( 'Configure sync frequency in the Automate tab.', 'woocommerce-es' ); ?>
+					<?php esc_html_e( 'Choose when to run automatic sync below.', 'woocommerce-es' ); ?>
 				</p>
+				<form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" style="margin-top: 12px;">
+					<?php settings_fields( 'connect_ecommerce_settings' ); ?>
+					<input type="hidden" name="connect_ecommerce[connector]" value="<?php echo esc_attr( $this->connector ); ?>" />
+					<p style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0;">
+						<label for="wcpimh_sync" style="margin: 0;"><?php esc_html_e( 'When do you want to sync?', 'woocommerce-es' ); ?></label>
+						<?php $this->sync_callback(); ?>
+						<?php submit_button( __( 'Save', 'woocommerce-es' ), 'secondary', 'submit_sync_frequency', false ); ?>
+					</p>
+				</form>
 			</div>
 
 			<div class="conecom-manual-import">
@@ -1530,8 +1494,6 @@ class Settings {
 				'order_tags'         => '',
 				'design_id'          => '',
 				'sync'               => 'no',
-				'sync_num'           => 5,
-				'sync_email'         => 'yes',
 				'prod_weight_eq'     => '',
 				'debug_log'          => 'no',
 			],
@@ -1549,45 +1511,6 @@ class Settings {
 		$sanitary_values['connector'] = $connector;
 
 		return $sanitary_values;
-	}
-
-	/**
-	 * Info for holded section.
-	 *
-	 * @return void
-	 */
-	public function section_automate() {
-		?>
-		<input type="hidden" name="connect_ecommerce[connector]" value="<?php echo esc_attr( $this->connector ); ?>" />
-		<?php
-		if ( empty( $this->options['table_sync'] ) ) {
-			return;
-		}
-		global $wpdb;
-		$table_sync = $this->options['table_sync'];
-		HELPER::check_table_sync( $table_sync );
-		$count        = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync WHERE synced = 1" );
-		$total_count  = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync" );
-		$count_return = $count . ' / ' . $total_count;
-
-		$total_api_products = (int) get_option( 'connect_ecommerce_total_api_products' );
-		if ( $total_api_products || $total_count !== $total_api_products ) {
-			$count_return .= ' ' . esc_html__( 'filtered', 'woocommerce-es' );
-			$count_return .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'woocommerce-es' ) . ' )';
-		}
-		$percentage = 0 < $total_count ? intval( $count / $total_count * 100 ) : 0;
-		esc_html_e( 'Make your settings to automate the sync.', 'woocommerce-es' );
-		echo '<div class="sync-status" style="text-align:right;">';
-		echo '<strong>';
-		esc_html_e( 'Actual Automate status:', 'woocommerce-es' );
-		echo '</strong> ' . esc_html( $count_return ) . ' ';
-		esc_html_e( 'products synced with ', 'woocommerce-es' );
-		echo esc_html( $this->options['name'] );
-		echo '</div>';
-		echo '<div class="progress-bar blue">
-		<span style="width:' . esc_html( $percentage ) . '%"></span>
-		<div class="progress-text">' . esc_html( $percentage ) . '%</div>
-		</div>';
 	}
 
 	/**
@@ -2184,33 +2107,6 @@ class Settings {
 	}
 
 	/**
-	 * Callback sync field.
-	 *
-	 * @return void
-	 */
-	public function sync_num_callback() {
-		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][sync_num]" id="wcpimh_sync_num" value="%s">',
-			isset( $this->settings['sync_num'] ) ? esc_attr( $this->settings['sync_num'] ) : 5
-		);
-	}
-
-	/**
-	 * Sync email options
-	 *
-	 * @return void
-	 */
-	public function sync_email_callback() {
-		$sync_email = isset( $this->settings['sync_email'] ) ? $this->settings['sync_email'] : 'no';
-		?>
-		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][sync_email]" id="wcpimh_sync_email">
-			<option value="yes" <?php selected( $sync_email, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
-			<option value="no" <?php selected( $sync_email, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
-		</select>
-		<?php
-	}
-
-	/**
 	 * ## Merge vars
 	 * --------------------------- */
 
@@ -2517,6 +2413,23 @@ class Settings {
 	}
 
 	/**
+	 * Alert product synced callback.
+	 *
+	 * @return void
+	 */
+	public function alert_product_synced_callback() {
+		$settings = get_option( 'connect_ecommerce_alerts' );
+		$value    = isset( $settings['alert_product_synced'] ) ? $settings['alert_product_synced'] : 'no';
+		?>
+		<select name="connect_ecommerce_alerts[alert_product_synced]" id="alert_product_synced">
+			<option value="no" <?php selected( $value, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<option value="yes" <?php selected( $value, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'Receive an email when all products have been synced.', 'woocommerce-es' ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Alert method callback
 	 *
 	 * @return void
@@ -2582,6 +2495,10 @@ class Settings {
 
 		if ( isset( $input['alert_enabled'] ) ) {
 			$sanitary_values['alert_enabled'] = sanitize_text_field( $input['alert_enabled'] );
+		}
+
+		if ( isset( $input['alert_product_synced'] ) ) {
+			$sanitary_values['alert_product_synced'] = sanitize_text_field( $input['alert_product_synced'] );
 		}
 
 		if ( isset( $input['alert_method'] ) ) {

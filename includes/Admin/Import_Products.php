@@ -236,7 +236,7 @@ class Import_Products {
 		// Mode (updated|all) can be used in future to filter products to sync when get_all_product_skus exists.
 		$mode = in_array( $mode, array( 'updated', 'all' ), true ) ? $mode : 'all';
 		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
-		$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
+		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {

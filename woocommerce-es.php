@@ -24,6 +24,7 @@ define( 'CONECOM_VERSION', '3.3.3-beta.2' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
+define( 'CONECOM_SYNC_PRODUCTS_PER_BATCH', 50 );
 define(
 	'CONECOM_VAT_FIELD_SLUGS',
 	array(
