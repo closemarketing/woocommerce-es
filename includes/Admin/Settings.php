@@ -631,6 +631,28 @@ class Settings {
 				);
 			}
 
+		// Manufacturer Code.
+		if ( in_array( 'manufacturer_code', $settings_fields, true ) ) {
+			add_settings_field(
+				'wcpimh_manufacturer_code',
+				__( 'Manufacturer Code', 'woocommerce-es' ),
+				array( $this, 'manufacturer_code_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+		}
+
+		// Customer Code.
+		if ( in_array( 'customer_code', $settings_fields, true ) ) {
+			add_settings_field(
+				'wcpimh_customer_code',
+				__( 'Customer Code', 'woocommerce-es' ),
+				array( $this, 'customer_code_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
+		}
+
 		// Company Select.
 		if ( in_array( 'company_id', $settings_fields, true ) ) {
 			add_settings_field(
@@ -1228,6 +1250,8 @@ class Settings {
 				'doctype'            => 'invoice',
 				'cleanchars'         => '',
 				'approve_document'   => 'no',
+			'manufacturer_code'  => '',
+			'customer_code'      => '',
 				'series'             => '',
 				'freeorder'          => 'no',
 				'ecstatus'           => 'all',
@@ -1706,6 +1730,32 @@ class Settings {
 			<option value="yes" <?php selected( $approve_document, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
 		<?php
+	}
+
+	/**
+	 * Manufacturer Code field
+	 *
+	 * @return void
+	 */
+	public function manufacturer_code_callback() {
+		printf(
+			'<input class="regular-text" type="text" name="connect_ecommerce[%s][manufacturer_code]" id="wcpimh_manufacturer_code" value="%s">',
+			esc_html( $this->connector ),
+			isset( $this->settings['manufacturer_code'] ) ? esc_attr( $this->settings['manufacturer_code'] ) : ''
+		);
+	}
+
+	/**
+	 * Customer Code field
+	 *
+	 * @return void
+	 */
+	public function customer_code_callback() {
+		printf(
+			'<input class="regular-text" type="text" name="connect_ecommerce[%s][customer_code]" id="wcpimh_customer_code" value="%s">',
+			esc_html( $this->connector ),
+			isset( $this->settings['customer_code'] ) ? esc_attr( $this->settings['customer_code'] ) : ''
+		);
 	}
 
 	/**
