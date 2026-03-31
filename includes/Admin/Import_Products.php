@@ -221,10 +221,12 @@ class Import_Products {
 	 * @return void
 	 */
 	public function sync_products() {
+
 		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
 			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
 			return;
 		}
+
 		$sync_loop      = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$product_erp_id = isset( $_POST['product_erp_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_erp_id'] ) ) : '';
 		$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( wp_unslash( $_POST['product_sku'] ) ) : '';
@@ -270,6 +272,16 @@ class Import_Products {
 			$api_products                     = $this->connapi_erp->get_products( null, $sync_loop );
 			$_SESSION['conecom_api_products'] = HELPER::sanitize_array_recursive( $api_products );
 			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
+
+			if ( $sync_loop > 0 && empty( $api_products ) ) {
+				wp_send_json_success( array(
+					'loop'          => $sync_loop,
+					'message'       => '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>',
+					'finish'        => true,
+					'product_count' => 0,
+				) );
+				return;
+			}
 		} elseif ( 0 < $sync_loop ) {
 			$api_products = isset( $_SESSION['conecom_api_products'] ) ? HELPER::sanitize_array_recursive( $_SESSION['conecom_api_products'] ) : array();
 		}
