@@ -1243,14 +1243,6 @@ class Settings {
 						</select>
 						</p>
 					<?php } ?>
-					</div>
-					<fieldset id="logwrapper">
-						<legend><?php esc_html_e( 'Log', 'woocommerce-es' ); ?></legend>
-						<div id="loglist"></div>
-					</fieldset>
-					<?php
-				}
-				?>
 			</div>
 		</div>
 

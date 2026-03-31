@@ -1279,7 +1279,7 @@ class PROD {
 	 * @return array Import statistics.
 	 */
 	public static function get_import_stats( $connapi_erp, $options, $settings = array() ) {
-		if ( empty( $connapi_erp ) || ! method_exists( $connapi_erp, 'get_all_product_skus' ) ) {
+		if ( ! $connapi_erp || ! method_exists( $connapi_erp, 'get_all_product_skus' ) ) {
 			return array(
 				'status'  => 'error',
 				'message' => __( 'Connector does not support import statistics', 'woocommerce-es' ),

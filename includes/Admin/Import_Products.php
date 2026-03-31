@@ -321,7 +321,7 @@ class Import_Products {
 		$res_message .= '[' . date_i18n( 'H:i:s' ) . ']';
 		if ( 0 <= $sync_loop ) {
 			$res_message .= '[' . $products_synced;
-			$res_message .= empty( $api_pagination ) ? '/' . $products_count : '';
+			$res_message .= ! $api_pagination ? '/' . $products_count : '';
 			$res_message .= '] ';
 		}
 		$res_message .= $message;
