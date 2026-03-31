@@ -631,38 +631,38 @@ class Settings {
 				);
 			}
 
-		// Manufacturer Code.
-		if ( in_array( 'manufacturer_code', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_manufacturer_code',
-				__( 'Manufacturer Code', 'woocommerce-es' ),
-				array( $this, 'manufacturer_code_callback' ),
-				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
+			// Manufacturer Code.
+			if ( in_array( 'manufacturer_code', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_manufacturer_code',
+					__( 'Manufacturer Code', 'woocommerce-es' ),
+					array( $this, 'manufacturer_code_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		// Customer Code.
-		if ( in_array( 'customer_code', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_customer_code',
-				__( 'Customer Code', 'woocommerce-es' ),
-				array( $this, 'customer_code_callback' ),
-				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
+			// Customer Code.
+			if ( in_array( 'customer_code', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_customer_code',
+					__( 'Customer Code', 'woocommerce-es' ),
+					array( $this, 'customer_code_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
-		// Company Select.
-		if ( in_array( 'company_id', $settings_fields, true ) ) {
-			add_settings_field(
-				'wcpimh_company_select',
-				__( 'Company', 'woocommerce-es' ),
-				array( $this, 'company_select_callback' ),
-				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
-			);
-		}
+			// Company Select.
+			if ( in_array( 'company_id', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_company_select',
+					__( 'Company', 'woocommerce-es' ),
+					array( $this, 'company_select_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
 
 		// API Connection Status.
 		add_settings_field(
