@@ -60,7 +60,7 @@ class Import_Products_Command {
 
 		$options        = $connector_data['options'];
 		$connapi_erp    = $connector_data['connapi_erp'];
-		$api_pagination = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
+		$api_pagination  = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 		$generate_ai     = $assoc_args['ai'] ?? 'none';
 
 		// Loop Products.

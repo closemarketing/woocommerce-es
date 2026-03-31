@@ -451,6 +451,16 @@ class PROD {
 		// Save ERP ID.
 		$product->update_meta_data( 'connect_ecommerce_id', $item['id'] );
 
+		// Save last updated date from API (timestamp) for import stats; fallback to current time.
+		$updated_ts = null;
+		if ( ! empty( $item['last_updated'] ) ) {
+			$updated_ts = is_numeric( $item['last_updated'] ) ? (int) $item['last_updated'] : strtotime( $item['last_updated'] );
+		}
+		if ( empty( $updated_ts ) || $updated_ts <= 0 ) {
+			$updated_ts = current_time( 'timestamp' );
+		}
+		$product->update_meta_data( 'conecom_updated', $updated_ts );
+
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
@@ -825,6 +835,52 @@ class PROD {
 			}
 		}
 		return $custom_fields;
+	}
+
+	/**
+	 * Gets WooCommerce product SKUs and last modified for import stats.
+	 * Only products with connect_ecommerce_id (linked to connector) are returned.
+	 * Uses conecom_updated (timestamp) when set, else post_modified.
+	 *
+	 * @return array Associative array sku => [ 'post_id' => int, 'last_modified' => 'Y-m-d H:i:s' ].
+	 */
+	public static function get_woocommerce_product_data_for_import_stats() {
+		global $wpdb;
+		$meta_link    = 'connect_ecommerce_id';
+		$meta_sku     = '_sku';
+		$meta_updated = 'conecom_updated';
+		// Products with connect_ecommerce_id, SKU, and conecom_updated or post_modified for comparison.
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT P.ID AS post_id, P.post_modified AS post_modified,
+				PM_sku.meta_value AS sku, PM_updated.meta_value AS conecom_updated
+				FROM {$wpdb->posts} AS P
+				INNER JOIN {$wpdb->postmeta} AS PM_link ON PM_link.post_id = P.ID AND PM_link.meta_key = %s
+				INNER JOIN {$wpdb->postmeta} AS PM_sku ON PM_sku.post_id = P.ID AND PM_sku.meta_key = %s
+				LEFT JOIN {$wpdb->postmeta} AS PM_updated ON PM_updated.post_id = P.ID AND PM_updated.meta_key = %s
+				WHERE P.post_type IN ( 'product', 'product_variation' )
+				AND P.post_status != 'trash'
+				AND PM_sku.meta_value != ''",
+				$meta_link,
+				$meta_sku,
+				$meta_updated
+			),
+			ARRAY_A
+		);
+		$data = array();
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$sku = $row['sku'];
+				$ts  = ! empty( $row['conecom_updated'] ) && is_numeric( $row['conecom_updated'] )
+					? (int) $row['conecom_updated']
+					: null;
+				$data[ $sku ] = array(
+					'post_id'       => (int) $row['post_id'],
+					'last_modified' => $ts ? gmdate( 'Y-m-d H:i:s', $ts ) : $row['post_modified'],
+				);
+			}
+		}
+		return $data;
 	}
 
 	/**
@@ -1213,5 +1269,137 @@ class PROD {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Get import statistics (only when connector has get_all_product_skus).
+	 *
+	 * @param object $connapi_erp Connector API object.
+	 * @param array  $options Plugin options.
+	 * @return array Import statistics.
+	 */
+	public static function get_import_stats( $connapi_erp, $options, $settings = array() ) {
+		if ( ! $connapi_erp || ! method_exists( $connapi_erp, 'get_all_product_skus' ) ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'Connector does not support import statistics', 'woocommerce-es' ),
+			);
+		}
+
+		$transient_key = 'conecom_all_product_skus_' . sanitize_key( $options['slug'] );
+		$api_result    = get_transient( $transient_key );
+		if ( false === $api_result ) {
+			$api_result = $connapi_erp->get_all_product_skus();
+			if ( ! isset( $api_result['status'] ) || 'error' !== $api_result['status'] ) {
+				set_transient( $transient_key, $api_result, HOUR_IN_SECONDS );
+			}
+		}
+
+		// Accept 'error' as failure; 'ok' or 'success' (e.g. connect-woocommerce-neo) as success.
+		if ( isset( $api_result['status'] ) && 'error' === $api_result['status'] ) {
+			$message = isset( $api_result['message'] ) && ! empty( $api_result['message'] )
+				? $api_result['message']
+				: __( 'Error fetching product SKUs from API', 'woocommerce-es' );
+			return array(
+				'status'  => 'error',
+				'message' => $message,
+			);
+		}
+
+		// Normalize API result: array of SKUs or array of items with 'sku' (and optionally 'last_updated', 'tags').
+		$api_skus         = array();
+		$api_skus_updated = array();
+		$api_skus_tags    = array();
+		if ( isset( $api_result['data'] ) && is_array( $api_result['data'] ) ) {
+			$raw = $api_result['data'];
+		} elseif ( is_array( $api_result ) ) {
+			$raw = $api_result;
+		} else {
+			$raw = array();
+		}
+
+		foreach ( $raw as $item ) {
+			if ( is_string( $item ) ) {
+				$api_skus[ $item ] = true;
+			} elseif ( is_array( $item ) && ! empty( $item['sku'] ) ) {
+				$sku              = $item['sku'];
+				$api_skus[ $sku ] = true;
+				if ( ! empty( $item['last_updated'] ) ) {
+					$api_skus_updated[ $sku ] = $item['last_updated'];
+				}
+				if ( ! empty( $item['tags'] ) ) {
+					$api_skus_tags[ $sku ] = (array) $item['tags'];
+				}
+			}
+		}
+
+		$api_total_count = count( $api_skus );
+
+		// Apply tag filter if configured (mirrors PROD::filter_product() logic).
+		$filter_tag = ! empty( $settings['filter'] ) ? $settings['filter'] : '';
+		if ( ! empty( $filter_tag ) ) {
+			$tags_option           = array_map( 'sanitize_text_field', array_map( 'trim', explode( ',', $filter_tag ) ) );
+			$filtered_skus         = array();
+			$filtered_skus_updated = array();
+
+			foreach ( $api_skus as $sku => $dummy ) {
+				$product_tags = isset( $api_skus_tags[ $sku ] ) ? $api_skus_tags[ $sku ] : array();
+				$product_tags = array_map( 'sanitize_text_field', array_map( 'trim', (array) $product_tags ) );
+				if ( ! empty( array_intersect( $tags_option, $product_tags ) ) ) {
+					$filtered_skus[ $sku ] = true;
+					if ( isset( $api_skus_updated[ $sku ] ) ) {
+						$filtered_skus_updated[ $sku ] = $api_skus_updated[ $sku ];
+					}
+				}
+			}
+
+			$api_skus         = $filtered_skus;
+			$api_skus_updated = $filtered_skus_updated;
+		}
+
+		$api_count = count( $api_skus );
+		$api_ids   = array_keys( $api_skus );
+
+		$wp_products = self::get_woocommerce_product_data_for_import_stats();
+		$wp_count    = count( $wp_products );
+		$wp_skus     = array_keys( $wp_products );
+
+		$new_properties = array_diff( $api_ids, $wp_skus );
+		$new_count      = count( $new_properties );
+
+		$outdated_count = 0;
+		foreach ( $wp_products as $sku => $wp_data ) {
+			if ( ! isset( $api_skus[ $sku ] ) ) {
+				continue;
+			}
+			$api_date = isset( $api_skus_updated[ $sku ] ) ? $api_skus_updated[ $sku ] : null;
+			$wp_date  = isset( $wp_data['last_modified'] ) ? $wp_data['last_modified'] : null;
+			if ( empty( $api_date ) || empty( $wp_date ) ) {
+				continue;
+			}
+			$api_ts = is_numeric( $api_date ) ? (int) $api_date : strtotime( $api_date );
+			$wp_ts  = is_numeric( $wp_date ) ? (int) $wp_date : strtotime( $wp_date );
+			if ( $api_ts > 0 && $wp_ts > 0 && $api_ts > $wp_ts ) {
+				++$outdated_count;
+			}
+		}
+
+		$import_count = $new_count + $outdated_count;
+
+		$to_delete    = array_diff( $wp_skus, $api_ids );
+		$delete_count = count( $to_delete );
+
+		return array(
+			'status'          => 'success',
+			'api_count'       => $api_count,
+			'api_total_count' => $api_total_count,
+			'available_count' => $api_count,
+			'filter_tag'      => $filter_tag,
+			'wp_count'        => $wp_count,
+			'import_count'    => $import_count,
+			'new_count'       => $new_count,
+			'outdated_count'  => $outdated_count,
+			'delete_count'    => $delete_count,
+		);
 	}
 }
