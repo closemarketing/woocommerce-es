@@ -783,7 +783,10 @@ class PROD {
 		}
 
 		// Filter by tags.
-		if ( empty( $settings['filter'] ) && empty( $item['tags'] ) ) {
+		if ( empty( $settings['filter'] ) ) {
+			return false;
+		}
+		if ( empty( $item['tags'] ) ) {
 			return false;
 		}
 
