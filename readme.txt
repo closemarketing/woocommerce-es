@@ -220,14 +220,25 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = n.e.x.t =
 * Added: Support to Factusol connector.
+* **Sync settings refactor:** Removed Synchronization > Automate tab; sync frequency ("When do you want to sync?") is now set on Synchronization > Products in the Automatic Sync section.
+* **Sync batch size:** Removed "How many products do you want to sync each time?"; batch size is now a fixed constant (50 products per run).
+* **Alerts:** "Email when all products are synced" moved to Settings > Alerts as "Enable Alerts Product synced" (global option).
+* **Product sync stats:** First stat label changed to "Available in [ERP name]" (e.g. Holded); when a tag filter is active, shows filtered count plus "Total" (unfiltered) in sublabel.
+* **Product sync stats:** Stats now respect the tag filter (filter products by tags) so counts match what is actually synced.
+* **Automatic Sync tab:** Replaced static message with Action Scheduler log table showing recent conecom_sync_* runs (date, status, frequency, logs).
+* Enhancement: Improved import products from API. Stats now shows the number of products fetched from the API.
 * Enhancement: Added payment method status to payment method mapping.
 * Fixed: Variations now inherit parent tax class correctly by setting tax_class to "parent" on creation.
 * Fixed: Tax class "parent" is preserved when products are re-synced/updated, preventing tax calculation inconsistencies.
+* Fixed: Plugin no longer shows alerts for successful order submissions to API - alerts now only appear on actual errors.
+* Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
+* Enhancement: Improved order sync UI feedback - success messages are shown in green and auto-hide after 5 seconds, errors show alerts.
 * Fixed: Product importer now correctly detects end of paginated product list, preventing unnecessary API calls beyond last product.
 * Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
 * Enhancement: Added pagination end detection tests for product import with various edge cases (102/100, exact pages, multiple pages).
 * Enhancement: Added support to import custom fields from API to WooCommerce.
 * Fixed: Error checking if API is connected.
+* Fixed: Error filtering products by tags.
 
 = 3.3.2 =
 * Added: Support to FacturaDirecta connector.
