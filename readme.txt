@@ -234,6 +234,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Enhancement: Added pagination end detection tests for product import with various edge cases (102/100, exact pages, multiple pages).
 * Enhancement: Added support to import custom fields from API to WooCommerce.
 * Fixed: Error checking if API is connected.
+* Fixed: Error filtering products by tags.
 
 = 3.3.2 =
 * Added: Support to FacturaDirecta connector.
