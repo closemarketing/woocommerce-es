@@ -219,6 +219,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = n.e.x.t =
+* Added: Support to Factusol connector.
 * **Sync settings refactor:** Removed Synchronization > Automate tab; sync frequency ("When do you want to sync?") is now set on Synchronization > Products in the Automatic Sync section.
 * **Sync batch size:** Removed "How many products do you want to sync each time?"; batch size is now a fixed constant (50 products per run).
 * **Alerts:** "Email when all products are synced" moved to Settings > Alerts as "Enable Alerts Product synced" (global option).
