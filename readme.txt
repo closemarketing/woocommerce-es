@@ -229,7 +229,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Enhancement: Added payment method status to payment method mapping.
 * Fixed: Variations now inherit parent tax class correctly by setting tax_class to "parent" on creation.
 * Fixed: Tax class "parent" is preserved when products are re-synced/updated, preventing tax calculation inconsistencies.
-* Fixed: Plugin no longer shows alerts for successful order submissions to API - alerts now only appear on actual errors.
+* Fixed: Alert notifications (Slack, email) no longer fire with "Order Submission Error" title when an order was already synced to the ERP or submitted successfully. Previously the already-synced branch incorrectly returned `status: error`, triggering a false alert.
+* Fixed: Duplicate alert on order submission exception — alert was sent twice (once in catch block, once in post-try check); now sent only once.
+* Enhancement: Alert notifications now reflect actual severity — errors use 🚨 emoji and red border, informational/success notifications use ✅ and green border.
 * Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
 * Enhancement: Improved order sync UI feedback - success messages are shown in green and auto-hide after 5 seconds, errors show alerts.
 * Fixed: Product importer now correctly detects end of paginated product list, preventing unnecessary API calls beyond last product.
