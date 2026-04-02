@@ -767,7 +767,7 @@ class PROD {
 		if ( ! empty( $settings_mergevars['prod_mergevars'] ) ) {
 			$key = array_search( 'prod|post_status', $settings_mergevars['prod_mergevars'] );
 			if ( false !== $key ) {
-				$publish_status = $item[ $settings_mergevars['prod_mergevars'][ $key ] ];
+				$publish_status = $item[ $key ] ?? '';
 				if ( empty( $publish_status ) ) {
 					return true;
 				}
