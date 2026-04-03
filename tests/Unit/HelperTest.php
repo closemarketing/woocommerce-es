@@ -272,7 +272,9 @@ class HelperTest extends WP_UnitTestCase {
 		$options  = array();
 		$connector = HELPER::get_connector( $options );
 
-		$this->assertSame( 'non_existent_connector', $connector['connector'] );
+		// A slug with no matching settings entry is not migrated, so no connector
+		// context is built and get_connector() returns the empty fallback.
+		$this->assertSame( '', $connector['connector'] );
 		$this->assertIsArray( $connector['settings'] );
 	}
 
@@ -319,10 +321,12 @@ class HelperTest extends WP_UnitTestCase {
 		// Should return connector but without connapi_erp since name is empty.
 		$this->assertIsArray( $connector );
 		$this->assertArrayHasKey( 'connector', $connector );
-		
-		// Verify connector was reset in settings.
+
+		// The new implementation no longer resets connector in the DB when the
+		// options name is missing — it just skips instantiating connapi_erp.
+		$this->assertArrayNotHasKey( 'connapi_erp', $connector );
 		$settings_all = get_option( $this->option_name );
-		$this->assertSame( '', $settings_all['connector'] );
+		$this->assertSame( 'test_connector', $settings_all['connector'] );
 	}
 
 	/**

@@ -522,8 +522,9 @@ class MultiConnectorHelperTest extends WP_UnitTestCase {
 	public function test_get_connector_action_name_sanitizes_connector_id(): void {
 		$name = HELPER::get_connector_action_name( 'sync_erp_order', 'My Store!' );
 
-		// sanitize_key converts to lowercase alphanumeric + hyphens.
-		$this->assertSame( 'sync_erp_order_my-store', $name );
+		// sanitize_key lowercases and strips non-alphanumeric/hyphen/underscore
+		// characters — spaces and ! are removed entirely (not converted to '-').
+		$this->assertSame( 'sync_erp_order_mystore', $name );
 	}
 
 	// -------------------------------------------------------------------------
