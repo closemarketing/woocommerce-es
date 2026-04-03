@@ -1249,14 +1249,13 @@ class Settings {
 					</select>
 				<?php endif; ?>
 				<?php if ( empty( $can_sync ) ) : ?>
-				<div class="error notice">
-						<p>
-							<?php esc_html_e( 'You need to set the API settings before importing products.', 'woocommerce-es' ); ?>
-							<br/>
-							<?php echo esc_html( $message ); ?>
-						</p>
-					</div>
-			<?php else : ?>
+					<p class="error">
+						<?php esc_html_e( 'You need to set the API settings before importing products.', 'woocommerce-es' ); ?>
+						<?php if ( ! empty( $message ) ) : ?>
+							<br/><?php echo esc_html( $message ); ?>
+						<?php endif; ?>
+					</p>
+				<?php else : ?>
 				<?php
 				$is_orders = 'sync_orders' === $type;
 				$item_type = $is_orders ? __( 'Orders', 'woocommerce-es' ) : __( 'Products', 'woocommerce-es' );
