@@ -1,13 +1,13 @@
 function syncManualItems( element, action, loop = 0 ) {
 	element.classList.add('disabled');
 	element.innerHTML = ConEcom_ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
-	const productAI = document.querySelector('select[name="connwoo-sync-product-ai"]')?.value || document.querySelector('#connect_ecommerce_ai_stats')?.value || '';
+	const productAI = document.querySelector('select[name="connwoo-sync-product-ai"]')?.value || '';
+	const connectorId = document.querySelector('select[name="connwoo-connector-select"]')?.value || '';
 
 	const isOdd = number => number % 2 !== 0;
-	var class_task = isOdd(loop) ? 'odd' : 'even';
-
-	var body = 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI;
-
+	class_task = isOdd(loop) ? 'odd' : 'even';
+	
+	// AJAX request.
 	fetch( ConEcom_ajaxAction.url, {
 		method: 'POST',
 		credentials: 'same-origin',
@@ -15,9 +15,9 @@ function syncManualItems( element, action, loop = 0 ) {
 			'Content-Type': 'application/x-www-form-urlencoded',
 			'Cache-Control': 'no-cache',
 		},
-		body: body,
+		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI + '&connector_id=' + connectorId,
 	})
-	.then( function(resp) { return resp.json(); } )
+	.then( (resp) => resp.json() )
 	.then( function(results) {
 		if ( results.success ) {
 			if ( ! results.data.finish ) {
@@ -25,138 +25,23 @@ function syncManualItems( element, action, loop = 0 ) {
 			} else {
 				element.classList.remove('disabled');
 				element.innerHTML = ConEcom_ajaxAction.label_sync;
-				if ( results.data.message ) {
-					results.data.message = results.data.message + ConEcom_ajaxAction.label_sync_complete;
-				}
+				results.data.message = results.data.message + ConEcom_ajaxAction.label_sync_complete;
 			}
 		} else {
 			element.classList.remove('disabled');
 			element.innerHTML = ConEcom_ajaxAction.label_sync;
 		}
-		if ( results.data && results.data.message !== undefined ) {
-			var progressElement = document.createElement('p');
+		// Message.
+		if ( results.data.message != undefined ){
+			progressElement = document.createElement('p');
 			progressElement.className = class_task;
-			var loglist = document.querySelector('#logwrapper #loglist');
-			if ( loglist ) {
-				progressElement.innerHTML = results.data.message;
-				loglist.appendChild(progressElement);
-			}
+			document.querySelector('#logwrapper #loglist').appendChild(progressElement);
+			progressElement.innerHTML = results.data.message;
 		}
-		var loglist = document.querySelector('#logwrapper #loglist');
-		if ( loglist ) {
-			loglist.scrollTo({ top: loglist.scrollHeight, behavior: 'smooth' });
-		}
+		const loglist = document.querySelector('#logwrapper #loglist');
+		loglist.scrollTo({ top: loglist.scrollHeight, behavior: "smooth" });
 	})
-	.catch(function(err) { console.log(err); });
-}
-
-/**
- * Manual sync with mode (updated/all) and pagination. Used when get_all_product_skus exists.
- */
-function syncManualItemsWithMode( element, action, loop, pagination ) {
-	var importMode = document.getElementById('import-mode');
-	var mode = importMode ? importMode.value : 'all';
-	var dateFrom = document.getElementById('orders-date-from');
-	var dateTo = document.getElementById('orders-date-to');
-	var refreshButton = document.getElementById('refresh_stats');
-	var spinner = element.parentElement ? element.parentElement.querySelector('.spinner') : null;
-
-	if ( loop === 0 ) {
-		var manualTabButton = document.querySelector('.conecom-tab-button[data-tab="manual"]');
-		if ( manualTabButton ) {
-			manualTabButton.click();
-		}
-		var loglist = document.querySelector('#logwrapper #loglist');
-		if ( loglist ) {
-			loglist.innerHTML = '';
-		}
-	}
-
-	element.disabled = true;
-	element.textContent = ConEcom_ajaxAction.label_syncing;
-	if ( importMode ) { importMode.disabled = true; }
-	if ( dateFrom ) { dateFrom.disabled = true; }
-	if ( dateTo ) { dateTo.disabled = true; }
-	if ( refreshButton ) { refreshButton.disabled = true; }
-	if ( spinner ) { spinner.classList.add('is-active'); }
-
-	var productAI = document.querySelector('select[name="connwoo-sync-product-ai"]')?.value || document.querySelector('#connect_ecommerce_ai_stats')?.value || '';
-	var isOdd = function(n) { return n % 2 !== 0; };
-	var class_task = isOdd(loop) ? 'odd' : 'even';
-
-	var body = 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI + '&mode=' + encodeURIComponent(mode) + '&pagination=' + (pagination || 100);
-	if ( dateFrom && dateFrom.value ) {
-		body += '&date_from=' + encodeURIComponent(dateFrom.value);
-	}
-	if ( dateTo && dateTo.value ) {
-		body += '&date_to=' + encodeURIComponent(dateTo.value);
-	}
-
-	fetch( ConEcom_ajaxAction.url, {
-		method: 'POST',
-		credentials: 'same-origin',
-		headers: {
-			'Content-Type': 'application/x-www-form-urlencoded',
-			'Cache-Control': 'no-cache',
-		},
-		body: body,
-	})
-	.then( function(resp) { return resp.json(); } )
-	.then( function(results) {
-		if ( results.success ) {
-			if ( results.data && results.data.message ) {
-				var progressElement = document.createElement('p');
-				progressElement.className = class_task;
-				var loglist = document.querySelector('#logwrapper #loglist');
-				if ( loglist ) {
-					progressElement.innerHTML = results.data.message;
-					loglist.appendChild(progressElement);
-				}
-			}
-			if ( ! results.data.finish ) {
-				syncManualItemsWithMode(element, action, results.data.loop, pagination);
-			} else {
-				element.disabled = false;
-				element.textContent = ConEcom_ajaxAction.label_sync;
-				if ( importMode ) { importMode.disabled = false; }
-				if ( dateFrom ) { dateFrom.disabled = false; }
-				if ( dateTo ) { dateTo.disabled = false; }
-				if ( refreshButton ) { refreshButton.disabled = false; }
-				if ( spinner ) { spinner.classList.remove('is-active'); }
-				if ( typeof loadImportStats === 'function' ) {
-					loadImportStats();
-				}
-			}
-		} else {
-			element.disabled = false;
-			element.textContent = ConEcom_ajaxAction.label_sync;
-			if ( importMode ) { importMode.disabled = false; }
-			if ( dateFrom ) { dateFrom.disabled = false; }
-			if ( dateTo ) { dateTo.disabled = false; }
-			if ( refreshButton ) { refreshButton.disabled = false; }
-			if ( spinner ) { spinner.classList.remove('is-active'); }
-			if ( results.data && results.data.message ) {
-				var errEl = document.createElement('p');
-				errEl.className = 'error';
-				errEl.style.color = 'red';
-				errEl.innerHTML = results.data.message;
-				var loglist = document.querySelector('#logwrapper #loglist');
-				if ( loglist ) { loglist.appendChild(errEl); }
-			}
-		}
-		var loglist = document.querySelector('#logwrapper #loglist');
-		if ( loglist ) {
-			loglist.scrollTo({ top: loglist.scrollHeight, behavior: 'smooth' });
-		}
-	})
-	.catch(function(err) {
-		console.error('Import error:', err);
-		element.disabled = false;
-		element.textContent = ConEcom_ajaxAction.label_sync;
-		if ( importMode ) { importMode.disabled = false; }
-		if ( refreshButton ) { refreshButton.disabled = false; }
-		if ( spinner ) { spinner.classList.remove('is-active'); }
-	});
+	.catch(err => console.log(err));
 }
 
 function syncProductERP( element, action, product_erp_id = 0, product_sku = '', product_id = 0 ) {

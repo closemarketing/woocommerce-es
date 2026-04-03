@@ -35,13 +35,28 @@ class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 	private $options;
 
 	/**
+	 * Connector instance identifier.
+	 *
+	 * @var string
+	 */
+	private $connector_id = 'clientify';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array $options Options of plugin.
 	 */
-	public function __construct( $options ) {
-		$this->options  = $options['clientify'];
-		$this->settings = get_option( 'connect_ecommerce' )['clientify'] ?? array();
+	public function __construct( $options, $connector_id = null ) {
+		$this->options      = $options['clientify'];
+		$this->connector_id = $connector_id ?: 'clientify';
+
+		$settings_all   = get_option( 'connect_ecommerce' );
+		$connector_key  = $this->connector_id;
+		if ( isset( $settings_all[ $connector_key ] ) ) {
+			$this->settings = $settings_all[ $connector_key ];
+		} else {
+			$this->settings = $settings_all['clientify'] ?? array();
+		}
 
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'clientify_cookie_checkout_field' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );

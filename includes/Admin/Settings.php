@@ -18,7 +18,6 @@ use CLOSE\ConnectEcommerce\Helpers\HELPER;
 use CLOSE\ConnectEcommerce\Helpers\AI;
 use CLOSE\ConnectEcommerce\Helpers\CRON;
 use CLOSE\ConnectEcommerce\Helpers\ALERT;
-use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
 
 /**
  * Library for WooCommerce Settings
@@ -113,6 +112,41 @@ class Settings {
 	private $all_options;
 
 	/**
+	 * Connector type slug.
+	 *
+	 * @var string
+	 */
+	private $connector_type = '';
+
+	/**
+	 * Connector identifier.
+	 *
+	 * @var string
+	 */
+	private $connector_id = '';
+
+	/**
+	 * All configured connectors.
+	 *
+	 * @var array
+	 */
+	private $connectors = array();
+
+	/**
+	 * Connectors metadata.
+	 *
+	 * @var array
+	 */
+	private $connectors_meta = array();
+
+	/**
+	 * Workflow keys.
+	 *
+	 * @var array
+	 */
+	private $workflows = array();
+
+	/**
 	 * Settings slug
 	 *
 	 * @var string
@@ -127,13 +161,6 @@ class Settings {
 	private $is_disabled_ai;
 
 	/**
-	 * Whether the active connector does not manage a product catalog.
-	 *
-	 * @var bool
-	 */
-	private $is_disabled_products;
-
-	/**
 	 * Payment methods page handler.
 	 *
 	 * @var Settings_Payment_Methods|null
@@ -141,27 +168,50 @@ class Settings {
 	private $payment_methods_page;
 
 	/**
+	 * Available connector definitions.
+	 *
+	 * @var array
+	 */
+	private $connector_definitions = array();
+
+	/**
 	 * Construct of class
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connectors_data Connectors payload from HELPER.
 	 * @return void
 	 */
-	public function __construct( $connector ) {
-		$this->settings_all          = $connector['settings_all'];
-		$this->connector             = $connector['connector'] ?? '';
-		$this->settings              = $connector['settings'] ?? array();
-		$this->all_options           = $connector['all_options'];
-		$this->options               = $connector['options'] ?? array();
-		$this->connapi_erp           = $connector['connapi_erp'] ?? null;
-		$this->is_mergevars          = $connector['is_mergevars'] ?? false;
-		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
-		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
-		$this->is_disabled_products  = in_array( 'product', $this->options['disable_modules'] ?? array(), true );
-		$payment_methods_enabled     = ! array_key_exists( 'payment_methods', $this->options ) || ! empty( $this->options['payment_methods'] );
-		$this->have_payments_methods = $payment_methods_enabled && ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_payment_methods' );
+	public function __construct( $connectors_data ) {
+		$this->settings_all    = $connectors_data['settings_all'] ?? get_option( 'connect_ecommerce' );
+		$this->connectors      = $connectors_data['items'] ?? array();
+		$this->connectors_meta = $connectors_data['meta'] ?? array();
+		$this->workflows       = array_fill_keys( HELPER::get_workflows(), true );
 
-		// If connector is saved but the plugin is no longer active (no options/api loaded), still register the admin page so the user can change the connector.
-		if ( ! empty( $this->connector ) && empty( $this->options ) && ! empty( $this->connapi_erp ) ) {
+		$this->connector_id = $connectors_data['active'] ?? '';
+		if ( empty( $this->connector_id ) && ! empty( $this->connectors ) ) {
+			$this->connector_id = array_key_first( $this->connectors );
+		}
+
+		$current_connector    = $this->connectors[ $this->connector_id ] ?? array();
+		$this->connector      = $current_connector['id'] ?? $this->connector_id;
+		$this->connector_type = $current_connector['connector'] ?? '';
+		$this->settings       = $current_connector['settings'] ?? array();
+		$this->all_options    = $current_connector['all_options'] ?? array();
+
+		$this->connector_definitions = $this->all_options;
+		if ( empty( $this->connector_definitions ) && function_exists( 'conecom_get_options' ) ) {
+			$this->connector_definitions = conecom_get_options();
+		}
+		$this->options               = $current_connector['options'] ?? array();
+		$this->connapi_erp           = $current_connector['connapi_erp'] ?? null;
+		$this->is_mergevars          = $current_connector['is_mergevars'] ?? false;
+		$this->is_disabled_orders    = $current_connector['is_disabled_orders'] ?? false;
+		$this->is_disabled_ai        = $current_connector['is_disabled_ai'] ?? false;
+		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
+
+		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
+		add_action( 'admin_init', array( $this, 'page_init' ) );
+
+		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
 			return;
 		}
 
@@ -169,21 +219,7 @@ class Settings {
 			$this->init_payment_methods_page();
 		}
 
-		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
-		add_action( 'admin_init', array( $this, 'page_init' ) );
 		add_action( 'wp_ajax_connect_ecommerce_test_alert', array( $this, 'test_alert_callback' ) );
-	}
-
-	/**
-	 * Whether the saved connector is fully active (plugin loaded and options available).
-	 *
-	 * Returns false when a connector slug is saved but the corresponding plugin is
-	 * no longer active, so settings can still be shown to allow changing the connector.
-	 *
-	 * @return bool
-	 */
-	private function is_connector_active() {
-		return ! empty( $this->connector ) && ! empty( $this->options );
 	}
 
 	/**
@@ -198,11 +234,13 @@ class Settings {
 
 		$connector_options = $this->options;
 		$connector_slug    = (string) $this->connector;
+		$connector_type    = (string) $this->connector_type;
 
 		$this->payment_methods_page = new Settings_Payment_Methods(
 			$this->connapi_erp,
 			$connector_slug,
-			is_array( $connector_options ) ? $connector_options : array()
+			is_array( $connector_options ) ? $connector_options : array(),
+			$connector_type
 		);
 	}
 
@@ -228,8 +266,7 @@ class Settings {
 	 * @return void
 	 */
 	public function create_admin_page() {
-		$special_tabs = array();
-		if ( $this->is_connector_active() ) {
+		if ( $this->connector ) {
 			$this->settings_public         = get_option( 'connect_ecommerce_public' );
 			$this->settings_prod_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
 			$this->settings_ai             = get_option( 'connect_ecommerce_ai' );
@@ -251,11 +288,6 @@ class Settings {
 								?>
 							</h2>
 						</div>
-						<div style="margin-left: auto; align-self: center;">
-							<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?conecom_reset_wizard=1' ), 'conecom_reset_wizard' ) ); ?>" class="button button-secondary connwoo-header-btn" style="font-size:12px;">
-								<?php esc_html_e( 'Run setup wizard', 'woocommerce-es' ); ?>
-							</a>
-						</div>
 					</div>
 				</div>
 			</div>
@@ -263,19 +295,15 @@ class Settings {
 				<?php settings_errors(); ?>
 
 				<?php
-				// Main tabs. Default to settings when connector plugin is not active.
-				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : ( $this->is_connector_active() ? 'synchronization' : 'settings' );
+				// Main tabs.
+				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
 
 				// Subtabs.
 				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
 
 				// Set default subtabs.
 				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
-					$active_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
-				}
-				// Connectors without a product catalog only expose the Orders subtab.
-				if ( 'synchronization' === $active_tab && 'sync_products' === $active_subtab && $this->is_disabled_products ) {
-					$active_subtab = 'sync_orders';
+					$active_subtab = 'sync_products';
 				}
 				if ( 'settings' === $active_tab && empty( $active_subtab ) ) {
 					$active_subtab = 'connection';
@@ -283,16 +311,15 @@ class Settings {
 				?>
 				<h2 class="nav-tab-wrapper">
 					<?php
-					if ( $this->is_connector_active() ) {
-						$sync_tab_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+					if ( $this->connector ) {
 						?>
-						<a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $sync_tab_subtab ); ?>" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
+						<a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
 						<?php
 					}
 					?>
 					<a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'woocommerce-es' ); ?></a>
 					<?php
-					if ( $this->is_connector_active() && in_array( 'subscriptions', $special_tabs, true ) ) {
+					if ( $this->connector && in_array( 'subscriptions', $special_tabs, true ) ) {
 						?>
 						<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'woocommerce-es' ); ?></a>
 						<?php
@@ -318,19 +345,18 @@ class Settings {
 
 				<?php
 				// Subtabs for Synchronization.
-				if ( 'synchronization' === $active_tab && $this->is_connector_active() ) {
+				if ( 'synchronization' === $active_tab && $this->connector ) {
 					?>
 					<ul class="subsubsub">
-						<?php if ( ! $this->is_disabled_products ) : ?>
-						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ''; ?></li>
-						<?php endif; ?>
+						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a> | </li>
 						<?php
 						if ( ! $this->is_disabled_orders ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a></li>
+							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a> | </li>
 							<?php
 						}
 						?>
+						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=automate" class="<?php echo 'automate' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Automate', 'woocommerce-es' ); ?></a></li>
 					</ul>
 					<br class="clear">
 					<?php
@@ -338,32 +364,28 @@ class Settings {
 
 				// Subtabs for Settings.
 				if ( 'settings' === $active_tab ) {
-					$has_settings_alerts   = $this->is_connector_active();
-					$has_settings_ai       = ! $this->is_disabled_ai && $this->is_connector_active();
-					$has_settings_payments = $this->is_connector_active() && $this->have_payments_methods;
-					$has_settings_merge    = $this->is_connector_active() && $this->is_mergevars;
 					?>
 					<ul class="subsubsub">
 						<li><a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="<?php echo 'connection' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Connection', 'woocommerce-es' ); ?></a> | </li>
-						<li><a href="?page=connect_ecommerce&tab=settings&subtab=vat_compliance" class="<?php echo 'vat_compliance' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'EU VAT Compliance', 'woocommerce-es' ); ?></a><?php echo $has_settings_merge || $has_settings_payments || $has_settings_ai || $has_settings_alerts ? ' | ' : ''; ?></li>
+						<li><a href="?page=connect_ecommerce&tab=settings&subtab=vat_compliance" class="<?php echo 'vat_compliance' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'EU VAT Compliance', 'woocommerce-es' ); ?></a><?php echo ( $this->connector && $this->is_mergevars ) || ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
 						<?php
-						if ( $has_settings_merge ) {
+						if ( $this->connector && $this->is_mergevars ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'woocommerce-es' ); ?></a><?php echo $has_settings_payments || $has_settings_ai || $has_settings_alerts ? ' | ' : ''; ?></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
 							<?php
 						}
-						if ( $has_settings_payments ) {
+						if ( $this->connector && $this->have_payments_methods ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a><?php echo $has_settings_ai || $has_settings_alerts ? ' | ' : ''; ?></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
 							<?php
 						}
-						if ( $has_settings_ai ) {
+						if ( ! $this->is_disabled_ai && $this->connector ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'woocommerce-es' ); ?></a><?php echo $has_settings_alerts ? ' | ' : ''; ?></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'woocommerce-es' ); ?></a> | </li>
 							<?php
 						}
-						if ( $has_settings_alerts ) {
-							?>
+						if ( $this->connector ) {
+						?>
 							<li><a href="?page=connect_ecommerce&tab=settings&subtab=alerts" class="<?php echo 'alerts' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Alerts', 'woocommerce-es' ); ?></a></li>
 							<?php
 						}
@@ -379,36 +401,45 @@ class Settings {
 					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
 						$this->page_get_sync( $active_subtab );
 					}
+
+					if ( 'automate' === $active_subtab ) {
+						?>
+						<form method="post" action="options.php">
+							<?php
+							settings_fields( 'connect_ecommerce_settings' );
+							do_settings_sections( 'connect_ecommerce_automate' );
+							submit_button(
+								__( 'Save automate', 'woocommerce-es' ),
+								'primary',
+								'submit_automate'
+							);
+							?>
+						</form>
+						<?php
+					}
 				}
 
 				// Settings Tab Content.
 				if ( 'settings' === $active_tab ) {
 					if ( 'connection' === $active_subtab ) {
-						if ( ! empty( $this->connector ) && ! $this->is_connector_active() ) {
-							?>
-							<div class="notice notice-warning">
-								<p>
-									<?php
-									printf(
-										/* translators: %s: connector slug */
-										esc_html__( 'The connector "%s" is saved but its plugin is not active. Select a different connector below.', 'woocommerce-es' ),
-										esc_html( $this->connector )
-									);
-									?>
-								</p>
-							</div>
-							<?php
-						}
 						?>
 						<form method="post" action="options.php">
 							<?php
-								settings_fields( 'connect_ecommerce_settings' );
+							settings_fields( 'connect_ecommerce_settings' );
+							$this->render_connector_manager();
+							submit_button(
+								__( 'Save connectors', 'woocommerce-es' ),
+								'secondary',
+								'submit_connectors'
+							);
+							if ( ! empty( $this->connector ) ) {
 								do_settings_sections( 'connect_ecommerce_admin' );
 								submit_button(
 									__( 'Save settings', 'woocommerce-es' ),
 									'primary',
 									'submit_settings'
 								);
+							}
 							?>
 						</form>
 						<?php
@@ -581,7 +612,7 @@ class Settings {
 			'connect_woocommerce_setting_section'
 		);
 
-		if ( $this->connector && ! empty( $this->options ) ) {
+		if ( $this->connector ) {
 			if ( 'connwoo_neo' === $this->options['slug'] ) {
 				add_settings_field(
 					'wcpimh_idcentre',
@@ -669,28 +700,6 @@ class Settings {
 				);
 			}
 
-			// Manufacturer Code.
-			if ( in_array( 'manufacturer_code', $settings_fields, true ) ) {
-				add_settings_field(
-					'wcpimh_manufacturer_code',
-					__( 'Manufacturer Code', 'woocommerce-es' ),
-					array( $this, 'manufacturer_code_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-				);
-			}
-
-			// Customer Code.
-			if ( in_array( 'customer_code', $settings_fields, true ) ) {
-				add_settings_field(
-					'wcpimh_customer_code',
-					__( 'Customer Code', 'woocommerce-es' ),
-					array( $this, 'customer_code_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-				);
-			}
-
 			// Company Select.
 			if ( in_array( 'company_id', $settings_fields, true ) ) {
 				add_settings_field(
@@ -711,119 +720,109 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
-			if ( ! $this->is_disabled_products ) {
-				if ( $this->options['product_option_stock'] ) {
+			if ( $this->options['product_option_stock'] ) {
 					add_settings_field(
-					'wcpimh_stock',
-					__( 'Import stock?', 'woocommerce-es' ),
-					array( $this, 'stock_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-					);
-
-					add_settings_field(
-						'wcpimh_stock_visibility',
-						__( 'Hide out-of-stock products?', 'woocommerce-es' ),
-						array( $this, 'stock_visibility_callback' ),
+						'wcpimh_stock',
+						__( 'Import stock?', 'woocommerce-es' ),
+						array( $this, 'stock_callback' ),
 						'connect_ecommerce_admin',
 						'connect_woocommerce_setting_section'
 					);
-				}
+			}
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_prodst',
 				__( 'Default status for new products?', 'woocommerce-es' ),
 				array( $this, 'prodst_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_virtual',
 				__( 'Virtual products?', 'woocommerce-es' ),
 				array( $this, 'virtual_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_backorders',
 				__( 'Allow backorders?', 'woocommerce-es' ),
 				array( $this, 'backorders_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_catsep',
 				__( 'Category separator', 'woocommerce-es' ),
 				array( $this, 'catsep_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				if ( is_object( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_attributes' ) ) {
-					add_settings_field(
+			if ( ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_attributes' ) ) {
+				add_settings_field(
 					'wcpimh_catattr',
 					__( 'Attribute to use as category', 'woocommerce-es' ),
 					array( $this, 'catattr_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
-					);
-				}
+				);
+			}
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_catnp',
 				__( 'Import category only in new products?', 'woocommerce-es' ),
 				array( $this, 'catnp_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_filter',
 				__( 'Filter products by tags? Only import this tags (separated by comma and no space)', 'woocommerce-es' ),
 				array( $this, 'filter_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_filter_sku',
 				__( 'Filter products by SKU? Only the products that complies these formula (use * for formula)', 'woocommerce-es' ),
 				array( $this, 'filter_sku_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				if ( $this->options['product_price_tax_option'] ) {
-					add_settings_field(
+			if ( $this->options['product_price_tax_option'] ) {
+				add_settings_field(
 					'wcpimh_tax_option',
 					__( 'Get prices with Tax?', 'woocommerce-es' ),
 					array( $this, 'tax_option_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
-					);
-				}
+				);
+			}
 
-				add_settings_field(
+			add_settings_field(
 				'wcpimh_make_discount',
 				__( 'Percentage to Make a discount from prices and save in sale price?', 'woocommerce-es' ),
 				array( $this, 'pricesale_discount_option_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-				);
+			);
 
-				if ( $this->options['product_price_rate_option'] ) {
-					$desc_tip = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
-					add_settings_field(
+			if ( $this->options['product_price_rate_option'] ) {
+				$desc_tip     = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
+				add_settings_field(
 					'wcpimh_rates',
 					__( 'Product price rate for this eCommerce', 'woocommerce-es' ),
 					array( $this, 'rates_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
-					);
-				}
+				);
 			}
 
 			if ( ( isset( $this->options['order_series_number'] ) && $this->options['order_series_number'] ) || 'Holded' === $this->options['name'] ) {
@@ -890,14 +889,6 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
-
-				add_settings_field(
-					'wcpimh_order_sync_from_date',
-					__( 'Sync orders from this date?', 'woocommerce-es' ),
-					array( $this, 'order_sync_from_date_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-				);
 			}
 
 			if ( ! empty( $this->options['order_tags'] ) ) {
@@ -910,7 +901,7 @@ class Settings {
 				);
 			}
 
-			if ( ! $this->is_disabled_products && ! empty( $this->options['product_weight_equivalence'] ) ) {
+			if ( ! empty( $this->options['product_weight_equivalence'] ) ) {
 				$attributes = get_transient( 'conecom_query_attributes' );
 				if ( false === $attributes ) { // Query attributes.
 					$attributes = $this->connapi_erp->get_product_attributes();
@@ -932,6 +923,42 @@ class Settings {
 				array( $this, 'debug_log_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
+			);
+		}
+
+		/**
+		 * ## Automate
+		 * --------------------------- */
+
+		add_settings_section(
+			'connect_woocommerce_setting_automate',
+			__( 'Automate', 'woocommerce-es' ),
+			array( $this, 'section_automate' ),
+			'connect_ecommerce_automate'
+		);
+
+		add_settings_field(
+			'wcpimh_sync',
+			__( 'When do you want to sync?', 'woocommerce-es' ),
+			array( $this, 'sync_callback' ),
+			'connect_ecommerce_automate',
+			'connect_woocommerce_setting_automate'
+		);
+
+		if ( ! empty( $this->options['table_sync'] ) ) {
+			add_settings_field(
+				'wcpimh_sync_num',
+				__( 'How many products do you want to sync each time?', 'woocommerce-es' ),
+				array( $this, 'sync_num_callback' ),
+				'connect_ecommerce_automate',
+				'connect_woocommerce_setting_automate'
+			);
+			add_settings_field(
+				'wcpimh_sync_email',
+				__( 'Do you want to receive an email when all products are synced?', 'woocommerce-es' ),
+				array( $this, 'sync_email_callback' ),
+				'connect_ecommerce_automate',
+				'connect_woocommerce_setting_automate'
 			);
 		}
 
@@ -1058,8 +1085,24 @@ class Settings {
 		);
 
 		add_settings_field(
+			'connect_ecommerce_ai_provider',
+			__( 'AI Provider', 'woocommerce-es' ),
+			array( $this, 'ai_provider_callback' ),
+			'connect_ecommerce_ai',
+			'imhset_ai_setting_section'
+		);
+
+		add_settings_field(
+			'connect_ecommerce_ai_apikey',
+			__( 'API Key', 'woocommerce-es' ),
+			array( $this, 'token_ai_callback' ),
+			'connect_ecommerce_ai',
+			'imhset_ai_setting_section'
+		);
+
+		add_settings_field(
 			'connect_ecommerce_ai_model',
-			__( 'Model', 'woocommerce-es' ),
+			__( 'Model (need login first)', 'woocommerce-es' ),
 			array( $this, 'ai_model_callback' ),
 			'connect_ecommerce_ai',
 			'imhset_ai_setting_section'
@@ -1099,14 +1142,6 @@ class Settings {
 		);
 
 		add_settings_field(
-			'connect_ecommerce_alert_product_synced',
-			__( 'Enable Alerts Product synced', 'woocommerce-es' ),
-			array( $this, 'alert_product_synced_callback' ),
-			'connect_ecommerce_alerts',
-			'connect_ecommerce_alerts_section'
-		);
-
-		add_settings_field(
 			'connect_ecommerce_alert_method',
 			__( 'Alert Method', 'woocommerce-es' ),
 			array( $this, 'alert_method_callback' ),
@@ -1139,424 +1174,133 @@ class Settings {
 	 */
 	public function page_get_sync( $type = 'sync_products' ) {
 		$ajax_action = 'connect_ecommerce_' . $type;
-		if ( empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'check_can_sync' ) ) {
-			echo '<div class="notice notice-warning"><p>' . esc_html__( 'No connector configured. Please configure a connector in the Settings tab.', 'woocommerce-es' ) . '</p></div>';
-			return;
-		}
-		$login_api = $this->connapi_erp->check_can_sync();
-		$can_sync  = false;
-		if ( is_array( $login_api ) ) {
-			$message  = $login_api['message'] ?? '';
-			$can_sync = 'ok' === $login_api['status'] ? true : false;
-		} else {
-			$can_sync = $login_api;
-			$message  = $login_api ? '' : __( 'We couln\'t connect to the API', 'woocommerce-es' );
+		$workflow    = 'sync_orders' === $type ? 'orders' : 'products';
+
+		// Determine which connector is shown based on the URL param.
+		$selected_id = isset( $_GET['connector_id'] ) ? sanitize_key( wp_unslash( $_GET['connector_id'] ) ) : '';
+
+		// Build list of connectors enabled for this workflow.
+		$available_connectors = array();
+		foreach ( $this->connectors_meta as $id => $meta ) {
+			if ( 'active' !== ( $meta['status'] ?? 'active' ) ) {
+				continue;
+			}
+			if ( 'yes' !== ( $meta['workflows'][ $workflow ] ?? 'yes' ) ) {
+				continue;
+			}
+			$available_connectors[ $id ] = $meta;
 		}
 
-		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_all_product_skus' );
-		$api_pagination           = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
+		// Validate / fall back the selected connector.
+		if ( empty( $selected_id ) || ! isset( $available_connectors[ $selected_id ] ) ) {
+			$selected_id = isset( $available_connectors[ $this->connector ] )
+				? $this->connector
+				: (string) array_key_first( $available_connectors );
+		}
+
+		$selected_connector = $this->connectors[ $selected_id ] ?? array();
+		$selected_connapi   = $selected_connector['connapi_erp'] ?? $this->connapi_erp;
+		$selected_options   = $selected_connector['options'] ?? $this->options;
+		$selected_no_ai     = $selected_connector['is_disabled_ai'] ?? $this->is_disabled_ai;
+
+		$tab_url = add_query_arg(
+			array(
+				'page'   => 'connect_ecommerce',
+				'tab'    => 'synchronization',
+				'subtab' => $type,
+			),
+			admin_url( 'admin.php' )
+		);
+
+		$can_sync = false;
+		$message  = '';
+		if ( ! empty( $selected_connapi ) ) {
+			$login_api = $selected_connapi->check_can_sync();
+			if ( is_array( $login_api ) ) {
+				$message  = $login_api['message'] ?? '';
+				$can_sync = 'ok' === $login_api['status'];
+			} else {
+				$can_sync = (bool) $login_api;
+				$message  = $login_api ? '' : __( 'We couldn\'t connect to the API', 'woocommerce-es' );
+			}
+		}
 		?>
-		<div class="connwoo-sync-engine connwoo-sync-with-stats">
+		<div class="connwoo-sync-engine">
 			<div class="sync-wrapper">
-				<?php
-				if ( empty( $can_sync ) ) {
-					?>
-					<div class="error notice">
+				<?php if ( empty( $can_sync ) ) : ?>
+				<div class="error notice">
 						<p>
 							<?php esc_html_e( 'You need to set the API settings before importing products.', 'woocommerce-es' ); ?>
 							<br/>
 							<?php echo esc_html( $message ); ?>
 						</p>
 					</div>
-					<?php
-				} else {
-					$this->render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus, $type );
-				}
+			<?php else : ?>
+				<?php
+				$is_orders = 'sync_orders' === $type;
+				$item_type = $is_orders ? __( 'Orders', 'woocommerce-es' ) : __( 'Products', 'woocommerce-es' );
 				?>
-			</div>
-		</div>
-		<?php
-	}
-
-	/**
-	 * Renders import UI with tabs, sync type selection and optional stats (stats only when get_all_product_skus exists).
-	 *
-	 * @param string $ajax_action AJAX action name.
-	 * @param int    $api_pagination Products per page for sync.
-	 * @param bool   $has_get_all_product_skus Whether connector has get_all_product_skus (shows indicators).
-	 * @param string $type Subtab type, 'sync_products' or 'sync_orders'.
-	 * @return void
-	 */
-	private function render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus = false, $type = 'sync_products' ) {
-		$is_orders           = 'sync_orders' === $type;
-		$cron_enabled        = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
-		$has_product_updated = $has_get_all_product_skus && (
-			$this->connapi_erp instanceof CONECOM_Abstract_Connector_API
-				? $this->connapi_erp->has_product_updated()
-				: ( ! method_exists( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated() )
-		);
-		?>
-		<h2>
-			<?php
-			if ( $is_orders ) {
-				printf(
-					/* translators: %s: Name of the connector */
-					esc_html__( 'Export Orders to %s', 'woocommerce-es' ),
-					esc_html( $this->options['name'] )
-				);
-			} else {
-				printf(
-					/* translators: %s: Name of the connector */
-					esc_html__( 'Import Products from %s', 'woocommerce-es' ),
-					esc_html( $this->options['name'] )
-				);
-			}
-			?>
-		</h2>
-
-		<?php
-		if ( $has_get_all_product_skus ) {
-			?>
-		<!-- Import Statistics (only when get_all_product_skus exists) -->
-		<div class="conecom-import-stats">
-			<div class="conecom-stat-card">
-				<div class="conecom-stat-icon conecom-icon-api">
-					<span class="dashicons dashicons-cloud"></span>
-				</div>
-				<div class="conecom-stat-content">
-					<div class="conecom-stat-value" id="stat-available-count">--</div>
-					<div class="conecom-stat-label">
+				<h2>
+					<?php
+					echo sprintf(
+						/* translators: %1$s: Item type (Products/Orders), %2$s: Connector name */
+						esc_html__( 'Import %1$s from %2$s', 'woocommerce-es' ),
+						esc_html( $item_type ),
+						esc_html( $selected_options['name'] ?? '' )
+					);
+						?>
+					</h2>
+					<p>
 						<?php
-						printf(
-							/* translators: %s: Name of the ERP connector */
-							esc_html__( 'Available in %s', 'woocommerce-es' ),
-							esc_html( $this->options['name'] )
+						echo sprintf(
+							/* translators: %s: Item type (products/orders) */
+							esc_html__( 'After you fillup the API settings, use the button below to import the %s. The importing process may take a while and you need to keep this page open to complete it.', 'woocommerce-es' ),
+							esc_html( strtolower( $item_type ) )
 						);
 						?>
-					</div>
-					<div class="conecom-stat-sublabel" id="stat-available-sublabel" style="display:none;"></div>
-				</div>
-			</div>
-
-			<div class="conecom-stat-card">
-				<div class="conecom-stat-icon conecom-icon-wp">
-					<span class="dashicons dashicons-cart"></span>
-				</div>
-				<div class="conecom-stat-content">
-					<div class="conecom-stat-value" id="stat-wp-count">--</div>
-					<div class="conecom-stat-label"><?php esc_html_e( 'Products in WooCommerce', 'woocommerce-es' ); ?></div>
-					<div class="conecom-stat-sublabel"><?php esc_html_e( 'Synced products', 'woocommerce-es' ); ?></div>
-				</div>
-			</div>
-
-			<?php if ( $has_product_updated ) : ?>
-			<div class="conecom-stat-card conecom-stat-import">
-				<div class="conecom-stat-icon conecom-icon-import">
-					<span class="dashicons dashicons-download"></span>
-				</div>
-				<div class="conecom-stat-content">
-					<div class="conecom-stat-value" id="stat-import-count">--</div>
-					<div class="conecom-stat-label"><?php esc_html_e( 'To Import/Update', 'woocommerce-es' ); ?></div>
-					<div class="conecom-stat-sublabel">
-						<span id="stat-new-count">--</span> <?php esc_html_e( 'new', 'woocommerce-es' ); ?> +
-						<span id="stat-outdated-count">--</span> <?php esc_html_e( 'outdated', 'woocommerce-es' ); ?>
-					</div>
-				</div>
-			</div>
-			<?php endif; ?>
-
-			<div class="conecom-stat-card conecom-stat-delete">
-				<div class="conecom-stat-icon conecom-icon-delete">
-					<span class="dashicons dashicons-trash"></span>
-				</div>
-				<div class="conecom-stat-content">
-					<div class="conecom-stat-value" id="stat-delete-count">--</div>
-					<div class="conecom-stat-label"><?php esc_html_e( 'Not in API', 'woocommerce-es' ); ?></div>
-				</div>
-			</div>
-		</div>
-			<?php
-		}
-		?>
-
-		<!-- Manual Import -->
-		<div class="conecom-two-columns<?php echo $is_orders ? ' conecom-single-column' : ''; ?>">
-			<?php if ( ! $is_orders ) : ?>
-			<div class="conecom-cron-logs">
-				<h3>
-					<span class="dashicons dashicons-clock" style="vertical-align: middle;"></span>
-					<?php esc_html_e( 'Automatic Sync (Cron)', 'woocommerce-es' ); ?>
-					<?php if ( $cron_enabled ) : ?>
-						<span style="color: green; font-size: 0.8em; font-weight: normal;">● <?php esc_html_e( 'Enabled', 'woocommerce-es' ); ?></span>
-					<?php else : ?>
-						<span style="color: #999; font-size: 0.8em; font-weight: normal;">○ <?php esc_html_e( 'Disabled', 'woocommerce-es' ); ?></span>
-					<?php endif; ?>
-				</h3>
-				<p style="color: #646970; font-size: 14px; margin-top: 10px;">
-					<?php esc_html_e( 'Choose when to run automatic sync below.', 'woocommerce-es' ); ?>
-				</p>
-				<form method="post" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" style="margin-top: 12px;">
-					<?php settings_fields( 'connect_ecommerce_settings' ); ?>
-					<input type="hidden" name="connect_ecommerce[connector]" value="<?php echo esc_attr( $this->connector ); ?>" />
-					<p style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 0;">
-						<label for="wcpimh_sync" style="margin: 0;"><?php esc_html_e( 'When do you want to sync?', 'woocommerce-es' ); ?></label>
-						<?php $this->sync_callback(); ?>
-						<?php submit_button( __( 'Save', 'woocommerce-es' ), 'secondary', 'submit_sync_frequency', false ); ?>
 					</p>
-				</form>
-			</div>
-			<?php endif; ?>
-
-			<div class="conecom-manual-import">
-				<h3>
-					<span class="dashicons dashicons-upload" style="vertical-align: middle;"></span>
-					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
-				</h3>
-
-				<?php if ( $is_orders ) : ?>
-				<p style="color: #646970; font-size: 13px; margin: 0 0 10px;">
-					<?php
-					$ecstatus       = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : 'all';
-					$ecstatus_label = array(
-						'all'       => __( 'All status orders', 'woocommerce-es' ),
-						'paid'      => __( 'Paid orders', 'woocommerce-es' ),
-						'completed' => __( 'Only Completed', 'woocommerce-es' ),
-						'manual'    => __( 'Manual (no automatic document creation)', 'woocommerce-es' ),
-					);
-					printf(
-						/* translators: %s: Order status label configured in Settings (e.g. "Paid orders") */
-						esc_html__( 'Orders are synced according to your settings: %s.', 'woocommerce-es' ),
-						'<strong>' . esc_html( $ecstatus_label[ $ecstatus ] ?? $ecstatus_label['all'] ) . '</strong>'
-					);
-					?>
-				</p>
-				<?php endif; ?>
-				<div class="import-button-wrapper">
-					<?php if ( $is_orders ) : ?>
-					<label for="orders-date-from" style="margin: 0;"><?php esc_html_e( 'From', 'woocommerce-es' ); ?></label>
-					<input type="date" id="orders-date-from" class="orders-date-input" value="<?php echo esc_attr( gmdate( 'Y-m-d', strtotime( '-1 month' ) ) ); ?>" />
-					<label for="orders-date-to" style="margin: 0;"><?php esc_html_e( 'To', 'woocommerce-es' ); ?></label>
-					<input type="date" id="orders-date-to" class="orders-date-input" value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>" />
-					<?php else : ?>
-					<select id="import-mode" class="import-mode-select">
-						<?php if ( $has_product_updated ) : ?>
-						<option value="updated"><?php esc_html_e( 'Products to update', 'woocommerce-es' ); ?></option>
-						<?php endif; ?>
-						<option value="all"><?php esc_html_e( 'All products', 'woocommerce-es' ); ?></option>
-					</select>
-					<?php endif; ?>
-					<button type="button" id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItemsWithMode(this, '<?php echo esc_attr( $ajax_action ); ?>', 0, <?php echo (int) $api_pagination; ?>);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></button>
-					<?php
-					if ( $has_get_all_product_skus ) {
-						?>
-					<button type="button" id="refresh_stats" name="refresh_stats" class="button button-large" onclick="loadImportStats();">
-						<span class="dashicons dashicons-update"></span>
-						<?php esc_html_e( 'Refresh Statistics', 'woocommerce-es' ); ?>
-					</button>
-						<?php
-					}
-					?>
-					<span class="spinner"></span>
-				</div>
-				<?php
-				if ( ! $is_orders && ! $this->is_disabled_ai ) {
-					?>
-					<p style="margin-top: 10px;">
-						<label for="connect_ecommerce_ai_stats"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
-						<select name="connwoo-sync-product-ai" id="connect_ecommerce_ai_stats">
-							<option value="none"><?php esc_html_e( 'None', 'woocommerce-es' ); ?></option>
-							<option value="new"><?php esc_html_e( 'NEW Products', 'woocommerce-es' ); ?></option>
-							<option value="all"><?php esc_html_e( 'ALL Products', 'woocommerce-es' ); ?></option>
-						</select>
+					<?php if ( count( $available_connectors ) > 1 ) : ?>
+						<p>
+							<label for="connector-select"><?php esc_html_e( 'Select connector:', 'woocommerce-es' ); ?></label>
+							<select name="connwoo-connector-select" id="connector-select" onchange="window.location.href='<?php echo esc_url( $tab_url ); ?>&connector_id='+encodeURIComponent(this.value);">
+								<?php foreach ( $available_connectors as $id => $meta ) : ?>
+									<?php
+									$type_key  = $meta['type'] ?? $id;
+									$label     = $meta['label'] ?? $type_key;
+									$type_name = $this->connector_definitions[ $type_key ]['name'] ?? ucfirst( $type_key );
+									?>
+									<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $selected_id, $id ); ?>>
+										<?php echo esc_html( $label . ' (' . $type_name . ')' ); ?>
+									</option>
+								<?php endforeach; ?>
+							</select>
 						</p>
-					<?php } ?>
+					<?php else : ?>
+						<select name="connwoo-connector-select" id="connector-select" style="display:none;">
+							<option value="<?php echo esc_attr( $selected_id ); ?>" selected></option>
+						</select>
+					<?php endif; ?>
+					<br/>
+					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
+					<?php if ( ! $selected_no_ai ) : ?>
+						<p>
+							<label for="connect_ecommerce_ai"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
+							<select name="connwoo-sync-product-ai" id="connect_ecommerce_ai">
+								<option value="none"><?php esc_html_e( 'None', 'woocommerce-es' ); ?></option>
+								<option value="new"><?php esc_html_e( 'NEW Products', 'woocommerce-es' ); ?></option>
+								<option value="all"><?php esc_html_e( 'ALL Products', 'woocommerce-es' ); ?></option>
+							</select>
+						</p>
+					<?php endif; ?>
+				<?php endif; ?>
 			</div>
-		</div>
-
-		<!-- Log container with tabs -->
-		<div class="conecom-log-container">
-			<?php if ( ! $is_orders ) : ?>
-			<div class="conecom-log-tabs">
-				<button class="conecom-tab-button active" data-tab="automatic">
-					<span class="dashicons dashicons-clock"></span>
-					<?php esc_html_e( 'Automatic Sync', 'woocommerce-es' ); ?>
-				</button>
-				<button class="conecom-tab-button" data-tab="manual">
-					<span class="dashicons dashicons-upload"></span>
-					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
-				</button>
-			</div>
+			<?php if ( $can_sync ) : ?>
+				<fieldset id="logwrapper">
+					<legend><?php esc_html_e( 'Log', 'woocommerce-es' ); ?></legend>
+					<div id="loglist"></div>
+				</fieldset>
 			<?php endif; ?>
-
-			<div class="conecom-tab-content">
-			<?php if ( ! $is_orders ) : ?>
-			<div class="conecom-tab-pane active" id="tab-automatic">
-				<div id="conecom-as-logs-container">
-					<p style="color: #666; font-style: italic; padding: 20px; text-align: center;">
-						<?php esc_html_e( 'Loading...', 'woocommerce-es' ); ?>
-					</p>
-				</div>
-			</div>
-			<?php endif; ?>
-				<div class="conecom-tab-pane<?php echo $is_orders ? ' active' : ''; ?>" id="tab-manual">
-					<fieldset id="logwrapper" style="border: none; padding: 0; margin: 0;">
-						<div id="loglist"></div>
-					</fieldset>
-				</div>
-			</div>
 		</div>
-
-		<script type="text/javascript">
-		function loadImportStats() {
-			if ( typeof ConEcom_ajaxAction === 'undefined' || ! ConEcom_ajaxAction.has_get_all_product_skus ) {
-				return;
-			}
-			var btn = document.getElementById('refresh_stats');
-			var cards = document.querySelectorAll('.conecom-stat-card');
-			if ( btn ) { btn.disabled = true; }
-			if ( cards.length ) { cards.forEach(function(c){ c.classList.add('loading'); }); }
-
-			fetch(ConEcom_ajaxAction.url, {
-				method: 'POST',
-				credentials: 'same-origin',
-				headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-				body: 'action=connect_ecommerce_get_import_stats&security=' + encodeURIComponent(ConEcom_ajaxAction.stats_nonce)
-			})
-			.then(function(r){ return r.json(); })
-		.then(function(response) {
-			if ( response.success && response.data ) {
-				var d = response.data;
-				var set = function(id, val) { var el = document.getElementById(id); if (el) el.textContent = (typeof val === 'number') ? val.toLocaleString() : val; };
-				set('stat-available-count', d.available_count);
-				set('stat-wp-count', d.wp_count);
-				set('stat-import-count', d.import_count);
-				set('stat-new-count', d.new_count);
-				set('stat-outdated-count', d.outdated_count);
-				set('stat-delete-count', d.delete_count);
-
-				var sublabel = document.getElementById('stat-available-sublabel');
-				if ( sublabel ) {
-					if ( d.filter_tag && d.api_total_count !== undefined && d.api_total_count !== d.available_count ) {
-						sublabel.style.display = '';
-						sublabel.innerHTML = '<?php esc_html_e( 'Tag:', 'woocommerce-es' ); ?> <strong>' + d.filter_tag + '</strong>'
-							+ '<br><small><?php esc_html_e( 'Total:', 'woocommerce-es' ); ?> ' + Number(d.api_total_count).toLocaleString() + '</small>';
-					} else {
-						sublabel.style.display = 'none';
-						sublabel.innerHTML = '';
-					}
-				}
-			}
-		})
-			.catch(function() {})
-			.finally(function() {
-				if ( btn ) { btn.disabled = false; }
-				if ( cards.length ) { cards.forEach(function(c){ c.classList.remove('loading'); }); }
-			});
-		}
-	function loadAsLogs() {
-		if ( typeof ConEcom_ajaxAction === 'undefined' ) { return; }
-		var container = document.getElementById('conecom-as-logs-container');
-		if ( ! container ) { return; }
-		container.innerHTML = '<p style="color:#666;font-style:italic;padding:20px;text-align:center;"><?php esc_html_e( 'Loading…', 'woocommerce-es' ); ?></p>';
-
-		fetch(ConEcom_ajaxAction.url, {
-			method: 'POST',
-			credentials: 'same-origin',
-			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: 'action=connect_ecommerce_get_as_logs&security=' + encodeURIComponent(ConEcom_ajaxAction.as_logs_nonce)
-		})
-		.then(function(r){ return r.json(); })
-		.then(function(response) {
-			if ( ! response.success ) {
-				container.innerHTML = '<p style="color:#d63638;padding:20px;">' + ( response.data && response.data.message ? response.data.message : '<?php esc_html_e( 'Error loading logs.', 'woocommerce-es' ); ?>' ) + '</p>';
-				return;
-			}
-			var actions = response.data;
-			if ( ! actions || actions.length === 0 ) {
-				container.innerHTML = '<p style="color:#666;font-style:italic;padding:20px;text-align:center;"><?php esc_html_e( 'No sync runs recorded yet.', 'woocommerce-es' ); ?></p>';
-				return;
-			}
-
-			var statusLabels = {
-				'complete':    '<?php esc_html_e( 'Complete', 'woocommerce-es' ); ?>',
-				'failed':      '<?php esc_html_e( 'Failed', 'woocommerce-es' ); ?>',
-				'pending':     '<?php esc_html_e( 'Pending', 'woocommerce-es' ); ?>',
-				'in-progress': '<?php esc_html_e( 'Running', 'woocommerce-es' ); ?>',
-				'canceled':    '<?php esc_html_e( 'Canceled', 'woocommerce-es' ); ?>'
-			};
-			var statusColors = {
-				'complete':    '#00a32a',
-				'failed':      '#d63638',
-				'pending':     '#dba617',
-				'in-progress': '#2271b1',
-				'canceled':    '#787c82'
-			};
-
-			var html = '<table class="widefat striped" style="margin:0;">'
-				+ '<thead><tr>'
-				+ '<th style="width:160px;"><?php esc_html_e( 'Date', 'woocommerce-es' ); ?></th>'
-				+ '<th style="width:100px;"><?php esc_html_e( 'Status', 'woocommerce-es' ); ?></th>'
-				+ '<th style="width:130px;"><?php esc_html_e( 'Frequency', 'woocommerce-es' ); ?></th>'
-				+ '<th><?php esc_html_e( 'Last log', 'woocommerce-es' ); ?></th>'
-				+ '</tr></thead><tbody>';
-
-			actions.forEach(function(action) {
-				var status      = action.status || 'pending';
-				var color       = statusColors[status] || '#787c82';
-				var statusLabel = statusLabels[status] || status;
-				var lastLog     = action.logs && action.logs.length ? action.logs[action.logs.length - 1].message : '—';
-				var rowId       = 'as-log-row-' + action.id;
-				var detailId    = 'as-log-detail-' + action.id;
-				var hasLogs     = action.logs && action.logs.length > 1;
-
-				html += '<tr id="' + rowId + '" style="cursor:' + ( hasLogs ? 'pointer' : 'default' ) + ';" '
-					+ ( hasLogs ? 'onclick="document.getElementById(\'' + detailId + '\').style.display = document.getElementById(\'' + detailId + '\').style.display === \'none\' ? \'\' : \'none\';"' : '' )
-					+ '>'
-					+ '<td style="white-space:nowrap;font-size:12px;">' + action.scheduled_date + '</td>'
-					+ '<td><span style="color:' + color + ';font-weight:600;">' + statusLabel + '</span></td>'
-					+ '<td style="font-size:12px;">' + action.hook_label + '</td>'
-					+ '<td style="font-size:12px;color:#50575e;">' + lastLog + '</td>'
-					+ '</tr>';
-
-				if ( hasLogs ) {
-					html += '<tr id="' + detailId + '" style="display:none;background:#f6f7f7;">'
-						+ '<td colspan="4" style="padding:8px 16px;">'
-						+ '<ol style="margin:0;padding-left:20px;">';
-					action.logs.forEach(function(log) {
-						html += '<li style="font-size:12px;margin-bottom:2px;"><span style="color:#50575e;">[' + log.date + ']</span> ' + log.message + '</li>';
-					});
-					html += '</ol></td></tr>';
-				}
-			});
-
-			html += '</tbody></table>';
-			container.innerHTML = html;
-		})
-		.catch(function() {
-			container.innerHTML = '<p style="color:#d63638;padding:20px;"><?php esc_html_e( 'Error loading logs.', 'woocommerce-es' ); ?></p>';
-		});
-	}
-
-	document.addEventListener('DOMContentLoaded', function() {
-		var tabButtons = document.querySelectorAll('.conecom-tab-button');
-		var tabPanes = document.querySelectorAll('.conecom-tab-pane');
-		tabButtons.forEach(function(btn) {
-			btn.addEventListener('click', function() {
-				var targetTab = this.getAttribute('data-tab');
-				tabButtons.forEach(function(b){ b.classList.remove('active'); });
-				tabPanes.forEach(function(p){ p.classList.remove('active'); });
-				this.classList.add('active');
-				var pane = document.getElementById('tab-' + targetTab);
-				if ( pane ) pane.classList.add('active');
-				if ( 'automatic' === targetTab ) { loadAsLogs(); }
-			});
-		});
-		if ( typeof ConEcom_ajaxAction !== 'undefined' && ConEcom_ajaxAction.has_get_all_product_skus ) {
-			loadImportStats();
-		}
-		loadAsLogs();
-	});
-	</script>
 		<?php
 	}
 
@@ -1570,7 +1314,7 @@ class Settings {
 		<div id="<?php echo esc_attr( $this->options['slug'] ); ?>-engine-subscriptions">
 			<input type="text" id="conwoo-wp-email">						
 			<button id="wp-get-user-data" class="button button-primary">
-			get WordPress user by email
+			get wordpress user by email
 			</button>
 			<div id="wp-user-data">
 			</div>
@@ -1591,73 +1335,63 @@ class Settings {
 	 * @return array
 	 */
 	public function sanitize_fields_settings( $input ) {
-		$sanitary_values = array();
-		$imh_settings    = get_option( 'connect_ecommerce' );
-		$connector       = isset( $input['connector'] ) ? $input['connector'] : '';
+		$input  = is_array( $input ) ? $input : array();
+		$stored = get_option( 'connect_ecommerce' );
+		$stored = is_array( $stored ) ? $stored : array();
 
-		$admin_settings = array(
-			$connector => array(
-				'api'                  => '',
-				'idcentre'             => '',
-				'url'                  => '',
-				'username'             => '',
-				'password'             => '',
-				'company'              => '',
-				'company_id'           => '',
-				'domain'               => '',
-				'dbname'               => '',
-				'stock'                => 'no',
-				'stock_visibility'     => 'hide',
-				'prodst'               => 'draft',
-				'virtual'              => 'no',
-				'backorders'           => 'no',
-				'catsep'               => '',
-				'catattr'              => '',
-				'filter'               => '',
-				'pricesale_discount'   => '',
-				'filter_sku'           => '',
-				'rates'                => 'default',
-				'catnp'                => 'yes',
-				'doctype'              => 'invoice',
-				'cleanchars'           => '',
-				'approve_document'     => 'no',
-				'manufacturer_code'    => '',
-				'customer_code'        => '',
-				'series'               => '',
-				'freeorder'            => 'no',
-				'ecstatus'             => 'all',
-				'order_tags'           => '',
-				'order_sync_from_date' => '',
-				'design_id'            => '',
-				'sync'                 => 'no',
-				'prod_weight_eq'       => '',
-				'debug_log'            => 'no',
-			),
-		);
+		$updated = $this->sanitize_connector_manager_inputs( $input, $stored );
 
-		foreach ( $admin_settings[ $connector ] as $setting => $default_value ) {
-			if ( isset( $input[ $connector ][ $setting ] ) ) {
-				$sanitary_values[ $connector ][ $setting ] = sanitize_text_field( $input[ $connector ][ $setting ] );
-			} elseif ( isset( $imh_settings[ $connector ][ $setting ] ) ) {
-				$sanitary_values[ $connector ][ $setting ] = $imh_settings[ $connector ][ $setting ];
-			} else {
-				$sanitary_values[ $connector ][ $setting ] = $default_value;
-			}
+		$connector_id = isset( $input['connector'] ) ? sanitize_key( $input['connector'] ) : ( $updated['connector'] ?? '' );
+		if ( empty( $connector_id ) && ! empty( $updated['connectors_meta'] ) ) {
+			$connector_id = array_key_first( $updated['connectors_meta'] );
+		}
+		$updated['connector'] = $connector_id;
+
+		if ( ! empty( $connector_id ) && isset( $input[ $connector_id ] ) ) {
+			$current_settings            = $updated[ $connector_id ] ?? array();
+			$updated[ $connector_id ] = $this->sanitize_connector_settings_values( $input[ $connector_id ], $current_settings );
 		}
 
-		// Get prices with Tax? Resolve "Default" now and store it as a plain 'yes'/'no',
-		// so connector add-ons reading `tax_option` directly always get a value they understand.
-		if ( isset( $input[ $connector ]['tax_option'] ) ) {
-			$tax_option_pref = sanitize_text_field( $input[ $connector ]['tax_option'] );
-		} else {
-			$tax_option_pref = HELPER::get_tax_option_pref( $imh_settings[ $connector ] ?? array() );
+		return $updated;
+	}
+
+	/**
+	 * Info for holded section.
+	 *
+	 * @return void
+	 */
+	public function section_automate() {
+		?>
+		<input type="hidden" name="connect_ecommerce[connector]" value="<?php echo esc_attr( $this->connector ); ?>" />
+		<?php
+		if ( empty( $this->options['table_sync'] ) ) {
+			return;
 		}
-		$sanitary_values[ $connector ]['tax_option_pref'] = $tax_option_pref;
-		$sanitary_values[ $connector ]['tax_option']      = HELPER::resolve_tax_option( $tax_option_pref );
+		global $wpdb;
+		$table_sync = $this->options['table_sync'];
+		HELPER::check_table_sync( $table_sync );
+		$count        = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync WHERE synced = 1" );
+		$total_count  = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync" );
+		$count_return = $count . ' / ' . $total_count;
 
-		$sanitary_values['connector'] = $connector;
-
-		return $sanitary_values;
+		$total_api_products = (int) get_option( 'connect_ecommerce_total_api_products' );
+		if ( $total_api_products || $total_count !== $total_api_products ) {
+			$count_return .= ' ' . esc_html__( 'filtered', 'woocommerce-es' );
+			$count_return .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'woocommerce-es' ) . ' )';
+		}
+		$percentage = 0 < $total_count ? intval( $count / $total_count * 100 ) : 0;
+		esc_html_e( 'Make your settings to automate the sync.', 'woocommerce-es' );
+		echo '<div class="sync-status" style="text-align:right;">';
+		echo '<strong>';
+		esc_html_e( 'Actual Automate status:', 'woocommerce-es' );
+		echo '</strong> ' . esc_html( $count_return ) . ' ';
+		esc_html_e( 'products synced with ', 'woocommerce-es' );
+		echo esc_html( $this->options['name'] );
+		echo '</div>';
+		echo '<div class="progress-bar blue">
+		<span style="width:' . esc_html( $percentage ) . '%"></span>
+		<div class="progress-text">' . esc_html( $percentage ) . '%</div>
+		</div>';
 	}
 
 	/**
@@ -1672,12 +1406,7 @@ class Settings {
 				'target' => array(),
 			),
 		);
-		$message = isset( $this->options['settings_admin_message'] ) && is_string( $this->options['settings_admin_message'] ) ? $this->options['settings_admin_message'] : '';
-		if ( '' === $message ) {
-			return;
-		}
-
-		echo wp_kses( $message, $arr );
+		echo wp_kses( $this->options['settings_admin_message'], $arr );
 	}
 
 	/**
@@ -1687,16 +1416,21 @@ class Settings {
 	 */
 	public function connector_callback() {
 		$connector = isset( $this->connector ) ? $this->connector : '';
+		if ( empty( $this->connectors_meta ) ) {
+			echo '<p>' . esc_html__( 'Add a connector to configure its settings.', 'woocommerce-es' ) . '</p>';
+			return;
+		}
 		?>
 		<select name="connect_ecommerce[connector]" id="wcpimh_connector" onchange="this.form.submit();">
-			<option value="" <?php selected( $connector, '' ); ?>><?php esc_html_e( 'Select the ERP/CRM that you wish to connect', 'woocommerce-es' ); ?></option>
-			<?php
-			foreach ( $this->all_options as $key => $option ) {
-				?>
-				<option value="<?php echo esc_attr( $key ); ?>" <?php selected( $connector, $key ); ?>><?php echo esc_html( $option['name'] ); ?></option>
+			<?php foreach ( $this->connectors_meta as $id => $meta ) : ?>
 				<?php
-			}
-			?>
+				$type_label = $meta['type'] ?? $id;
+				$label      = $meta['label'] ?? $type_label;
+				?>
+				<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $connector, $id ); ?>>
+					<?php echo esc_html( $label . ' (' . $type_label . ')' ); ?>
+				</option>
+			<?php endforeach; ?>
 		</select>
 		<?php
 	}
@@ -1791,7 +1525,7 @@ class Settings {
 	 * @return void
 	 */
 	public function company_select_callback() {
-		if ( empty( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_companies' ) ) {
+		if ( empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
 			echo '<p>' . esc_html__( 'By default', 'woocommerce-es' ) . '</p>';
 			return;
 		}
@@ -1842,26 +1576,6 @@ class Settings {
 			<option value="yes" <?php selected( $stock_option, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 			<option value="no" <?php selected( $stock_option, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 		</select>
-		<?php
-	}
-
-	/**
-	 * Stock visibility field
-	 *
-	 * Controls whether the sync is allowed to change a product's catalog
-	 * visibility based on stock. Defaults to "hide" to keep the historic
-	 * behaviour for existing installs.
-	 *
-	 * @return void
-	 */
-	public function stock_visibility_callback() {
-		$stock_visibility_option = isset( $this->settings['stock_visibility'] ) ? $this->settings['stock_visibility'] : 'hide';
-		?>
-		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][stock_visibility]" id="wcpimh_stock_visibility">
-			<option value="hide" <?php selected( $stock_visibility_option, 'hide' ); ?>><?php esc_html_e( 'Yes, hide out-of-stock products (default)', 'woocommerce-es' ); ?></option>
-			<option value="no_change" <?php selected( $stock_visibility_option, 'no_change' ); ?>><?php esc_html_e( 'No, do not change catalog visibility', 'woocommerce-es' ); ?></option>
-		</select>
-		<p class="description"><?php esc_html_e( 'When set to "No", the sync will still update stock status and quantity, but will not modify the catalog visibility of the product, so manual changes are preserved.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 
@@ -1937,12 +1651,8 @@ class Settings {
 	 * @return void
 	 */
 	public function catattr_callback() {
-		if ( ! is_object( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_attributes' ) ) {
-			return;
-		}
-
 		$catattr_options = $this->connapi_erp->get_attributes();
-		if ( ! is_array( $catattr_options ) || empty( $catattr_options ) ) {
+		if ( empty( $catattr_options ) ) {
 			return;
 		}
 		$saved_attr = isset( $this->settings['catattr'] ) ? $this->settings['catattr'] : '';
@@ -1989,32 +1699,12 @@ class Settings {
 	 * @return void
 	 */
 	public function tax_option_callback() {
-		$tax_option            = isset( $this->settings['tax_option_pref'] ) ? $this->settings['tax_option_pref'] : 'default';
-		$wc_prices_include_tax = 'yes' === get_option( 'woocommerce_prices_include_tax' );
-		$wc_tax_option_label   = $wc_prices_include_tax ? __( 'Yes, tax included', 'woocommerce-es' ) : __( 'No, tax not included', 'woocommerce-es' );
+		$tax_price = isset( $this->settings['tax'] ) ? $this->settings['tax'] : 'no';
 		?>
-		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_option]" id="wcsen_tax">
-			<option value="default" <?php selected( $tax_option, 'default' ); ?>>
-				<?php
-				printf(
-					/* translators: %s: current value of the WooCommerce "Prices entered with tax" setting. */
-					esc_html__( 'Default (use WooCommerce setting: %s)', 'woocommerce-es' ),
-					esc_html( $wc_tax_option_label )
-				);
-				?>
-			</option>
-			<option value="yes" <?php selected( $tax_option, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>
-			<option value="no" <?php selected( $tax_option, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'woocommerce-es' ); ?></option>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_price]" id="wcsen_tax">
+			<option value="yes" <?php selected( $tax_price, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $tax_price, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'woocommerce-es' ); ?></option>
 		</select>
-		<p class="description">
-			<?php
-			printf(
-				/* translators: %s: link to the WooCommerce tax settings page. */
-				esc_html__( 'The current WooCommerce setting can be checked and changed on the %s page.', 'woocommerce-es' ),
-				'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=tax' ) ) . '" target="_blank">' . esc_html__( 'WooCommerce &gt; Settings &gt; Tax', 'woocommerce-es' ) . '</a>'
-			);
-			?>
-		</p>
 		<?php
 	}
 
@@ -2059,7 +1749,7 @@ class Settings {
 	 * @return void
 	 */
 	public function serie_number_callback() {
-		$type           = ! empty( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
+		$type = ! empty( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		$series_options = $this->connapi_erp->get_series_number( $type );
 		if ( empty( $series_options ) ) {
 			return;
@@ -2124,32 +1814,6 @@ class Settings {
 	}
 
 	/**
-	 * Manufacturer Code field
-	 *
-	 * @return void
-	 */
-	public function manufacturer_code_callback() {
-		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[%s][manufacturer_code]" id="wcpimh_manufacturer_code" value="%s">',
-			esc_html( $this->connector ),
-			isset( $this->settings['manufacturer_code'] ) ? esc_attr( $this->settings['manufacturer_code'] ) : ''
-		);
-	}
-
-	/**
-	 * Customer Code field
-	 *
-	 * @return void
-	 */
-	public function customer_code_callback() {
-		printf(
-			'<input class="regular-text" type="text" name="connect_ecommerce[%s][customer_code]" id="wcpimh_customer_code" value="%s">',
-			esc_html( $this->connector ),
-			isset( $this->settings['customer_code'] ) ? esc_attr( $this->settings['customer_code'] ) : ''
-		);
-	}
-
-	/**
 	 * Document type
 	 *
 	 * @return void
@@ -2163,7 +1827,7 @@ class Settings {
 			'salesorder'   => __( 'Sales order', 'woocommerce-es' ),
 			'waybill'      => __( 'Waybill', 'woocommerce-es' ),
 		);
-		$doctype        = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
+		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
 			<?php
@@ -2183,8 +1847,7 @@ class Settings {
 	 * @return void
 	 */
 	public function freeorder_callback() {
-		$default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
-		$freeorder         = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : $default_freeorder;
+		$freeorder = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : 'no';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][freeorder]" id="wcpimh_freeorder">
 			<option value="no" <?php selected( $freeorder, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $freeorder, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
@@ -2207,10 +1870,7 @@ class Settings {
 			<option value="paid" <?php selected( $ecstatus, 'paid' ); ?>><?php esc_html_e( 'Paid orders', 'woocommerce-es' ); ?></option>
 
 			<option value="completed" <?php selected( $ecstatus, 'completed' ); ?>><?php esc_html_e( 'Only Completed', 'woocommerce-es' ); ?></option>
-
-			<option value="manual" <?php selected( $ecstatus, 'manual' ); ?>><?php esc_html_e( 'Manual (no automatic document creation)', 'woocommerce-es' ); ?></option>
 		</select>
-		<p class="description"><?php esc_html_e( 'With Manual, no document is created automatically when the order status changes. Use the "Send to ERP" button on the order to create it on request.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 
@@ -2224,20 +1884,6 @@ class Settings {
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][order_tags]" id="wcpimh_order_tags" value="%s">',
 			isset( $this->settings['order_tags'] ) ? esc_attr( $this->settings['order_tags'] ) : ''
 		);
-	}
-
-	/**
-	 * Sync orders from date. Orders created before this date are skipped
-	 * by the manual order sync.
-	 *
-	 * @return void
-	 */
-	public function order_sync_from_date_callback() {
-		printf(
-			'<input class="regular-text" type="date" name="connect_ecommerce[' . esc_html( $this->connector ) . '][order_sync_from_date]" id="wcpimh_order_sync_from_date" value="%s">',
-			isset( $this->settings['order_sync_from_date'] ) ? esc_attr( $this->settings['order_sync_from_date'] ) : ''
-		);
-		echo '<p class="description">' . esc_html__( 'Orders created before this date are skipped by the manual order sync. Leave empty to sync all orders.', 'woocommerce-es' ) . '</p>';
 	}
 
 	/**
@@ -2347,6 +1993,33 @@ class Settings {
 	}
 
 	/**
+	 * Callback sync field.
+	 *
+	 * @return void
+	 */
+	public function sync_num_callback() {
+		printf(
+			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][sync_num]" id="wcpimh_sync_num" value="%s">',
+			isset( $this->settings['sync_num'] ) ? esc_attr( $this->settings['sync_num'] ) : 5
+		);
+	}
+
+	/**
+	 * Sync email options
+	 *
+	 * @return void
+	 */
+	public function sync_email_callback() {
+		$sync_email = isset( $this->settings['sync_email'] ) ? $this->settings['sync_email'] : 'no';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][sync_email]" id="wcpimh_sync_email">
+			<option value="yes" <?php selected( $sync_email, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $sync_email, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
 	 * ## Merge vars
 	 * --------------------------- */
 
@@ -2390,11 +2063,11 @@ class Settings {
 	 * @return void
 	 */
 	public function prod_mergevars_callback() {
-		$product_fields    = PROD::get_all_product_fields();
-		$custom_fields     = PROD::get_all_custom_fields();
-		$custom_taxonomies = TAX::get_all_custom_taxonomies();
-		$product_cat_terms = TAX::get_terms_product_cat();
-		$attribute_fields  = $this->connapi_erp->get_product_attributes();
+		$product_fields      = PROD::get_all_product_fields();
+		$custom_fields       = PROD::get_all_custom_fields();
+		$custom_taxonomies   = TAX::get_all_custom_taxonomies();
+		$product_cat_terms   = TAX::get_terms_product_cat();
+		$attribute_fields    = $this->connapi_erp->get_product_attributes();
 
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
@@ -2409,14 +2082,9 @@ class Settings {
 		<div id="<?php echo esc_attr( $this->options['slug'] ); ?>-products-mergevars" class="repeater-section">
 			<div class="wrap">
 				<div class="product-mergevars">
-					<div class="save-item"><strong>
-					<?php
-					esc_html_e( 'Field from ', 'woocommerce-es' );
-					echo ' ' . esc_html( $this->options['name'] );
-					?>
-					</strong></div>
+					<div class="save-item"><strong><?php esc_html_e( 'Field from ', 'woocommerce-es' ); echo ' ' . esc_html( $this->options['name'] ); ?></strong></div>
 					<div></div>
-					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'woocommerce-es' ); ?></strong></div>
+					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'woocommerce-es' );?></strong></div>
 				</div>
 				<?php
 				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
@@ -2429,20 +2097,26 @@ class Settings {
 							<select name='connect_ecommerce_prod_mergevars[prod_mergevars][<?php echo esc_html( $idx ); ?>][attrprod]' class="attrprod-publish" data-row="<?php echo esc_html( $idx ); ?>">
 								<option value=''></option>
 								<?php
-								foreach ( $attribute_fields as $key => $label ) {
-									// get_product_attributes() must return a flat field => label
-									// map (readme.md); skip any non-scalar label defensively rather
-									// than rendering "Array" or triggering a conversion warning.
-									if ( ! is_scalar( $label ) ) {
+								foreach ( $attribute_fields as $attribute ) {
+									if ( empty( $attribute['elements'] ) ) {
 										continue;
 									}
-									echo '<option value="' . esc_html( $key ) . '" ';
-									selected( $key, $attrprod );
-									echo '>' . esc_html( $label ) . '</option>';
+									?>
+									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
+										<?php
+										foreach ( $attribute['elements'] as $value ) {
+											$option_id = $attribute['id'] . '|' . $value;
+											echo '<option value="' . esc_html( $option_id ) . '" ';
+											selected( $option_id, $attrprod );
+											echo '>' . esc_html( $value ) . '</option>';
 
-									if ( $key === $attrprod ) {
-										$attrprod_label = $label;
-									}
+											if ( $option_id === $attrprod ) {
+												$attrprod_label = $attribute['name'];
+											}
+										}
+										?>
+									</optgroup>
+									<?php
 								}
 								?>
 							</select>
@@ -2458,7 +2132,7 @@ class Settings {
 						<div class="save-item">
 							<?php
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
-							$all_fields         = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
+							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
 								$custom_fields[] = $saved_custom_field;
 							}
@@ -2529,52 +2203,82 @@ class Settings {
 	 * @return array
 	 */
 	public function sanitize_fields_ai( $input ) {
-		$sanitary_values           = array();
-		$sanitary_values['model']  = isset( $input['model'] ) ? sanitize_text_field( $input['model'] ) : '';
-		$sanitary_values['prompt'] = isset( $input['prompt'] ) ? sanitize_textarea_field( $input['prompt'] ) : '';
+		$sanitary_values = array();
+
+		$admin_settings = array(
+			'provider' => 'chatgpt',
+			'token'    => '',
+			'model'    => '',
+			'prompt'   => '',
+		);
+
+		foreach ( $admin_settings as $setting => $default_value ) {
+			if ( isset( $input[ $setting ] ) ) {
+				$sanitary_values[ $setting ] = sanitize_text_field( $input[ $setting ] );
+			} else {
+				$sanitary_values[ $setting ] = $default_value;
+			}
+		}
+
 		return $sanitary_values;
 	}
 
 	/**
-	 * Info for AI section.
+	 * Info for AI.
 	 *
 	 * @return void
 	 */
 	public function section_info_ai() {
-		if ( ! AI::has_wp_ai() ) {
-			printf(
-				'<div class="notice notice-error inline"><p>%s</p></div>',
-				esc_html__( 'WordPress AI is not available. Please upgrade to WordPress 7.0 or later and ensure AI support is enabled in your environment.', 'woocommerce-es' )
-			);
-		}
+		esc_html_e( 'Select the provider and options for AI generating. ', 'woocommerce-es' );
 	}
 
 	/**
-	 * Model selection field.
+	 * Vat show setting
+	 *
+	 * @return void
+	 */
+	public function ai_provider_callback() {
+		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
+		?>
+		<select name="connect_ecommerce_ai[provider]" id="provider">
+			<option value="chatgpt" <?php selected( $provider, 'chatgpt' ); ?>><?php esc_html_e( 'ChatGPT', 'woocommerce-es' ); ?></option>
+			<option value="deepseek" <?php selected( $provider, 'deepseek' ); ?>><?php esc_html_e( 'DeepSeek', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Vat show setting
 	 *
 	 * @return void
 	 */
 	public function ai_model_callback() {
-		$model  = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
-		$groups = AI::get_available_models();
+		$model    = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
+		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
+		$token    = isset( $this->settings_ai['token'] ) ? $this->settings_ai['token'] : '';
+		$options  = AI::get_models( $provider, $token );
 		?>
-		<select name="connect_ecommerce_ai[model]" id="connect_ecommerce_ai_model">
-			<option value=""><?php esc_html_e( '— Auto (best available) —', 'woocommerce-es' ); ?></option>
-			<?php foreach ( $groups as $provider_label => $models ) : ?>
-				<optgroup label="<?php echo esc_attr( $provider_label ); ?>">
-					<?php foreach ( $models as $option ) : ?>
-						<option value="<?php echo esc_attr( $option['value'] ); ?>" <?php selected( $model, $option['value'] ); ?>>
-							<?php echo esc_html( $option['label'] ); ?>
-						</option>
-					<?php endforeach; ?>
-				</optgroup>
-			<?php endforeach; ?>
-			<?php if ( empty( $groups ) && '' !== $model ) : ?>
-				<option value="<?php echo esc_attr( $model ); ?>" selected="selected"><?php echo esc_html( $model ); ?></option>
-			<?php endif; ?>
+
+		<select name="connect_ecommerce_ai[model]" id="cwc_ai_model">
+			<?php
+			foreach ( $options as $key => $label ) {
+				echo '<option value="' . esc_html( $key ) . '" ' . selected( $key, $model ) . ' >' . esc_html( $label ) . '</option>';
+			}
+			?>
 		</select>
-		<p class="description"><?php esc_html_e( 'Models are loaded from your active WordPress AI connectors.', 'woocommerce-es' ); ?></p>
 		<?php
+	}
+
+	/**
+	 * Callback sync field.
+	 *
+	 * @return void
+	 */
+	public function token_ai_callback() {
+		printf(
+			'<input class="regular-text" type="password" name="connect_ecommerce_ai[token]" id="wcpimh_token" value="%s">',
+			isset( $this->settings_ai['token'] ) ? esc_attr( $this->settings_ai['token'] ) : ''
+		);
 	}
 
 	/**
@@ -2618,23 +2322,6 @@ class Settings {
 			<option value="no" <?php selected( $enabled, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 			<option value="yes" <?php selected( $enabled, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
-		<?php
-	}
-
-	/**
-	 * Alert product synced callback.
-	 *
-	 * @return void
-	 */
-	public function alert_product_synced_callback() {
-		$settings = get_option( 'connect_ecommerce_alerts' );
-		$value    = isset( $settings['alert_product_synced'] ) ? $settings['alert_product_synced'] : 'no';
-		?>
-		<select name="connect_ecommerce_alerts[alert_product_synced]" id="alert_product_synced">
-			<option value="no" <?php selected( $value, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
-			<option value="yes" <?php selected( $value, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
-		</select>
-		<p class="description"><?php esc_html_e( 'Receive an email when all products have been synced.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 
@@ -2704,10 +2391,6 @@ class Settings {
 
 		if ( isset( $input['alert_enabled'] ) ) {
 			$sanitary_values['alert_enabled'] = sanitize_text_field( $input['alert_enabled'] );
-		}
-
-		if ( isset( $input['alert_product_synced'] ) ) {
-			$sanitary_values['alert_product_synced'] = sanitize_text_field( $input['alert_product_synced'] );
 		}
 
 		if ( isset( $input['alert_method'] ) ) {
@@ -2804,6 +2487,274 @@ class Settings {
 	 */
 	public function section_info_public() {
 		esc_html_e( 'Please select the following settings in order customize your eCommerce. ', 'woocommerce-es' );
+	}
+
+	/**
+	 * Outputs the connector management fields.
+	 *
+	 * @return void
+	 */
+	private function render_connector_manager() {
+		?>
+		<div class="connector-manager">
+			<h3><?php esc_html_e( 'Connectors', 'woocommerce-es' ); ?></h3>
+			<p><?php esc_html_e( 'Manage the connectors available for this store. Only the active connector will be used for synchronisation.', 'woocommerce-es' ); ?></p>
+			<?php if ( ! empty( $this->connectors_meta ) ) : ?>
+				<table class="widefat striped">
+					<thead>
+						<tr>
+							<th><?php esc_html_e( 'ID', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Label', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Type', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Workflows', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Status', 'woocommerce-es' ); ?></th>
+							<th><?php esc_html_e( 'Remove', 'woocommerce-es' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $this->connectors_meta as $connector_id => $meta ) : ?>
+							<tr>
+								<td>
+									<code><?php echo esc_html( $connector_id ); ?></code>
+									<?php if ( $this->connector === $connector_id ) : ?>
+										<br/><span class="dashicons dashicons-yes"></span> <?php esc_html_e( 'Active', 'woocommerce-es' ); ?>
+									<?php endif; ?>
+								</td>
+								<td>
+									<input type="text" class="regular-text" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][label]" value="<?php echo esc_attr( $meta['label'] ?? '' ); ?>"/>
+									<input type="hidden" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][type]" value="<?php echo esc_attr( $meta['type'] ?? $connector_id ); ?>"/>
+								</td>
+								<td>
+									<?php
+									$type = $meta['type'] ?? $connector_id;
+									echo esc_html( $this->connector_definitions[ $type ]['name'] ?? ucfirst( $type ) );
+									?>
+								</td>
+								<td>
+									<?php foreach ( HELPER::get_workflows() as $workflow ) : ?>
+										<?php $enabled = isset( $meta['workflows'][ $workflow ] ) ? $meta['workflows'][ $workflow ] : 'yes'; ?>
+										<label style="display:block;">
+											<input type="hidden" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="no"/>
+											<input type="checkbox" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="yes" <?php checked( 'yes', $enabled ); ?>/>
+											<?php echo esc_html( $this->get_workflow_label( $workflow ) ); ?>
+										</label>
+									<?php endforeach; ?>
+								</td>
+								<td>
+									<select name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][status]">
+										<option value="active" <?php selected( 'active', $meta['status'] ?? 'active' ); ?>><?php esc_html_e( 'Active', 'woocommerce-es' ); ?></option>
+										<option value="inactive" <?php selected( 'inactive', $meta['status'] ?? 'active' ); ?>><?php esc_html_e( 'Inactive', 'woocommerce-es' ); ?></option>
+									</select>
+								</td>
+								<td>
+									<label>
+										<input type="checkbox" name="connect_ecommerce[remove_connectors][]" value="<?php echo esc_attr( $connector_id ); ?>"/>
+										<?php esc_html_e( 'Remove', 'woocommerce-es' ); ?>
+									</label>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			<?php else : ?>
+				<div class="notice notice-info inline">
+					<p><?php esc_html_e( 'No connectors have been configured yet.', 'woocommerce-es' ); ?></p>
+				</div>
+			<?php endif; ?>
+			<hr/>
+			<?php if ( empty( $this->connector_definitions ) ) : ?>
+				<h4><?php esc_html_e( 'Add connector', 'woocommerce-es' ); ?></h4>
+				<div class="notice notice-warning inline">
+					<p><?php esc_html_e( 'No connector types are available in this installation.', 'woocommerce-es' ); ?></p>
+				</div>
+			<?php else : ?>
+				<div class="add-connector-wrapper">
+					<h4 class="add-connector-title"><?php esc_html_e( 'Add connector', 'woocommerce-es' ); ?></h4>
+					<div class="add-connector-row">
+						<div class="add-connector-field">
+							<label for="connector-type"><?php esc_html_e( 'Connector type', 'woocommerce-es' ); ?></label>
+							<select id="connector-type" name="connect_ecommerce[new_connector][type]">
+								<option value=""><?php esc_html_e( 'Select…', 'woocommerce-es' ); ?></option>
+								<?php foreach ( $this->connector_definitions as $type_key => $definition ) : ?>
+									<option value="<?php echo esc_attr( $type_key ); ?>"><?php echo esc_html( $definition['name'] ?? ucfirst( $type_key ) ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</div>
+						<div class="add-connector-field">
+							<label for="connector-label"><?php esc_html_e( 'Display name', 'woocommerce-es' ); ?></label>
+							<input type="text" id="connector-label" name="connect_ecommerce[new_connector][label]" class="regular-text"/>
+						</div>
+						<div class="add-connector-field">
+							<label for="connector-custom-id"><?php esc_html_e( 'Custom identifier (optional)', 'woocommerce-es' ); ?></label>
+							<input type="text" id="connector-custom-id" name="connect_ecommerce[new_connector][id]" class="regular-text" placeholder="<?php esc_attr_e( 'Auto generated when empty', 'woocommerce-es' ); ?>"/>
+						</div>
+					</div>
+				</div>
+			<?php endif; ?>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Returns a translated workflow label.
+	 *
+	 * @param string $workflow Workflow key.
+	 * @return string
+	 */
+	private function get_workflow_label( $workflow ) {
+		switch ( $workflow ) {
+			case 'orders':
+				return __( 'Orders', 'woocommerce-es' );
+			case 'products':
+				return __( 'Products', 'woocommerce-es' );
+			default:
+				return ucfirst( $workflow );
+		}
+	}
+
+	/**
+	 * Sanitize connector metadata and handle add/remove operations.
+	 *
+	 * @param array $input  Raw input.
+	 * @param array $stored Stored settings.
+	 * @return array
+	 */
+	private function sanitize_connector_manager_inputs( array $input, array $stored ) {
+		$meta = $stored['connectors_meta'] ?? array();
+
+		if ( ! empty( $input['remove_connectors'] ) && is_array( $input['remove_connectors'] ) ) {
+			foreach ( $input['remove_connectors'] as $remove_id ) {
+				$remove_id = sanitize_key( $remove_id );
+				if ( empty( $remove_id ) ) {
+					continue;
+				}
+				unset( $meta[ $remove_id ], $stored[ $remove_id ] );
+				if ( isset( $stored['connector'] ) && $stored['connector'] === $remove_id ) {
+					$stored['connector'] = '';
+				}
+			}
+		}
+
+		if ( isset( $input['connectors_meta'] ) && is_array( $input['connectors_meta'] ) ) {
+			foreach ( $input['connectors_meta'] as $connector_id => $meta_input ) {
+				$connector_id = sanitize_key( $connector_id );
+				if ( empty( $connector_id ) || ! isset( $meta[ $connector_id ] ) ) {
+					continue;
+				}
+
+				$meta[ $connector_id ]['label']  = sanitize_text_field( $meta_input['label'] ?? $meta[ $connector_id ]['label'] );
+				$meta[ $connector_id ]['status'] = isset( $meta_input['status'] ) && 'inactive' === $meta_input['status'] ? 'inactive' : 'active';
+
+				foreach ( HELPER::get_workflows() as $workflow ) {
+					$value = isset( $meta_input['workflows'][ $workflow ] ) && 'yes' === $meta_input['workflows'][ $workflow ] ? 'yes' : 'no';
+					$meta[ $connector_id ]['workflows'][ $workflow ] = $value;
+				}
+			}
+		}
+
+		if ( ! empty( $input['new_connector'] ) && is_array( $input['new_connector'] ) ) {
+			$type  = sanitize_key( $input['new_connector']['type'] ?? '' );
+			$label = sanitize_text_field( $input['new_connector']['label'] ?? '' );
+			$custom_id = sanitize_key( $input['new_connector']['id'] ?? '' );
+
+			if ( $type && isset( $this->connector_definitions[ $type ] ) ) {
+				$new_id = $custom_id ?: sanitize_key( $type . '-' . $label );
+				if ( empty( $new_id ) || isset( $meta[ $new_id ] ) ) {
+					$new_id = sanitize_key( $type . '-' . uniqid() );
+				}
+
+				$meta[ $new_id ] = array(
+					'type'      => $type,
+					'label'     => $label ?: ( $this->connector_definitions[ $type ]['name'] ?? ucfirst( $type ) ),
+					'status'    => 'active',
+					'workflows' => array(),
+				);
+
+				foreach ( HELPER::get_workflows() as $workflow ) {
+					$meta[ $new_id ]['workflows'][ $workflow ] = 'yes';
+				}
+
+				$stored[ $new_id ] = isset( $stored[ $new_id ] ) ? $stored[ $new_id ] : array();
+				$stored['connector'] = $new_id;
+			}
+		}
+
+		$stored['connectors_meta'] = $meta;
+
+		if ( ! empty( $stored['connector'] ) && ! isset( $meta[ $stored['connector'] ] ) ) {
+			$stored['connector'] = '';
+		}
+		if ( empty( $stored['connector'] ) && ! empty( $meta ) ) {
+			$stored['connector'] = array_key_first( $meta );
+		}
+
+		return $stored;
+	}
+
+	/**
+	 * Sanitize connector-specific settings.
+	 *
+	 * @param array $input    Connector input.
+	 * @param array $existing Existing values.
+	 * @return array
+	 */
+	private function sanitize_connector_settings_values( array $input, array $existing ) {
+		$defaults = $this->get_connector_default_settings();
+		$sanitized = $existing;
+
+		foreach ( $defaults as $key => $default_value ) {
+			if ( isset( $input[ $key ] ) ) {
+				$sanitized[ $key ] = sanitize_text_field( $input[ $key ] );
+			} elseif ( ! isset( $sanitized[ $key ] ) ) {
+				$sanitized[ $key ] = $default_value;
+			}
+		}
+
+		return $sanitized;
+	}
+
+	/**
+	 * Default settings for a connector block.
+	 *
+	 * @return array
+	 */
+	private function get_connector_default_settings() {
+		return array(
+			'api'                => '',
+			'idcentre'           => '',
+			'url'                => '',
+			'username'           => '',
+			'password'           => '',
+			'company'            => '',
+			'company_id'         => '',
+			'domain'             => '',
+			'dbname'             => '',
+			'stock'              => 'no',
+			'prodst'             => 'draft',
+			'virtual'            => 'no',
+			'backorders'         => 'no',
+			'catsep'             => '',
+			'catattr'            => '',
+			'filter'             => '',
+			'pricesale_discount' => '',
+			'filter_sku'         => '',
+			'tax_option'         => 'no',
+			'rates'              => 'default',
+			'catnp'              => 'yes',
+			'doctype'            => 'invoice',
+			'cleanchars'         => '',
+			'approve_document'   => 'no',
+			'series'             => '',
+			'freeorder'          => 'no',
+			'ecstatus'           => 'all',
+			'order_tags'         => '',
+			'design_id'          => '',
+			'sync'               => 'no',
+			'sync_num'           => 5,
+			'sync_email'         => 'yes',
+			'prod_weight_eq'     => '',
+			'debug_log'          => 'no',
+		);
 	}
 
 	/**

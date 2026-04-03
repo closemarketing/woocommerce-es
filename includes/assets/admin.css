@@ -173,3 +173,50 @@
 	width: 85%;
 	margin: 10px;
 }
+
+/* Connector Manager */
+.connect-ecommerce-settings .card.connector-manager {
+	max-width: 100%;
+}
+
+.connect-ecommerce-settings .connector-manager table.widefat {
+	width: 100%;
+}
+
+.connect-ecommerce-settings .add-connector-wrapper {
+	display: flex;
+	align-items: flex-end;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .add-connector-title {
+	margin: 0 0 8px 0;
+	flex-shrink: 0;
+	align-self: flex-start;
+	padding-top: 8px;
+}
+
+.connect-ecommerce-settings .add-connector-row {
+	display: flex;
+	gap: 20px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+	flex: 1;
+}
+
+.connect-ecommerce-settings .add-connector-field {
+	flex: 1;
+	min-width: 200px;
+}
+
+.connect-ecommerce-settings .add-connector-field label {
+	display: block;
+	margin-bottom: 5px;
+	font-weight: 600;
+}
+
+.connect-ecommerce-settings .add-connector-field select,
+.connect-ecommerce-settings .add-connector-field input[type="text"] {
+	width: 100%;
+}
