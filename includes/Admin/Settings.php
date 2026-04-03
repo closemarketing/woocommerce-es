@@ -1227,6 +1227,27 @@ class Settings {
 		?>
 		<div class="connwoo-sync-engine">
 			<div class="sync-wrapper">
+				<?php if ( count( $available_connectors ) > 1 ) : ?>
+					<p>
+						<label for="connector-select"><?php esc_html_e( 'Select connector:', 'woocommerce-es' ); ?></label>
+						<select name="connwoo-connector-select" id="connector-select" onchange="window.location.href='<?php echo esc_url( $tab_url ); ?>&connector_id='+encodeURIComponent(this.value);">
+							<?php foreach ( $available_connectors as $id => $meta ) : ?>
+								<?php
+								$type_key  = $meta['type'] ?? $id;
+								$label     = $meta['label'] ?? $type_key;
+								$type_name = $this->connector_definitions[ $type_key ]['name'] ?? ucfirst( $type_key );
+								?>
+								<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $selected_id, $id ); ?>>
+									<?php echo esc_html( $label . ' (' . $type_name . ')' ); ?>
+								</option>
+							<?php endforeach; ?>
+						</select>
+					</p>
+				<?php else : ?>
+					<select name="connwoo-connector-select" id="connector-select" style="display:none;">
+						<option value="<?php echo esc_attr( $selected_id ); ?>" selected></option>
+					</select>
+				<?php endif; ?>
 				<?php if ( empty( $can_sync ) ) : ?>
 				<div class="error notice">
 						<p>
@@ -1259,27 +1280,6 @@ class Settings {
 						);
 						?>
 					</p>
-					<?php if ( count( $available_connectors ) > 1 ) : ?>
-						<p>
-							<label for="connector-select"><?php esc_html_e( 'Select connector:', 'woocommerce-es' ); ?></label>
-							<select name="connwoo-connector-select" id="connector-select" onchange="window.location.href='<?php echo esc_url( $tab_url ); ?>&connector_id='+encodeURIComponent(this.value);">
-								<?php foreach ( $available_connectors as $id => $meta ) : ?>
-									<?php
-									$type_key  = $meta['type'] ?? $id;
-									$label     = $meta['label'] ?? $type_key;
-									$type_name = $this->connector_definitions[ $type_key ]['name'] ?? ucfirst( $type_key );
-									?>
-									<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $selected_id, $id ); ?>>
-										<?php echo esc_html( $label . ' (' . $type_name . ')' ); ?>
-									</option>
-								<?php endforeach; ?>
-							</select>
-						</p>
-					<?php else : ?>
-						<select name="connwoo-connector-select" id="connector-select" style="display:none;">
-							<option value="<?php echo esc_attr( $selected_id ); ?>" selected></option>
-						</select>
-					<?php endif; ?>
 					<br/>
 					<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
 					<?php if ( ! $selected_no_ai ) : ?>
