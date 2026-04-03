@@ -44,18 +44,27 @@ class Settings_Payment_Methods {
 	private $connector_options = array();
 
 	/**
+	 * Connector type slug.
+	 *
+	 * @var string
+	 */
+	private $connector_type = '';
+
+	/**
 	 * Construct of class.
 	 *
 	 * @param object|null $connector_api Connector API instance.
-	 * @param string      $connector_slug Connector slug.
+	 * @param string      $connector_slug Connector identifier.
 	 * @param array       $connector_options Connector specific options.
+	 * @param string      $connector_type Connector type slug.
 	 *
 	 * @return void
 	 */
-	public function __construct( $connector_api = null, $connector_slug = '', $connector_options = array() ) {
+	public function __construct( $connector_api = null, $connector_slug = '', $connector_options = array(), $connector_type = '' ) {
 		$this->connector_api     = $connector_api;
 		$this->connector_slug    = $connector_slug;
 		$this->connector_options = $connector_options;
+		$this->connector_type    = $connector_type;
 
 		add_action( 'admin_post_connect_ecommerce_save_payment_methods', array( $this, 'handle_form_submission' ) );
 	}
@@ -478,7 +487,7 @@ class Settings_Payment_Methods {
 	 * @return array
 	 */
 	private function get_saved_mappings() {
-		$mappings = PAYMENTS::get_payment_method_mappings( $this->connector_slug );
+		$mappings = PAYMENTS::get_payment_method_mappings( $this->connector_slug, $this->connector_type );
 
 		// Convert to the format expected by render_page.
 		$prepared = array();

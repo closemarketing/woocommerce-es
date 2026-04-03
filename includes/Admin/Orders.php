@@ -137,6 +137,29 @@ class Orders {
 		$sync_loop    = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$message      = '';
 
+		// Get connector from request or use default.
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+		if ( ! empty( $connector_id ) ) {
+			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
+			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
+				$connapi_erp    = $connector_data['connapi_erp'];
+				$settings       = $connector_data['settings'];
+				$options        = $connector_data['options'];
+				$meta_key_order = '_' . $options['slug'] . '_invoice_id';
+			} else {
+				$connapi_erp    = $this->connapi_erp;
+				$settings       = $this->settings;
+				$options        = $this->options;
+				$meta_key_order = $this->meta_key_order;
+			}
+		} else {
+			$connapi_erp    = $this->connapi_erp;
+			$settings       = $this->settings;
+			$options        = $this->options;
+			$meta_key_order = $this->meta_key_order;
+		}
+
 		// Start.
 		if ( ! session_id() ) {
 			session_start();
@@ -185,22 +208,22 @@ class Orders {
 							)
 						);
 					} else {
-						die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
-					}
-				} else {
-					$ec_invoice_id = $order->get_meta( $this->meta_key_order );
-
-					if ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
-						$message .= __( 'Order already exported to API ID:', 'woocommerce-es' ) . $ec_invoice_id;
-					} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
-						$message .= __( 'Free order not exported', 'woocommerce-es' );
-					} else {
-						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
-
-						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
-						$message .= ' ' . $result['message'];
-					}
+					die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
 				}
+			} else {
+				$ec_invoice_id = $order->get_meta( $meta_key_order );
+
+				if ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
+					$message .= __( 'Order already exported to API ID:', 'woocommerce-es' ) . $ec_invoice_id;
+				} elseif ( 'nocreate' === $ec_invoice_id ) {
+					$message .= __( 'Free order not exported', 'woocommerce-es' );
+				} else {
+					$result = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp );
+
+					$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
+					$message .= ' ' . $result['message'];
+				}
+			}
 
 				if ( $doing_ajax || $not_sapi_cli ) {
 					$orders_synced = $sync_loop + 1;
@@ -335,34 +358,35 @@ class Orders {
 		if ( ! check_ajax_referer( 'sync_erp_order_nonce', 'nonce' ) ) {
 			wp_send_json_error( array( 'error' => 'Error' ) );
 		}
-		$order_id = isset( $_POST['order_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['order_id'] ) ) : 0;
-		$type     = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
+		$order_id     = isset( $_POST['order_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$type         = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
 
-		$result = array(
-			'status'  => 'error',
-			'message' => __( 'Invalid request type', 'woocommerce-es' ),
-		);
+		$connapi_erp    = $this->connapi_erp;
+		$settings       = $this->settings;
+		$meta_key_order = $this->meta_key_order;
+		$options        = $this->options;
+
+		if ( ! empty( $connector_id ) ) {
+			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
+			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
+				$connapi_erp    = $connector_data['connapi_erp'];
+				$settings       = $connector_data['settings'];
+				$options        = $connector_data['options'];
+				$meta_key_order = '_' . $options['slug'] . '_invoice_id';
+			}
+		}
 
 		if ( 'erp-post' === $type ) {
-			$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true );
+			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true );
 		}
-
-		// Check result status and respond accordingly.
-		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
-			wp_send_json_error(
-				array(
-					'message'  => $result['message'] ?? __( 'Unknown error occurred', 'woocommerce-es' ),
-					'order_id' => $order_id,
-				)
-			);
-		} else {
-			wp_send_json_success(
-				array(
-					'message'  => $result['message'] ?? __( 'Order sent successfully', 'woocommerce-es' ),
-					'order_id' => $order_id,
-				)
-			);
-		}
+		wp_send_json_success(
+			array(
+				'message'  => $result['message'] ?? '',
+				'order_id' => $order_id,
+			)
+		);
 	}
 }
 
