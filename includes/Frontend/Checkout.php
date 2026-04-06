@@ -81,10 +81,10 @@ class Checkout {
 			// Classic checkout validation.
 			add_action( 'woocommerce_after_checkout_validation', array( $this, 'validate_vat_number_checkout' ), 10, 2 );
 			add_action( 'woocommerce_checkout_order_processed', array( $this, 'save_vat_validation_result' ), 10, 1 );
-			
+
 			// Gutenberg Blocks checkout validation.
 			add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'validate_vat_number_checkout_blocks' ), 10, 2 );
-			
+
 			// Real-time VAT validation.
 			$vat_realtime = isset( $this->setttings_public['vat_realtime_validation'] ) ? $this->setttings_public['vat_realtime_validation'] : 'yes';
 			if ( 'yes' === $vat_realtime ) {
@@ -432,11 +432,11 @@ class Checkout {
 
 		// Apply or remove VAT exemption based on validation result.
 		$is_valid = isset( $validation_result['valid'] ) && $validation_result['valid'];
-		
+
 		if ( $is_valid ) {
 			// Apply VAT exemption if conditions are met.
 			VAT::apply_vat_exemption( $country_code, $vat_number, true );
-			
+
 			// Check if exemption was applied.
 			if ( VAT::is_customer_vat_exempt() ) {
 				wc_add_notice(
@@ -452,10 +452,10 @@ class Checkout {
 		} else {
 			// Remove any existing exemption and restore normal VAT.
 			VAT::remove_vat_exemption();
-			
+
 			// Clear any stored exemption data.
 			WC()->session->set( 'vat_validation_result', null );
-			
+
 			// Add notice that normal VAT will apply.
 			if ( ! $vat_number ) {
 				wc_add_notice(
