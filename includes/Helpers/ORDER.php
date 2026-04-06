@@ -88,12 +88,10 @@ class ORDER {
 					'status'  => 'error',
 					'message' => $e->getMessage(),
 				);
-				// Send alert for order error.
-				ALERT::send_order_error_alert( $order_id, $e->getMessage() );
 			}
 		} else {
 			$result = array(
-				'status'  => 'error',
+				'status'  => 'ok',
 				'message' => $doctype . ' ' . __( 'num: ', 'woocommerce-es' ) . $ec_invoice_id,
 			);
 		}
