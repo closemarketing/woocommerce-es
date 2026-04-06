@@ -326,7 +326,7 @@ class ORDER {
 					}
 					$product_cost                            = floatval( $item['line_total'] );
 					$fields_items[ $index_bund ]['subtotal'] = $fields_items[ $index_bund ]['subtotal'] + $product_cost;
-					$fields_items[ $index_bund ]['tax']      = round( $vat_per, 0 );
+					$fields_items[ $index_bund ]['tax']      = round( $vat_per, 2 );
 				}
 			} else {
 				$item_qty   = (int) $item->get_quantity();
@@ -351,10 +351,13 @@ class ORDER {
 				if ( $line_discount > 0 ) {
 					$coupon = array_search( (string) $line_discount, array_column( $order_discounts, 'discount' ), true );
 					if ( false !== $coupon ) {
-						$item_data['discount'] = 'percent' !== $order_discounts[ $coupon ]['type'] ? ( $item->get_subtotal() * $order_discounts[ $coupon ]['amount'] ) / 100 : $order_discounts[ $coupon ]['amount'];
-					} else {
-						$item_data['discount'] = round( ( $line_discount * 100 ) / $item->get_subtotal(), 0 );
+						$coupon_type = $order_discounts[ $coupon ]['type'];
+						if ( 'percent' === $coupon_type ) {
+							// Percentage discount.
+							$line_discount = (float) $order_discounts[ $coupon ]['amount'];
+						}
 					}
+					$item_data['discount'] = round( ( $line_discount * 100 ) / $item->get_subtotal(), 2 );
 				}
 
 				$fields_items[] = $item_data;
@@ -445,7 +448,7 @@ class ORDER {
 			if ( ! empty( $tax_key ) ) {
 				$item_taxes['taxes'] = array( trim( $tax_key ) );
 			} else {
-				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? floor( $item_tax_data['total'][ $tax_rate_id_from_item ] ) : 0;
+				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? round( $item_tax_data['total'][ $tax_rate_id_from_item ], 2 ) : 0;
 			}
 		}
 
