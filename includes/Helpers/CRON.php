@@ -57,7 +57,7 @@ class CRON {
 
 		// Get ALL products from API.
 		$products       = array();
-		$api_pagination = ! empty( $options['api_pagination'] ) ? (int) $options['api_pagination'] : false;
+		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 		if ( $api_pagination ) {
 			$sync_loop = 0;
 
@@ -124,7 +124,7 @@ class CRON {
 		}
 		// Method with table sync.
 		global $wpdb;
-		$limit = isset( $settings['sync_num'] ) ? (int) $settings['sync_num'] : 50;
+		$limit = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
@@ -221,7 +221,8 @@ class CRON {
 	 */
 	public static function send_sync_ended_products( $settings, $table_sync, $option_name, $option_prefix ) {
 		global $wpdb;
-		$send_email  = isset( $settings['sync_email'] ) ? strval( $settings['sync_email'] ) : 'yes';
+		$alerts      = get_option( 'connect_ecommerce_alerts', array() );
+		$send_email  = isset( $alerts['alert_product_synced'] ) ? strval( $alerts['alert_product_synced'] ) : 'no';
 		$total_count = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync WHERE synced = 1" );
 
 		if ( $total_count > 0 && 'yes' === $send_email ) {
@@ -335,6 +336,85 @@ class CRON {
 				'display'  => __( 'Every 12 Hours', 'woocommerce-es' ),
 				'cron'     => 'conecom_sync_twelve_hours',
 			),
+		);
+	}
+
+	/**
+	 * Returns recent Action Scheduler runs for conecom_sync_* hooks.
+	 *
+	 * @return array { status: 'success'|'error', actions?: array, message?: string }
+	 */
+	public static function get_sync_logs() {
+		global $wpdb;
+		$actions_table = $wpdb->prefix . 'actionscheduler_actions';
+		$logs_table    = $wpdb->prefix . 'actionscheduler_logs';
+
+		if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $actions_table ) ) !== $actions_table ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'Action Scheduler is not active.', 'woocommerce-es' ),
+			);
+		}
+
+		$hook_labels = array();
+		foreach ( self::get_cron_periods() as $period ) {
+			$hook_labels[ $period['cron'] ] = $period['display'];
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
+		$action_rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT id, hook, status, scheduled_date_gmt, last_attempt_gmt
+				 FROM {$actions_table}
+				 WHERE hook LIKE %s
+				 ORDER BY scheduled_date_gmt DESC
+				 LIMIT 25",
+				'conecom_sync_%'
+			),
+			ARRAY_A
+		);
+
+		if ( empty( $action_rows ) ) {
+			return array(
+				'status'  => 'success',
+				'actions' => array(),
+			);
+		}
+
+		$action_ids = implode( ',', array_map( 'intval', array_column( $action_rows, 'id' ) ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- Table names from prefix, IDs intval'd.
+		$log_rows = $wpdb->get_results(
+			"SELECT action_id, message, log_date_gmt
+			 FROM {$logs_table}
+			 WHERE action_id IN ({$action_ids})
+			 ORDER BY log_date_gmt ASC",
+			ARRAY_A
+		);
+
+		$logs_by_action = array();
+		foreach ( $log_rows as $log ) {
+			$logs_by_action[ $log['action_id'] ][] = array(
+				'message' => $log['message'],
+				'date'    => get_date_from_gmt( $log['log_date_gmt'], get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
+			);
+		}
+
+		$actions = array();
+		foreach ( $action_rows as $row ) {
+			$actions[] = array(
+				'id'             => $row['id'],
+				'hook'           => $row['hook'],
+				'hook_label'     => $hook_labels[ $row['hook'] ] ?? $row['hook'],
+				'status'         => $row['status'],
+				'scheduled_date' => get_date_from_gmt( $row['scheduled_date_gmt'], get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ),
+				'last_attempt'   => ! empty( $row['last_attempt_gmt'] ) ? get_date_from_gmt( $row['last_attempt_gmt'], get_option( 'date_format' ) . ' ' . get_option( 'time_format' ) ) : '',
+				'logs'           => $logs_by_action[ $row['id'] ] ?? array(),
+			);
+		}
+
+		return array(
+			'status'  => 'success',
+			'actions' => $actions,
 		);
 	}
 }

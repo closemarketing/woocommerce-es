@@ -318,14 +318,14 @@ class TAXES {
 				'super_reduced_rate' => false,
 				'parking_rate'       => 13.00,
 			),
-			'RO' => array(
-				'country'            => __( 'Romania', 'woocommerce-es' ),
-				'standard_rate'      => 19.00,
-				'reduced_rate'       => 9.00,
-				'reduced_rate_alt'   => 5.00,
-				'super_reduced_rate' => false,
-				'parking_rate'       => false,
-			),
+		'RO' => array(
+			'country'            => __( 'Romania', 'woocommerce-es' ),
+			'standard_rate'      => 19.00,
+			'reduced_rate'       => 11.00,
+			'reduced_rate_alt'   => 5.00,
+			'super_reduced_rate' => false,
+			'parking_rate'       => false,
+		),
 			'SI' => array(
 				'country'            => __( 'Slovenia', 'woocommerce-es' ),
 				'standard_rate'      => 22.00,

@@ -106,6 +106,7 @@ $products = [
 				'content' => Content of image,
 				'content_type' => Content type from image,
 			],
+		'last_updated' => Date from last updated from the product.
 		rates: array(4)
 			0: array(3)
 			id: "65f40aaf178216df3a054762"

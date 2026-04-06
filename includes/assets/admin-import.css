@@ -1,0 +1,254 @@
+/**
+ * Admin Import Styles
+ *
+ * Styles for the product import page when get_all_product_skus is available.
+ *
+ * @package WooCommerce_ES
+ */
+
+/* Statistics Cards */
+.conecom-import-stats {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+	gap: 20px;
+	margin: 20px 0 30px;
+}
+
+.conecom-stat-card {
+	background: white;
+	border: 1px solid #c3c4c7;
+	border-radius: 8px;
+	padding: 20px;
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+	transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.conecom-stat-card:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.conecom-stat-icon {
+	width: 50px;
+	height: 50px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.conecom-icon-api {
+	background: #e8f4fd;
+	color: #0073aa;
+}
+
+.conecom-icon-wp {
+	background: #f0f0f1;
+	color: #2c3338;
+}
+
+.conecom-icon-import {
+	background: #ecf7ed;
+	color: #00a32a;
+}
+
+.conecom-icon-delete {
+	background: #fcf0f1;
+	color: #d63638;
+}
+
+.conecom-stat-icon .dashicons {
+	font-size: 28px;
+	width: 28px;
+	height: 28px;
+}
+
+.conecom-stat-content {
+	flex: 1;
+}
+
+.conecom-stat-value {
+	font-size: 32px;
+	font-weight: 700;
+	line-height: 1.2;
+	color: #1d2327;
+}
+
+.conecom-stat-label {
+	font-size: 13px;
+	font-weight: 600;
+	color: #50575e;
+	margin-top: 5px;
+}
+
+.conecom-stat-sublabel {
+	font-size: 12px;
+	color: #787c82;
+	margin-top: 2px;
+}
+
+.conecom-stat-card.loading .conecom-stat-value {
+	opacity: 0.5;
+}
+
+/* Two columns */
+.conecom-two-columns {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 30px;
+	margin: 20px 0;
+}
+
+@media (max-width: 782px) {
+	.conecom-two-columns {
+		grid-template-columns: 1fr;
+	}
+}
+
+.conecom-cron-logs h3,
+.conecom-manual-import h3 {
+	margin-top: 0;
+}
+
+/* Import controls */
+.connwoo-sync-with-stats .import-button-wrapper {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 10px;
+	margin-bottom: 15px;
+}
+
+.connwoo-sync-with-stats #import-mode {
+	height: 40px;
+	padding: 0 12px;
+	font-size: 14px;
+	border: 1px solid #2271b1;
+	border-radius: 3px;
+	background: white;
+	color: #2271b1;
+	cursor: pointer;
+	min-width: 180px;
+	line-height: 38px;
+}
+
+.connwoo-sync-with-stats #import-mode:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.connwoo-sync-with-stats .import-button-wrapper .button {
+	height: 40px;
+	padding: 0 16px;
+	font-size: 14px;
+	line-height: 38px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	box-sizing: border-box;
+}
+
+.connwoo-sync-with-stats #refresh_stats .dashicons {
+	font-size: 20px;
+	width: 20px;
+	height: 20px;
+	margin-right: 2px;
+}
+
+.connwoo-sync-with-stats .spinner {
+	float: none;
+	margin: 0;
+	display: none;
+}
+
+.connwoo-sync-with-stats .spinner.is-active {
+	display: block;
+	visibility: visible;
+}
+
+/* Log container with tabs */
+.conecom-log-container {
+	margin-top: 25px;
+	border: 1px solid #c3c4c7;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.conecom-log-tabs {
+	display: flex;
+	border-bottom: 1px solid #c3c4c7;
+	background: #f0f0f1;
+}
+
+.conecom-tab-button {
+	padding: 12px 20px;
+	border: none;
+	background: transparent;
+	cursor: pointer;
+	font-size: 14px;
+	color: #50575e;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.conecom-tab-button:hover {
+	color: #1d2327;
+}
+
+.conecom-tab-button.active {
+	background: #fff;
+	color: #2271b1;
+	font-weight: 600;
+	border-bottom: 2px solid #fff;
+	margin-bottom: -1px;
+}
+
+.conecom-tab-content {
+	padding: 15px;
+}
+
+.conecom-tab-pane {
+	display: none;
+}
+
+.conecom-tab-pane.active {
+	display: block;
+}
+
+.connwoo-sync-with-stats #logwrapper {
+	margin-top: 0;
+	padding: 0;
+}
+
+.connwoo-sync-with-stats #loglist {
+	max-height: 400px;
+	overflow-y: auto;
+	background: #f9f9f9;
+	padding: 10px;
+	border-radius: 3px;
+}
+
+.connwoo-sync-with-stats #loglist p {
+	margin: 5px 0;
+	padding: 5px 10px;
+	border-left: 3px solid #0073aa;
+}
+
+.connwoo-sync-with-stats #loglist p.odd {
+	background: #f0f0f1;
+}
+
+.connwoo-sync-with-stats #loglist p.even {
+	background: #fff;
+}
+
+.connwoo-sync-with-stats #loglist p.error {
+	border-left-color: #d63638;
+	background: #fcf0f1;
+}
