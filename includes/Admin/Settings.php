@@ -210,6 +210,8 @@ class Settings {
 
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
+		add_action( 'wp_ajax_conecom_remove_connector', array( $this, 'ajax_remove_connector' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'register_scripts' ) );
 
 		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
 			return;
@@ -2491,11 +2493,101 @@ class Settings {
 	}
 
 	/**
+	 * Registers admin scripts (no enqueue yet).
+	 *
+	 * @return void
+	 */
+	public function register_scripts() {
+		wp_register_script(
+			'conecom-connector-manager',
+			CONECOM_PLUGIN_URL . 'includes/assets/connector-manager.js',
+			array(),
+			CONECOM_VERSION,
+			true
+		);
+	}
+
+	/**
+	 * AJAX handler — removes a connector from the DB.
+	 *
+	 * @return void
+	 */
+	public function ajax_remove_connector() {
+		check_ajax_referer( 'conecom_remove_connector_nonce', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error(
+				array( 'message' => '<p>' . esc_html__( 'You do not have permission to perform this action.', 'woocommerce-es' ) . '</p>' )
+			);
+		}
+
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+
+		if ( empty( $connector_id ) ) {
+			wp_send_json_error(
+				array( 'message' => '<p>' . esc_html__( 'Invalid connector ID.', 'woocommerce-es' ) . '</p>' )
+			);
+		}
+
+		global $wpdb;
+
+		// Read directly from DB to bypass WP object cache entirely.
+		$raw = $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s LIMIT 1", 'connect_ecommerce' ) );
+		$all_settings = $raw ? maybe_unserialize( $raw ) : array();
+		$all_settings = is_array( $all_settings ) ? $all_settings : array();
+
+		if ( ! isset( $all_settings['connectors_meta'][ $connector_id ] ) ) {
+			wp_send_json_error(
+				array( 'message' => '<p>' . esc_html__( 'Connector not found.', 'woocommerce-es' ) . '</p>' )
+			);
+		}
+
+		unset( $all_settings['connectors_meta'][ $connector_id ] );
+		unset( $all_settings[ $connector_id ] );
+
+		// If this was the active connector, reassign to the first remaining one.
+		if ( isset( $all_settings['connector'] ) && $all_settings['connector'] === $connector_id ) {
+			$remaining                 = array_keys( $all_settings['connectors_meta'] );
+			$all_settings['connector'] = ! empty( $remaining ) ? $remaining[0] : '';
+		}
+
+		// Write directly to DB and flush all WP option caches.
+		$wpdb->update(
+			$wpdb->options,
+			array( 'option_value' => maybe_serialize( $all_settings ) ),
+			array( 'option_name' => 'connect_ecommerce' )
+		);
+		wp_cache_delete( 'connect_ecommerce', 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
+
+		wp_send_json_success(
+			array(
+				'message' => '<p>' . sprintf(
+					/* translators: %s: connector ID */
+					esc_html__( 'Connector "%s" has been removed successfully.', 'woocommerce-es' ),
+					esc_html( $connector_id )
+				) . '</p>',
+			)
+		);
+	}
+
+	/**
 	 * Outputs the connector management fields.
 	 *
 	 * @return void
 	 */
 	private function render_connector_manager() {
+		wp_enqueue_script( 'conecom-connector-manager' );
+		wp_localize_script(
+			'conecom-connector-manager',
+			'ConecomConnectorManager',
+			array(
+				'ajax_url'     => admin_url( 'admin-ajax.php' ),
+				'nonce'        => wp_create_nonce( 'conecom_remove_connector_nonce' ),
+				'confirm_text' => __( 'Are you sure you want to remove this connector? This action cannot be undone.', 'woocommerce-es' ),
+				'error_text'   => __( 'An unexpected error occurred. Please try again.', 'woocommerce-es' ),
+			)
+		);
 		?>
 		<div class="connector-manager">
 			<h3><?php esc_html_e( 'Connectors', 'woocommerce-es' ); ?></h3>
@@ -2548,10 +2640,11 @@ class Settings {
 									</select>
 								</td>
 								<td>
-									<label>
-										<input type="checkbox" name="connect_ecommerce[remove_connectors][]" value="<?php echo esc_attr( $connector_id ); ?>"/>
+									<button type="button"
+										class="button button-secondary conecom-remove-connector"
+										data-connector-id="<?php echo esc_attr( $connector_id ); ?>">
 										<?php esc_html_e( 'Remove', 'woocommerce-es' ); ?>
-									</label>
+									</button>
 								</td>
 							</tr>
 						<?php endforeach; ?>
