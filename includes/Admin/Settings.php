@@ -613,7 +613,7 @@ class Settings {
 		);
 
 		if ( $this->connector ) {
-			if ( 'connwoo_neo' === $this->options['slug'] ) {
+			if ( ! empty( $this->options['slug'] ) && 'connwoo_neo' === $this->options['slug'] ) {
 				add_settings_field(
 					'wcpimh_idcentre',
 					__( 'NEO ID Centre', 'woocommerce-es' ),
@@ -720,7 +720,7 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
-			if ( $this->options['product_option_stock'] ) {
+			if ( ! empty( $this->options['product_option_stock'] ) ) {
 					add_settings_field(
 						'wcpimh_stock',
 						__( 'Import stock?', 'woocommerce-es' ),
@@ -796,7 +796,7 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
-			if ( $this->options['product_price_tax_option'] ) {
+			if ( ! empty( $this->options['product_price_tax_option'] ) ) {
 				add_settings_field(
 					'wcpimh_tax_option',
 					__( 'Get prices with Tax?', 'woocommerce-es' ),
@@ -814,8 +814,7 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
-			if ( $this->options['product_price_rate_option'] ) {
-				$desc_tip     = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
+			if ( ! empty( $this->options['product_price_rate_option'] ) ) {
 				add_settings_field(
 					'wcpimh_rates',
 					__( 'Product price rate for this eCommerce', 'woocommerce-es' ),
@@ -825,7 +824,7 @@ class Settings {
 				);
 			}
 
-			if ( ( isset( $this->options['order_series_number'] ) && $this->options['order_series_number'] ) || 'Holded' === $this->options['name'] ) {
+			if ( ( ! empty( $this->options['order_series_number'] ) && ! empty( $this->options['order_series_number'] ) ) && ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_serie_number',
 					__( 'Serie number', 'woocommerce-es' ),
@@ -853,7 +852,7 @@ class Settings {
 				);
 			}
 
-			if ( 'Holded' === $this->options['name'] || in_array( 'doctype', $settings_fields, true ) ) {
+			if ( ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] || in_array( 'doctype', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
 					__( 'Document to create after order completed?', 'woocommerce-es' ),
@@ -863,7 +862,7 @@ class Settings {
 				);
 			}
 
-			if ( 'Holded' === $this->options['name'] ) {
+			if ( ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] ) {
 				add_settings_field(
 					'wcpimh_design_id',
 					__( 'ID Holded design for document', 'woocommerce-es' ),
@@ -1405,7 +1404,10 @@ class Settings {
 				'target' => array(),
 			),
 		);
-		echo wp_kses( $this->options['settings_admin_message'], $arr );
+
+		if ( ! empty( $this->options['settings_admin_message'] ) ) {
+			echo wp_kses( $this->options['settings_admin_message'], $arr );
+		}
 	}
 
 	/**
