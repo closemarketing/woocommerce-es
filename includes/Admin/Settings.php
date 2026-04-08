@@ -188,6 +188,7 @@ class Settings {
 		if ( empty( $this->connector_definitions ) && function_exists( 'conecom_get_options' ) ) {
 			$this->connector_definitions = conecom_get_options();
 		}
+	
 		$this->options               = $current_connector['options'] ?? array();
 		$this->connapi_erp           = $current_connector['connapi_erp'] ?? null;
 		$this->is_mergevars          = $current_connector['is_mergevars'] ?? false;
@@ -1413,14 +1414,14 @@ class Settings {
 
 		$updated = $this->sanitize_connector_manager_inputs( $input, $stored );
 
-		$connector_id = isset( $input['connector'] ) ? sanitize_key( $input['connector'] ) : ( $updated['connector'] ?? '' );
+		$connector_id = isset( $input['connector'] ) ? sanitize_text_field( wp_unslash( $input['connector'] ) ) : ( $updated['connector'] ?? '' );
 		if ( empty( $connector_id ) && ! empty( $updated['connectors_meta'] ) ) {
 			$connector_id = array_key_first( $updated['connectors_meta'] );
 		}
 		$updated['connector'] = $connector_id;
 
 		if ( ! empty( $connector_id ) && isset( $input[ $connector_id ] ) ) {
-			$current_settings            = $updated[ $connector_id ] ?? array();
+			$current_settings         = $updated[ $connector_id ] ?? array();
 			$updated[ $connector_id ] = $this->sanitize_connector_settings_values( $input[ $connector_id ], $current_settings );
 		}
 
@@ -2730,7 +2731,11 @@ class Settings {
 				<div class="notice notice-warning inline">
 					<p><?php esc_html_e( 'No connector types are available in this installation.', 'woocommerce-es' ); ?></p>
 				</div>
-			<?php else : ?>
+			<?php else :
+				$used_types      = array_column( $this->connectors_meta, 'type' );
+				$available_types = array_diff_key( $this->connector_definitions, array_flip( $used_types ) );
+				?>
+				<?php if ( ! empty( $available_types ) ) : ?>
 				<div class="add-connector-wrapper">
 					<h4 class="add-connector-title"><?php esc_html_e( 'Add connector', 'woocommerce-es' ); ?></h4>
 					<div class="add-connector-row">
@@ -2738,7 +2743,7 @@ class Settings {
 							<label for="connector-type"><?php esc_html_e( 'Connector type', 'woocommerce-es' ); ?></label>
 							<select id="connector-type" name="connect_ecommerce[new_connector][type]">
 								<option value=""><?php esc_html_e( 'Select…', 'woocommerce-es' ); ?></option>
-								<?php foreach ( $this->connector_definitions as $type_key => $definition ) : ?>
+								<?php foreach ( $available_types as $type_key => $definition ) : ?>
 									<option value="<?php echo esc_attr( $type_key ); ?>"><?php echo esc_html( $definition['name'] ?? ucfirst( $type_key ) ); ?></option>
 								<?php endforeach; ?>
 							</select>
@@ -2747,12 +2752,9 @@ class Settings {
 							<label for="connector-label"><?php esc_html_e( 'Display name', 'woocommerce-es' ); ?></label>
 							<input type="text" id="connector-label" name="connect_ecommerce[new_connector][label]" class="regular-text"/>
 						</div>
-						<div class="add-connector-field">
-							<label for="connector-custom-id"><?php esc_html_e( 'Custom identifier (optional)', 'woocommerce-es' ); ?></label>
-							<input type="text" id="connector-custom-id" name="connect_ecommerce[new_connector][id]" class="regular-text" placeholder="<?php esc_attr_e( 'Auto generated when empty', 'woocommerce-es' ); ?>"/>
-						</div>
 					</div>
 				</div>
+				<?php endif; ?>
 			<?php endif; ?>
 		</div>
 		<?php
@@ -2787,7 +2789,7 @@ class Settings {
 
 		if ( ! empty( $input['remove_connectors'] ) && is_array( $input['remove_connectors'] ) ) {
 			foreach ( $input['remove_connectors'] as $remove_id ) {
-				$remove_id = sanitize_key( $remove_id );
+				$remove_id = sanitize_text_field( wp_unslash( $remove_id ) );
 				if ( empty( $remove_id ) ) {
 					continue;
 				}
@@ -2800,7 +2802,7 @@ class Settings {
 
 		if ( isset( $input['connectors_meta'] ) && is_array( $input['connectors_meta'] ) ) {
 			foreach ( $input['connectors_meta'] as $connector_id => $meta_input ) {
-				$connector_id = sanitize_key( $connector_id );
+				$connector_id = sanitize_text_field( wp_unslash( $connector_id ) );
 				if ( empty( $connector_id ) || ! isset( $meta[ $connector_id ] ) ) {
 					continue;
 				}
@@ -2821,8 +2823,8 @@ class Settings {
 			$custom_id = sanitize_key( $input['new_connector']['id'] ?? '' );
 
 			if ( $type && isset( $this->connector_definitions[ $type ] ) ) {
-				$new_id = $custom_id ?: sanitize_key( $type . '-' . $label );
-				if ( empty( $new_id ) || isset( $meta[ $new_id ] ) ) {
+				$new_id = $custom_id ?: $type;
+				if ( isset( $meta[ $new_id ] ) ) {
 					$new_id = sanitize_key( $type . '-' . uniqid() );
 				}
 
