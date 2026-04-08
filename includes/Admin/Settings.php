@@ -2679,11 +2679,8 @@ class Settings {
 					<tbody>
 						<?php foreach ( $this->connectors_meta as $connector_id => $meta ) : ?>
 							<tr>
-								<td>
+								<td class="conecom-connector-id">
 									<code><?php echo esc_html( $connector_id ); ?></code>
-									<?php if ( $this->connector === $connector_id ) : ?>
-										<br/><span class="dashicons dashicons-yes"></span> <?php esc_html_e( 'Active', 'woocommerce-es' ); ?>
-									<?php endif; ?>
 								</td>
 								<td>
 									<input type="text" class="regular-text" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][label]" value="<?php echo esc_attr( $meta['label'] ?? '' ); ?>"/>
