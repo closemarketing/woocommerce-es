@@ -17,6 +17,78 @@
 	width: 326px;
 }
 
+/* Sync engine: flow header (origin → destination) */
+.connect-ecommerce-settings .connwoo-flow-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	padding: 20px 24px;
+	margin: 16px 0;
+	max-width: 680px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-origin,
+.connect-ecommerce-settings .connwoo-flow-destination {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #888;
+}
+
+.connect-ecommerce-settings .connwoo-flow-site {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	background: #f6f7f7;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+	padding: 10px 14px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-site strong {
+	font-size: 14px;
+	line-height: 1.3;
+}
+
+.connect-ecommerce-settings .connwoo-flow-site small {
+	font-size: 11px;
+	color: #888;
+}
+
+.connect-ecommerce-settings .connwoo-flow-selector select {
+	width: 100%;
+	font-size: 13px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-arrow {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	color: #aaa;
+	gap: 2px;
+	flex: 0 0 auto;
+	font-size: 22px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-arrow small {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+/* Sync engine: log */
 .connect-ecommerce-settings .connwoo-sync-engine #logwrapper {
 	border: 1px solid #aaa;
 	margin: 10px auto;
