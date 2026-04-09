@@ -142,7 +142,7 @@ class Import_Products {
 
 		$is_sync_products_page = $is_connect_ecommerce_page
 			&& 'synchronization' === $current_tab
-			&& 'sync_products' === $current_subtab;
+			&& in_array( $current_subtab, array( 'sync_products', 'sync_orders' ), true );
 
 		wp_enqueue_style(
 			'woocommerce-es',
