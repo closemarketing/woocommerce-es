@@ -160,6 +160,7 @@ class Settings {
 
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_settings_scripts' ) );
 		add_action( 'wp_ajax_connect_ecommerce_test_alert', array( $this, 'test_alert_callback' ) );
 	}
 
@@ -498,12 +499,93 @@ class Settings {
 	}
 
 	/**
+	 * Enqueue WooCommerce tooltip script on the settings page.
+	 *
+	 * @return void
+	 */
+	public function enqueue_settings_scripts() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! isset( $_GET['page'] ) || 'connect_ecommerce' !== $_GET['page'] ) {
+			return;
+		}
+		wp_enqueue_style( 'dashicons' );
+		wp_enqueue_style(
+			'woocommerce-es',
+			CONECOM_PLUGIN_URL . 'includes/assets/admin.css',
+			array(),
+			CONECOM_VERSION
+		);
+	}
+
+	/**
+	 * Normalize settings_fields entries to a keyed array.
+	 *
+	 * Each entry can be a plain string (field ID) or an associative array with
+	 * keys 'id', 'label', and optionally 'desc_tip'. The result is always a
+	 * map keyed by field ID so callers can do isset( $fields['company'] ).
+	 *
+	 * @param array $fields Raw settings_fields from plugin options.
+	 * @return array Normalized map: [ 'field_id' => [ 'id', 'label', 'desc_tip' ], ... ]
+	 */
+	protected function normalize_settings_fields( $fields ) {
+		$defaults = array(
+			'url'               => __( 'URL', 'woocommerce-es' ),
+			'dbname'            => __( 'DB Name', 'woocommerce-es' ),
+			'username'          => __( 'Username', 'woocommerce-es' ),
+			'password'          => __( 'Password', 'woocommerce-es' ),
+			'company'           => __( 'Company', 'woocommerce-es' ),
+			'domain'            => __( 'Domain', 'woocommerce-es' ),
+			'apipassword'       => __( 'API Key', 'woocommerce-es' ),
+			'manufacturer_code' => __( 'Manufacturer Code', 'woocommerce-es' ),
+			'customer_code'     => __( 'Customer Code', 'woocommerce-es' ),
+			'company_id'        => __( 'Company', 'woocommerce-es' ),
+			'approve_document'  => __( 'Approve document by default for validations?', 'woocommerce-es' ),
+			'doctype'           => __( 'Document to create after order completed?', 'woocommerce-es' ),
+		);
+
+		$normalized = array();
+		foreach ( $fields as $entry ) {
+			if ( is_string( $entry ) ) {
+				$normalized[ $entry ] = array(
+					'id'       => $entry,
+					'label'    => isset( $defaults[ $entry ] ) ? $defaults[ $entry ] : $entry,
+					'desc_tip' => '',
+				);
+			} elseif ( is_array( $entry ) && ! empty( $entry['id'] ) ) {
+				$id       = $entry['id'];
+				$label    = ! empty( $entry['label'] ) ? $entry['label'] : ( isset( $defaults[ $id ] ) ? $defaults[ $id ] : $id );
+				$desc_tip = ! empty( $entry['desc_tip'] ) ? $entry['desc_tip'] : '';
+				if ( $desc_tip ) {
+					$label .= ' <span class="dashicons dashicons-info conecom-desc-tip" data-tip="' . esc_attr( $desc_tip ) . '"></span>';
+				}
+				$normalized[ $id ] = array(
+					'id'       => $id,
+					'label'    => $label,
+					'desc_tip' => $desc_tip,
+				);
+			}
+		}
+		return $normalized;
+	}
+
+	/**
+	 * Render a WooCommerce-style tooltip after a field if desc_tip is set.
+	 *
+	 * @param array $args Field args passed from add_settings_field.
+	 * @return void
+	 */
+	protected function render_field_desc_tip( $args ) {
+		// Tooltip is rendered in the field label by normalize_settings_fields().
+	}
+
+	/**
 	 * Init for page
 	 *
 	 * @return void
 	 */
 	public function page_init() {
 		$settings_fields = ! empty( $this->options['settings_fields'] ) ? $this->options['settings_fields'] : array();
+		$settings_fields = $this->normalize_settings_fields( $settings_fields );
 
 		register_setting(
 			'connect_ecommerce_settings',
@@ -538,112 +620,122 @@ class Settings {
 			}
 
 			// URL.
-			if ( in_array( 'url', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['url'] ) ) {
 				add_settings_field(
 					'wcpimh_url',
-					__( 'URL', 'woocommerce-es' ),
+					$settings_fields['url']['label'],
 					array( $this, 'url_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['url']
 				);
 			}
 
 			// DB Name.
-			if ( in_array( 'dbname', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['dbname'] ) ) {
 				add_settings_field(
 					'wcpimh_dbname',
-					__( 'DB Name', 'woocommerce-es' ),
+					$settings_fields['dbname']['label'],
 					array( $this, 'dbname_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['dbname']
 				);
 			}
 
 			// Username.
-			if ( in_array( 'username', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['username'] ) ) {
 				add_settings_field(
 					'wcpimh_username',
-					__( 'Username', 'woocommerce-es' ),
+					$settings_fields['username']['label'],
 					array( $this, 'username_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['username']
 				);
 			}
 
 			// Password.
-			if ( in_array( 'password', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['password'] ) ) {
 				add_settings_field(
 					'wcpimh_password',
-					__( 'Password', 'woocommerce-es' ),
+					$settings_fields['password']['label'],
 					array( $this, 'password_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['password']
 				);
 			}
 
 			// Company.
-			if ( in_array( 'company', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['company'] ) ) {
 				add_settings_field(
 					'wcpimh_company',
-					__( 'Company', 'woocommerce-es' ),
+					$settings_fields['company']['label'],
 					array( $this, 'company_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['company']
 				);
 			}
 
 			// Domain.
-			if ( in_array( 'domain', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['domain'] ) ) {
 				add_settings_field(
 					'wcpimh_domain',
-					__( 'domain', 'woocommerce-es' ),
+					$settings_fields['domain']['label'],
 					array( $this, 'domain_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['domain']
 				);
 			}
 
 			// API Password.
-			if ( in_array( 'apipassword', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['apipassword'] ) ) {
 				add_settings_field(
 					'wcpimh_api',
-					__( 'API Key', 'woocommerce-es' ),
+					$settings_fields['apipassword']['label'],
 					array( $this, 'api_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['apipassword']
 				);
 			}
 
 			// Manufacturer Code.
-			if ( in_array( 'manufacturer_code', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['manufacturer_code'] ) ) {
 				add_settings_field(
 					'wcpimh_manufacturer_code',
-					__( 'Manufacturer Code', 'woocommerce-es' ),
+					$settings_fields['manufacturer_code']['label'],
 					array( $this, 'manufacturer_code_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['manufacturer_code']
 				);
 			}
 
 			// Customer Code.
-			if ( in_array( 'customer_code', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['customer_code'] ) ) {
 				add_settings_field(
 					'wcpimh_customer_code',
-					__( 'Customer Code', 'woocommerce-es' ),
+					$settings_fields['customer_code']['label'],
 					array( $this, 'customer_code_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['customer_code']
 				);
 			}
 
 			// Company Select.
-			if ( in_array( 'company_id', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['company_id'] ) ) {
 				add_settings_field(
 					'wcpimh_company_select',
-					__( 'Company', 'woocommerce-es' ),
+					$settings_fields['company_id']['label'],
 					array( $this, 'company_select_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['company_id']
 				);
 			}
 
@@ -777,23 +869,26 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
-			if ( in_array( 'approve_document', $settings_fields, true ) ) {
+			if ( isset( $settings_fields['approve_document'] ) ) {
 				add_settings_field(
 					'wcpimh_approve_document',
-					__( 'Approve document by default for validations?', 'woocommerce-es' ),
+					$settings_fields['approve_document']['label'],
 					array( $this, 'approve_document_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$settings_fields['approve_document']
 				);
 			}
 
-			if ( 'Holded' === $this->options['name'] || in_array( 'doctype', $settings_fields, true ) ) {
+			if ( 'Holded' === $this->options['name'] || isset( $settings_fields['doctype'] ) ) {
+				$doctype_args = isset( $settings_fields['doctype'] ) ? $settings_fields['doctype'] : array( 'id' => 'doctype', 'label' => __( 'Document to create after order completed?', 'woocommerce-es' ), 'desc_tip' => '' );
 				add_settings_field(
 					'wcpimh_doctype',
-					__( 'Document to create after order completed?', 'woocommerce-es' ),
+					$doctype_args['label'],
 					array( $this, 'doctype_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section',
+					$doctype_args
 				);
 			}
 
@@ -1590,73 +1685,85 @@ class Settings {
 	/**
 	 * URL input
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function url_callback() {
+	public function url_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="url" name="connect_ecommerce[' . esc_html( $this->connector ) . '][url]" id="wcpimh_url" value="%s">',
 			isset( $this->settings['url'] ) ? esc_attr( $this->settings['url'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
 	 * Username input
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function username_callback() {
+	public function username_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][username]" id="wcpimh_username" value="%s">',
 			isset( $this->settings['username'] ) ? esc_attr( $this->settings['username'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
 	 * DB Name input
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function dbname_callback() {
+	public function dbname_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][dbname]" id="wcpimh_dbname" value="%s">',
 			isset( $this->settings['dbname'] ) ? esc_attr( $this->settings['dbname'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
 	 * Password input
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function password_callback() {
+	public function password_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="password" name="connect_ecommerce[' . esc_html( $this->connector ) . '][password]" id="wcpimh_password" value="%s">',
 			isset( $this->settings['password'] ) ? esc_attr( $this->settings['password'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
 	 * Domain input
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function domain_callback() {
+	public function domain_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][domain]" id="wcpimh_domain" value="%s">',
 			isset( $this->settings['domain'] ) ? esc_attr( $this->settings['domain'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
-	 * Password input
+	 * Company input
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function company_callback() {
+	public function company_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][company]" id="wcpimh_company" value="%s">',
 			isset( $this->settings['company'] ) ? esc_attr( $this->settings['company'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
@@ -1695,13 +1802,15 @@ class Settings {
 	 * API input
 	 * API field
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function api_callback() {
+	public function api_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="password" name="connect_ecommerce[' . esc_html( $this->connector ) . '][api]" id="wcpimh_api" value="%s">',
 			isset( $this->settings['api'] ) ? esc_attr( $this->settings['api'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
@@ -1941,9 +2050,10 @@ class Settings {
 	/**
 	 * Call back for approve document
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function approve_document_callback() {
+	public function approve_document_callback( $args = array() ) {
 		$approve_document = isset( $this->settings['approve_document'] ) ? $this->settings['approve_document'] : 'no';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][approve_document]" id="wcpimh_approve_document">
@@ -1951,40 +2061,46 @@ class Settings {
 			<option value="yes" <?php selected( $approve_document, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
 		<?php
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
 	 * Manufacturer Code field
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function manufacturer_code_callback() {
+	public function manufacturer_code_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="text" name="connect_ecommerce[%s][manufacturer_code]" id="wcpimh_manufacturer_code" value="%s">',
 			esc_html( $this->connector ),
 			isset( $this->settings['manufacturer_code'] ) ? esc_attr( $this->settings['manufacturer_code'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
 	 * Customer Code field
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function customer_code_callback() {
+	public function customer_code_callback( $args = array() ) {
 		printf(
 			'<input class="regular-text" type="text" name="connect_ecommerce[%s][customer_code]" id="wcpimh_customer_code" value="%s">',
 			esc_html( $this->connector ),
 			isset( $this->settings['customer_code'] ) ? esc_attr( $this->settings['customer_code'] ) : ''
 		);
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
 	 * Document type
 	 *
+	 * @param array $args Field args.
 	 * @return void
 	 */
-	public function doctype_callback() {
+	public function doctype_callback( $args = array() ) {
 		$documents_type = array(
 			'nosync'       => __( 'Not sync', 'woocommerce-es' ),
 			'smart'        => __( 'Smart', 'woocommerce-es' ),
@@ -2005,6 +2121,7 @@ class Settings {
 			?>
 		</select>
 		<?php
+		$this->render_field_desc_tip( $args );
 	}
 
 	/**
@@ -2143,7 +2260,7 @@ class Settings {
 		$sync = isset( $this->settings['sync'] ) ? $this->settings['sync'] : 'no';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][sync]" id="wcpimh_sync">
-			<option value="no" <?php selected( $sync, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $sync, 'no' ); ?>><?php esc_html_e( 'Never', 'woocommerce-es' ); ?></option>
 			<?php
 			$periods = CRON::get_cron_periods();
 			if ( ! empty( $periods ) ) {
