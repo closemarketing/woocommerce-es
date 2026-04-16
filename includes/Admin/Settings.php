@@ -150,7 +150,8 @@ class Settings {
 		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
 		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
 
-		if ( ! empty( $this->connector ) && empty( $this->options ) ) {
+		// If connector is saved but the plugin is no longer active (no options/api loaded), still register the admin page so the user can change the connector.
+		if ( ! empty( $this->connector ) && empty( $this->options ) && ! empty( $this->connapi_erp ) ) {
 			return;
 		}
 
@@ -161,6 +162,18 @@ class Settings {
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
 		add_action( 'wp_ajax_connect_ecommerce_test_alert', array( $this, 'test_alert_callback' ) );
+	}
+
+	/**
+	 * Whether the saved connector is fully active (plugin loaded and options available).
+	 *
+	 * Returns false when a connector slug is saved but the corresponding plugin is
+	 * no longer active, so settings can still be shown to allow changing the connector.
+	 *
+	 * @return bool
+	 */
+	private function is_connector_active() {
+		return ! empty( $this->connector ) && ! empty( $this->options );
 	}
 
 	/**
@@ -205,7 +218,8 @@ class Settings {
 	 * @return void
 	 */
 	public function create_admin_page() {
-		if ( $this->connector ) {
+		$special_tabs = array();
+		if ( $this->is_connector_active() ) {
 			$this->settings_public         = get_option( 'connect_ecommerce_public' );
 			$this->settings_prod_mergevars = get_option( 'connect_ecommerce_prod_mergevars' );
 			$this->settings_ai             = get_option( 'connect_ecommerce_ai' );
@@ -234,8 +248,8 @@ class Settings {
 				<?php settings_errors(); ?>
 
 				<?php
-				// Main tabs.
-				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
+				// Main tabs. Default to settings when connector plugin is not active.
+				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : ( $this->is_connector_active() ? 'synchronization' : 'settings' );
 
 				// Subtabs.
 				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
@@ -250,7 +264,7 @@ class Settings {
 				?>
 				<h2 class="nav-tab-wrapper">
 					<?php
-					if ( $this->connector ) {
+					if ( $this->is_connector_active() ) {
 						?>
 						<a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
 						<?php
@@ -258,7 +272,7 @@ class Settings {
 					?>
 					<a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="nav-tab <?php echo 'settings' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'woocommerce-es' ); ?></a>
 					<?php
-					if ( $this->connector && in_array( 'subscriptions', $special_tabs, true ) ) {
+					if ( $this->is_connector_active() && in_array( 'subscriptions', $special_tabs, true ) ) {
 						?>
 						<a href="?page=connect_ecommerce&tab=subscriptions" class="nav-tab <?php echo 'subscriptions' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Subscriptions', 'woocommerce-es' ); ?></a>
 						<?php
@@ -284,7 +298,7 @@ class Settings {
 
 				<?php
 				// Subtabs for Synchronization.
-				if ( 'synchronization' === $active_tab && $this->connector ) {
+				if ( 'synchronization' === $active_tab && $this->is_connector_active() ) {
 					?>
 					<ul class="subsubsub">
 						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ''; ?></li>
@@ -305,24 +319,24 @@ class Settings {
 					?>
 					<ul class="subsubsub">
 						<li><a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="<?php echo 'connection' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Connection', 'woocommerce-es' ); ?></a> | </li>
-						<li><a href="?page=connect_ecommerce&tab=settings&subtab=vat_compliance" class="<?php echo 'vat_compliance' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'EU VAT Compliance', 'woocommerce-es' ); ?></a><?php echo ( $this->connector && $this->is_mergevars ) || ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
+						<li><a href="?page=connect_ecommerce&tab=settings&subtab=vat_compliance" class="<?php echo 'vat_compliance' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'EU VAT Compliance', 'woocommerce-es' ); ?></a><?php echo ( $this->is_connector_active() && $this->is_mergevars ) || ( ! $this->is_disabled_ai && $this->is_connector_active() ) ? ' | ' : ''; ?></li>
 						<?php
-						if ( $this->connector && $this->is_mergevars ) {
+						if ( $this->is_connector_active() && $this->is_mergevars ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->is_connector_active() ) ? ' | ' : ''; ?></li>
 							<?php
 						}
-						if ( $this->connector && $this->have_payments_methods ) {
+						if ( $this->is_connector_active() && $this->have_payments_methods ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->connector ) ? ' | ' : ''; ?></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->is_connector_active() ) ? ' | ' : ''; ?></li>
 							<?php
 						}
-						if ( ! $this->is_disabled_ai && $this->connector ) {
+						if ( ! $this->is_disabled_ai && $this->is_connector_active() ) {
 							?>
 							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'woocommerce-es' ); ?></a> | </li>
 							<?php
 						}
-						if ( $this->connector ) {
+						if ( $this->is_connector_active() ) {
 						?>
 							<li><a href="?page=connect_ecommerce&tab=settings&subtab=alerts" class="<?php echo 'alerts' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Alerts', 'woocommerce-es' ); ?></a></li>
 							<?php
@@ -344,6 +358,21 @@ class Settings {
 				// Settings Tab Content.
 				if ( 'settings' === $active_tab ) {
 					if ( 'connection' === $active_subtab ) {
+						if ( ! empty( $this->connector ) && ! $this->is_connector_active() ) {
+							?>
+							<div class="notice notice-warning">
+								<p>
+									<?php
+									printf(
+										/* translators: %s: connector slug */
+										esc_html__( 'The connector "%s" is saved but its plugin is not active. Select a different connector below.', 'woocommerce-es' ),
+										esc_html( $this->connector )
+									);
+									?>
+								</p>
+							</div>
+							<?php
+						}
 						?>
 						<form method="post" action="options.php">
 							<?php
@@ -526,7 +555,7 @@ class Settings {
 			'connect_woocommerce_setting_section'
 		);
 
-		if ( $this->connector ) {
+		if ( $this->connector && ! empty( $this->options ) ) {
 			if ( 'connwoo_neo' === $this->options['slug'] ) {
 				add_settings_field(
 					'wcpimh_idcentre',
