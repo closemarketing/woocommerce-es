@@ -20,6 +20,20 @@ Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance is the ulti
 
 Whether you're managing a small online store or a large e-commerce operation, this powerful plugin eliminates manual data entry, reduces errors, and saves countless hours of administrative work. Automatically synchronize your products, customers, and orders between WooCommerce and your ERP or CRM system, ensuring your inventory, customer database, and sales data are always up-to-date across all platforms.
 
+**Available Connectors**
+
+Free connector included:
+- [Clientify](https://close.marketing/likes/clientify/)
+
+Premium connectors:
+- [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+- [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
+- [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
+- [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
+- [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
+
+Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
+
 **Complete EU VAT Compliance Made Simple**
 
 Stay compliant with European tax regulations effortlessly. The plugin includes comprehensive VAT number validation using the official VIES service, with optional VATSense integration for enhanced reliability. Real-time validation during checkout ensures accurate B2B transactions, automatically applying zero VAT rates for valid intra-community transactions while maintaining full compliance with EU directives.
@@ -118,22 +132,10 @@ This plugin also includes specific adjustments to comply with Verifactu regulati
 - Complies with Verifactu and GDPR.
 - For ERPs that support it, you can send the payment method.
 
-This plugin serves as the foundation for various connectors. The free version supports:
-- [Clientify](https://close.marketing/likes/clientify/)
-
 **Merge variables**
 You can use this section to merge variables from ERP to WooCommerce. That means that you can merge categories, attributes, products, custom fields, taxonomies, etc.
 
 You will need to add Payment methods to merge variables to send the payment method to the ERP.
-
-Premium connectors include:
-- [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
-- [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
-- [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
-- [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
-- [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
-
-Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
 
 == Frequently Asked Questions ==
 
