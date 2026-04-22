@@ -110,17 +110,13 @@ class MyAccount {
 	public function add_account_orders_column_rows( $order ) {
 		$api_doc_id = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 
-		if ( ! empty( $api_doc_id ) ) {
-			$api_doc_type  = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
-			if ( empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
-				return;
-			}
-			$document_file = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
-			if ( $document_file ) {
-				$nonce        = wp_create_nonce( 'cwc-document-nonce' );
-				echo '<a href=' . esc_url( admin_url( 'admin-ajax.php?action=cwc_document_download&doc_id=' . esc_attr( $api_doc_id ) . '&doc_type=' . esc_attr( $api_doc_type ) . '&nonce=' . $nonce ) ) . ' class="button button-primary" target="_blank">';
-				echo esc_html__( 'Download', 'woocommerce-es' ) . '</a>';
-			}
+		if ( ! empty( $api_doc_id ) && ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_order_pdf' ) && 'completed' === $order->get_status() ) {
+			$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
+			$nonce        = wp_create_nonce( 'cwc-document-nonce' );
+			echo '<a href=' . esc_url( admin_url( 'admin-ajax.php?action=cwc_document_download&doc_id=' . esc_attr( $api_doc_id ) . '&doc_type=' . esc_attr( $api_doc_type ) . '&nonce=' . $nonce ) ) . ' class="button button-primary" target="_blank">';
+			echo esc_html__( 'Download', 'woocommerce-es' ) . '</a>';
+		} else {
+			echo esc_html__( 'Not available', 'woocommerce-es' );
 		}
 	}
 

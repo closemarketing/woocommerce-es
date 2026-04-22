@@ -96,7 +96,7 @@ class Widget_Order {
 
 		$label = $invoice_id ? __( 'Update to ERP', 'woocommerce-es' ) : __( 'Send to ERP', 'woocommerce-es' );
 
-		echo '<br/><br/><div name="grao-sync-order" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
+		echo '<br/><br/><div name="sync-erp-orders" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncOrderERP(' . esc_html( $order_id );
 		echo ',this.id,\'erp-post\')">' . esc_html( $label ) . '</div>';
 		echo '</td></tr>';
