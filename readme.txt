@@ -219,6 +219,12 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = n.e.x.t =
+* Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
+* Fixed: Admin CSS and WooCommerce schedule action on purchase.
+* Enhancement: My Account orders column — refactored and now shows an empty-state message when no orders are found.
+* Enhancement: Product import progress bar is always visible during import.
+* Enhancement: Added `is_connector_active()` check to prevent settings errors when the configured connector class is not loaded.
+* Fixed: Send to ERP button label updated.
 * Fixed: Error decimals in tax rates.
 * Added: Support to Factusol connector.
 * **Sync settings refactor:** Removed Synchronization > Automate tab; sync frequency ("When do you want to sync?") is now set on Synchronization > Products in the Automatic Sync section.
