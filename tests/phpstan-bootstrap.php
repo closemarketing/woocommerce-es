@@ -50,10 +50,27 @@ if (!function_exists('conecom_get_options')) {
 }
 
 
-// Mock Action Scheduler function
+// Mock Action Scheduler functions
 if (!function_exists('as_schedule_recurring_action')) {
     function as_schedule_recurring_action($timestamp, $interval_in_seconds, $hook, $args = [], $group = '') {
         return true;
+    }
+}
+
+if (!function_exists('as_get_scheduled_actions')) {
+    /**
+     * @param array<string, mixed> $args
+     * @param string $return_format
+     * @return array<int>|array<object>
+     */
+    function as_get_scheduled_actions($args = [], $return_format = 'objects') {
+        return [];
+    }
+}
+
+if (!class_exists('ActionScheduler_Store')) {
+    class ActionScheduler_Store {
+        const STATUS_PENDING = 'pending';
     }
 }
 
