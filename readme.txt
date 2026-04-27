@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 6.9
-Stable tag: 3.3.2
-Version: 3.3.2
+Stable tag: 3.3.3
+Version: 3.3.3
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -27,6 +27,7 @@ Free connector included:
 
 Premium connectors:
 - [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+- [FactuSol](https://close.technology/en/wordpress-plugins/connect-woocommerce-factusol/)
 - [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
 - [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
 - [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
@@ -220,7 +221,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= n.e.x.t =
+= 3.3.3 =
 * Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
 * Fixed: Admin CSS and WooCommerce schedule action on purchase.
 * Enhancement: My Account orders column — refactored and now shows an empty-state message when no orders are found.

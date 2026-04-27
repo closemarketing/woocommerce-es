@@ -1,17 +1,25 @@
+# General
+.DS_Store
+composer.json
+composer.lock
+
+# Version Control
+.github
+.gitignore
 .distignore
 .editorconfig
 .git
 .gitignore
-.DS_Store
-composer.lock
-.wordpress-org
-docs/
-changelog.md
-readme.md
-.cursor
 
-# PHP Unit
-.github
+# Develop
+node_modules/
+package.json
+package-lock.json
+
+# WordPress
+.wordpress-org
+
+# Testing
 .travis.yml
 circle.yml
 .phpcs.xml.dist
@@ -22,4 +30,11 @@ phpcs.xml.dist
 phpstan.neon.dist
 tests/
 bin/
+.wp-env.json
+
+# AI
+AGENTS.md
+CLAUDE.md
+.claude/
+.cursor/
 docs/
