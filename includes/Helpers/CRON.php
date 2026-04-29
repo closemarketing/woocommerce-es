@@ -67,15 +67,14 @@ class CRON {
 				if ( empty( $api_products ) ) {
 					break;
 				}
-				$sync_loop++;
+				++$sync_loop;
 				$count_products = count( $api_products );
 				$products       = array_merge( $products, $api_products );
 			} while ( $count_products === $api_pagination );
-
 		} else {
 			$products = $api_erp->get_products();
 		}
-			
+
 		if ( ! is_array( $products ) ) {
 			return false;
 		}
@@ -281,8 +280,8 @@ class CRON {
 		if ( 'no' === $sync_period ) {
 			return false;
 		}
-		$periods     = self::get_cron_periods();
-		$pos         = array_search( $sync_period, array_column( $periods, 'cron' ), true );
+		$periods = self::get_cron_periods();
+		$pos     = array_search( $sync_period, array_column( $periods, 'cron' ), true );
 
 		return false !== $pos ? $periods[ $pos ] : end( $periods );
 	}

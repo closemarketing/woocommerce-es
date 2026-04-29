@@ -30,7 +30,7 @@ class Import_Products_Command {
 	 * @return void
 	 */
 	public function products( $args, $assoc_args ) {
-		$assoc_args = wp_parse_args(
+		$assoc_args      = wp_parse_args(
 			$assoc_args,
 			array(
 				'update' => false,
@@ -60,8 +60,8 @@ class Import_Products_Command {
 
 		$options        = $connector_data['options'];
 		$connapi_erp    = $connector_data['connapi_erp'];
-		$api_pagination  = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
-		$generate_ai     = $assoc_args['ai'] ?? 'none';
+		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
+		$generate_ai    = $assoc_args['ai'] ?? 'none';
 
 		// Loop Products.
 		$sync_loop       = 0;
@@ -70,7 +70,7 @@ class Import_Products_Command {
 		$synced_products = 0;
 		do {
 			$message = sprintf(
-				__( 'Fetching %s products from %s', 'woocommerce-es' ),
+				__( 'Fetching %1$s products from %2$s', 'woocommerce-es' ),
 				$api_pagination,
 				$connector
 			);
@@ -92,27 +92,26 @@ class Import_Products_Command {
 				$page        = intval( $sync_loop / $api_pagination, 0 );
 				$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $generate_ai );
 
-				$sync_loop   = $page * $api_pagination + $key;
-				$message = '[' . $sync_loop + 1 . '/' . $page . '] ';
-				$message .= $result_sync['status'] . ' ';
-				$message .= wp_strip_all_tags($result_sync['message']);
-				$message .= ! empty( $result_sync['post_id'] ) ? ' POSTID: ' . $result_sync['post_id'] : '';
+				$sync_loop = $page * $api_pagination + $key;
+				$message   = '[' . $sync_loop + 1 . '/' . $page . '] ';
+				$message  .= $result_sync['status'] . ' ';
+				$message  .= wp_strip_all_tags( $result_sync['message'] );
+				$message  .= ! empty( $result_sync['post_id'] ) ? ' POSTID: ' . $result_sync['post_id'] : '';
 				WP_CLI::line( $this->cli_header_line() . $message );
 
 				if ( ! empty( $result_sync['post_id'] ) ) {
-					$synced_products++;
+					++$synced_products;
 				}
 
 				++$sync_loop;
 			}
 
 			$continue = $products_count < $api_pagination ? false : true;
-
 		} while ( $continue );
 
 		// Resume.
 		$message = sprintf(
-			__( 'Products imported: %s / %s . Total time: %s', 'woocommerce-es' ),
+			__( 'Products imported: %1$s / %2$s . Total time: %3$s', 'woocommerce-es' ),
 			$synced_products,
 			$sync_loop,
 			HELPER::time_total_text( $time_start )

@@ -59,7 +59,7 @@ class TAX {
 			$attribute->set_options( $attr_values );
 
 			$attributes_return[] = $attribute;
-			$position++;
+			++$position;
 		}
 		return $attributes_return;
 	}
@@ -158,7 +158,7 @@ class TAX {
 					$cats_ids[ $level ] = $term['term_id'];
 				}
 			}
-			$level++;
+			++$level;
 		}
 
 		return $cats_ids;
@@ -177,7 +177,7 @@ class TAX {
 			return array();
 		}
 		$categories_ids = array();
-		$category_newp = isset( $settings['catnp'] ) ? $settings['catnp'] : 'yes';
+		$category_newp  = isset( $settings['catnp'] ) ? $settings['catnp'] : 'yes';
 
 		if ( ( 'yes' === $category_newp && $is_new_product ) || 'no' === $category_newp ) {
 			$categories_name = self::split_categories_name( $settings, $item_type );
@@ -216,7 +216,7 @@ class TAX {
 
 		foreach ( $items_cat_value as $item_cat_value ) {
 			// Custom merge categories.
-			if ( ! empty( $settings_mergevars['prod_mergevars'] ) ){
+			if ( ! empty( $settings_mergevars['prod_mergevars'] ) ) {
 				foreach ( $settings_mergevars['prod_mergevars'] as $source => $target ) {
 					$target_cat      = explode( '|', $target );
 					$source_cat      = explode( '|', $source );
@@ -288,14 +288,14 @@ class TAX {
 		if ( is_wp_error( $terms ) ) {
 			return array();
 		}
-		
+
 		$terms_wp = wp_list_pluck( $terms, 'name', 'term_id' );
 		$terms    = array();
-		
+
 		foreach ( $terms_wp as $term_id => $term_name ) {
 			$term_parent = get_term( $term_id, 'product_cat' );
-			$label = $term_name;
-			
+			$label       = $term_name;
+
 			// Add parent term information if it exists
 			if ( $term_parent && $term_parent->parent > 0 ) {
 				$parent_term = get_term( $term_parent->parent, 'product_cat' );
@@ -303,7 +303,7 @@ class TAX {
 					$label = $parent_term->name . ' > ' . $term_name;
 				}
 			}
-			
+
 			$terms[ 'product_cat|' . $term_id ] = $label;
 		}
 		return $terms;
@@ -312,14 +312,14 @@ class TAX {
 	/**
 	 * Assigns the array to a taxonomy, and creates missing term
 	 *
-	 * @param string $post_id Post id of actual post id.
-	 * @param array  $taxonomy_slug Slug of taxonomy.
-	 * @param array|string  $terms Array of terms.
+	 * @param string       $post_id Post id of actual post id.
+	 * @param array        $taxonomy_slug Slug of taxonomy.
+	 * @param array|string $terms Array of terms.
 	 * @return void
 	 */
 	public static function assign_product_term( $post_id, $taxonomy_slug, $terms ) {
 		$parent_term      = '';
-		$terms						= is_array( $terms ) ? $terms : array( $terms );
+		$terms            = is_array( $terms ) ? $terms : array( $terms );
 		$term_levels      = count( $terms );
 		$term_level_index = 1;
 
@@ -341,7 +341,7 @@ class TAX {
 					$args_term
 				);
 			}
-			
+
 			// Check if term was found or created successfully
 			if ( ! is_wp_error( $search_term ) && $term_level_index === $term_levels ) {
 				$term_id = isset( $search_term['term_id'] ) ? (int) $search_term['term_id'] : (int) $search_term;
@@ -350,7 +350,7 @@ class TAX {
 
 			// Next iteration for child.
 			$parent_term = (int) $search_term['term_id'];
-			$term_level_index++;
+			++$term_level_index;
 		}
 	}
 

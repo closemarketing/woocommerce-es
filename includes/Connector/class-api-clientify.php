@@ -165,13 +165,13 @@ class Connect_Ecommerce_Clientify {
 		while ( $next ) {
 			$result_api = wp_remote_request( $url, $args );
 			if ( is_wp_error( $result_api ) ) {
-				return [
+				return array(
 					'status' => 'error',
 					'data'   => null,
-				];
+				);
 			}
-			$results    = json_decode( wp_remote_retrieve_body( $result_api ), true );
-			$code       = isset( $result_api['response']['code'] ) ? (int) round( $result_api['response']['code'] / 100, 0 ) : 0;
+			$results = json_decode( wp_remote_retrieve_body( $result_api ), true );
+			$code    = isset( $result_api['response']['code'] ) ? (int) round( $result_api['response']['code'] / 100, 0 ) : 0;
 
 			if ( 2 === $code && 'simple' === $type ) {
 				return array(
@@ -251,7 +251,7 @@ class Connect_Ecommerce_Clientify {
 	 * @return array
 	 */
 	public function create_order( $order, $doc_id, $invoice_id, $force ) {
-		$api_key   = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
+		$api_key = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
 
 		if ( empty( $order ) ) {
 			return array(
@@ -344,7 +344,6 @@ class Connect_Ecommerce_Clientify {
 		$order_clientify['contact'] = $result_clientify['data']['url'];
 		$result_order               = $this->api( 'orders/', $api_key, 'POST', $order_clientify );
 		if ( ! empty( $result_order['data']['id'] ) && 'error' !== $result_order['status'] ) {
-
 			$clientify_sale_id = isset( $result_order['data']['id'] ) ? $result_order['data']['id'] : 0;
 			return array(
 				'status'      => 'ok',

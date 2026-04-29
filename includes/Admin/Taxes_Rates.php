@@ -88,18 +88,18 @@ class Taxes_Rates {
 				wrapper.innerHTML = `
 					<div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 10px;\">
 						<label for=\"connect-rate-type\" style=\"font-weight: bold;\">
-							" . esc_html__( 'Rate Type:', 'woocommerce-es' ) . "
+							" . esc_html__( 'Rate Type:', 'woocommerce-es' ) . '
 						</label>
-						<select id=\"connect-rate-type\" class=\"regular-text\" style=\"width: auto;\">
-							<option value=\"standard_rate\">" . esc_html__( 'Standard Rate', 'woocommerce-es' ) . "</option>
-							<option value=\"reduced_rate\">" . esc_html__( 'Reduced Rate', 'woocommerce-es' ) . "</option>
-							<option value=\"reduced_rate_alt\">" . esc_html__( 'Reduced Rate Alt', 'woocommerce-es' ) . "</option>
-							<option value=\"super_reduced_rate\">" . esc_html__( 'Super Reduced Rate', 'woocommerce-es' ) . "</option>
-							<option value=\"zero_rate\">" . esc_html__( 'Zero Rate', 'woocommerce-es' ) . "</option>
-							<option value=\"all\">" . esc_html__( 'All Rates', 'woocommerce-es' ) . "</option>
+						<select id="connect-rate-type" class="regular-text" style="width: auto;">
+							<option value="standard_rate">' . esc_html__( 'Standard Rate', 'woocommerce-es' ) . '</option>
+							<option value="reduced_rate">' . esc_html__( 'Reduced Rate', 'woocommerce-es' ) . '</option>
+							<option value="reduced_rate_alt">' . esc_html__( 'Reduced Rate Alt', 'woocommerce-es' ) . '</option>
+							<option value="super_reduced_rate">' . esc_html__( 'Super Reduced Rate', 'woocommerce-es' ) . '</option>
+							<option value="zero_rate">' . esc_html__( 'Zero Rate', 'woocommerce-es' ) . '</option>
+							<option value="all">' . esc_html__( 'All Rates', 'woocommerce-es' ) . '</option>
 						</select>
-						<button type=\"button\" id=\"connect-update-tax-rates\" class=\"button button-primary\">
-							" . esc_html__( 'Update Tax Rates from EU Database', 'woocommerce-es' ) . "
+						<button type="button" id="connect-update-tax-rates" class="button button-primary">
+							' . esc_html__( 'Update Tax Rates from EU Database', 'woocommerce-es' ) . "
 						</button>
 					</div>
 					<div id=\"connect-tax-rates-message\"></div>

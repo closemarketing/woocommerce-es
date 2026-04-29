@@ -199,17 +199,17 @@ class PROD {
 					if ( ! empty( $result_ai['data']['title'] ) ) {
 						$product_info['post_title'] = $result_ai['data']['title'];
 					} else {
-						$message .=  __( 'Title not generated. ', 'woocommerce-es' );
+						$message .= __( 'Title not generated. ', 'woocommerce-es' );
 					}
 					if ( ! empty( $result_ai['data']['body'] ) ) {
 						$product_info['post_content'] = $result_ai['data']['body'];
 					} else {
-						$message .=  __( 'Post content not generated. ', 'woocommerce-es' );
+						$message .= __( 'Post content not generated. ', 'woocommerce-es' );
 					}
 					if ( ! empty( $result_ai['data']['seo_description'] ) ) {
 						$product_info['post_excerpt'] = $result_ai['data']['seo_description'];
 					} else {
-						$message .=  __( 'Post excerpt not generated. ', 'woocommerce-es' );
+						$message .= __( 'Post excerpt not generated. ', 'woocommerce-es' );
 					}
 
 					// Update product.
@@ -278,21 +278,21 @@ class PROD {
 		} catch ( \Exception $e ) {
 			return array(
 				'status'  => 'error',
-				'props'   => [],
+				'props'   => array(),
 				'message' => __( 'Error creating variable product: ', 'woocommerce-es' ) . $e->getMessage(),
 			);
 		}
 
 		// Common and default properties.
-		$product_props     = array(
-			'stock_status'     => 'instock',
-			'backorders'       => $allow_backorders,
-			'regular_price'    => self::get_rate_price( $item, $rate_id ),
-			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
-			'width'            => isset( $item['width'] ) ? $item['width'] : '',
-			'height'           => isset( $item['height'] ) ? $item['height'] : '',
+		$product_props = array(
+			'stock_status'  => 'instock',
+			'backorders'    => $allow_backorders,
+			'regular_price' => self::get_rate_price( $item, $rate_id ),
+			'length'        => isset( $item['lenght'] ) ? $item['lenght'] : '',
+			'width'         => isset( $item['width'] ) ? $item['width'] : '',
+			'height'        => isset( $item['height'] ) ? $item['height'] : '',
 		);
-		$price_sale = self::get_sale_price( $item, $settings );
+		$price_sale    = self::get_sale_price( $item, $settings );
 		if ( ! empty( $price_sale ) ) {
 			$product_props['sale_price'] = $price_sale;
 		}
@@ -354,11 +354,12 @@ class PROD {
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
 					$product_props['stock_status']       = 'instock';
 					$product_props['catalog_visibility'] = 'visible';
-					
+
 					try {
 						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
 						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					} catch ( \Exception $e ) {
+					}
 				} elseif ( 'yes' === $import_stock && $item_stock > 0 ) {
 					$product_props['manage_stock']       = true;
 					$product_props['stock_quantity']     = $item_stock;
@@ -368,7 +369,8 @@ class PROD {
 					try {
 						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
 						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					} catch ( \Exception $e ) {
+					}
 				} elseif ( 'yes' === $import_stock && 0 === $item_stock ) {
 					$product_props['manage_stock']       = true;
 					$product_props['catalog_visibility'] = 'hidden';
@@ -377,7 +379,8 @@ class PROD {
 					// Only call taxonomy functions if taxonomy exists
 					try {
 						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					} catch ( \Exception $e ) {
+					}
 				} else {
 					$product_props['manage_stock']       = true;
 					$product_props['catalog_visibility'] = 'hidden';
@@ -386,7 +389,8 @@ class PROD {
 					// Only call taxonomy functions if taxonomy exists
 					try {
 						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					} catch ( \Exception $e ) {
+					}
 				}
 				break;
 			case 'variable':
@@ -400,7 +404,7 @@ class PROD {
 		}
 
 		// Set attributes.
-		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
+		$attributes     = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
 		$categories_ids = TAX::assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product );
 		if ( ! empty( $categories_ids ) ) {
 			$product_props['category_ids'] = $categories_ids;
@@ -507,12 +511,10 @@ class PROD {
 			} else {
 				$message .= __( 'Subproduct synced: ', 'woocommerce-es' );
 			}
-		} else {
-			if ( ! $post_id ) {
+		} elseif ( ! $post_id ) {
 				$message .= __( 'Product created: ', 'woocommerce-es' );
-			} else {
-				$message .= __( 'Product synced: ', 'woocommerce-es' );
-			}
+		} else {
+			$message .= __( 'Product synced: ', 'woocommerce-es' );
 		}
 		$message .= $item['name'] . '. SKU: ' . $item['sku'] . ' (' . $item['kind'] . ')' . $result_prod['message'] ?? '';
 
@@ -701,7 +703,7 @@ class PROD {
 					$attributes[ $attribute['name'] ][] = $attribute['value'];
 				}
 
-				$attribute_name = wc_sanitize_taxonomy_name( $attribute['name'] );
+				$attribute_name                                       = wc_sanitize_taxonomy_name( $attribute['name'] );
 				$attributes_prod[ 'attribute_pa_' . $attribute_name ] = wc_sanitize_taxonomy_name( $attribute['value'] );
 
 				$att_props = TAX::make_attributes( $attributes, false );
@@ -756,8 +758,8 @@ class PROD {
 	/**
 	 * Filters product to not import to web
 	 *
-	 * @param  array  $settings Settings of the plugin.
-	 * @param  array  $item Item product to filter.
+	 * @param  array $settings Settings of the plugin.
+	 * @param  array $item Item product to filter.
 	 *
 	 * @return boolean True to not get the product, false to get it.
 	 */
@@ -794,9 +796,9 @@ class PROD {
 		$tags_option = array_map( 'trim', $tags_option );
 		$tags_option = array_map( 'sanitize_text_field', $tags_option );
 
-		$tags_prod   = array_map( 'trim', $item['tags'] );
-		$tags_prod   = array_map( 'sanitize_text_field', $tags_prod );
-		$tags_prod   = array_filter( $tags_prod );
+		$tags_prod = array_map( 'trim', $item['tags'] );
+		$tags_prod = array_map( 'sanitize_text_field', $tags_prod );
+		$tags_prod = array_filter( $tags_prod );
 
 		return empty( array_intersect( $tags_option, $tags_prod ) ) ? true : false;
 	}
@@ -815,7 +817,7 @@ class PROD {
 			'post_status'  => ! empty( $settings['prodst'] ) ? $settings['prodst'] : 'draft',
 			'post_type'    => 'product',
 		);
-		$post_id   = wp_insert_post( $post_arg );
+		$post_id  = wp_insert_post( $post_arg );
 		if ( $post_id ) {
 			update_post_meta( $post_id, '_sku', $item['sku'] );
 		}
@@ -871,11 +873,11 @@ class PROD {
 			),
 			ARRAY_A
 		);
-		$data = array();
+		$data    = array();
 		if ( ! empty( $results ) ) {
 			foreach ( $results as $row ) {
-				$sku = $row['sku'];
-				$ts  = ! empty( $row['conecom_updated'] ) && is_numeric( $row['conecom_updated'] )
+				$sku          = $row['sku'];
+				$ts           = ! empty( $row['conecom_updated'] ) && is_numeric( $row['conecom_updated'] )
 					? (int) $row['conecom_updated']
 					: null;
 				$data[ $sku ] = array(
@@ -926,7 +928,7 @@ class PROD {
 	 * Gets image from API products
 	 *
 	 * @param array  $item Item of API to get information.
-	 * @param int $product_id Id of product to get information.
+	 * @param int    $product_id Id of product to get information.
 	 * @param object $api_erp API Object.
 	 *
 	 * @return bool
@@ -948,12 +950,12 @@ class PROD {
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
-			if ( isset( $result_api['upload']['url'] ) ){
-				$images[] = [
+			if ( isset( $result_api['upload']['url'] ) ) {
+				$images[] = array(
 					'url'          => $result_api['upload']['url'],
 					'file'         => $result_api['upload']['file'],
 					'content_type' => $result_api['content_type'],
-				];
+				);
 			}
 		}
 
@@ -973,9 +975,9 @@ class PROD {
 	/**
 	 * Adds image to product
 	 *
-	 * @param int    $product_id Product ID.
-	 * @param array|string  $image Image data.
-	 * @param bool   $first_image If is the first image for thumbnail.
+	 * @param int          $product_id Product ID.
+	 * @param array|string $image Image data.
+	 * @param bool         $first_image If is the first image for thumbnail.
 	 *
 	 * @return int $attach_id Attachment ID.
 	 */
@@ -983,7 +985,7 @@ class PROD {
 		if ( empty( $image_data ) ) {
 			return;
 		}
-		$image      = is_array( $image_data ) ? $image_data : [ 'url' => $image_data ];
+		$image      = is_array( $image_data ) ? $image_data : array( 'url' => $image_data );
 		$attachment = array(
 			'guid'           => $image['url'] ?? '',
 			'post_mime_type' => $image['content_type'] ?? '',
@@ -992,15 +994,15 @@ class PROD {
 			'post_status'    => 'inherit',
 		);
 
-		if ( empty( $image['file'] ) ) { 
+		if ( empty( $image['file'] ) ) {
 			// Download image to server
 			$image_url = $image['url'] ?? '';
 			if ( empty( $image_url ) ) {
 				return;
 			}
 
-			$handle_file         = [];
-			$handle_file['name'] = basename( $image_url );
+			$handle_file             = array();
+			$handle_file['name']     = basename( $image_url );
 			$handle_file['tmp_name'] = download_url( $image_url );
 
 			if ( empty( $attachment['post_mime_type'] ) && ! empty( $handle_file['tmp_name'] ) && file_exists( $handle_file['tmp_name'] ) ) {
@@ -1018,7 +1020,7 @@ class PROD {
 
 			// Prevents scripts in the name of the file.
 			$base_name_after_download = basename( $handle_file['tmp_name'] );
-			$handle_file['name'] = $base_name_after_download;
+			$handle_file['name']      = $base_name_after_download;
 
 			// Check if the file already exists in the media library by GUID (URL)
 			$attach_id = self::search_image( $image['url'] );
@@ -1028,8 +1030,8 @@ class PROD {
 			}
 
 			// Check for attachment errors
-			if (is_wp_error($attach_id)) {
-				@unlink($handle_file['tmp_name']);
+			if ( is_wp_error( $attach_id ) ) {
+				@unlink( $handle_file['tmp_name'] );
 				return;
 			}
 		} else {
@@ -1037,7 +1039,7 @@ class PROD {
 				return;
 			}
 
-			$attach_id  = wp_insert_attachment( $attachment, $image['file'], 0 );
+			$attach_id = wp_insert_attachment( $attachment, $image['file'], 0 );
 		}
 
 		if ( $first_image ) {
@@ -1063,13 +1065,14 @@ class PROD {
 		global $wpdb;
 		$attach_id = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT ID FROM $wpdb->posts WHERE guid LIKE %s AND post_type = 'attachment' LIMIT 1", '%' . $wpdb->esc_like( $image_url )
+				"SELECT ID FROM $wpdb->posts WHERE guid LIKE %s AND post_type = 'attachment' LIMIT 1",
+				'%' . $wpdb->esc_like( $image_url )
 			)
 		);
 
 		// If not found by URL, try searching by filename in the postmeta '_wp_attached_file'
 		if ( ! $attach_id && ! empty( $image_url ) ) {
-			$filename = basename( $image_url );
+			$filename  = basename( $image_url );
 			$attach_id = $wpdb->get_var(
 				$wpdb->prepare(
 					"SELECT p.ID FROM $wpdb->posts p
@@ -1082,7 +1085,7 @@ class PROD {
 				)
 			);
 		}
-		return (int) $attach_id; 
+		return (int) $attach_id;
 	}
 
 	/**
@@ -1128,53 +1131,53 @@ class PROD {
 	/**
 	 * Update SEO for product
 	 *
-	 * @param int    $product_id Product ID.
+	 * @param int   $product_id Product ID.
 	 * @param array $seo_data SEO data.
-	 * 
+	 *
 	 * @return void
 	 */
 	private static function update_product_seo( $product_id, $seo_data ) {
 		$plugins_seo_meta = array(
-			'wordpress-seo/wp-seo.php' => [ // Yoast
-				'seo_title' => '_yoast_wpseo_title',
+			'wordpress-seo/wp-seo.php'                    => array( // Yoast
+				'seo_title'       => '_yoast_wpseo_title',
 				'seo_description' => '_yoast_wpseo_metadesc',
-				'seo_keyword' => '_yoast_wpseo_keywords',
-			],
-			'wordpress-seo-premium/wp-seo-premium.php' => [ // Yoast Premium
-				'seo_title' => '_yoast_wpseo_title',
+				'seo_keyword'     => '_yoast_wpseo_keywords',
+			),
+			'wordpress-seo-premium/wp-seo-premium.php'    => array( // Yoast Premium
+				'seo_title'       => '_yoast_wpseo_title',
 				'seo_description' => '_yoast_wpseo_metadesc',
-				'seo_keyword' => '_yoast_wpseo_keywords',
-			],
-			'seo-by-rank-math/rank-math.php' => [ // Rank Math
-				'seo_title' => 'rank_math_title',
+				'seo_keyword'     => '_yoast_wpseo_keywords',
+			),
+			'seo-by-rank-math/rank-math.php'              => array( // Rank Math
+				'seo_title'       => 'rank_math_title',
 				'seo_description' => 'rank_math_description',
-				'seo_keyword' => 'rank_math_focus_keyword',
-			],
-			'seopress/seopress.php' => [ // SEO Press
-				'seo_title' => '_seopress_titles_title',
+				'seo_keyword'     => 'rank_math_focus_keyword',
+			),
+			'seopress/seopress.php'                       => array( // SEO Press
+				'seo_title'       => '_seopress_titles_title',
 				'seo_description' => '_seopress_titles_description',
-				'seo_keyword' => '_seopress_titles_keywords',
-			],
-			'all-in-one-seo-pack/all_in_one_seo_pack.php' => [ // All in One SEO Pack
-				'seo_title' => '_aioseop_title',
+				'seo_keyword'     => '_seopress_titles_keywords',
+			),
+			'all-in-one-seo-pack/all_in_one_seo_pack.php' => array( // All in One SEO Pack
+				'seo_title'       => '_aioseop_title',
 				'seo_description' => '_aioseop_description',
-				'seo_keyword' => '_aioseop_keywords',
-			],
-			'seopress-pro/seopress-pro.php' => [ // SEO Press Pro
-				'seo_title' => '_seopress_titles_title',
+				'seo_keyword'     => '_aioseop_keywords',
+			),
+			'seopress-pro/seopress-pro.php'               => array( // SEO Press Pro
+				'seo_title'       => '_seopress_titles_title',
 				'seo_description' => '_seopress_titles_description',
-				'seo_keyword' => '_seopress_titles_keywords',
-			],
-			'wp-meta-seo/wp-meta-seo.php' => [ // WP Meta SEO
-				'seo_title' => '_wpseo_title',
+				'seo_keyword'     => '_seopress_titles_keywords',
+			),
+			'wp-meta-seo/wp-meta-seo.php'                 => array( // WP Meta SEO
+				'seo_title'       => '_wpseo_title',
 				'seo_description' => '_wpseo_metadesc',
-				'seo_keyword' => '_wpseo_keywords',
-			],
-			'autodescription/autodescription.php' => [ // SEO Framework
-				'seo_title' => '_autodescription_title',
+				'seo_keyword'     => '_wpseo_keywords',
+			),
+			'autodescription/autodescription.php'         => array( // SEO Framework
+				'seo_title'       => '_autodescription_title',
 				'seo_description' => '_autodescription_description',
-				'seo_keyword' => '_autodescription_keywords',
-			],
+				'seo_keyword'     => '_autodescription_keywords',
+			),
 		);
 
 		foreach ( $plugins_seo_meta as $plugin => $meta ) {

@@ -241,7 +241,7 @@ class Import_Products {
 		$generate_ai    = ! empty( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
 		$mode           = isset( $_POST['mode'] ) ? sanitize_text_field( wp_unslash( $_POST['mode'] ) ) : 'all';
 		// Mode (updated|all) can be used in future to filter products to sync when get_all_product_skus exists.
-		$mode = in_array( $mode, array( 'updated', 'all' ), true ) ? $mode : 'all';
+		$mode           = in_array( $mode, array( 'updated', 'all' ), true ) ? $mode : 'all';
 		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
 		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 
@@ -276,15 +276,17 @@ class Import_Products {
 		if ( 0 === $sync_loop || ( $api_pagination && $api_pagination > 0 && 0 === $loop_page ) ) {
 			$api_products                     = $this->connapi_erp->get_products( null, $sync_loop );
 			$_SESSION['conecom_api_products'] = HELPER::sanitize_array_recursive( $api_products );
-			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
+			$res_message                     .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
 
 			if ( $sync_loop > 0 && empty( $api_products ) ) {
-				wp_send_json_success( array(
-					'loop'          => $sync_loop,
-					'message'       => '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>',
-					'finish'        => true,
-					'product_count' => 0,
-				) );
+				wp_send_json_success(
+					array(
+						'loop'          => $sync_loop,
+						'message'       => '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>',
+						'finish'        => true,
+						'product_count' => 0,
+					)
+				);
 				return;
 			}
 		} elseif ( 0 < $sync_loop ) {

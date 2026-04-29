@@ -12,6 +12,7 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Admin\Webhook_Products;
 use CLOSE\ConnectEcommerce\Helpers\PROD;
 use CLOSE\ConnectEcommerce\Helpers\TAX;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
@@ -301,14 +302,15 @@ class Settings {
 				if ( 'synchronization' === $active_tab && $this->is_connector_active() ) {
 					?>
 					<ul class="subsubsub">
-						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ''; ?></li>
+						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ' | '; ?></li>
 						<?php
 						if ( ! $this->is_disabled_orders ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a></li>
+							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a> | </li>
 							<?php
 						}
 						?>
+						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=webhooks" class="<?php echo 'webhooks' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Webhooks', 'woocommerce-es' ); ?></a></li>
 					</ul>
 					<br class="clear">
 					<?php
@@ -337,7 +339,7 @@ class Settings {
 							<?php
 						}
 						if ( $this->is_connector_active() ) {
-						?>
+							?>
 							<li><a href="?page=connect_ecommerce&tab=settings&subtab=alerts" class="<?php echo 'alerts' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Alerts', 'woocommerce-es' ); ?></a></li>
 							<?php
 						}
@@ -352,6 +354,9 @@ class Settings {
 				if ( 'synchronization' === $active_tab ) {
 					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
 						$this->page_get_sync( $active_subtab );
+					}
+					if ( 'webhooks' === $active_subtab ) {
+						$this->page_get_webhooks();
 					}
 				}
 
@@ -676,16 +681,16 @@ class Settings {
 				);
 			}
 
-		// API Connection Status.
-		add_settings_field(
-			'wcpimh_api_status',
-			__( 'Connection Status', 'woocommerce-es' ),
-			array( $this, 'api_status_callback' ),
-			'connect_ecommerce_admin',
-			'connect_woocommerce_setting_section'
-		);
+			// API Connection Status.
+			add_settings_field(
+				'wcpimh_api_status',
+				__( 'Connection Status', 'woocommerce-es' ),
+				array( $this, 'api_status_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
 
-		if ( $this->options['product_option_stock'] ) {
+			if ( $this->options['product_option_stock'] ) {
 				add_settings_field(
 					'wcpimh_stock',
 					__( 'Import stock?', 'woocommerce-es' ),
@@ -778,7 +783,7 @@ class Settings {
 			);
 
 			if ( $this->options['product_price_rate_option'] ) {
-				$desc_tip     = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
+				$desc_tip = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
 				add_settings_field(
 					'wcpimh_rates',
 					__( 'Product price rate for this eCommerce', 'woocommerce-es' ),
@@ -1099,6 +1104,83 @@ class Settings {
 			'connect_ecommerce_alerts',
 			'connect_ecommerce_alerts_section'
 		);
+	}
+
+	/**
+	 * Render the Webhooks subtab under Synchronization.
+	 *
+	 * @return void
+	 */
+	public function page_get_webhooks() {
+		$endpoint_url = Webhook_Products::get_endpoint_url();
+		$logs         = Webhook_Products::get_logs();
+
+		$instructions = apply_filters(
+			'conecom_webhook_instructions',
+			sprintf(
+				/* translators: %s: REST endpoint URL */
+				__( 'Configure your ERP to send a POST request to the following URL whenever a product changes. The request must include the ERP product ID.', 'woocommerce-es' )
+			)
+		);
+		?>
+		<h2><?php esc_html_e( 'ERP Webhook — Product Synchronization', 'woocommerce-es' ); ?></h2>
+
+		<p><?php echo wp_kses_post( $instructions ); ?></p>
+
+		<table class="form-table" role="presentation">
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Endpoint URL', 'woocommerce-es' ); ?></th>
+				<td>
+					<code><?php echo esc_html( $endpoint_url ); ?></code>
+					<p class="description"><?php esc_html_e( 'Methods: GET or POST', 'woocommerce-es' ); ?></p>
+				</td>
+			</tr>
+			<tr>
+				<th scope="row"><?php esc_html_e( 'Payload', 'woocommerce-es' ); ?></th>
+				<td>
+					<p><?php esc_html_e( 'Query parameter (GET or POST):', 'woocommerce-es' ); ?></p>
+					<code><?php echo esc_html( $endpoint_url ); ?>?id=<strong>{product_id}</strong></code>
+					<p style="margin-top: 8px;"><?php esc_html_e( 'Or JSON body (POST):', 'woocommerce-es' ); ?></p>
+					<pre style="background:#f6f7f7;padding:10px;border-left:4px solid #ddd;max-width:420px;"><?php echo esc_html( "{\n  \"id\": \"{product_id}\"\n}" ); ?></pre>
+					<p class="description">
+						<?php esc_html_e( 'Replace {product_id} with the ERP internal product identifier.', 'woocommerce-es' ); ?>
+					</p>
+				</td>
+			</tr>
+		</table>
+
+		<h3><?php esc_html_e( 'Webhook Log', 'woocommerce-es' ); ?></h3>
+		<?php if ( empty( $logs ) ) : ?>
+			<p style="color:#646970;font-style:italic;"><?php esc_html_e( 'No webhook executions recorded yet.', 'woocommerce-es' ); ?></p>
+		<?php else : ?>
+			<table class="widefat striped" style="max-width:900px;">
+				<thead>
+					<tr>
+						<th><?php esc_html_e( 'Timestamp', 'woocommerce-es' ); ?></th>
+						<th><?php esc_html_e( 'Product ID', 'woocommerce-es' ); ?></th>
+						<th><?php esc_html_e( 'Status', 'woocommerce-es' ); ?></th>
+						<th><?php esc_html_e( 'Message', 'woocommerce-es' ); ?></th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php foreach ( $logs as $log ) : ?>
+						<tr>
+							<td><?php echo esc_html( $log['timestamp'] ); ?></td>
+							<td><?php echo esc_html( $log['product_id'] ); ?></td>
+							<td>
+								<?php if ( 'success' === $log['status'] ) : ?>
+									<span style="color:green;">&#10003; <?php esc_html_e( 'Success', 'woocommerce-es' ); ?></span>
+								<?php else : ?>
+									<span style="color:#d63638;">&#10007; <?php esc_html_e( 'Error', 'woocommerce-es' ); ?></span>
+								<?php endif; ?>
+							</td>
+							<td><?php echo esc_html( $log['message'] ); ?></td>
+						</tr>
+					<?php endforeach; ?>
+				</tbody>
+			</table>
+		<?php endif; ?>
+		<?php
 	}
 
 	/**
@@ -1490,7 +1572,7 @@ class Settings {
 		<div id="<?php echo esc_attr( $this->options['slug'] ); ?>-engine-subscriptions">
 			<input type="text" id="conwoo-wp-email">						
 			<button id="wp-get-user-data" class="button button-primary">
-			get wordpress user by email
+			get WordPress user by email
 			</button>
 			<div id="wp-user-data">
 			</div>
@@ -1515,8 +1597,8 @@ class Settings {
 		$imh_settings    = get_option( 'connect_ecommerce' );
 		$connector       = isset( $input['connector'] ) ? $input['connector'] : '';
 
-		$admin_settings = [
-			$connector => [
+		$admin_settings = array(
+			$connector => array(
 				'api'                => '',
 				'idcentre'           => '',
 				'url'                => '',
@@ -1541,8 +1623,8 @@ class Settings {
 				'doctype'            => 'invoice',
 				'cleanchars'         => '',
 				'approve_document'   => 'no',
-			'manufacturer_code'  => '',
-			'customer_code'      => '',
+				'manufacturer_code'  => '',
+				'customer_code'      => '',
 				'series'             => '',
 				'freeorder'          => 'no',
 				'ecstatus'           => 'all',
@@ -1551,8 +1633,8 @@ class Settings {
 				'sync'               => 'no',
 				'prod_weight_eq'     => '',
 				'debug_log'          => 'no',
-			],
-		];
+			),
+		);
 
 		foreach ( $admin_settings[ $connector ] as $setting => $default_value ) {
 			if ( isset( $input[ $connector ][ $setting ] ) ) {
@@ -1918,7 +2000,7 @@ class Settings {
 	 * @return void
 	 */
 	public function serie_number_callback() {
-		$type = ! empty( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
+		$type           = ! empty( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		$series_options = $this->connapi_erp->get_series_number( $type );
 		if ( empty( $series_options ) ) {
 			return;
@@ -2022,7 +2104,7 @@ class Settings {
 			'salesorder'   => __( 'Sales order', 'woocommerce-es' ),
 			'waybill'      => __( 'Waybill', 'woocommerce-es' ),
 		);
-		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
+		$doctype        = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
 			<?php
@@ -2231,11 +2313,11 @@ class Settings {
 	 * @return void
 	 */
 	public function prod_mergevars_callback() {
-		$product_fields      = PROD::get_all_product_fields();
-		$custom_fields       = PROD::get_all_custom_fields();
-		$custom_taxonomies   = TAX::get_all_custom_taxonomies();
-		$product_cat_terms   = TAX::get_terms_product_cat();
-		$attribute_fields    = $this->connapi_erp->get_product_attributes();
+		$product_fields    = PROD::get_all_product_fields();
+		$custom_fields     = PROD::get_all_custom_fields();
+		$custom_taxonomies = TAX::get_all_custom_taxonomies();
+		$product_cat_terms = TAX::get_terms_product_cat();
+		$attribute_fields  = $this->connapi_erp->get_product_attributes();
 
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
@@ -2250,9 +2332,14 @@ class Settings {
 		<div id="<?php echo esc_attr( $this->options['slug'] ); ?>-products-mergevars" class="repeater-section">
 			<div class="wrap">
 				<div class="product-mergevars">
-					<div class="save-item"><strong><?php esc_html_e( 'Field from ', 'woocommerce-es' ); echo ' ' . esc_html( $this->options['name'] ); ?></strong></div>
+					<div class="save-item"><strong>
+					<?php
+					esc_html_e( 'Field from ', 'woocommerce-es' );
+					echo ' ' . esc_html( $this->options['name'] );
+					?>
+					</strong></div>
 					<div></div>
-					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'woocommerce-es' );?></strong></div>
+					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'woocommerce-es' ); ?></strong></div>
 				</div>
 				<?php
 				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
@@ -2300,7 +2387,7 @@ class Settings {
 						<div class="save-item">
 							<?php
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
-							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
+							$all_fields         = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
 								$custom_fields[] = $saved_custom_field;
 							}

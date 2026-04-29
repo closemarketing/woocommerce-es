@@ -28,48 +28,48 @@ class Notices {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			return;
 		}
-	
+
 		// Only show on plugin pages or dashboard
 		$screen = get_current_screen();
 		if ( ! $screen || ( strpos( $screen->id, 'woocommerce-es' ) === false && $screen->id !== 'dashboard' ) ) {
 			return;
 		}
-	
+
 		// Check if user has already dismissed the notice
 		$dismissed = get_user_meta( get_current_user_id(), 'conecom_review_notice_dismissed', true );
 		if ( $dismissed ) {
 			return;
 		}
-	
+
 		$review_url = 'https://wordpress.org/support/plugin/woocommerce-es/reviews/';
-		
+
 		$notice_title = sprintf(
 			// translators: %s is the plugin name
 			__( '⭐ Love %s?', 'woocommerce-es' ),
 			'Connect Ecommerce'
 		);
-		
+
 		$notice_message = sprintf(
 			// translators: %1$s is the plugin name, %2$s is the review URL
 			__( 'Thank you for using %1$s! The plugin that connects WooCommerce to ERPs and CRMs. If you find it helpful, please consider leaving a review on WordPress.org. It helps us a lot! <p></p><a href="%2$s" target="_blank" class="button button-primary">Leave a Review</a>', 'woocommerce-es' ),
 			'Connect Ecommerce',
 			$review_url
 		);
-	
+
 		wp_admin_notice(
 			'<h3>' . $notice_title . '</h3><p>' . $notice_message . '</p>',
 			array(
-				'type'        => 'info',
-				'dismissible' => true,
-				'id'          => 'conecom-review-notice',
+				'type'               => 'info',
+				'dismissible'        => true,
+				'id'                 => 'conecom-review-notice',
 				'additional_classes' => 'is-dismissible',
 			)
 		);
-		
+
 		// Enqueue admin script with WordPress variables
 		$this->enqueue_admin_script();
 	}
-	
+
 	/**
 	 * Enqueue admin script with WordPress variables
 	 *
@@ -83,7 +83,7 @@ class Notices {
 			CONECOM_VERSION,
 			true
 		);
-		
+
 		wp_localize_script(
 			'conecom-admin',
 			'conecom_admin',
@@ -93,21 +93,21 @@ class Notices {
 			)
 		);
 	}
-	
+
 	/**
 	 * Handle dismissal of the review notice
 	 *
 	 * @return void
 	 */
 	function dismiss_review_notice() {
-		if ( isset( $_POST['action'] ) && 'conecom_dismiss_review_notice' ===$_POST['action'] ) {
+		if ( isset( $_POST['action'] ) && 'conecom_dismiss_review_notice' === $_POST['action'] ) {
 			// Verify nonce for security
 			if ( ! wp_verify_nonce( $_POST['nonce'], 'conecom_dismiss_review' ) ) {
 				wp_die( 'Security check failed' );
 			}
-			
+
 			update_user_meta( get_current_user_id(), 'conecom_review_notice_dismissed', true );
 			wp_die();
 		}
-	}	
+	}
 }

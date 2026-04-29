@@ -94,10 +94,10 @@ class TAXES {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
 		$column_exists = $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+				'SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
 				WHERE TABLE_SCHEMA = %s
 				AND TABLE_NAME = %s
-				AND COLUMN_NAME = %s",
+				AND COLUMN_NAME = %s',
 				DB_NAME,
 				$table_name,
 				$column_name
@@ -318,14 +318,14 @@ class TAXES {
 				'super_reduced_rate' => false,
 				'parking_rate'       => 13.00,
 			),
-		'RO' => array(
-			'country'            => __( 'Romania', 'woocommerce-es' ),
-			'standard_rate'      => 19.00,
-			'reduced_rate'       => 11.00,
-			'reduced_rate_alt'   => 5.00,
-			'super_reduced_rate' => false,
-			'parking_rate'       => false,
-		),
+			'RO' => array(
+				'country'            => __( 'Romania', 'woocommerce-es' ),
+				'standard_rate'      => 19.00,
+				'reduced_rate'       => 11.00,
+				'reduced_rate_alt'   => 5.00,
+				'super_reduced_rate' => false,
+				'parking_rate'       => false,
+			),
 			'SI' => array(
 				'country'            => __( 'Slovenia', 'woocommerce-es' ),
 				'standard_rate'      => 22.00,

@@ -102,7 +102,7 @@ class VAT {
 			$vat_number   = substr( $vat_number, 2 );
 		}
 
-		$cache_key    = md5( $country_code . $vat_number );
+		$cache_key     = md5( $country_code . $vat_number );
 		$cached_result = wp_cache_get( $cache_key, self::CACHE_GROUP );
 
 		if ( false !== $cached_result ) {
@@ -149,7 +149,6 @@ class VAT {
 			wp_cache_set( $cache_key, $validation_result, self::CACHE_GROUP, self::CACHE_EXPIRATION );
 
 			return $validation_result;
-
 		} catch ( ViesServiceException $e ) {
 			// VIES service error - accept VAT number.
 			self::log_error( 'VIES Service Error: ' . $e->getMessage() );
@@ -160,7 +159,6 @@ class VAT {
 				'error'   => $e->getMessage(),
 				'cached'  => false,
 			);
-
 		} catch ( ViesException $e ) {
 			// Invalid VAT format or other VIES error.
 			self::log_error( 'VIES Validation Error: ' . $e->getMessage() );
@@ -175,7 +173,6 @@ class VAT {
 				'error'   => $e->getMessage(),
 				'cached'  => false,
 			);
-
 		} catch ( \Exception $e ) {
 			// Generic error - accept VAT number.
 			self::log_error( 'VAT Validation Error: ' . $e->getMessage() );
@@ -284,7 +281,7 @@ class VAT {
 		if ( ! $api_result['success'] ) {
 			// Check if it's an invalid VAT number (not a service error).
 			if ( isset( $api_result['data']['error']['title'] ) &&
-				 false !== stristr( $api_result['data']['error']['title'], 'invalid' ) ) {
+				false !== stristr( $api_result['data']['error']['title'], 'invalid' ) ) {
 				$result = array(
 					'valid'   => false,
 					'message' => __( 'VAT number is invalid (verified by VATSense)', 'woocommerce-es' ),
@@ -568,7 +565,7 @@ class VAT {
 		if ( empty( $vat_number ) ) {
 			// Remove any existing VAT exemption.
 			self::remove_vat_exemption();
-			
+
 			wp_send_json_success(
 				array(
 					'status'     => 'empty',
@@ -587,7 +584,7 @@ class VAT {
 			if ( empty( $country_code ) ) {
 				// Remove any existing VAT exemption.
 				self::remove_vat_exemption();
-				
+
 				wp_send_json_success(
 					array(
 						'status'     => 'invalid_format',
@@ -598,14 +595,14 @@ class VAT {
 			}
 			$vat_clean = substr( $vat_clean, 2 );
 		}
-		$vat_clean = str_replace( $country_code, '', $vat_clean ); 
+		$vat_clean = str_replace( $country_code, '', $vat_clean );
 
 		// Check minimum length.
 		$min_length = self::get_min_vat_length( $country_code );
 		if ( strlen( $vat_clean ) < $min_length ) {
 			// Remove any existing VAT exemption.
 			self::remove_vat_exemption();
-			
+
 			wp_send_json_success(
 				array(
 					'status'     => 'too_short',
@@ -639,13 +636,13 @@ class VAT {
 
 		// Apply or remove VAT exemption based on validation.
 		$is_valid = isset( $result['valid'] ) && $result['valid'];
-		
+
 		if ( $is_valid ) {
 			self::apply_vat_exemption( $country_code, $vat_clean, true );
-			
+
 			// Check if exemption was applied and add to response.
 			if ( self::is_customer_vat_exempt() ) {
-				$response['vat_exempt'] = true;
+				$response['vat_exempt']     = true;
 				$response['exempt_message'] = sprintf(
 					// translators: %s is the country code.
 					__( 'B2B intra-community transaction - Zero VAT rate applied (%s)', 'woocommerce-es' ),
@@ -653,7 +650,7 @@ class VAT {
 				);
 			} else {
 				$response['vat_exempt'] = false;
-				
+
 				// Check why exemption was not applied.
 				$base_country = WC()->countries->get_base_country();
 				if ( $country_code === $base_country ) {
@@ -663,18 +660,20 @@ class VAT {
 		} else {
 			// Validation failed - remove any exemption and restore normal VAT.
 			self::remove_vat_exemption();
-			$response['vat_exempt'] = false;
+			$response['vat_exempt']     = false;
 			$response['exempt_message'] = sprintf(
 				// translators: %s is the country code.
 				__( 'VAT validation failed - Standard VAT rate applies for %s', 'woocommerce-es' ),
 				$country_code
 			);
-			
-			self::log_debug( sprintf(
-				'VAT Exemption REMOVED - Validation failed for %s: %s',
-				$country_code,
-				$vat_clean
-			) );
+
+			self::log_debug(
+				sprintf(
+					'VAT Exemption REMOVED - Validation failed for %s: %s',
+					$country_code,
+					$vat_clean
+				)
+			);
 		}
 
 		wp_send_json_success( $response );
@@ -703,13 +702,15 @@ class VAT {
 		$base_country = WC()->countries->get_base_country();
 
 		// Debug log.
-		self::log_debug( sprintf(
-			'VAT Exemption Check - Base: %s, Customer: %s, VAT: %s, Validated: %s',
-			$base_country,
-			$customer_country,
-			$vat_number,
-			$is_validated ? 'yes' : 'no'
-		) );
+		self::log_debug(
+			sprintf(
+				'VAT Exemption Check - Base: %s, Customer: %s, VAT: %s, Validated: %s',
+				$base_country,
+				$customer_country,
+				$vat_number,
+				$is_validated ? 'yes' : 'no'
+			)
+		);
 
 		// Check if both countries are in EU.
 		$eu_countries = self::get_eu_countries();
@@ -750,7 +751,7 @@ class VAT {
 	public static function apply_vat_exemption( $customer_country, $vat_number, $is_validated ) {
 		// First, always remove any existing exemption.
 		self::remove_vat_exemption();
-		
+
 		// Then check if we should apply new exemption.
 		if ( ! self::should_apply_vat_exemption( $customer_country, $vat_number, $is_validated ) ) {
 			return;
@@ -839,7 +840,7 @@ class VAT {
 
 		if ( ! in_array( 'zero-rate', $tax_classes, true ) ) {
 			// Add zero-rate tax class.
-			$tax_classes = \WC_Tax::get_tax_class_slugs();
+			$tax_classes              = \WC_Tax::get_tax_class_slugs();
 			$tax_classes['Zero Rate'] = 'zero-rate';
 			update_option( 'woocommerce_tax_classes', implode( "\n", array_keys( $tax_classes ) ) );
 		}
@@ -885,4 +886,3 @@ class VAT {
 		delete_transient( 'wc_tax_rates' );
 	}
 }
-

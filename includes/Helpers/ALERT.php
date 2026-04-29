@@ -135,7 +135,7 @@ class ALERT {
 				),
 			),
 			array(
-				'type'    => 'section',
+				'type' => 'section',
 				'text' => array(
 					'type' => 'mrkdwn',
 					'text' => $message,

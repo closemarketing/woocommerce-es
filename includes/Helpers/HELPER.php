@@ -184,14 +184,14 @@ class HELPER {
 		$time_end = microtime( true );
 
 		$execution_time = round( $time_end - $time_start, 2 );
-		$end = "seg";
+		$end            = 'seg';
 
 		if ( $execution_time > 3600 ) {
 			$execution_time = round( $execution_time / 3600, 2 );
-			$end = "horas";
+			$end            = 'horas';
 		} elseif ( $execution_time > 60 ) {
 			$execution_time = round( $execution_time / 60, 2 );
-			$end = "min";
+			$end            = 'min';
 		}
 		return $execution_time . ' ' . $end;
 	}

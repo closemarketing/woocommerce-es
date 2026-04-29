@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Admin\Settings;
 use CLOSE\ConnectEcommerce\Admin\Import_Products;
+use CLOSE\ConnectEcommerce\Admin\Webhook_Products;
 use CLOSE\ConnectEcommerce\Admin\Widget_Order;
 use CLOSE\ConnectEcommerce\Admin\Widget_Product;
 use CLOSE\ConnectEcommerce\Admin\Orders;
@@ -46,6 +47,8 @@ class Base {
 	public function __construct( $options = array() ) {
 		$this->options = $options;
 		$connector     = HELPER::get_connector( $options );
+
+		new Webhook_Products( $connector );
 
 		if ( is_admin() ) {
 			new Settings( $connector );

@@ -55,8 +55,8 @@ class PAYMENTS {
 			);
 		}
 
-		$payment_methods    = array();
-		$treasury_accounts  = array();
+		$payment_methods   = array();
+		$treasury_accounts = array();
 
 		foreach ( $stored[ $connector_slug ] as $gateway_id => $mapping ) {
 			if ( ! is_scalar( $gateway_id ) ) {

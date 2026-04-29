@@ -58,7 +58,7 @@ class Checkout {
 			add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 99 );
 			add_action( 'wp_loaded', array( $this, 'add_vat_field_to_checkout' ), 10 );
 		}
-		
+
 		// Save and display additional checkout fields.
 		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'save_additional_checkout_fields' ) );
 		add_action( 'woocommerce_admin_order_data_after_billing_address', array( $this, 'display_additional_checkout_fields_admin' ) );
@@ -90,14 +90,14 @@ class Checkout {
 			if ( 'yes' === $vat_realtime ) {
 				add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_vat_validation_scripts' ) );
 			}
-			
+
 			// Initialize AJAX hooks.
 			VAT::init_ajax_hooks();
-			
+
 			// Apply zero-rate tax class when VAT exempt.
 			add_filter( 'woocommerce_product_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
 			add_filter( 'woocommerce_product_variation_get_tax_class', array( $this, 'apply_zero_rate_tax_class' ), 10, 2 );
-			
+
 			// Remove exemption when checkout is updated and VAT field is empty or country changes.
 			add_action( 'woocommerce_checkout_update_order_review', array( $this, 'maybe_remove_vat_exemption_on_update' ) );
 		}
@@ -175,7 +175,7 @@ class Checkout {
 		}
 		// Move billing_company after billing_last_name if both exist
 		if ( isset( $fields['billing']['billing_company'] ) && isset( $fields['billing']['billing_last_name'] ) ) {
-			$billing_fields = $fields['billing'];
+			$billing_fields     = $fields['billing'];
 			$new_billing_fields = array();
 			foreach ( $billing_fields as $key => $value ) {
 				$new_billing_fields[ $key ] = $value;
@@ -319,7 +319,7 @@ class Checkout {
 				<label class="woocommerce-form__label woocommerce-form__label-for-checkbox checkbox">
 					<input type="checkbox" class="woocommerce-form__input woocommerce-form__input-checkbox input-checkbox" name="terms" <?php checked( apply_filters( 'woocommerce_terms_is_checked_default', isset( $_POST['terms'] ) ), true ); ?> id="terms" /> <span>
 					<?php
-					echo sprintf(
+					printf(
 						/* translators: 1: Terms and conditions page link */
 						__( 'I&rsquo;ve read and accept the <a href="%s" target="_blank" class="woocommerce-terms-and-conditions-link">terms &amp; conditions</a>', 'woocommerce-es' ),
 						esc_url( wc_get_page_permalink( 'terms' ) )
@@ -514,12 +514,12 @@ class Checkout {
 		// Save VAT exemption info if applied.
 		if ( VAT::is_customer_vat_exempt() ) {
 			$exemption_info = VAT::get_vat_exemption_info();
-			
+
 			if ( $exemption_info ) {
 				update_post_meta( $order_id, '_vat_exempt_applied', 'yes' );
 				update_post_meta( $order_id, '_vat_exempt_country', $exemption_info['country'] );
 				update_post_meta( $order_id, '_vat_exempt_vat_number', $exemption_info['vat_number'] );
-				
+
 				// Add order note.
 				$order = wc_get_order( $order_id );
 				if ( $order ) {
@@ -572,7 +572,7 @@ class Checkout {
 			return;
 		}
 
-		$plugin_url = plugin_dir_url( dirname( dirname( __FILE__ ) ) );
+		$plugin_url = plugin_dir_url( dirname( __DIR__ ) );
 		$version    = defined( 'WP_DEBUG' ) && WP_DEBUG ? time() : '1.0.0';
 
 		// Enqueue CSS.
@@ -605,7 +605,7 @@ class Checkout {
 
 		// Prepare configuration and messages.
 		$vat_vies_mandatory = isset( $this->setttings_public['vat_vies_mandatory'] ) ? $this->setttings_public['vat_vies_mandatory'] : 'no';
-		
+
 		$config = array(
 			'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
 			'nonce'         => wp_create_nonce( 'conecom_vat_validation' ),
@@ -623,7 +623,7 @@ class Checkout {
 				'SE' => 12,
 				'PL' => 10,
 			),
-			'messages' => array(
+			'messages'      => array(
 				'checking'       => __( 'Validating VAT number...', 'woocommerce-es' ),
 				'valid'          => __( 'Valid VAT number', 'woocommerce-es' ),
 				'invalid'        => __( 'Invalid VAT number', 'woocommerce-es' ),
@@ -713,7 +713,7 @@ class Checkout {
 
 		// Get billing data from request.
 		$billing_address = $request->get_param( 'billing_address' );
-		
+
 		// Check standard fields.
 		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
 			$field_name = str_replace( 'billing_', '', $field );
@@ -743,17 +743,17 @@ class Checkout {
 
 		// Apply or remove VAT exemption based on validation result.
 		$is_valid = isset( $validation_result['valid'] ) && $validation_result['valid'];
-		
+
 		if ( $is_valid ) {
 			// Apply VAT exemption if conditions are met.
 			VAT::apply_vat_exemption( $country_code, $vat_number, true );
-			
+
 			// Save exemption info to order if applied.
 			if ( VAT::is_customer_vat_exempt() ) {
 				update_post_meta( $order->get_id(), '_vat_exempt_applied', 'yes' );
 				update_post_meta( $order->get_id(), '_vat_exempt_country', $country_code );
 				update_post_meta( $order->get_id(), '_vat_exempt_vat_number', $vat_number );
-				
+
 				$order->add_order_note(
 					sprintf(
 						// translators: 1: VAT number, 2: country code.

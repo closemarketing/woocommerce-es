@@ -90,7 +90,7 @@ class MyAccount {
 	 * @return array
 	 */
 	public function add_account_orders_column( $columns ) {
-		$order_actions  = $columns['order-actions']; // Save Order actions.
+		$order_actions = $columns['order-actions']; // Save Order actions.
 		unset( $columns['order-actions'] ); // Remove Order actions.
 
 		// Add your custom column key / label.

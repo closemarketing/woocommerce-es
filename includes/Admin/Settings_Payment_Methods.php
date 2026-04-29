@@ -211,7 +211,7 @@ class Settings_Payment_Methods {
 										<option value=""><?php esc_html_e( '— Select —', 'woocommerce-es' ); ?></option>
 										<?php
 										foreach ( $connector_methods as $method_id => $method_label ) {
-											$sanitized_method_id = sanitize_text_field( (string) $method_id );
+											$sanitized_method_id    = sanitize_text_field( (string) $method_id );
 											$sanitized_method_label = sanitize_text_field( (string) $method_label );
 											?>
 											<option value="<?php echo esc_attr( $sanitized_method_id ); ?>" <?php echo selected( $selected_method, $sanitized_method_id, false ); ?>>
