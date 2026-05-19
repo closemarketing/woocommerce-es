@@ -1157,7 +1157,10 @@ class Settings {
 	 * @return void
 	 */
 	private function render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus = false ) {
-		$cron_enabled = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
+		$cron_enabled        = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
+		$has_product_updated = $has_get_all_product_skus && (
+			! method_exists( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated()
+		);
 		?>
 		<h2>
 			<?php
@@ -1204,6 +1207,7 @@ class Settings {
 				</div>
 			</div>
 
+			<?php if ( $has_product_updated ) : ?>
 			<div class="conecom-stat-card conecom-stat-import">
 				<div class="conecom-stat-icon conecom-icon-import">
 					<span class="dashicons dashicons-download"></span>
@@ -1217,6 +1221,7 @@ class Settings {
 					</div>
 				</div>
 			</div>
+			<?php endif; ?>
 
 			<div class="conecom-stat-card conecom-stat-delete">
 				<div class="conecom-stat-icon conecom-icon-delete">
@@ -1266,7 +1271,9 @@ class Settings {
 
 				<div class="import-button-wrapper">
 					<select id="import-mode" class="import-mode-select">
+						<?php if ( $has_product_updated ) : ?>
 						<option value="updated"><?php esc_html_e( 'Products to update', 'woocommerce-es' ); ?></option>
+						<?php endif; ?>
 						<option value="all"><?php esc_html_e( 'All products', 'woocommerce-es' ); ?></option>
 					</select>
 					<button type="button" id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItemsWithMode(this, '<?php echo esc_attr( $ajax_action ); ?>', 0, <?php echo (int) $api_pagination; ?>);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></button>
