@@ -287,15 +287,20 @@ class PROD {
 		$product_props     = array(
 			'stock_status'     => 'instock',
 			'backorders'       => $allow_backorders,
-			'regular_price'    => self::get_rate_price( $item, $rate_id ),
 			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
 		);
+
+		if ( 'variable' !== $type ) {
+			$product_props['regular_price'] = self::get_rate_price( $item, $rate_id );
+		}
+
 		$price_sale = self::get_sale_price( $item, $settings );
-		if ( ! empty( $price_sale ) ) {
+		if ( ! empty( $price_sale ) && 'variable' !== $type ) {
 			$product_props['sale_price'] = $price_sale;
 		}
+
 		$product_props_new = array();
 		if ( $is_new_product ) {
 			$product_props_new = array(
