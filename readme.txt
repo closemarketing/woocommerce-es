@@ -221,6 +221,10 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
+= 3.3.4 =
+* Fixed: Tax prices setting key corrected from `tax_option` to `tax_price` — prices with tax included were not being imported correctly.
+* Fixed: Tax class from ERP tax type is now correctly applied on both product create and update (NEO connector).
+
 = 3.3.3 =
 * Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
 * Fixed: Admin CSS and WooCommerce schedule action on purchase.
