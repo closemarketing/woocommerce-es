@@ -290,6 +290,7 @@ class PROD {
 			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
+			'tax_class'        => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 		);
 
 		if ( 'variable' !== $type ) {
@@ -315,7 +316,7 @@ class PROD {
 				'date_on_sale_to'    => '',
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
-				'tax_class'          => '',
+				'tax_class'          => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 				'manage_stock'       => 'yes' === $import_stock ? true : false,
 				'stock_quantity'     => null,
 				'sold_individually'  => false,
