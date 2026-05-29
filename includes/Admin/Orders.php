@@ -14,7 +14,6 @@ defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Helpers\ORDER;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
-use CLOSE\ConnectEcommerce\Helpers\VAT;
 
 /**
  * Class Orders integration

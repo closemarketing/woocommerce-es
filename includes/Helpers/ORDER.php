@@ -78,6 +78,9 @@ class ORDER {
 				$order->update_meta_data( $meta_key_order, $invoice_id );
 				$order->update_meta_data( '_' . $option_prefix . '_doc_id', $doc_id );
 				$order->update_meta_data( '_' . $option_prefix . '_doc_type', $doctype );
+				if ( $is_debug_log && isset( $result['log_payload'] ) ) {
+					$order->update_meta_data( '_' . $option_prefix . '_log_payload', $result['log_payload'] );
+				}
 				$order->save();
 
 				$order_msg = __( 'Order synced correctly with ERP, ID: ', 'woocommerce-es' ) . $invoice_id;
@@ -324,7 +327,7 @@ class ORDER {
 					}
 					$product_cost                            = floatval( $item['line_total'] );
 					$fields_items[ $index_bund ]['subtotal'] = $fields_items[ $index_bund ]['subtotal'] + $product_cost;
-					$fields_items[ $index_bund ]['tax']      = round( $vat_per, 2 );
+					$fields_items[ $index_bund ]['tax']      = (float) number_format( $vat_per, 2, '.', '' );
 				}
 			} else {
 				$item_qty   = (int) $item->get_quantity();
@@ -334,7 +337,7 @@ class ORDER {
 					'name'      => $item->get_name(),
 					'desc'      => get_the_excerpt( $product_id ),
 					'units'     => $item_qty,
-					'subtotal'  => (float) $price_line,
+					'subtotal'  => (float) number_format( $price_line, 2, '.', '' ),
 					'sku'       => ! empty( $product ) ? $product->get_sku() : '',
 					'image_url' => get_the_post_thumbnail_url( $product_id, 'post-thumbnail' ),
 					'permalink' => get_the_permalink( $product_id ),
@@ -348,14 +351,12 @@ class ORDER {
 				$line_discount = $item->get_subtotal() - $item->get_total();
 				if ( $line_discount > 0 ) {
 					$coupon = array_search( (string) $line_discount, array_column( $order_discounts, 'discount' ), true );
-					if ( false !== $coupon ) {
-						$coupon_type = $order_discounts[ $coupon ]['type'];
-						if ( 'percent' === $coupon_type ) {
-							// Percentage discount.
-							$line_discount = (float) $order_discounts[ $coupon ]['amount'];
-						}
+					if ( false !== $coupon && 'percent' === $order_discounts[ $coupon ]['type'] ) {
+						// Percentage discount: amount is already the percentage value.
+						$item_data['discount'] = (float) number_format( (float) $order_discounts[ $coupon ]['amount'], 2, '.', '' );
+					} else {
+						$item_data['discount'] = (float) number_format( ( $line_discount * 100 ) / $item->get_subtotal(), 2, '.', '' );
 					}
-					$item_data['discount'] = round( ( $line_discount * 100 ) / $item->get_subtotal(), 2 );
 				}
 
 				$fields_items[] = $item_data;
@@ -446,7 +447,7 @@ class ORDER {
 			if ( ! empty( $tax_key ) ) {
 				$item_taxes['taxes'] = array( trim( $tax_key ) );
 			} else {
-				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? round( $item_tax_data['total'][ $tax_rate_id_from_item ], 2 ) : 0;
+				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? (float) number_format( (float) $item_tax_data['total'][ $tax_rate_id_from_item ], 2, '.', '' ) : 0;
 			}
 		}
 

@@ -221,6 +221,11 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
+= next =
+* Fixed: Order item `tax` and `discount` values no longer expose IEEE 754 floating-point noise (e.g. `2.1000000000000001` or `33.329999999999998`) in the JSON payload sent to the ERP. All values are now serialized with at most 2 decimal digits.
+* Fixed: Fixed-cart coupon discount is now correctly distributed as a percentage across all order lines.
+* Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.
+
 = 3.3.3 =
 * Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
 * Fixed: Admin CSS and WooCommerce schedule action on purchase.
