@@ -2404,7 +2404,16 @@ class Settings {
 	 * @return void
 	 */
 	public function section_info_ai() {
-		esc_html_e( 'Select the provider and options for AI generating. ', 'woocommerce-es' );
+		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
+			printf(
+				'<p>%s <a href="%s">%s</a>.</p>',
+				esc_html__( 'AI credentials are managed centrally by the WordPress AI Services plugin.', 'woocommerce-es' ),
+				esc_url( admin_url( 'options-general.php?page=ai_services' ) ),
+				esc_html__( 'Configure AI Services', 'woocommerce-es' )
+			);
+		} else {
+			esc_html_e( 'Select the provider and options for AI generating. ', 'woocommerce-es' );
+		}
 	}
 
 	/**
@@ -2413,6 +2422,10 @@ class Settings {
 	 * @return void
 	 */
 	public function ai_provider_callback() {
+		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
+			esc_html_e( 'Managed by WordPress AI Services.', 'woocommerce-es' );
+			return;
+		}
 		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
 		?>
 		<select name="connect_ecommerce_ai[provider]" id="provider">
@@ -2428,6 +2441,10 @@ class Settings {
 	 * @return void
 	 */
 	public function ai_model_callback() {
+		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
+			esc_html_e( 'Model selection is handled by WordPress AI Services.', 'woocommerce-es' );
+			return;
+		}
 		$model    = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
 		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
 		$token    = isset( $this->settings_ai['token'] ) ? $this->settings_ai['token'] : '';
@@ -2450,6 +2467,10 @@ class Settings {
 	 * @return void
 	 */
 	public function token_ai_callback() {
+		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
+			esc_html_e( 'API key is managed by WordPress AI Services.', 'woocommerce-es' );
+			return;
+		}
 		printf(
 			'<input class="regular-text" type="password" name="connect_ecommerce_ai[token]" id="wcpimh_token" value="%s">',
 			isset( $this->settings_ai['token'] ) ? esc_attr( $this->settings_ai['token'] ) : ''
