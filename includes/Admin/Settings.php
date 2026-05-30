@@ -1011,29 +1011,31 @@ class Settings {
 			'connect_ecommerce_ai'
 		);
 
-		add_settings_field(
-			'connect_ecommerce_ai_provider',
-			__( 'AI Provider', 'woocommerce-es' ),
-			array( $this, 'ai_provider_callback' ),
-			'connect_ecommerce_ai',
-			'imhset_ai_setting_section'
-		);
+		if ( ! AI::has_wp_ai_services() ) {
+			add_settings_field(
+				'connect_ecommerce_ai_provider',
+				__( 'AI Provider', 'woocommerce-es' ),
+				array( $this, 'ai_provider_callback' ),
+				'connect_ecommerce_ai',
+				'imhset_ai_setting_section'
+			);
 
-		add_settings_field(
-			'connect_ecommerce_ai_apikey',
-			__( 'API Key', 'woocommerce-es' ),
-			array( $this, 'token_ai_callback' ),
-			'connect_ecommerce_ai',
-			'imhset_ai_setting_section'
-		);
+			add_settings_field(
+				'connect_ecommerce_ai_apikey',
+				__( 'API Key', 'woocommerce-es' ),
+				array( $this, 'token_ai_callback' ),
+				'connect_ecommerce_ai',
+				'imhset_ai_setting_section'
+			);
 
-		add_settings_field(
-			'connect_ecommerce_ai_model',
-			__( 'Model (need login first)', 'woocommerce-es' ),
-			array( $this, 'ai_model_callback' ),
-			'connect_ecommerce_ai',
-			'imhset_ai_setting_section'
-		);
+			add_settings_field(
+				'connect_ecommerce_ai_model',
+				__( 'Model (need login first)', 'woocommerce-es' ),
+				array( $this, 'ai_model_callback' ),
+				'connect_ecommerce_ai',
+				'imhset_ai_setting_section'
+			);
+		}
 
 		add_settings_field(
 			'connect_ecommerce_ai_prompt',
