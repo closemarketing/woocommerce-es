@@ -221,6 +221,13 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
+= 3.3.4 =
+* Enhancement: AI product description generation now uses the WordPress 7.0 core AI API (`wp_ai_client_prompt`) instead of direct provider API calls — no separate plugin or stored API key required.
+* Enhancement: AI model selector is now dynamic — models are loaded live from the active WordPress AI connectors (grouped by provider) and filtered to text-generation capable models only.
+* Enhancement: Model preference is forwarded to the core AI client via `usingModelPreference()`, supporting the `provider::model` format used by the WP core registry.
+* Enhancement: An "Auto" option in the model selector lets WordPress pick the best available model when no preference is set.
+* Enhancement: AI settings page shows an error notice when WordPress AI is unavailable, prompting an upgrade to WordPress 7.0+.
+
 = 3.3.3 =
 * Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
 * Fixed: Admin CSS and WooCommerce schedule action on purchase.
