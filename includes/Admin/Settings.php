@@ -1011,32 +1011,6 @@ class Settings {
 			'connect_ecommerce_ai'
 		);
 
-		if ( ! AI::has_wp_ai_services() ) {
-			add_settings_field(
-				'connect_ecommerce_ai_provider',
-				__( 'AI Provider', 'woocommerce-es' ),
-				array( $this, 'ai_provider_callback' ),
-				'connect_ecommerce_ai',
-				'imhset_ai_setting_section'
-			);
-
-			add_settings_field(
-				'connect_ecommerce_ai_apikey',
-				__( 'API Key', 'woocommerce-es' ),
-				array( $this, 'token_ai_callback' ),
-				'connect_ecommerce_ai',
-				'imhset_ai_setting_section'
-			);
-
-			add_settings_field(
-				'connect_ecommerce_ai_model',
-				__( 'Model (need login first)', 'woocommerce-es' ),
-				array( $this, 'ai_model_callback' ),
-				'connect_ecommerce_ai',
-				'imhset_ai_setting_section'
-			);
-		}
-
 		add_settings_field(
 			'connect_ecommerce_ai_prompt',
 			__( 'Prompt', 'woocommerce-es' ),
@@ -2381,102 +2355,40 @@ class Settings {
 	 */
 	public function sanitize_fields_ai( $input ) {
 		$sanitary_values = array();
-
-		$admin_settings = array(
-			'provider' => 'chatgpt',
-			'token'    => '',
-			'model'    => '',
-			'prompt'   => '',
-		);
-
-		foreach ( $admin_settings as $setting => $default_value ) {
-			if ( isset( $input[ $setting ] ) ) {
-				$sanitary_values[ $setting ] = sanitize_text_field( $input[ $setting ] );
-			} else {
-				$sanitary_values[ $setting ] = $default_value;
-			}
+		if ( isset( $input['prompt'] ) ) {
+			$sanitary_values['prompt'] = sanitize_textarea_field( $input['prompt'] );
+		} else {
+			$sanitary_values['prompt'] = '';
 		}
-
 		return $sanitary_values;
 	}
 
 	/**
-	 * Info for AI.
+	 * Info for AI section.
 	 *
 	 * @return void
 	 */
 	public function section_info_ai() {
-		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
+		if ( AI::has_wp_ai_services() ) {
 			printf(
 				'<p>%s <a href="%s">%s</a>.</p>',
-				esc_html__( 'AI credentials are managed centrally by the WordPress AI Services plugin.', 'woocommerce-es' ),
+				esc_html__( 'AI credentials and model are managed centrally by the WordPress AI Services plugin.', 'woocommerce-es' ),
 				esc_url( admin_url( 'options-general.php?page=ai_services' ) ),
 				esc_html__( 'Configure AI Services', 'woocommerce-es' )
 			);
+			printf(
+				'<p><strong>%s</strong> %s</p>',
+				esc_html__( 'Recommended model:', 'woocommerce-es' ),
+				esc_html__( 'gpt-4o-mini or gemini-2.0-flash (configure in AI Services settings).', 'woocommerce-es' )
+			);
 		} else {
-			esc_html_e( 'Select the provider and options for AI generating. ', 'woocommerce-es' );
+			printf(
+				'<div class="notice notice-error inline"><p>%s <a href="%s" target="_blank">%s</a>.</p></div>',
+				esc_html__( 'The AI Services plugin is required to use AI features.', 'woocommerce-es' ),
+				esc_url( 'https://wordpress.org/plugins/ai-services/' ),
+				esc_html__( 'Install AI Services', 'woocommerce-es' )
+			);
 		}
-	}
-
-	/**
-	 * Vat show setting
-	 *
-	 * @return void
-	 */
-	public function ai_provider_callback() {
-		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
-			esc_html_e( 'Managed by WordPress AI Services.', 'woocommerce-es' );
-			return;
-		}
-		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
-		?>
-		<select name="connect_ecommerce_ai[provider]" id="provider">
-			<option value="chatgpt" <?php selected( $provider, 'chatgpt' ); ?>><?php esc_html_e( 'ChatGPT', 'woocommerce-es' ); ?></option>
-			<option value="deepseek" <?php selected( $provider, 'deepseek' ); ?>><?php esc_html_e( 'DeepSeek', 'woocommerce-es' ); ?></option>
-		</select>
-		<?php
-	}
-
-	/**
-	 * Vat show setting
-	 *
-	 * @return void
-	 */
-	public function ai_model_callback() {
-		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
-			esc_html_e( 'Model selection is handled by WordPress AI Services.', 'woocommerce-es' );
-			return;
-		}
-		$model    = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
-		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
-		$token    = isset( $this->settings_ai['token'] ) ? $this->settings_ai['token'] : '';
-		$options  = AI::get_models( $provider, $token );
-		?>
-
-		<select name="connect_ecommerce_ai[model]" id="cwc_ai_model">
-			<?php
-			foreach ( $options as $key => $label ) {
-				echo '<option value="' . esc_html( $key ) . '" ' . selected( $key, $model ) . ' >' . esc_html( $label ) . '</option>';
-			}
-			?>
-		</select>
-		<?php
-	}
-
-	/**
-	 * Callback sync field.
-	 *
-	 * @return void
-	 */
-	public function token_ai_callback() {
-		if ( \CLOSE\ConnectEcommerce\Helpers\AI::has_wp_ai_services() ) {
-			esc_html_e( 'API key is managed by WordPress AI Services.', 'woocommerce-es' );
-			return;
-		}
-		printf(
-			'<input class="regular-text" type="password" name="connect_ecommerce_ai[token]" id="wcpimh_token" value="%s">',
-			isset( $this->settings_ai['token'] ) ? esc_attr( $this->settings_ai['token'] ) : ''
-		);
 	}
 
 	/**
