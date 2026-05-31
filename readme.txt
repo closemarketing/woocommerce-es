@@ -227,6 +227,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Enhancement: Model preference is forwarded to the core AI client via `usingModelPreference()`, supporting the `provider::model` format used by the WP core registry.
 * Enhancement: An "Auto" option in the model selector lets WordPress pick the best available model when no preference is set.
 * Enhancement: AI settings page shows an error notice when WordPress AI is unavailable, prompting an upgrade to WordPress 7.0+.
+* Enhancement: Added billing VAT number field to the WordPress user profile page (/wp-admin/profile.php and /wp-admin/user-edit.php). Admins can now view and edit the VAT number directly on a customer's profile. The value is stored as `billing_vat` user meta, so WooCommerce pre-populates the field automatically on the public checkout and on admin order creation for logged-in customers.
 
 = 3.3.3 =
 * Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
