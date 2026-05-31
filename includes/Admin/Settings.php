@@ -2388,22 +2388,25 @@ class Settings {
 	 * @return void
 	 */
 	public function ai_model_callback() {
-		$model   = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : 'gpt-4o-mini';
-		$models  = array(
-			'gpt-4o-mini'          => 'GPT-4o mini (OpenAI)',
-			'gpt-4o'               => 'GPT-4o (OpenAI)',
-			'gemini-2.0-flash'     => 'Gemini 2.0 Flash (Google)',
-			'gemini-1.5-pro'       => 'Gemini 1.5 Pro (Google)',
-			'claude-3-5-haiku'     => 'Claude 3.5 Haiku (Anthropic)',
-			'claude-3-5-sonnet'    => 'Claude 3.5 Sonnet (Anthropic)',
-		);
+		$model  = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
+		$groups = AI::get_available_models();
 		?>
 		<select name="connect_ecommerce_ai[model]" id="connect_ecommerce_ai_model">
-			<?php foreach ( $models as $id => $label ) : ?>
-				<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $model, $id ); ?>><?php echo esc_html( $label ); ?></option>
+			<option value=""><?php esc_html_e( '— Auto (best available) —', 'woocommerce-es' ); ?></option>
+			<?php foreach ( $groups as $provider_label => $models ) : ?>
+				<optgroup label="<?php echo esc_attr( $provider_label ); ?>">
+					<?php foreach ( $models as $option ) : ?>
+						<option value="<?php echo esc_attr( $option['value'] ); ?>" <?php selected( $model, $option['value'] ); ?>>
+							<?php echo esc_html( $option['label'] ); ?>
+						</option>
+					<?php endforeach; ?>
+				</optgroup>
 			<?php endforeach; ?>
+			<?php if ( empty( $groups ) && '' !== $model ) : ?>
+				<option value="<?php echo esc_attr( $model ); ?>" selected="selected"><?php echo esc_html( $model ); ?></option>
+			<?php endif; ?>
 		</select>
-		<p class="description"><?php esc_html_e( 'The selected model must be available in your WordPress AI environment.', 'woocommerce-es' ); ?></p>
+		<p class="description"><?php esc_html_e( 'Models are loaded from your active WordPress AI connectors.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 

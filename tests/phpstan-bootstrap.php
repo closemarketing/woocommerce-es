@@ -7,7 +7,7 @@
  */
 
 namespace WordPress\AiClient {
-	// Stub for the WordPress 7.0 core AI client (PromptBuilder).
+
 	if ( ! class_exists( 'WordPress\AiClient\PromptBuilder' ) ) {
 		class PromptBuilder {
 			/** @param mixed ...$preferredModels */
@@ -15,6 +15,30 @@ namespace WordPress\AiClient {
 				return $this;
 			}
 			public function generateText(): string {
+				return '';
+			}
+		}
+	}
+
+	// Minimal stubs for dynamic model discovery via AiClient::defaultRegistry().
+	if ( ! class_exists( 'WordPress\AiClient\AiClient' ) ) {
+		class AiClient {
+			public static function defaultRegistry(): ProviderRegistry {
+				return new ProviderRegistry();
+			}
+		}
+	}
+
+	if ( ! class_exists( 'WordPress\AiClient\ProviderRegistry' ) ) {
+		class ProviderRegistry {
+			/** @return array<string> */
+			public function getRegisteredProviderIds(): array {
+				return array();
+			}
+			public function isProviderConfigured( string $providerId ): bool {
+				return false;
+			}
+			public function getProviderClassName( string $providerId ): string {
 				return '';
 			}
 		}
