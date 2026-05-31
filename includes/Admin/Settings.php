@@ -2369,24 +2369,17 @@ class Settings {
 	 * @return void
 	 */
 	public function section_info_ai() {
-		if ( AI::has_wp_ai_services() ) {
+		if ( AI::has_wp_ai() ) {
 			printf(
-				'<p>%s <a href="%s">%s</a>.</p>',
-				esc_html__( 'AI credentials and model are managed centrally by the WordPress AI Services plugin.', 'woocommerce-es' ),
-				esc_url( admin_url( 'options-general.php?page=ai_services' ) ),
-				esc_html__( 'Configure AI Services', 'woocommerce-es' )
-			);
-			printf(
-				'<p><strong>%s</strong> %s</p>',
+				'<p>%s</p><p><strong>%s</strong> %s</p>',
+				esc_html__( 'AI generation uses the WordPress core AI API. The provider and model are configured by your hosting environment.', 'woocommerce-es' ),
 				esc_html__( 'Recommended model:', 'woocommerce-es' ),
-				esc_html__( 'gpt-4o-mini or gemini-2.0-flash (configure in AI Services settings).', 'woocommerce-es' )
+				esc_html__( 'gpt-4o-mini or gemini-2.0-flash (set by your host or wp-config.php).', 'woocommerce-es' )
 			);
 		} else {
 			printf(
-				'<div class="notice notice-error inline"><p>%s <a href="%s" target="_blank">%s</a>.</p></div>',
-				esc_html__( 'The AI Services plugin is required to use AI features.', 'woocommerce-es' ),
-				esc_url( 'https://wordpress.org/plugins/ai-services/' ),
-				esc_html__( 'Install AI Services', 'woocommerce-es' )
+				'<div class="notice notice-error inline"><p>%s</p></div>',
+				esc_html__( 'WordPress AI is not available. Please upgrade to WordPress 7.0 or later and ensure AI support is enabled in your environment.', 'woocommerce-es' )
 			);
 		}
 	}
