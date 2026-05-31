@@ -1012,6 +1012,14 @@ class Settings {
 		);
 
 		add_settings_field(
+			'connect_ecommerce_ai_model',
+			__( 'Model', 'woocommerce-es' ),
+			array( $this, 'ai_model_callback' ),
+			'connect_ecommerce_ai',
+			'imhset_ai_setting_section'
+		);
+
+		add_settings_field(
 			'connect_ecommerce_ai_prompt',
 			__( 'Prompt', 'woocommerce-es' ),
 			array( $this, 'ai_prompt_callback' ),
@@ -2354,12 +2362,9 @@ class Settings {
 	 * @return array
 	 */
 	public function sanitize_fields_ai( $input ) {
-		$sanitary_values = array();
-		if ( isset( $input['prompt'] ) ) {
-			$sanitary_values['prompt'] = sanitize_textarea_field( $input['prompt'] );
-		} else {
-			$sanitary_values['prompt'] = '';
-		}
+		$sanitary_values          = array();
+		$sanitary_values['model'] = isset( $input['model'] ) ? sanitize_text_field( $input['model'] ) : '';
+		$sanitary_values['prompt'] = isset( $input['prompt'] ) ? sanitize_textarea_field( $input['prompt'] ) : '';
 		return $sanitary_values;
 	}
 
@@ -2369,19 +2374,37 @@ class Settings {
 	 * @return void
 	 */
 	public function section_info_ai() {
-		if ( AI::has_wp_ai() ) {
-			printf(
-				'<p>%s</p><p><strong>%s</strong> %s</p>',
-				esc_html__( 'AI generation uses the WordPress core AI API. The provider and model are configured by your hosting environment.', 'woocommerce-es' ),
-				esc_html__( 'Recommended model:', 'woocommerce-es' ),
-				esc_html__( 'gpt-4o-mini or gemini-2.0-flash (set by your host or wp-config.php).', 'woocommerce-es' )
-			);
-		} else {
+		if ( ! AI::has_wp_ai() ) {
 			printf(
 				'<div class="notice notice-error inline"><p>%s</p></div>',
 				esc_html__( 'WordPress AI is not available. Please upgrade to WordPress 7.0 or later and ensure AI support is enabled in your environment.', 'woocommerce-es' )
 			);
 		}
+	}
+
+	/**
+	 * Model selection field.
+	 *
+	 * @return void
+	 */
+	public function ai_model_callback() {
+		$model   = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : 'gpt-4o-mini';
+		$models  = array(
+			'gpt-4o-mini'          => 'GPT-4o mini (OpenAI)',
+			'gpt-4o'               => 'GPT-4o (OpenAI)',
+			'gemini-2.0-flash'     => 'Gemini 2.0 Flash (Google)',
+			'gemini-1.5-pro'       => 'Gemini 1.5 Pro (Google)',
+			'claude-3-5-haiku'     => 'Claude 3.5 Haiku (Anthropic)',
+			'claude-3-5-sonnet'    => 'Claude 3.5 Sonnet (Anthropic)',
+		);
+		?>
+		<select name="connect_ecommerce_ai[model]" id="connect_ecommerce_ai_model">
+			<?php foreach ( $models as $id => $label ) : ?>
+				<option value="<?php echo esc_attr( $id ); ?>" <?php selected( $model, $id ); ?>><?php echo esc_html( $label ); ?></option>
+			<?php endforeach; ?>
+		</select>
+		<p class="description"><?php esc_html_e( 'The selected model must be available in your WordPress AI environment.', 'woocommerce-es' ); ?></p>
+		<?php
 	}
 
 	/**

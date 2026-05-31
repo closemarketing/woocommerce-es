@@ -10,6 +10,10 @@ namespace WordPress\AiClient {
 	// Stub for the WordPress 7.0 core AI client (PromptBuilder).
 	if ( ! class_exists( 'WordPress\AiClient\PromptBuilder' ) ) {
 		class PromptBuilder {
+			/** @param mixed ...$preferredModels */
+			public function usingModelPreference( ...$preferredModels ): self {
+				return $this;
+			}
 			public function generateText(): string {
 				return '';
 			}

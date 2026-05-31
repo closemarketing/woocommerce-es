@@ -59,7 +59,12 @@ class AI {
 		$content .= PHP_EOL . __( 'Return only a valid and complete JSON object. If the content is too long, split it into multiple parts and clearly indicate when to continue. Do not include any text outside of the JSON.', 'woocommerce-es' );
 
 		try {
-			$raw_text = wp_ai_client_prompt( $content )->generateText();
+			$builder  = wp_ai_client_prompt( $content );
+			$model    = isset( $settings['model'] ) && ! empty( $settings['model'] ) ? $settings['model'] : '';
+			if ( $model ) {
+				$builder = $builder->usingModelPreference( $model );
+			}
+			$raw_text = $builder->generateText();
 
 			$raw_text = str_replace( '```json', '', $raw_text );
 			$raw_text = preg_replace( '/```[\w]*\s*/', '', $raw_text );
