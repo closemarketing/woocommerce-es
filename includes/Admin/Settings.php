@@ -1012,24 +1012,8 @@ class Settings {
 		);
 
 		add_settings_field(
-			'connect_ecommerce_ai_provider',
-			__( 'AI Provider', 'woocommerce-es' ),
-			array( $this, 'ai_provider_callback' ),
-			'connect_ecommerce_ai',
-			'imhset_ai_setting_section'
-		);
-
-		add_settings_field(
-			'connect_ecommerce_ai_apikey',
-			__( 'API Key', 'woocommerce-es' ),
-			array( $this, 'token_ai_callback' ),
-			'connect_ecommerce_ai',
-			'imhset_ai_setting_section'
-		);
-
-		add_settings_field(
 			'connect_ecommerce_ai_model',
-			__( 'Model (need login first)', 'woocommerce-es' ),
+			__( 'Model', 'woocommerce-es' ),
 			array( $this, 'ai_model_callback' ),
 			'connect_ecommerce_ai',
 			'imhset_ai_setting_section'
@@ -1157,7 +1141,10 @@ class Settings {
 	 * @return void
 	 */
 	private function render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus = false ) {
-		$cron_enabled = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
+		$cron_enabled        = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
+		$has_product_updated = $has_get_all_product_skus && (
+			! method_exists( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated()
+		);
 		?>
 		<h2>
 			<?php
@@ -1204,6 +1191,7 @@ class Settings {
 				</div>
 			</div>
 
+			<?php if ( $has_product_updated ) : ?>
 			<div class="conecom-stat-card conecom-stat-import">
 				<div class="conecom-stat-icon conecom-icon-import">
 					<span class="dashicons dashicons-download"></span>
@@ -1217,6 +1205,7 @@ class Settings {
 					</div>
 				</div>
 			</div>
+			<?php endif; ?>
 
 			<div class="conecom-stat-card conecom-stat-delete">
 				<div class="conecom-stat-icon conecom-icon-delete">
@@ -1266,7 +1255,9 @@ class Settings {
 
 				<div class="import-button-wrapper">
 					<select id="import-mode" class="import-mode-select">
+						<?php if ( $has_product_updated ) : ?>
 						<option value="updated"><?php esc_html_e( 'Products to update', 'woocommerce-es' ); ?></option>
+						<?php endif; ?>
 						<option value="all"><?php esc_html_e( 'All products', 'woocommerce-es' ); ?></option>
 					</select>
 					<button type="button" id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItemsWithMode(this, '<?php echo esc_attr( $ajax_action ); ?>', 0, <?php echo (int) $api_pagination; ?>);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></button>
@@ -2371,82 +2362,52 @@ class Settings {
 	 * @return array
 	 */
 	public function sanitize_fields_ai( $input ) {
-		$sanitary_values = array();
-
-		$admin_settings = array(
-			'provider' => 'chatgpt',
-			'token'    => '',
-			'model'    => '',
-			'prompt'   => '',
-		);
-
-		foreach ( $admin_settings as $setting => $default_value ) {
-			if ( isset( $input[ $setting ] ) ) {
-				$sanitary_values[ $setting ] = sanitize_text_field( $input[ $setting ] );
-			} else {
-				$sanitary_values[ $setting ] = $default_value;
-			}
-		}
-
+		$sanitary_values          = array();
+		$sanitary_values['model'] = isset( $input['model'] ) ? sanitize_text_field( $input['model'] ) : '';
+		$sanitary_values['prompt'] = isset( $input['prompt'] ) ? sanitize_textarea_field( $input['prompt'] ) : '';
 		return $sanitary_values;
 	}
 
 	/**
-	 * Info for AI.
+	 * Info for AI section.
 	 *
 	 * @return void
 	 */
 	public function section_info_ai() {
-		esc_html_e( 'Select the provider and options for AI generating. ', 'woocommerce-es' );
+		if ( ! AI::has_wp_ai() ) {
+			printf(
+				'<div class="notice notice-error inline"><p>%s</p></div>',
+				esc_html__( 'WordPress AI is not available. Please upgrade to WordPress 7.0 or later and ensure AI support is enabled in your environment.', 'woocommerce-es' )
+			);
+		}
 	}
 
 	/**
-	 * Vat show setting
-	 *
-	 * @return void
-	 */
-	public function ai_provider_callback() {
-		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
-		?>
-		<select name="connect_ecommerce_ai[provider]" id="provider">
-			<option value="chatgpt" <?php selected( $provider, 'chatgpt' ); ?>><?php esc_html_e( 'ChatGPT', 'woocommerce-es' ); ?></option>
-			<option value="deepseek" <?php selected( $provider, 'deepseek' ); ?>><?php esc_html_e( 'DeepSeek', 'woocommerce-es' ); ?></option>
-		</select>
-		<?php
-	}
-
-	/**
-	 * Vat show setting
+	 * Model selection field.
 	 *
 	 * @return void
 	 */
 	public function ai_model_callback() {
-		$model    = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
-		$provider = isset( $this->settings_ai['provider'] ) ? $this->settings_ai['provider'] : 'chatgpt';
-		$token    = isset( $this->settings_ai['token'] ) ? $this->settings_ai['token'] : '';
-		$options  = AI::get_models( $provider, $token );
+		$model  = isset( $this->settings_ai['model'] ) ? $this->settings_ai['model'] : '';
+		$groups = AI::get_available_models();
 		?>
-
-		<select name="connect_ecommerce_ai[model]" id="cwc_ai_model">
-			<?php
-			foreach ( $options as $key => $label ) {
-				echo '<option value="' . esc_html( $key ) . '" ' . selected( $key, $model ) . ' >' . esc_html( $label ) . '</option>';
-			}
-			?>
+		<select name="connect_ecommerce_ai[model]" id="connect_ecommerce_ai_model">
+			<option value=""><?php esc_html_e( '— Auto (best available) —', 'woocommerce-es' ); ?></option>
+			<?php foreach ( $groups as $provider_label => $models ) : ?>
+				<optgroup label="<?php echo esc_attr( $provider_label ); ?>">
+					<?php foreach ( $models as $option ) : ?>
+						<option value="<?php echo esc_attr( $option['value'] ); ?>" <?php selected( $model, $option['value'] ); ?>>
+							<?php echo esc_html( $option['label'] ); ?>
+						</option>
+					<?php endforeach; ?>
+				</optgroup>
+			<?php endforeach; ?>
+			<?php if ( empty( $groups ) && '' !== $model ) : ?>
+				<option value="<?php echo esc_attr( $model ); ?>" selected="selected"><?php echo esc_html( $model ); ?></option>
+			<?php endif; ?>
 		</select>
+		<p class="description"><?php esc_html_e( 'Models are loaded from your active WordPress AI connectors.', 'woocommerce-es' ); ?></p>
 		<?php
-	}
-
-	/**
-	 * Callback sync field.
-	 *
-	 * @return void
-	 */
-	public function token_ai_callback() {
-		printf(
-			'<input class="regular-text" type="password" name="connect_ecommerce_ai[token]" id="wcpimh_token" value="%s">',
-			isset( $this->settings_ai['token'] ) ? esc_attr( $this->settings_ai['token'] ) : ''
-		);
 	}
 
 	/**

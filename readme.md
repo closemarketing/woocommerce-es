@@ -76,12 +76,12 @@ $products = [
 		'length' => Length of product
 		'width'  => Width of product
 		'height' => Heigth of product
-    'taxes' => [ 's_iva_21' ],
-    'total' => Price with taxes
-    'hasStock' => 1
-    'stock' => Number of units
-    'barcode' => GTIN code
-    'tags' => Array of tags
+		'taxes' => [ 's_iva_21' ],
+		'total' => Price with taxes
+		'hasStock' => 1
+		'stock' => Number of units
+		'barcode' => GTIN code
+		'tags' => Array of tags
 		'cf|custom_namefield' => Custom Name of field
 		'attributes' => [
 			[
@@ -96,8 +96,8 @@ $products = [
 				'value' => Value of the term in Taxonomy (has to be unique)
 			]
 		]
-    'categoryId' => 
-    'factoryCode' => 
+		'categoryId' => 
+		'factoryCode' => 
 		'full_info'   => all information that brings API for IA.
 		'images' => [
 			[

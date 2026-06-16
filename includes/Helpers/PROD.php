@@ -189,9 +189,9 @@ class PROD {
 		if ( ( 'all' === $generate_ai && $post_id ) || ( 'new' === $generate_ai && $is_new_product && $post_id ) ) {
 			// Generate description with AI for product.
 			$settings_ai = get_option( 'connect_ecommerce_ai' );
-			if ( ! empty( $settings_ai['provider'] ) ) {
-				$result_ai = AI::generate_description( $settings_ai, $item );
-				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
+			if ( AI::has_wp_ai() ) {
+				$result_ai = AI::generate_description( $settings_ai ? $settings_ai : array(), $item );
+				if ( 'ok' === $result_ai['status'] ) {
 					$message      = '';
 					$product_info = array(
 						'ID' => $post_id,

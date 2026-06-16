@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -c \"\nimport re, sys, json\nreadme = 'readme.txt'\ntry:\n    with open(readme, 'r', encoding='utf-8') as f:\n        content = f.read()\nexcept FileNotFoundError:\n    sys.exit(0)\n\nhas_next = bool(re.search(r'^= next =$', content, re.MULTILINE))\nif not has_next:\n    match = re.search(r'^= \\d+\\.\\d+', content, re.MULTILINE)\n    if match:\n        content = content[:match.start()] + '= next =\\n* \\n\\n' + content[match.start():]\n        with open(readme, 'w', encoding='utf-8') as f:\n            f.write(content)\n        msg = 'Changelog: created = next = section in readme.txt — add your entry now.'\n    else:\n        msg = 'Changelog reminder: add an entry to the = next = section in readme.txt.'\nelse:\n    next_block = re.search(r'^= next =\\n(.*?)(?=^= \\d|\\Z)', content, re.MULTILINE | re.DOTALL)\n    entries = [l for l in (next_block.group(1) if next_block else '').splitlines() if l.strip() and l.strip() != '*']\n    if not entries:\n        msg = 'Changelog reminder: = next = section in readme.txt is empty — describe what changed.'\n    else:\n        sys.exit(0)\n\nprint(json.dumps({'systemMessage': msg}))\n\"",
+            "timeout": 10,
+            "statusMessage": "Checking changelog..."
+          }
+        ]
+      }
+    ]
+  }
+}

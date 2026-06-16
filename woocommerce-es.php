@@ -32,6 +32,7 @@ define(
 		'_billing_nif',
 		'_billing_vat_number',
 		'billing_vat',
+		'billing_cif',
 		'_wc_shipping/connect_ecommerce/billing_vat', // Gutenberg compatibility.
 		'VAT Number',
 	)
