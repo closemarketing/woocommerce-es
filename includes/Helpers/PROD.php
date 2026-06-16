@@ -268,12 +268,24 @@ class PROD {
 
 		// Start.
 		try {
-			if ( 'simple' === $type ) {
-				$product = new \WC_Product( $product_id );
-			} elseif ( 'variable' === $type ) {
-				$product = new \WC_Product_Variable( $product_id );
-			} elseif ( 'pack' === $type ) {
-				$product = new \WC_Product( $product_id );
+			// Preserve subscription product types — ERP has no subscription concept.
+			$subscription_types = array( 'subscription', 'variable-subscription' );
+			if ( ! $is_new_product ) {
+				$existing_product = wc_get_product( $product_id );
+				if ( $existing_product && in_array( $existing_product->get_type(), $subscription_types, true ) ) {
+					$product = $existing_product;
+				}
+				unset( $existing_product );
+			}
+
+			if ( null === $product ) {
+				if ( 'simple' === $type ) {
+					$product = new \WC_Product( $product_id );
+				} elseif ( 'variable' === $type ) {
+					$product = new \WC_Product_Variable( $product_id );
+				} elseif ( 'pack' === $type ) {
+					$product = new \WC_Product( $product_id );
+				}
 			}
 		} catch ( \Exception $e ) {
 			return array(
