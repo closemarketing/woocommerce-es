@@ -222,7 +222,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = next =
-* 
+* Added: WooCommerce Subscriptions support — product sync from ERP no longer overwrites the product type when it already exists in the store as a subscription or variable-subscription.
 
 = 3.3.4 =
 * Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.
