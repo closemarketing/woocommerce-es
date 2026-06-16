@@ -4,9 +4,9 @@ Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.9
-Stable tag: 3.3.3
-Version: 3.3.3
+Tested up to: 7.0
+Stable tag: 3.3.4
+Version: 3.3.4
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -222,8 +222,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = 3.3.4 =
-* Fixed: Tax prices setting key corrected from `tax_option` to `tax_price` — prices with tax included were not being imported correctly.
-* Fixed: Tax class from ERP tax type is now correctly applied on both product create and update (NEO connector).
+* Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.
 * Enhancement: Added `billing_cif` to the VAT field slug list so orders whose billing tax ID is stored in the `_billing_cif` meta key (e.g. from the WC-APG NIF/CIF/NIE plugin) are correctly synced to the ERP.
 * Enhancement: AI product description generation now uses the WordPress 7.0 core AI API (`wp_ai_client_prompt`) instead of direct provider API calls — no separate plugin or stored API key required.
 * Enhancement: AI model selector is now dynamic — models are loaded live from the active WordPress AI connectors (grouped by provider) and filtered to text-generation capable models only.
@@ -231,6 +230,10 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Enhancement: An "Auto" option in the model selector lets WordPress pick the best available model when no preference is set.
 * Enhancement: AI settings page shows an error notice when WordPress AI is unavailable, prompting an upgrade to WordPress 7.0+.
 * Enhancement: Added billing VAT number field to the WordPress user profile page (/wp-admin/profile.php and /wp-admin/user-edit.php). Admins can now view and edit the VAT number directly on a customer's profile. The value is stored as `billing_vat` user meta, so WooCommerce pre-populates the field automatically on the public checkout and on admin order creation for logged-in customers.
+* Fixed: Order item `tax` and `discount` values no longer expose IEEE 754 floating-point noise (e.g. `2.1000000000000001` or `33.329999999999998`) in the JSON payload sent to the ERP. All values are now serialized with at most 2 decimal digits.
+* Fixed: Fixed-cart coupon discount is now correctly distributed as a percentage across all order lines.
+* Fixed: Tax prices setting key corrected from `tax_option` to `tax_price` — prices with tax included were not being imported correctly.
+* Fixed: Tax class from ERP tax type is now correctly applied on both product create and update (NEO connector).
 
 = 3.3.3 =
 * Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
