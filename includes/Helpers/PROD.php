@@ -651,6 +651,12 @@ class PROD {
 				}
 			}
 			$variation->set_props( $variation_props );
+
+			// For variable-subscription products, keep the subscription price in sync.
+			if ( 'variable-subscription' === $product->get_type() && ! empty( $variation_price ) ) {
+				$variation->update_meta_data( '_subscription_price', $variation_price );
+			}
+
 			// Stock.
 			if ( 'yes' === $import_stock && isset( $variant['stock'] ) ) {
 				$item_stock   = (int) $variant['stock'];
