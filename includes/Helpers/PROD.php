@@ -189,9 +189,9 @@ class PROD {
 		if ( ( 'all' === $generate_ai && $post_id ) || ( 'new' === $generate_ai && $is_new_product && $post_id ) ) {
 			// Generate description with AI for product.
 			$settings_ai = get_option( 'connect_ecommerce_ai' );
-			if ( ! empty( $settings_ai['provider'] ) ) {
-				$result_ai = AI::generate_description( $settings_ai, $item );
-				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
+			if ( AI::has_wp_ai() ) {
+				$result_ai = AI::generate_description( $settings_ai ? $settings_ai : array(), $item );
+				if ( 'ok' === $result_ai['status'] ) {
 					$message      = '';
 					$product_info = array(
 						'ID' => $post_id,
@@ -287,15 +287,21 @@ class PROD {
 		$product_props     = array(
 			'stock_status'     => 'instock',
 			'backorders'       => $allow_backorders,
-			'regular_price'    => self::get_rate_price( $item, $rate_id ),
 			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
+			'tax_class'        => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 		);
+
+		if ( 'variable' !== $type ) {
+			$product_props['regular_price'] = self::get_rate_price( $item, $rate_id );
+		}
+
 		$price_sale = self::get_sale_price( $item, $settings );
-		if ( ! empty( $price_sale ) ) {
+		if ( ! empty( $price_sale ) && 'variable' !== $type ) {
 			$product_props['sale_price'] = $price_sale;
 		}
+
 		$product_props_new = array();
 		if ( $is_new_product ) {
 			$product_props_new = array(
@@ -310,7 +316,7 @@ class PROD {
 				'date_on_sale_to'    => '',
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
-				'tax_class'          => '',
+				'tax_class'          => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 				'manage_stock'       => 'yes' === $import_stock ? true : false,
 				'stock_quantity'     => null,
 				'sold_individually'  => false,
