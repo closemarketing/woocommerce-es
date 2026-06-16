@@ -1526,7 +1526,7 @@ class Settings {
 				'filter'             => '',
 				'pricesale_discount' => '',
 				'filter_sku'         => '',
-				'tax_option'         => 'no',
+				'tax_price'          => 'no',
 				'rates'              => 'default',
 				'catnp'              => 'yes',
 				'doctype'            => 'invoice',
@@ -1859,7 +1859,7 @@ class Settings {
 	 * @return void
 	 */
 	public function tax_option_callback() {
-		$tax_price = isset( $this->settings['tax'] ) ? $this->settings['tax'] : 'no';
+		$tax_price = isset( $this->settings['tax_price'] ) ? $this->settings['tax_price'] : 'no';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_price]" id="wcsen_tax">
 			<option value="yes" <?php selected( $tax_price, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>

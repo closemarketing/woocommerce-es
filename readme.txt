@@ -221,11 +221,10 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= next =
-* Enhancement: Added `billing_cif` to the VAT field slug list so orders whose billing tax ID is stored in the `_billing_cif` meta key (e.g. from the WC-APG NIF/CIF/NIE plugin) are correctly synced to the ERP.
-
-
 = 3.3.4 =
+* Fixed: Tax prices setting key corrected from `tax_option` to `tax_price` — prices with tax included were not being imported correctly.
+* Fixed: Tax class from ERP tax type is now correctly applied on both product create and update (NEO connector).
+* Enhancement: Added `billing_cif` to the VAT field slug list so orders whose billing tax ID is stored in the `_billing_cif` meta key (e.g. from the WC-APG NIF/CIF/NIE plugin) are correctly synced to the ERP.
 * Enhancement: AI product description generation now uses the WordPress 7.0 core AI API (`wp_ai_client_prompt`) instead of direct provider API calls — no separate plugin or stored API key required.
 * Enhancement: AI model selector is now dynamic — models are loaded live from the active WordPress AI connectors (grouped by provider) and filtered to text-generation capable models only.
 * Enhancement: Model preference is forwarded to the core AI client via `usingModelPreference()`, supporting the `provider::model` format used by the WP core registry.
