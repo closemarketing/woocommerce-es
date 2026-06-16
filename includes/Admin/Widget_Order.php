@@ -28,6 +28,13 @@ class Widget_Order {
 	private $options;
 
 	/**
+	 * Settings saved by the user (credentials, debug_log, etc.).
+	 *
+	 * @var array
+	 */
+	private $settings;
+
+	/**
 	 * API Object
 	 *
 	 * @var object
@@ -44,6 +51,7 @@ class Widget_Order {
 			return;
 		}
 		$this->options     = $connector['options'];
+		$this->settings    = $connector['settings'] ?? array();
 		$this->connapi_erp = $connector['connapi_erp'];
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_orders' ) );
@@ -113,7 +121,7 @@ class Widget_Order {
 	 * @return void
 	 */
 	public function maybe_add_log_payload_metabox( $post ) {
-		$is_debug = isset( $this->options['debug_log'] ) && 'on' === $this->options['debug_log'];
+		$is_debug = isset( $this->settings['debug_log'] ) && 'on' === $this->settings['debug_log'];
 
 		if ( ! $is_debug ) {
 			return;
