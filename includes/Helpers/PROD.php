@@ -269,13 +269,17 @@ class PROD {
 		// Start.
 		try {
 			// Preserve subscription product types — ERP has no subscription concept.
-			$subscription_types = array( 'subscription', 'variable-subscription' );
+			// Only reuse the subscription object when the ERP shape matches the subtype:
+			// simple ERP item → subscription, variable ERP item → variable-subscription.
 			if ( ! $is_new_product ) {
-				$existing_product = wc_get_product( $product_id );
-				if ( $existing_product && in_array( $existing_product->get_type(), $subscription_types, true ) ) {
+				$existing_product      = wc_get_product( $product_id );
+				$existing_type         = $existing_product ? $existing_product->get_type() : '';
+				$is_simple_sub_match   = ( 'simple' === $type && 'subscription' === $existing_type );
+				$is_variable_sub_match = ( 'variable' === $type && 'variable-subscription' === $existing_type );
+				if ( $is_simple_sub_match || $is_variable_sub_match ) {
 					$product = $existing_product;
 				}
-				unset( $existing_product );
+				unset( $existing_product, $existing_type, $is_simple_sub_match, $is_variable_sub_match );
 			}
 
 			if ( null === $product ) {
