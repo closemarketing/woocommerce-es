@@ -4,9 +4,9 @@ Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.9
-Stable tag: 3.3.3
-Version: 3.3.3
+Tested up to: 7.0
+Stable tag: 3.3.4
+Version: 3.3.4
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
