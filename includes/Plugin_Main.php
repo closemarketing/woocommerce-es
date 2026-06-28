@@ -13,6 +13,7 @@ namespace CLOSE\ConnectEcommerce;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Admin\Settings;
+use CLOSE\ConnectEcommerce\Admin\Setup_Wizard;
 use CLOSE\ConnectEcommerce\Admin\Import_Products;
 use CLOSE\ConnectEcommerce\Admin\Widget_Order;
 use CLOSE\ConnectEcommerce\Admin\Widget_Product;
@@ -49,6 +50,7 @@ class Base {
 
 		if ( is_admin() ) {
 			new Settings( $connector );
+			new Setup_Wizard( $options );
 			new Import_Products( $connector );
 			new Widget_Product( $connector );
 			new Widget_Order( $connector );

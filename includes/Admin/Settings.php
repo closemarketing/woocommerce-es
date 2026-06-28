@@ -241,6 +241,11 @@ class Settings {
 								?>
 							</h2>
 						</div>
+						<div style="margin-left: auto; align-self: center;">
+							<a href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin.php?conecom_reset_wizard=1' ), 'conecom_reset_wizard' ) ); ?>" class="button button-secondary" style="font-size:12px;">
+								<?php esc_html_e( 'Run setup wizard', 'woocommerce-es' ); ?>
+							</a>
+						</div>
 					</div>
 				</div>
 			</div>

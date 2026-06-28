@@ -114,12 +114,16 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	add_action( 'cli_init', 'conecom_import_products_register_commands', 20 );
 }
 
-register_activation_hook( __FILE__, 'conecom_move_settings' );
+register_activation_hook( __FILE__, 'conecom_activation' );
 /**
- * Move settings from old plugin to new plugin
+ * Runs on plugin activation: migrates legacy settings and queues the setup wizard redirect.
  *
  * @return void
  */
-function conecom_move_settings() {
+function conecom_activation() {
 	CLOSE\ConnectEcommerce\Helpers\HELPER::move_settings();
+
+	if ( ! get_option( 'conecom_wizard_complete' ) ) {
+		set_transient( 'conecom_wizard_redirect', true, 30 );
+	}
 }
