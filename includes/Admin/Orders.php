@@ -83,7 +83,8 @@ class Orders {
 		} elseif ( 'paid' === $ecstatus ) {
 			add_action( 'woocommerce_payment_complete', array( $this, 'send_order_erp' ) );
 		}
-		add_action( 'woocommerce_order_status_completed', array( $this, 'send_order_erp' ) );
+		// Priority 5 ensures invoice is created before WooCommerce sends the completed email (priority 10).
+		add_action( 'woocommerce_order_status_completed', array( $this, 'send_order_erp_sync' ), 5 );
 
 		// Email attachments.
 		if ( $this->options['order_send_attachments'] ) {
@@ -146,6 +147,16 @@ class Orders {
 		} else {
 			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
 		}
+	}
+
+	/**
+	 * Send order to ERP synchronously (used for completed status so PDF is ready before email).
+	 *
+	 * @param int $order_id Order id.
+	 * @return void
+	 */
+	public function send_order_erp_sync( $order_id ) {
+		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
 	}
 
 	/**
@@ -301,7 +312,7 @@ class Orders {
 	 * @return file
 	 */
 	public function attach_file_woocommerce_email( $attachments, $action, $email_order ) {
-		$settings = get_option( $this->options['slug'] );
+		$settings = $this->settings;
 		$order    = wc_get_order( $email_order );
 		if ( ! $order ) {
 			return $attachments;

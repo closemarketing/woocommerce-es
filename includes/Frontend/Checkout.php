@@ -63,6 +63,9 @@ class Checkout {
 		add_action( 'woocommerce_checkout_update_order_meta', array( $this, 'save_additional_checkout_fields' ) );
 		add_action( 'woocommerce_admin_order_data_after_billing_address', array( $this, 'display_additional_checkout_fields_admin' ) );
 
+		// Save VAT to order meta for blocks checkout (always, regardless of VIES setting).
+		add_action( 'woocommerce_store_api_checkout_update_order_from_request', array( $this, 'save_vat_from_blocks_request' ), 5, 2 );
+
 		$remove_free = isset( $this->setttings_public['remove_free'] ) ? $this->setttings_public['remove_free'] : 'no';
 		if ( 'yes' === $remove_free ) {
 			// Hide shipping rates when free shipping is available.
@@ -702,6 +705,27 @@ class Checkout {
 	}
 
 	/**
+	 * Save VAT number to order meta for WooCommerce Blocks checkout.
+	 *
+	 * @param \WC_Order        $order Order object.
+	 * @param \WP_REST_Request $request Request object.
+	 * @return void
+	 */
+	public function save_vat_from_blocks_request( $order, $request ) {
+		$billing_address = $request->get_param( 'billing_address' );
+		$vat_number      = '';
+
+		if ( isset( $billing_address['connect_ecommerce/billing_vat'] ) ) {
+			$vat_number = sanitize_text_field( $billing_address['connect_ecommerce/billing_vat'] );
+		}
+
+		if ( ! empty( $vat_number ) ) {
+			$order->update_meta_data( '_billing_vat', $vat_number );
+			$order->save();
+		}
+	}
+
+	/**
 	 * Validate VAT number during checkout for WooCommerce Blocks.
 	 *
 	 * @param \WC_Order        $order Order object.
@@ -731,6 +755,10 @@ class Checkout {
 			VAT::remove_vat_exemption();
 			return;
 		}
+
+		// Save VAT number to order meta so get_billing_vat() can find it later.
+		$order->update_meta_data( '_billing_vat', $vat_number );
+		$order->save();
 
 		// Get country code.
 		$country_code = isset( $billing_address['country'] ) ? $billing_address['country'] : '';
