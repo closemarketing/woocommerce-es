@@ -269,20 +269,18 @@ class PROD {
 		// Preserve subscription product types — ERP has no subscription concept.
 		// Read the type directly from the taxonomy (not via wc_get_product, which may be cached),
 		// then restore it with wp_set_object_terms after every save so WooCommerce internals
-		// cannot overwrite it. Gate on ERP shape matching the subtype to avoid type mismatches:
-		// simple ERP item → subscription, variable ERP item → variable-subscription.
+		// cannot overwrite it. Any ERP shape (simple or variable) preserves the subscription
+		// type because the ERP may legitimately change shape while the subscription remains.
 		$preserved_sub_type = null;
 		if ( ! $is_new_product ) {
 			$existing_terms = get_the_terms( $product_id, 'product_type' );
 			$existing_type  = ( ! empty( $existing_terms ) && ! is_wp_error( $existing_terms ) )
 				? sanitize_title( current( $existing_terms )->name )
 				: '';
-			$is_simple_sub   = ( 'simple' === $type && 'subscription' === $existing_type );
-			$is_variable_sub = ( 'variable' === $type && 'variable-subscription' === $existing_type );
-			if ( $is_simple_sub || $is_variable_sub ) {
+			if ( in_array( $existing_type, array( 'subscription', 'variable-subscription' ), true ) ) {
 				$preserved_sub_type = $existing_type;
 			}
-			unset( $existing_terms, $existing_type, $is_simple_sub, $is_variable_sub );
+			unset( $existing_terms, $existing_type );
 		}
 
 		// Start.
@@ -492,6 +490,14 @@ class PROD {
 		}
 		$product->update_meta_data( 'conecom_updated', $updated_ts );
 
+		// For simple subscription products, keep _subscription_price in sync.
+		// Use sale price as the recurring amount when active (WC Subscriptions behaviour).
+		if ( 'subscription' === $preserved_sub_type ) {
+			$price_sale_sub     = self::get_sale_price( $item, $settings );
+			$subscription_price = ! empty( $price_sale_sub ) ? $price_sale_sub : self::get_rate_price( $item, $rate_id );
+			$product->update_meta_data( '_subscription_price', $subscription_price );
+		}
+
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
@@ -672,9 +678,31 @@ class PROD {
 			}
 			$variation->set_props( $variation_props );
 
-			// For variable-subscription products, keep the subscription price in sync.
-			if ( 'variable-subscription' === $product->get_type() && ! empty( $variation_price ) ) {
-				$variation->update_meta_data( '_subscription_price', $variation_price );
+			// For variable-subscription products, sync subscription price and schedule.
+			if ( 'variable-subscription' === $product->get_type() ) {
+				// Use sale price as the recurring amount when active (WC Subscriptions behaviour).
+				$price_sale_var     = self::get_sale_price( $variant, $settings );
+				$subscription_price = ! empty( $price_sale_var ) ? $price_sale_var : $variation_price;
+				$variation->update_meta_data( '_subscription_price', $subscription_price );
+
+				// Copy the subscription schedule from the parent onto new variants so they
+				// inherit the merchant's billing cadence instead of WooCommerce defaults.
+				if ( 0 === $variation_id ) {
+					$schedule_keys = array(
+						'_subscription_period',
+						'_subscription_period_interval',
+						'_subscription_length',
+						'_subscription_trial_length',
+						'_subscription_trial_period',
+						'_subscription_sign_up_fee',
+					);
+					foreach ( $schedule_keys as $meta_key ) {
+						$parent_value = get_post_meta( $product_id, $meta_key, true );
+						if ( '' !== $parent_value ) {
+							$variation->update_meta_data( $meta_key, $parent_value );
+						}
+					}
+				}
 			}
 
 			// Stock.
