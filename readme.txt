@@ -223,6 +223,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 * Fixed: Reverted the "Get prices with Tax?" setting key from `tax_price` back to `tax_option`. Connector addons still read/write `tax_option`, so the 3.3.4 rename caused the setting to appear to reset to "No" after saving.
+* Enhancement: Added a "Default" option to "Get prices with Tax?" that follows WooCommerce's own "Prices entered with tax" setting (WooCommerce &gt; Settings &gt; Tax), so both settings stay in sync instead of having to be configured twice. It is now the default value for new/unset installs. Explicitly choosing "Yes" or "No" still overrides the WooCommerce setting as before.
 
 = 3.3.4 =
 * Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.

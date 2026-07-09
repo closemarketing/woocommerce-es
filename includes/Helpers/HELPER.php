@@ -228,6 +228,12 @@ class HELPER {
 		$connector['settings']     = $connector['settings_all'][ $connector['connector'] ] ?? array();
 		$connector['all_options']  = $options;
 
+		// Keep the saved choice for the settings UI, then resolve "default" to WooCommerce's own tax setting.
+		$connector['settings']['tax_option_saved'] = $connector['settings']['tax_option'] ?? 'default';
+		if ( empty( $connector['settings']['tax_option'] ) || 'default' === $connector['settings']['tax_option'] ) {
+			$connector['settings']['tax_option'] = 'yes' === get_option( 'woocommerce_prices_include_tax' ) ? 'yes' : 'no';
+		}
+
 		$connector['settings']['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
 
 		// Initialize payment method mappings.

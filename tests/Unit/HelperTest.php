@@ -46,6 +46,7 @@ class HelperTest extends WP_UnitTestCase {
 		delete_option( $this->option_name );
 		delete_option( $this->payment_option_name );
 		delete_option( $this->mergevars_option_name );
+		delete_option( 'woocommerce_prices_include_tax' );
 	}
 
 	/**
@@ -58,6 +59,7 @@ class HelperTest extends WP_UnitTestCase {
 		delete_option( $this->option_name );
 		delete_option( $this->payment_option_name );
 		delete_option( $this->mergevars_option_name );
+		delete_option( 'woocommerce_prices_include_tax' );
 		parent::tearDown();
 	}
 
@@ -317,6 +319,90 @@ class HelperTest extends WP_UnitTestCase {
 
 		$this->assertIsArray( $connector['settings']['prod_mergevars'] );
 		$this->assertEmpty( $connector['settings']['prod_mergevars'] );
+	}
+
+	/**
+	 * Should resolve "default" tax_option to WooCommerce's own tax setting (prices with tax).
+	 *
+	 * @return void
+	 */
+	public function test_resolves_default_tax_option_to_woocommerce_setting_when_yes(): void {
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_option' => 'default' ),
+			)
+		);
+
+		$connector = HELPER::get_connector( array() );
+
+		$this->assertSame( 'default', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'yes', $connector['settings']['tax_option'] );
+	}
+
+	/**
+	 * Should resolve "default" tax_option to WooCommerce's own tax setting (prices without tax).
+	 *
+	 * @return void
+	 */
+	public function test_resolves_default_tax_option_to_woocommerce_setting_when_no(): void {
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_option' => 'default' ),
+			)
+		);
+
+		$connector = HELPER::get_connector( array() );
+
+		$this->assertSame( 'default', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'no', $connector['settings']['tax_option'] );
+	}
+
+	/**
+	 * Should treat a missing tax_option as "default" and resolve it against WooCommerce.
+	 *
+	 * @return void
+	 */
+	public function test_treats_missing_tax_option_as_default(): void {
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array(),
+			)
+		);
+
+		$connector = HELPER::get_connector( array() );
+
+		$this->assertSame( 'default', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'yes', $connector['settings']['tax_option'] );
+	}
+
+	/**
+	 * Should keep an explicit "yes"/"no" tax_option untouched, ignoring the WooCommerce setting.
+	 *
+	 * @return void
+	 */
+	public function test_keeps_explicit_tax_option_regardless_of_woocommerce_setting(): void {
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_option' => 'no' ),
+			)
+		);
+
+		$connector = HELPER::get_connector( array() );
+
+		$this->assertSame( 'no', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'no', $connector['settings']['tax_option'] );
 	}
 }
 

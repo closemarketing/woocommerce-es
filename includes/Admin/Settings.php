@@ -1526,7 +1526,7 @@ class Settings {
 				'filter'             => '',
 				'pricesale_discount' => '',
 				'filter_sku'         => '',
-				'tax_option'         => 'no',
+				'tax_option'         => 'default',
 				'rates'              => 'default',
 				'catnp'              => 'yes',
 				'doctype'            => 'invoice',
@@ -1859,12 +1859,32 @@ class Settings {
 	 * @return void
 	 */
 	public function tax_option_callback() {
-		$tax_option = isset( $this->settings['tax_option'] ) ? $this->settings['tax_option'] : 'no';
+		$tax_option            = isset( $this->settings['tax_option_saved'] ) ? $this->settings['tax_option_saved'] : 'default';
+		$wc_prices_include_tax = 'yes' === get_option( 'woocommerce_prices_include_tax' );
+		$wc_tax_option_label   = $wc_prices_include_tax ? __( 'Yes, tax included', 'woocommerce-es' ) : __( 'No, tax not included', 'woocommerce-es' );
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_option]" id="wcsen_tax">
+			<option value="default" <?php selected( $tax_option, 'default' ); ?>>
+				<?php
+				printf(
+					/* translators: %s: current value of the WooCommerce "Prices entered with tax" setting. */
+					esc_html__( 'Default (use WooCommerce setting: %s)', 'woocommerce-es' ),
+					esc_html( $wc_tax_option_label )
+				);
+				?>
+			</option>
 			<option value="yes" <?php selected( $tax_option, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>
 			<option value="no" <?php selected( $tax_option, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'woocommerce-es' ); ?></option>
 		</select>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: link to the WooCommerce tax settings page. */
+				esc_html__( 'The current WooCommerce setting can be checked and changed on the %s page.', 'woocommerce-es' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=tax' ) ) . '" target="_blank">' . esc_html__( 'WooCommerce &gt; Settings &gt; Tax', 'woocommerce-es' ) . '</a>'
+			);
+			?>
+		</p>
 		<?php
 	}
 
