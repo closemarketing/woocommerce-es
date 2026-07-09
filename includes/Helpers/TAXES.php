@@ -94,14 +94,18 @@ class TAXES {
 
 		global $wpdb;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$tax_rate_class = $wpdb->get_var(
+		$row = $wpdb->get_row(
 			$wpdb->prepare(
 				"SELECT tax_rate_class FROM {$wpdb->prefix}woocommerce_tax_rates WHERE erp_tax_type = %s LIMIT 1",
 				(string) $erp_tax_id
-			)
+			),
+			ARRAY_A
 		);
 
-		return null === $tax_rate_class ? null : $tax_rate_class;
+		// get_var() would return null both when no row matches and when the
+		// matched row's tax_rate_class is '' (standard rate) — get_row() lets
+		// us tell "no mapping" apart from "mapped to the standard class".
+		return null === $row ? null : $row['tax_rate_class'];
 	}
 
 	/**

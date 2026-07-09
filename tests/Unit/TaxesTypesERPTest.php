@@ -254,6 +254,65 @@ class TaxesTypesERPTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test get_tax_class_by_erp_id() returns the mapped tax class slug.
+	 */
+	public function test_get_tax_class_by_erp_id_returns_mapped_class() {
+		$tax_rate_id = \WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'ES',
+				'tax_rate_state'    => '',
+				'tax_rate'          => '10.0000',
+				'tax_rate_name'     => 'IVA reducido',
+				'tax_rate_priority' => 1,
+				'tax_rate_compound' => 0,
+				'tax_rate_shipping' => 1,
+				'tax_rate_order'    => 0,
+				'tax_rate_class'    => 'reduced-rate',
+			)
+		);
+		TAXES::update_tax_type( $tax_rate_id, '291' );
+
+		$this->assertEquals( 'reduced-rate', TAXES::get_tax_class_by_erp_id( '291' ) );
+
+		\WC_Tax::_delete_tax_rate( $tax_rate_id );
+	}
+
+	/**
+	 * An ERP tax ID mapped to the WooCommerce standard class is stored with
+	 * tax_rate_class = '' — this must be distinguished from "no mapping"
+	 * (null), which is what a plain get_var() lookup would incorrectly return
+	 * for both cases.
+	 */
+	public function test_get_tax_class_by_erp_id_returns_empty_string_for_standard_rate_mapping() {
+		$tax_rate_id = \WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'ES',
+				'tax_rate_state'    => '',
+				'tax_rate'          => '21.0000',
+				'tax_rate_name'     => 'IVA',
+				'tax_rate_priority' => 1,
+				'tax_rate_compound' => 0,
+				'tax_rate_shipping' => 1,
+				'tax_rate_order'    => 0,
+				'tax_rate_class'    => '',
+			)
+		);
+		TAXES::update_tax_type( $tax_rate_id, '220' );
+
+		$this->assertSame( '', TAXES::get_tax_class_by_erp_id( '220' ) );
+
+		\WC_Tax::_delete_tax_rate( $tax_rate_id );
+	}
+
+	/**
+	 * Test get_tax_class_by_erp_id() returns null when no tax rate has that
+	 * ERP tax ID mapped.
+	 */
+	public function test_get_tax_class_by_erp_id_returns_null_when_unmapped() {
+		$this->assertNull( TAXES::get_tax_class_by_erp_id( '999999' ) );
+	}
+
+	/**
 	 * Test that ERP taxes sharing the same display name get their ID appended,
 	 * so the admin can tell them apart in the dropdown (e.g. Odoo taxes 277 and
 	 * 291 both named "10% G" on different companies/fiscal positions).
