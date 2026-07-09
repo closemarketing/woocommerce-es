@@ -1526,7 +1526,6 @@ class Settings {
 				'filter'             => '',
 				'pricesale_discount' => '',
 				'filter_sku'         => '',
-				'tax_option'         => 'default',
 				'rates'              => 'default',
 				'catnp'              => 'yes',
 				'doctype'            => 'invoice',
@@ -1554,6 +1553,17 @@ class Settings {
 				$sanitary_values[ $connector ][ $setting ] = $default_value;
 			}
 		}
+
+		// Get prices with Tax? Resolve "Default" now and store it as a plain 'yes'/'no',
+		// so connector add-ons reading `tax_option` directly always get a value they understand.
+		if ( isset( $input[ $connector ]['tax_option'] ) ) {
+			$tax_option_pref = sanitize_text_field( $input[ $connector ]['tax_option'] );
+		} else {
+			$tax_option_pref = HELPER::get_tax_option_pref( $imh_settings[ $connector ] ?? array() );
+		}
+		$sanitary_values[ $connector ]['tax_option_pref'] = $tax_option_pref;
+		$sanitary_values[ $connector ]['tax_option']      = HELPER::resolve_tax_option( $tax_option_pref );
+
 		$sanitary_values['connector'] = $connector;
 
 		return $sanitary_values;
@@ -1859,7 +1869,7 @@ class Settings {
 	 * @return void
 	 */
 	public function tax_option_callback() {
-		$tax_option            = isset( $this->settings['tax_option_saved'] ) ? $this->settings['tax_option_saved'] : 'default';
+		$tax_option            = isset( $this->settings['tax_option_pref'] ) ? $this->settings['tax_option_pref'] : 'default';
 		$wc_prices_include_tax = 'yes' === get_option( 'woocommerce_prices_include_tax' );
 		$wc_tax_option_label   = $wc_prices_include_tax ? __( 'Yes, tax included', 'woocommerce-es' ) : __( 'No, tax not included', 'woocommerce-es' );
 		?>

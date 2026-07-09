@@ -332,13 +332,13 @@ class HelperTest extends WP_UnitTestCase {
 			$this->option_name,
 			array(
 				'connector'      => 'test_connector',
-				'test_connector' => array( 'tax_option' => 'default' ),
+				'test_connector' => array( 'tax_option_pref' => 'default' ),
 			)
 		);
 
 		$connector = HELPER::get_connector( array() );
 
-		$this->assertSame( 'default', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'default', $connector['settings']['tax_option_pref'] );
 		$this->assertSame( 'yes', $connector['settings']['tax_option'] );
 	}
 
@@ -353,13 +353,13 @@ class HelperTest extends WP_UnitTestCase {
 			$this->option_name,
 			array(
 				'connector'      => 'test_connector',
-				'test_connector' => array( 'tax_option' => 'default' ),
+				'test_connector' => array( 'tax_option_pref' => 'default' ),
 			)
 		);
 
 		$connector = HELPER::get_connector( array() );
 
-		$this->assertSame( 'default', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'default', $connector['settings']['tax_option_pref'] );
 		$this->assertSame( 'no', $connector['settings']['tax_option'] );
 	}
 
@@ -380,7 +380,7 @@ class HelperTest extends WP_UnitTestCase {
 
 		$connector = HELPER::get_connector( array() );
 
-		$this->assertSame( 'default', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'default', $connector['settings']['tax_option_pref'] );
 		$this->assertSame( 'yes', $connector['settings']['tax_option'] );
 	}
 
@@ -395,14 +395,125 @@ class HelperTest extends WP_UnitTestCase {
 			$this->option_name,
 			array(
 				'connector'      => 'test_connector',
-				'test_connector' => array( 'tax_option' => 'no' ),
+				'test_connector' => array( 'tax_option_pref' => 'no' ),
 			)
 		);
 
 		$connector = HELPER::get_connector( array() );
 
-		$this->assertSame( 'no', $connector['settings']['tax_option_saved'] );
+		$this->assertSame( 'no', $connector['settings']['tax_option_pref'] );
 		$this->assertSame( 'no', $connector['settings']['tax_option'] );
+	}
+
+	/**
+	 * Should migrate the pre-"Default" `tax_option` value into `tax_option_pref`.
+	 *
+	 * @return void
+	 */
+	public function test_migrates_legacy_tax_option_into_pref(): void {
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_option' => 'yes' ),
+			)
+		);
+
+		$connector = HELPER::get_connector( array() );
+
+		$this->assertSame( 'yes', $connector['settings']['tax_option_pref'] );
+		$this->assertSame( 'yes', $connector['settings']['tax_option'] );
+	}
+
+	/**
+	 * Should migrate the short-lived 3.3.4 `tax_price` key into `tax_option_pref`.
+	 *
+	 * @return void
+	 */
+	public function test_migrates_legacy_tax_price_into_pref(): void {
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_price' => 'yes' ),
+			)
+		);
+
+		$connector = HELPER::get_connector( array() );
+
+		$this->assertSame( 'yes', $connector['settings']['tax_option_pref'] );
+		$this->assertSame( 'yes', $connector['settings']['tax_option'] );
+	}
+
+	/**
+	 * HELPER::resolve_tax_option() should pass explicit "yes"/"no" through untouched.
+	 *
+	 * @return void
+	 */
+	public function test_resolve_tax_option_keeps_explicit_values(): void {
+		$this->assertSame( 'yes', HELPER::resolve_tax_option( 'yes' ) );
+		$this->assertSame( 'no', HELPER::resolve_tax_option( 'no' ) );
+	}
+
+	/**
+	 * HELPER::resolve_tax_option() should follow WooCommerce's setting for "default".
+	 *
+	 * @return void
+	 */
+	public function test_resolve_tax_option_follows_woocommerce_for_default(): void {
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		$this->assertSame( 'yes', HELPER::resolve_tax_option( 'default' ) );
+
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+		$this->assertSame( 'no', HELPER::resolve_tax_option( 'default' ) );
+	}
+
+	/**
+	 * sync_tax_option_with_woocommerce() should update the stored tax_option when the
+	 * preference is "default" and WooCommerce's own setting changes.
+	 *
+	 * @return void
+	 */
+	public function test_sync_tax_option_with_woocommerce_updates_default_preference(): void {
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_option_pref' => 'default' ),
+			)
+		);
+
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		HELPER::sync_tax_option_with_woocommerce();
+
+		$settings_all = get_option( $this->option_name );
+		$this->assertSame( 'yes', $settings_all['test_connector']['tax_option'] );
+		$this->assertSame( 'default', $settings_all['test_connector']['tax_option_pref'] );
+	}
+
+	/**
+	 * sync_tax_option_with_woocommerce() should not touch an explicit "yes"/"no" preference.
+	 *
+	 * @return void
+	 */
+	public function test_sync_tax_option_with_woocommerce_ignores_explicit_preference(): void {
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_option_pref' => 'yes', 'tax_option' => 'yes' ),
+			)
+		);
+
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+		HELPER::sync_tax_option_with_woocommerce();
+
+		$settings_all = get_option( $this->option_name );
+		$this->assertSame( 'yes', $settings_all['test_connector']['tax_option'] );
 	}
 }
 
