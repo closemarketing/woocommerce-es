@@ -545,8 +545,72 @@ class CreateOrderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test percent coupon discount sends the percentage value, not a recalculated amount.
+	 *
+	 * Regression test for the bug introduced in v3.3.3 where a 20% coupon on a $16
+	 * item produced discount=125 instead of discount=20, causing Holded to return
+	 * negative totals (16 × (1 − 1.25) = −4.00).
+	 */
+	public function test_percent_coupon_discount_sends_percentage_not_recalculated_amount() {
+		// Create a product with subtotal $16.
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Test Product' );
+		$product->set_regular_price( 16 );
+		$product->save();
+
+		// Create a percent coupon of 20%.
+		$coupon = new \WC_Coupon();
+		$coupon->set_code( 'percent20' );
+		$coupon->set_discount_type( 'percent' );
+		$coupon->set_amount( 20 );
+		$coupon->save();
+
+		// Create an order.
+		$order = new \WC_Order();
+		$order->set_billing_email( 'test@example.com' );
+		$order->set_status( 'completed' );
+
+		// Add product: subtotal $16, total $12.80 after 20% discount.
+		$item = new \WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 16 );
+		$item->set_total( 12.80 );
+		$order->add_item( $item );
+
+		// Add the percent coupon line item: discount monetary amount = 3.20.
+		$coupon_item = new \WC_Order_Item_Coupon();
+		$coupon_item->set_code( 'percent20' );
+		$coupon_item->set_discount( 3.20 );
+		$order->add_item( $coupon_item );
+
+		$order->calculate_totals();
+		$order->save();
+
+		$option_prefix = 'conecom-test';
+		$order_data    = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+
+		$this->assertNotEmpty( $order_data['items'] );
+		$first_item = $order_data['items'][0];
+
+		$this->assertArrayHasKey( 'discount', $first_item, 'Item should have a discount field' );
+
+		// Must be 20 (the coupon percentage), not 125 (the wrong recalculated value).
+		$this->assertEquals(
+			20.0,
+			$first_item['discount'],
+			'Percent coupon discount must send the percentage value (20), not the recalculated amount (125)'
+		);
+
+		// Clean up.
+		$product->delete( true );
+		$coupon->delete( true );
+		$order->delete( true );
+	}
+
+	/**
 	 * Test rounding precision for discounts (Issue #138)
-	 * 
+	 *
 	 * Verifies that discount percentages are rounded to 2 decimals instead of 0 decimals.
 	 */
 	public function test_order_discount_rounding_precision() {
@@ -637,6 +701,237 @@ class CreateOrderTest extends WP_UnitTestCase {
 			$coupon->delete( true );
 			$order->delete( true );
 		}
+	}
+
+	/**
+	 * Test fixed_cart coupon (e.g. €10 off) distributes discount across all order lines.
+	 *
+	 * WooCommerce distributes a fixed cart coupon proportionally by line subtotal.
+	 * The discount field sent to the ERP must be a percentage per line, not the raw
+	 * monetary amount, and must be rounded to 2 decimals.
+	 *
+	 * Example: €10 coupon on a cart with two items (€30 + €20 = €50 subtotal).
+	 *   - Item A gets €6 off  → discount = (6/30)*100 = 20.00%
+	 *   - Item B gets €4 off  → discount = (4/20)*100 = 20.00%
+	 */
+	public function test_fixed_cart_coupon_discount_distributes_to_all_lines() {
+		// Product A: €30, Product B: €20.
+		$product_a = new \WC_Product_Simple();
+		$product_a->set_name( 'Product A' );
+		$product_a->set_regular_price( 30 );
+		$product_a->save();
+
+		$product_b = new \WC_Product_Simple();
+		$product_b->set_name( 'Product B' );
+		$product_b->set_regular_price( 20 );
+		$product_b->save();
+
+		// Fixed cart coupon: €10 off.
+		$coupon = new \WC_Coupon();
+		$coupon->set_code( 'cart10' );
+		$coupon->set_discount_type( 'fixed_cart' );
+		$coupon->set_amount( 10 );
+		$coupon->save();
+
+		// Build the order manually, distributing the €10 discount proportionally:
+		//   €50 subtotal → Item A (60%) gets €6 off, Item B (40%) gets €4 off.
+		$order = new \WC_Order();
+		$order->set_billing_email( 'test@example.com' );
+		$order->set_status( 'completed' );
+
+		$item_a = new \WC_Order_Item_Product();
+		$item_a->set_product( $product_a );
+		$item_a->set_quantity( 1 );
+		$item_a->set_subtotal( 30 );
+		$item_a->set_total( 24 ); // 30 - 6.
+		$order->add_item( $item_a );
+
+		$item_b = new \WC_Order_Item_Product();
+		$item_b->set_product( $product_b );
+		$item_b->set_quantity( 1 );
+		$item_b->set_subtotal( 20 );
+		$item_b->set_total( 16 ); // 20 - 4.
+		$order->add_item( $item_b );
+
+		// Coupon line item carries the full €10 monetary discount.
+		$coupon_item = new \WC_Order_Item_Coupon();
+		$coupon_item->set_code( 'cart10' );
+		$coupon_item->set_discount( 10 );
+		$order->add_item( $coupon_item );
+
+		$order->calculate_totals();
+		$order->save();
+
+		$option_prefix = 'conecom-test';
+		$order_data    = ORDER::generate_order_data( $this->settings, $order, $option_prefix );
+
+		$this->assertNotEmpty( $order_data['items'], 'Order must have items' );
+		$this->assertCount( 2, $order_data['items'], 'Order must have exactly 2 product lines' );
+
+		$item_data_a = $order_data['items'][0];
+		$item_data_b = $order_data['items'][1];
+
+		// Both items must carry a discount field.
+		$this->assertArrayHasKey( 'discount', $item_data_a, 'Item A must have a discount field' );
+		$this->assertArrayHasKey( 'discount', $item_data_b, 'Item B must have a discount field' );
+
+		// Item A: (6 / 30) * 100 = 20.00%.
+		$this->assertEquals( 20.0, $item_data_a['discount'], 'Item A discount must be 20.00%' );
+
+		// Item B: (4 / 20) * 100 = 20.00%.
+		$this->assertEquals( 20.0, $item_data_b['discount'], 'Item B discount must be 20.00%' );
+
+		// Discount values must be proper floats, not strings.
+		$this->assertIsFloat( $item_data_a['discount'] );
+		$this->assertIsFloat( $item_data_b['discount'] );
+
+		// Discount values must not expose IEEE 754 extra decimals.
+		$this->assertEquals(
+			(float) number_format( $item_data_a['discount'], 2, '.', '' ),
+			$item_data_a['discount'],
+			'Item A discount must be rounded to 2 decimals'
+		);
+		$this->assertEquals(
+			(float) number_format( $item_data_b['discount'], 2, '.', '' ),
+			$item_data_b['discount'],
+			'Item B discount must be rounded to 2 decimals'
+		);
+
+		// Clean up.
+		$product_a->delete( true );
+		$product_b->delete( true );
+		$coupon->delete( true );
+		$order->delete( true );
+	}
+
+	/**
+	 * Test that fixed_cart coupon discount and tax values have at most 2 decimal digits
+	 * when serialized, i.e. no IEEE 754 trailing noise like 33.329999999999998.
+	 *
+	 * Uses prices that are known to produce non-terminating binary fractions:
+	 *   - €15 item, 21% tax   → tax = 3.15  (exact in decimal, tricky in binary)
+	 *   - €10 fixed coupon on a €45 cart → Item A (€30): 6.67% off, Item B (€15): 6.67% off
+	 */
+	public function test_fixed_cart_coupon_discount_and_tax_have_max_2_decimals() {
+		update_option( 'woocommerce_calc_taxes', 'yes' );
+		update_option( 'woocommerce_prices_include_tax', 'no' );
+
+		$tax_rate_id = \WC_Tax::_insert_tax_rate(
+			array(
+				'tax_rate_country'  => 'ES',
+				'tax_rate_state'    => '',
+				'tax_rate'          => '21.0000',
+				'tax_rate_name'     => 'IVA',
+				'tax_rate_priority' => 1,
+				'tax_rate_compound' => 0,
+				'tax_rate_shipping' => 0,
+				'tax_rate_order'    => 0,
+				'tax_rate_class'    => '',
+			)
+		);
+
+		// Product A: €30, Product B: €15 — total cart €45.
+		$product_a = new \WC_Product_Simple();
+		$product_a->set_name( 'Product Float A' );
+		$product_a->set_regular_price( 30 );
+		$product_a->set_tax_status( 'taxable' );
+		$product_a->set_tax_class( '' );
+		$product_a->save();
+
+		$product_b = new \WC_Product_Simple();
+		$product_b->set_name( 'Product Float B' );
+		$product_b->set_regular_price( 15 );
+		$product_b->set_tax_status( 'taxable' );
+		$product_b->set_tax_class( '' );
+		$product_b->save();
+
+		// Fixed cart coupon: €10 off.
+		$coupon = new \WC_Coupon();
+		$coupon->set_code( 'cart10float' );
+		$coupon->set_discount_type( 'fixed_cart' );
+		$coupon->set_amount( 10 );
+		$coupon->save();
+
+		// Distribute €10 proportionally: A gets €6.67, B gets €3.33.
+		$discount_a = round( 10 * ( 30 / 45 ), 2 ); // 6.67
+		$discount_b = round( 10 * ( 15 / 45 ), 2 ); // 3.33
+		$tax_a      = round( 30 * 0.21, 2 );         // 6.30
+		$tax_b      = round( 15 * 0.21, 2 );         // 3.15
+
+		$order = new \WC_Order();
+		$order->set_billing_email( 'float@example.com' );
+		$order->set_billing_country( 'ES' );
+		$order->set_status( 'completed' );
+
+		$item_a = new \WC_Order_Item_Product();
+		$item_a->set_product( $product_a );
+		$item_a->set_quantity( 1 );
+		$item_a->set_subtotal( 30 );
+		$item_a->set_total( 30 - $discount_a );
+		$item_a->set_taxes( array(
+			'total'    => array( $tax_rate_id => $tax_a ),
+			'subtotal' => array( $tax_rate_id => $tax_a ),
+		) );
+		$order->add_item( $item_a );
+
+		$item_b = new \WC_Order_Item_Product();
+		$item_b->set_product( $product_b );
+		$item_b->set_quantity( 1 );
+		$item_b->set_subtotal( 15 );
+		$item_b->set_total( 15 - $discount_b );
+		$item_b->set_taxes( array(
+			'total'    => array( $tax_rate_id => $tax_b ),
+			'subtotal' => array( $tax_rate_id => $tax_b ),
+		) );
+		$order->add_item( $item_b );
+
+		$coupon_item = new \WC_Order_Item_Coupon();
+		$coupon_item->set_code( 'cart10float' );
+		$coupon_item->set_discount( 10 );
+		$order->add_item( $coupon_item );
+
+		$order->calculate_totals();
+		$order->save();
+
+		$order_data = ORDER::generate_order_data( $this->settings, $order, 'conecom-test' );
+
+		$this->assertNotEmpty( $order_data['items'] );
+		$this->assertCount( 2, $order_data['items'] );
+
+		foreach ( $order_data['items'] as $i => $item ) {
+			$label = "Item $i";
+
+			// Discount must be present and must be a float.
+			$this->assertArrayHasKey( 'discount', $item, "$label must have discount" );
+			$this->assertIsFloat( $item['discount'], "$label discount must be float" );
+
+			// Tax must be present and must be a float.
+			$this->assertArrayHasKey( 'tax', $item, "$label must have tax" );
+			$this->assertIsFloat( $item['tax'], "$label tax must be float" );
+
+			// Neither value may have more than 2 significant decimal digits.
+			// json_encode exposes IEEE 754 noise — serialize and check the string.
+			$discount_json = json_encode( $item['discount'] );
+			$tax_json      = json_encode( $item['tax'] );
+
+			$this->assertMatchesRegularExpression(
+				'/^-?\d+(\.\d{1,2})?$/',
+				$discount_json,
+				"$label discount JSON '$discount_json' must have at most 2 decimal digits"
+			);
+			$this->assertMatchesRegularExpression(
+				'/^-?\d+(\.\d{1,2})?$/',
+				$tax_json,
+				"$label tax JSON '$tax_json' must have at most 2 decimal digits"
+			);
+		}
+
+		// Clean up.
+		$product_a->delete( true );
+		$product_b->delete( true );
+		$coupon->delete( true );
+		$order->delete( true );
+		\WC_Tax::_delete_tax_rate( $tax_rate_id );
 	}
 
 	/**

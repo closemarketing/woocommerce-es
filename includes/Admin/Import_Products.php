@@ -87,6 +87,8 @@ class Import_Products {
 
 		// Admin Styles.
 		add_action( 'wp_ajax_connect_ecommerce_sync_products', array( $this, 'sync_products' ) );
+		add_action( 'wp_ajax_connect_ecommerce_get_import_stats', array( $this, 'get_import_stats' ) );
+		add_action( 'wp_ajax_connect_ecommerce_get_as_logs', array( $this, 'get_as_logs' ) );
 
 		// Schedule.
 		if ( $this->sync_period && 'no' !== $this->sync_period ) {
@@ -165,6 +167,24 @@ class Import_Products {
 				'label_syncing'       => __( 'Syncing', 'woocommerce-es' ),
 				'label_sync_complete' => __( 'Finished', 'woocommerce-es' ),
 				'nonce'               => wp_create_nonce( 'conecom_manual_import_nonce' ),
+				'stats_nonce'         => wp_create_nonce( 'conecom_import_stats_nonce' ),
+				'as_logs_nonce'       => wp_create_nonce( 'conecom_as_logs_nonce' ),
+				'i18n'                => array(
+					'loading'            => __( 'Loading…', 'woocommerce-es' ),
+					'error_loading_logs' => __( 'Error loading logs.', 'woocommerce-es' ),
+					'no_sync_runs'       => __( 'No sync runs recorded yet.', 'woocommerce-es' ),
+					'col_date'           => __( 'Date', 'woocommerce-es' ),
+					'col_status'         => __( 'Status', 'woocommerce-es' ),
+					'col_frequency'      => __( 'Frequency', 'woocommerce-es' ),
+					'col_last_log'       => __( 'Last log', 'woocommerce-es' ),
+					'status_complete'    => __( 'Complete', 'woocommerce-es' ),
+					'status_failed'      => __( 'Failed', 'woocommerce-es' ),
+					'status_pending'     => __( 'Pending', 'woocommerce-es' ),
+					'status_in_progress' => __( 'Running', 'woocommerce-es' ),
+					'status_canceled'    => __( 'Canceled', 'woocommerce-es' ),
+					'tag_label'          => __( 'Tag:', 'woocommerce-es' ),
+					'total_label'        => __( 'Total:', 'woocommerce-es' ),
+				),
 			)
 		);
 
@@ -213,27 +233,9 @@ class Import_Products {
 		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
 
 		// Get connector from request or use default.
-		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
-		if ( ! empty( $connector_id ) ) {
-			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
-			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
-			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
-				$connapi_erp    = $connector_data['connapi_erp'];
-				$settings       = $connector_data['settings'];
-				$options        = $connector_data['options'];
-				$api_pagination = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
-			} else {
-				$connapi_erp    = $this->connapi_erp;
-				$settings       = $this->settings;
-				$options        = $this->options;
-				$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
-			}
-		} else {
-			$connapi_erp    = $this->connapi_erp;
-			$settings       = $this->settings;
-			$options        = $this->options;
-			$api_pagination = ! empty( $this->options['api_pagination'] ) ? $this->options['api_pagination'] : false;
-		}
+		$connector_id                             = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+		list( $connapi_erp, $settings, $options ) = $this->resolve_connector( $connector_id );
+		$api_pagination                           = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
 
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {
@@ -334,6 +336,85 @@ class Import_Products {
 			HELPER::send_product_errors( $this->error_product_import, $options['slug'] );
 		}
 		wp_send_json_success( $args );
+	}
+
+	/**
+	 * Resolves the connapi_erp/settings/options triplet for a connector ID, falling back to this instance's connector.
+	 *
+	 * @param string $connector_id Connector ID from request, or empty for the default connector.
+	 * @return array List of ( $connapi_erp, $settings, $options ).
+	 */
+	private function resolve_connector( $connector_id ) {
+		if ( ! empty( $connector_id ) ) {
+			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
+			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
+				return array( $connector_data['connapi_erp'], $connector_data['settings'], $connector_data['options'] );
+			}
+		}
+		return array( $this->connapi_erp, $this->settings, $this->options );
+	}
+
+	/**
+	 * Get import statistics (only when connector has get_all_product_skus).
+	 *
+	 * @return void
+	 */
+	public function get_import_stats() {
+		if ( ! check_ajax_referer( 'conecom_import_stats_nonce', 'security', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid nonce', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		$connector_id                             = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+		list( $connapi_erp, $settings, $options ) = $this->resolve_connector( $connector_id );
+
+		$result = PROD::get_import_stats( $connapi_erp, $options, $settings );
+
+		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
+			return;
+		}
+
+		wp_send_json_success(
+			array(
+				'api_count'       => $result['api_count'],
+				'api_total_count' => $result['api_total_count'],
+				'available_count' => $result['available_count'],
+				'filter_tag'      => $result['filter_tag'],
+				'wp_count'        => $result['wp_count'],
+				'import_count'    => $result['import_count'],
+				'new_count'       => $result['new_count'],
+				'outdated_count'  => $result['outdated_count'],
+				'delete_count'    => $result['delete_count'],
+			)
+		);
+	}
+
+	/**
+	 * AJAX handler: returns recent Action Scheduler runs for conecom_sync_* hooks.
+	 *
+	 * @return void
+	 */
+	public function get_as_logs() {
+		if ( ! check_ajax_referer( 'conecom_as_logs_nonce', 'security', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Invalid nonce', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		if ( ! current_user_can( 'manage_woocommerce' ) ) {
+			wp_send_json_error( array( 'message' => __( 'Unauthorized', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		$result = CRON::get_sync_logs();
+
+		if ( 'error' === $result['status'] ) {
+			wp_send_json_error( array( 'message' => $result['message'] ) );
+			return;
+		}
+
+		wp_send_json_success( $result['actions'] );
 	}
 
 	/**

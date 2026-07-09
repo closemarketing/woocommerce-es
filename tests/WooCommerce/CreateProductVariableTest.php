@@ -165,8 +165,8 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertIsInt( $result_sync_upd['post_id'] );
 		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
 
-		// Prices.
-		$this->assertEquals( $item['price'], get_post_meta( $result_sync_upd['post_id'], '_regular_price', true ) );
+		// Variable parent has no regular_price — price is derived from variations.
+		$this->assertEmpty( get_post_meta( $result_sync_upd['post_id'], '_regular_price', true ) );
 
 		// Product update does not change Title and Content.
 		$this->assertEquals( 'Updated Product Title', get_the_title( $result_sync_upd['post_id'] ) );

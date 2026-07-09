@@ -14,7 +14,6 @@ defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Helpers\ORDER;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
-use CLOSE\ConnectEcommerce\Helpers\VAT;
 
 /**
  * Class Orders integration
@@ -70,7 +69,9 @@ class Orders {
 		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
 		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
 
+		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
+		add_action( 'conecom_async_send_order_erp', array( $this, 'async_send_order_erp' ) );
 
 		if ( 'all' === $ecstatus ) {
 			add_action( 'woocommerce_order_status_pending', array( $this, 'send_order_erp' ) );
@@ -102,6 +103,30 @@ class Orders {
 	}
 
 	/**
+	 * Enqueues styles for orders admin page
+	 *
+	 * @return void
+	 */
+	public function admin_enqueues() {
+		$is_connect_ecommerce_page = isset( $_GET['page'] ) && 'connect_ecommerce' === $_GET['page'];
+		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
+		$current_subtab            = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : 'sync_products';
+
+		$is_sync_orders_page = $is_connect_ecommerce_page
+			&& 'synchronization' === $current_tab
+			&& 'sync_orders' === $current_subtab;
+
+		if ( $is_sync_orders_page ) {
+			wp_enqueue_style(
+				'conecom-admin-import',
+				CONECOM_PLUGIN_URL . 'includes/assets/admin-import.css',
+				array(),
+				CONECOM_VERSION
+			);
+		}
+	}
+
+	/**
 	 * Send order to ERP
 	 *
 	 * @param int $order_id Order id.
@@ -109,6 +134,27 @@ class Orders {
 	 * @return void
 	 */
 	public function send_order_erp( $order_id ) {
+		if ( function_exists( 'as_schedule_single_action' ) ) {
+			$pending = as_get_scheduled_actions( array(
+				'hook'   => 'conecom_async_send_order_erp',
+				'args'   => array( $order_id ),
+				'status' => \ActionScheduler_Store::STATUS_PENDING,
+			), 'ids' );
+			if ( empty( $pending ) ) {
+				as_schedule_single_action( time() + 30, 'conecom_async_send_order_erp', array( $order_id ), 'connect-ecommerce' );
+			}
+		} else {
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
+		}
+	}
+
+	/**
+	 * Process async order sync via Action Scheduler.
+	 *
+	 * @param int $order_id Order id.
+	 * @return void
+	 */
+	public function async_send_order_erp( $order_id ) {
 		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
 	}
 

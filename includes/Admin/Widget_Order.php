@@ -12,7 +12,6 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use CLOSE\ConnectEcommerce\Base;
 /**
  * Widget in Orders
  *
@@ -27,6 +26,13 @@ class Widget_Order {
 	 * @var array
 	 */
 	private $options;
+
+	/**
+	 * Settings saved by the user (credentials, debug_log, etc.).
+	 *
+	 * @var array
+	 */
+	private $settings;
 
 	/**
 	 * API Object
@@ -45,6 +51,7 @@ class Widget_Order {
 			return;
 		}
 		$this->options     = $connector['options'];
+		$this->settings    = $connector['settings'] ?? array();
 		$this->connapi_erp = $connector['connapi_erp'];
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_orders' ) );
@@ -65,6 +72,9 @@ class Widget_Order {
 			'side',
 			'core'
 		);
+
+		// Register log payload metabox only when the meta is not empty.
+		add_action( 'add_meta_boxes_' . $screen, array( $this, 'maybe_add_log_payload_metabox' ) );
 	}
 
 	/**
@@ -96,11 +106,66 @@ class Widget_Order {
 
 		$label = $invoice_id ? __( 'Update to ERP', 'woocommerce-es' ) : __( 'Send to ERP', 'woocommerce-es' );
 
-		echo '<br/><br/><div name="grao-sync-order" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
+		echo '<br/><br/><div name="sync-erp-orders" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncOrderERP(' . esc_html( $order_id );
 		echo ',this.id,\'erp-post\')">' . esc_html( $label ) . '</div>';
 		echo '</td></tr>';
 
 		echo '</table>';
+	}
+
+	/**
+	 * Conditionally registers the log payload metabox when the meta is not empty.
+	 *
+	 * @param \WP_Post $post Post object.
+	 * @return void
+	 */
+	public function maybe_add_log_payload_metabox( $post ) {
+		$is_debug = isset( $this->settings['debug_log'] ) && 'on' === $this->settings['debug_log'];
+
+		if ( ! $is_debug ) {
+			return;
+		}
+
+		$order       = wc_get_order( $post->ID );
+		$payload_key = '_' . $this->options['slug'] . '_log_payload';
+
+		if ( empty( $order ) || empty( $order->get_meta( $payload_key, true ) ) ) {
+			return;
+		}
+
+		$screen = get_current_screen()->id == 'woocommerce_page_wc-orders' ? wc_get_page_screen_id( 'shop-order' ) : 'shop_order';
+
+		add_meta_box(
+			'cw-order-log-payload',
+			__( 'Connect Log Payload', 'woocommerce-es' ),
+			array( $this, 'metabox_show_log_payload' ),
+			$screen,
+			'normal',
+			'low'
+		);
+	}
+
+	/**
+	 * Metabox showing the log payload JSON for the order.
+	 *
+	 * @param object $post Post object.
+	 * @return void
+	 */
+	public function metabox_show_log_payload( $post ) {
+		$order       = wc_get_order( $post->ID );
+		$payload_key = '_' . $this->options['slug'] . '_log_payload';
+		$log_payload = $order->get_meta( $payload_key, true );
+
+		if ( empty( $log_payload ) ) {
+			return;
+		}
+
+		$decoded = json_decode( $log_payload, true );
+		$json    = null !== $decoded ? wp_json_encode( $decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ) : $log_payload;
+
+		echo '<pre style="overflow:auto;max-height:300px;font-size:11px;background:#f6f7f7;padding:8px;border:1px solid #ddd;border-radius:3px;white-space:pre-wrap;word-break:break-all;">';
+		echo esc_html( $json );
+		echo '</pre>';
 	}
 }

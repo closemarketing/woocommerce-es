@@ -4,9 +4,9 @@ Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.9
-Stable tag: 3.3.2
-Version: 3.3.2
+Tested up to: 7.0
+Stable tag: 3.3.4
+Version: 3.3.4
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -19,6 +19,21 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance is the ultimate solution for WooCommerce store owners who need seamless integration with their business management systems while ensuring full compliance with European tax regulations.
 
 Whether you're managing a small online store or a large e-commerce operation, this powerful plugin eliminates manual data entry, reduces errors, and saves countless hours of administrative work. Automatically synchronize your products, customers, and orders between WooCommerce and your ERP or CRM system, ensuring your inventory, customer database, and sales data are always up-to-date across all platforms.
+
+**Available Connectors**
+
+Free connector included:
+- [Clientify](https://close.marketing/likes/clientify/)
+
+Premium connectors:
+- [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+- [FactuSol](https://close.technology/en/wordpress-plugins/connect-woocommerce-factusol/)
+- [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
+- [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
+- [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
+- [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
+
+Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
 
 **Complete EU VAT Compliance Made Simple**
 
@@ -118,22 +133,10 @@ This plugin also includes specific adjustments to comply with Verifactu regulati
 - Complies with Verifactu and GDPR.
 - For ERPs that support it, you can send the payment method.
 
-This plugin serves as the foundation for various connectors. The free version supports:
-- [Clientify](https://close.marketing/likes/clientify/)
-
 **Merge variables**
 You can use this section to merge variables from ERP to WooCommerce. That means that you can merge categories, attributes, products, custom fields, taxonomies, etc.
 
 You will need to add Payment methods to merge variables to send the payment method to the ERP.
-
-Premium connectors include:
-- [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
-- [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
-- [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
-- [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
-- [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
-
-Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
 
 == Frequently Asked Questions ==
 
@@ -218,7 +221,27 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= n.e.x.t =
+= 3.3.4 =
+* Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.
+* Enhancement: Added `billing_cif` to the VAT field slug list so orders whose billing tax ID is stored in the `_billing_cif` meta key (e.g. from the WC-APG NIF/CIF/NIE plugin) are correctly synced to the ERP.
+* Enhancement: AI product description generation now uses the WordPress 7.0 core AI API (`wp_ai_client_prompt`) instead of direct provider API calls — no separate plugin or stored API key required.
+* Enhancement: AI model selector is now dynamic — models are loaded live from the active WordPress AI connectors (grouped by provider) and filtered to text-generation capable models only.
+* Enhancement: Model preference is forwarded to the core AI client via `usingModelPreference()`, supporting the `provider::model` format used by the WP core registry.
+* Enhancement: An "Auto" option in the model selector lets WordPress pick the best available model when no preference is set.
+* Enhancement: AI settings page shows an error notice when WordPress AI is unavailable, prompting an upgrade to WordPress 7.0+.
+* Enhancement: Added billing VAT number field to the WordPress user profile page (/wp-admin/profile.php and /wp-admin/user-edit.php). Admins can now view and edit the VAT number directly on a customer's profile. The value is stored as `billing_vat` user meta, so WooCommerce pre-populates the field automatically on the public checkout and on admin order creation for logged-in customers.
+* Fixed: Order item `tax` and `discount` values no longer expose IEEE 754 floating-point noise (e.g. `2.1000000000000001` or `33.329999999999998`) in the JSON payload sent to the ERP. All values are now serialized with at most 2 decimal digits.
+* Fixed: Fixed-cart coupon discount is now correctly distributed as a percentage across all order lines.
+* Fixed: Tax prices setting key corrected from `tax_option` to `tax_price` — prices with tax included were not being imported correctly.
+* Fixed: Tax class from ERP tax type is now correctly applied on both product create and update (NEO connector).
+
+= 3.3.3 =
+* Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
+* Fixed: Admin CSS and WooCommerce schedule action on purchase.
+* Enhancement: My Account orders column — refactored and now shows an empty-state message when no orders are found.
+* Enhancement: Product import progress bar is always visible during import.
+* Enhancement: Added `is_connector_active()` check to prevent settings errors when the configured connector class is not loaded.
+* Fixed: Send to ERP button label updated.
 * Fixed: Error decimals in tax rates.
 * Added: Support to Factusol connector.
 * **Sync settings refactor:** Removed Synchronization > Automate tab; sync frequency ("When do you want to sync?") is now set on Synchronization > Products in the Automatic Sync section.
