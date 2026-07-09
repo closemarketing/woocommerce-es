@@ -389,6 +389,114 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that importing a variable product never enables stock management on the
+	 * parent product, even when stock import is enabled — stock is tracked on the
+	 * variations only. A parent with manage_stock enabled and no stock quantity of
+	 * its own shows as "out of stock" regardless of variation availability.
+	 *
+	 * @see https://github.com/closemarketing/woocommerce-es/issues/204
+	 */
+	public function test_variable_product_parent_never_manages_stock() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		// Enable stock import — this is exactly the setting that previously
+		// leaked manage_stock=true onto the parent.
+		$this->settings['stock']   = 'yes';
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		$image_path  = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url'          => $image_path,
+			'file'         => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images']                = [ $image_dummy ];
+		$item['variants'][0]['image']  = $image_dummy;
+		$item['variants'][1]['image']  = $image_dummy;
+
+		// Both variants have stock, so the parent must be sellable.
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertIsInt( $result_prod_id );
+
+		$product = wc_get_product( $result_prod_id );
+		$this->assertInstanceOf( 'WC_Product_Variable', $product );
+
+		$this->assertFalse( $product->get_manage_stock(), 'Parent product must never manage stock — stock is tracked on variations.' );
+		$this->assertEquals( 'instock', $product->get_stock_status(), 'Parent must show in stock when its variations have stock.' );
+
+		// Variations must still have stock management enabled, since that's
+		// where stock is actually tracked.
+		$variations = $product->get_children();
+		$this->assertNotEmpty( $variations );
+		foreach ( $variations as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			$this->assertTrue( $prod_variation->get_manage_stock(), 'Variations must manage their own stock.' );
+		}
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test
+	}
+
+	/**
+	 * Test that resyncing a variable product created before the fix (parent still
+	 * has manage_stock enabled from an old import) corrects the parent on the next
+	 * sync, instead of only preventing the issue on brand-new products.
+	 *
+	 * @see https://github.com/closemarketing/woocommerce-es/issues/204
+	 */
+	public function test_variable_product_parent_stock_management_corrected_on_resync() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		$image_path  = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url'          => $image_path,
+			'file'         => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images']               = [ $image_dummy ];
+		$item['variants'][0]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy;
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		$this->settings['stock'] = 'yes';
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		// Simulate a product imported before this fix: force manage_stock back on
+		// at the parent, bypassing PROD, the way the old buggy code used to leave it.
+		$product = wc_get_product( $result_prod_id );
+		$product->set_manage_stock( true );
+		$product->set_stock_status( 'outofstock' );
+		$product->save();
+
+		$this->assertTrue( wc_get_product( $result_prod_id )->get_manage_stock(), 'Setup: parent must start with manage_stock enabled for this test to be meaningful.' );
+
+		// Resync — must correct the parent even though it already existed.
+		$result_resync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+		$this->assertEquals( 'ok', $result_resync['status'] );
+
+		$product_after = wc_get_product( $result_prod_id );
+		$this->assertFalse( $product_after->get_manage_stock(), 'Resync must disable manage_stock on the parent even if it was already enabled.' );
+		$this->assertEquals( 'instock', $product_after->get_stock_status(), 'Resync must recompute stock status from variations, not leave the stale "out of stock" value.' );
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test
+	}
+
+	/**
 	 * Test that stock import setting is respected when updating existing variable products.
 	 */
 	public function test_variable_product_stock_respected_on_update() {
