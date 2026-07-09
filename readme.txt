@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.0
-Stable tag: 3.3.4
-Version: 3.3.4
+Stable tag: 3.3.5
+Version: 3.3.5
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -223,6 +223,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 * Added: WooCommerce Subscriptions support — product sync from ERP no longer overwrites the product type when it already exists in the store as a subscription or variable-subscription.
+* Added: New `TAXES::get_tax_class_by_erp_id()` helper method that resolves a WooCommerce tax class from an ERP/CRM tax id, using the "ERP Tax Type" mapping configured in WooCommerce > Settings > Tax. This lets connectors (e.g. Odoo) map an ERP tax id to the correct WooCommerce tax class when syncing products, reusing the same mapping already used for orders.
 
 = 3.3.4 =
 * Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.
