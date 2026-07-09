@@ -293,6 +293,15 @@ class PROD {
 			'tax_class'        => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 		);
 
+		// Stock is managed on the variations, not the parent — WooCommerce itself
+		// never sets _manage_stock on a variable product's parent. Force this on
+		// every sync (not just at creation) so products that already had it
+		// enabled before this fix get corrected on their next sync too.
+		if ( 'variable' === $type ) {
+			$product_props['manage_stock']   = false;
+			$product_props['stock_quantity'] = null;
+		}
+
 		if ( 'variable' !== $type ) {
 			$product_props['regular_price'] = self::get_rate_price( $item, $rate_id );
 		}
@@ -317,8 +326,6 @@ class PROD {
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
 				'tax_class'          => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
-				'manage_stock'       => 'yes' === $import_stock ? true : false,
-				'stock_quantity'     => null,
 				'sold_individually'  => false,
 				'weight'             => $is_virtual ? '' : $item['weight'],
 				'upsell_ids'         => '',
@@ -333,6 +340,11 @@ class PROD {
 				'gallery_image_ids'  => '',
 				'status'             => $post_status,
 			);
+
+			if ( 'variable' !== $type ) {
+				$product_props_new['manage_stock']   = 'yes' === $import_stock ? true : false;
+				$product_props_new['stock_quantity'] = null;
+			}
 		}
 
 		if ( ! empty( $item['barcode'] ) ) {
@@ -477,6 +489,14 @@ class PROD {
 			}
 		}
 
+		if ( 'variable' === $type ) {
+			// Recalculate the parent's price range and stock status from its
+			// variations now that they're all saved. The parent itself never
+			// manages its own stock (see above), so WooCommerce must derive
+			// its stock status from the variations instead.
+			\WC_Product_Variable::sync( $product_id );
+		}
+
 		return array(
 			'status'  => 'ok',
 			'message' => $message,
@@ -596,13 +616,6 @@ class PROD {
 					$attributes_prod[ 'attribute_pa_' . $attribute_name ] = wc_sanitize_taxonomy_name( $category_fields['field'] );
 				}
 			}
-			// Set stock parent product.
-			if ( 'yes' === $import_stock ) {
-				$product->set_manage_stock( true );
-			} else {
-				$product->set_manage_stock( false );
-			}
-
 			// Make Variations.
 			$variation_price = self::get_rate_price( $variant, $rate_id );
 			$variation_props = array(
