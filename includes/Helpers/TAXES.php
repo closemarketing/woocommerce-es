@@ -75,6 +75,40 @@ class TAXES {
 	}
 
 	/**
+	 * Get WooCommerce tax class slug mapped to a given ERP tax ID.
+	 *
+	 * Reverse lookup of get_tax_types_map(): finds the WooCommerce tax rate
+	 * whose "ERP Tax Type" column (WooCommerce > Settings > Tax) matches the
+	 * given ERP (e.g. Odoo) tax ID, and returns its tax_rate_class slug so it
+	 * can be assigned to a product's tax_class.
+	 *
+	 * @param int|string $erp_tax_id ERP tax ID (e.g. Odoo account.tax id).
+	 * @return string|null Tax class slug ('' for standard rate), or null if no mapping exists.
+	 */
+	public static function get_tax_class_by_erp_id( $erp_tax_id ) {
+		if ( '' === (string) $erp_tax_id ) {
+			return null;
+		}
+
+		self::ensure_tax_type_column();
+
+		global $wpdb;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT tax_rate_class FROM {$wpdb->prefix}woocommerce_tax_rates WHERE erp_tax_type = %s LIMIT 1",
+				(string) $erp_tax_id
+			),
+			ARRAY_A
+		);
+
+		// get_var() would return null both when no row matches and when the
+		// matched row's tax_rate_class is '' (standard rate) — get_row() lets
+		// us tell "no mapping" apart from "mapped to the standard class".
+		return null === $row ? null : $row['tax_rate_class'];
+	}
+
+	/**
 	 * Ensure ERP tax type column exists in WooCommerce tax rates table.
 	 *
 	 * @return void
