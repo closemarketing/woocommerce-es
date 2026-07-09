@@ -266,22 +266,31 @@ class PROD {
 		$product            = null;
 		$item_sku           = ! empty( $item['sku'] ) ? $item['sku'] : '';
 
+		// Preserve subscription product types — ERP has no subscription concept.
+		// Read the type directly from the taxonomy (not via wc_get_product, which may be cached),
+		// then restore it with wp_set_object_terms after every save so WooCommerce internals
+		// cannot overwrite it. Gate on ERP shape matching the subtype to avoid type mismatches:
+		// simple ERP item → subscription, variable ERP item → variable-subscription.
+		$preserved_sub_type = null;
+		if ( ! $is_new_product ) {
+			$existing_terms = get_the_terms( $product_id, 'product_type' );
+			$existing_type  = ( ! empty( $existing_terms ) && ! is_wp_error( $existing_terms ) )
+				? sanitize_title( current( $existing_terms )->name )
+				: '';
+			$is_simple_sub   = ( 'simple' === $type && 'subscription' === $existing_type );
+			$is_variable_sub = ( 'variable' === $type && 'variable-subscription' === $existing_type );
+			if ( $is_simple_sub || $is_variable_sub ) {
+				$preserved_sub_type = $existing_type;
+			}
+			unset( $existing_terms, $existing_type, $is_simple_sub, $is_variable_sub );
+		}
+
 		// Start.
 		try {
-			// Preserve subscription product types — ERP has no subscription concept.
-			// Only reuse the subscription object when the ERP shape matches the subtype:
-			// simple ERP item → subscription, variable ERP item → variable-subscription.
-			if ( ! $is_new_product ) {
-				$existing_product      = wc_get_product( $product_id );
-				$existing_type         = $existing_product ? $existing_product->get_type() : '';
-				$is_simple_sub_match   = ( 'simple' === $type && 'subscription' === $existing_type );
-				$is_variable_sub_match = ( 'variable' === $type && 'variable-subscription' === $existing_type );
-				if ( $is_simple_sub_match || $is_variable_sub_match ) {
-					$product = $existing_product;
-				}
-				unset( $existing_product, $existing_type, $is_simple_sub_match, $is_variable_sub_match );
+			if ( null !== $preserved_sub_type ) {
+				// Load via wc_get_product so the correct WC class is used for the sync.
+				$product = wc_get_product( $product_id ) ?: null;
 			}
-
 			if ( null === $product ) {
 				if ( 'simple' === $type ) {
 					$product = new \WC_Product( $product_id );
@@ -486,11 +495,18 @@ class PROD {
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
+
 		if ( 'pack' === $type ) {
 			// Only call taxonomy functions if taxonomy exists
 			if ( taxonomy_exists( 'product_type' ) ) {
 				wp_set_object_terms( $product_id, 'woosb', 'product_type' );
 			}
+		}
+
+		// Restore subscription type after all saves — WooCommerce may reset the taxonomy
+		// term during save when the WC class does not match the registered subscription type.
+		if ( null !== $preserved_sub_type && taxonomy_exists( 'product_type' ) ) {
+			wp_set_object_terms( $product_id, $preserved_sub_type, 'product_type' );
 		}
 
 		return array(

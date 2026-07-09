@@ -121,8 +121,12 @@ class SubscriptionProductSyncTest extends WP_UnitTestCase {
 		$product->set_status( 'publish' );
 		$product->set_regular_price( $price );
 		$product->save();
-		wp_set_object_terms( $product->get_id(), $type, 'product_type' );
-		return $product->get_id();
+		$product_id = $product->get_id();
+		wp_set_object_terms( $product_id, $type, 'product_type' );
+		// Flush all relevant caches so subsequent wc_get_product() reads fresh data.
+		clean_post_cache( $product_id );
+		wc_delete_product_transients( $product_id );
+		return $product_id;
 	}
 
 	/**
