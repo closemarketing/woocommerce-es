@@ -252,5 +252,36 @@ class TaxesTypesERPTest extends WP_UnitTestCase {
 		unset( $_POST['changes'] );
 		\WC_Tax::_delete_tax_rate( $tax_rate_id );
 	}
+
+	/**
+	 * Test that ERP taxes sharing the same display name get their ID appended,
+	 * so the admin can tell them apart in the dropdown (e.g. Odoo taxes 277 and
+	 * 291 both named "10% G" on different companies/fiscal positions).
+	 */
+	public function test_get_erp_taxes_options_disambiguates_duplicate_labels() {
+		$connector_stub = new class() {
+			public function get_taxes() {
+				return array(
+					array( 'id' => 277, 'name' => '10% G' ),
+					array( 'id' => 291, 'name' => '10% G' ),
+					array( 'id' => 220, 'name' => '21% G' ),
+				);
+			}
+		};
+
+		$connector = array(
+			'options'      => array( 'name' => 'Test ERP' ),
+			'connapi_erp'  => $connector_stub,
+		);
+
+		$taxes_erp = new Taxes_Types_ERP( $connector );
+		$method    = new ReflectionMethod( Taxes_Types_ERP::class, 'get_erp_taxes_options' );
+		$method->setAccessible( true );
+		$result = $method->invoke( $taxes_erp );
+
+		$this->assertStringContainsString( '<option value="277">10% G (ID: 277)</option>', $result['options_html'] );
+		$this->assertStringContainsString( '<option value="291">10% G (ID: 291)</option>', $result['options_html'] );
+		$this->assertStringContainsString( '<option value="220">21% G</option>', $result['options_html'] );
+	}
 }
 
