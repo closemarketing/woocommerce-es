@@ -515,5 +515,63 @@ class HelperTest extends WP_UnitTestCase {
 		$settings_all = get_option( $this->option_name );
 		$this->assertSame( 'yes', $settings_all['test_connector']['tax_option'] );
 	}
+
+	/**
+	 * Connector add-ons (e.g. connect-woocommerce-neo) read `tax_option` straight from
+	 * get_option( 'connect_ecommerce' ) in their own constructor, not from the resolved
+	 * array get_connector() returns. The migration fallback must therefore persist the
+	 * resolved tax_option/tax_option_pref back into the option itself, not just apply it
+	 * to the in-memory $connector['settings'] copy.
+	 *
+	 * @return void
+	 */
+	public function test_persists_resolved_tax_option_back_to_option_on_legacy_site(): void {
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array( 'tax_price' => 'no' ),
+			)
+		);
+
+		HELPER::get_connector( array() );
+
+		$settings_all = get_option( $this->option_name );
+		$this->assertSame( 'no', $settings_all['test_connector']['tax_option_pref'], 'Legacy tax_price must be persisted as tax_option_pref.' );
+		$this->assertSame( 'no', $settings_all['test_connector']['tax_option'], 'Resolved tax_option must be persisted, not just kept in memory.' );
+	}
+
+	/**
+	 * When the option is already fully resolved, get_connector() must not write to the
+	 * database on every call (it runs on every page load via the init hook).
+	 *
+	 * @return void
+	 */
+	public function test_does_not_rewrite_option_when_already_resolved(): void {
+		update_option( 'woocommerce_prices_include_tax', 'yes' );
+		update_option(
+			$this->option_name,
+			array(
+				'connector'      => 'test_connector',
+				'test_connector' => array(
+					'tax_option_pref' => 'no',
+					'tax_option'      => 'no',
+				),
+			)
+		);
+
+		$rewrite_count = 0;
+		add_action(
+			'update_option_' . $this->option_name,
+			function () use ( &$rewrite_count ) {
+				++$rewrite_count;
+			}
+		);
+
+		HELPER::get_connector( array() );
+
+		$this->assertSame( 0, $rewrite_count, 'get_connector() must not rewrite the option when the stored value already matches.' );
+	}
 }
 

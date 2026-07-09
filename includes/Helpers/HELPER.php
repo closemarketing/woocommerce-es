@@ -228,10 +228,25 @@ class HELPER {
 		$connector['settings']     = $connector['settings_all'][ $connector['connector'] ] ?? array();
 		$connector['all_options']  = $options;
 
-		// Defensive fallback for sites that haven't re-saved settings since upgrading;
-		// the settings form and the WooCommerce tax hook keep this resolved going forward.
-		$connector['settings']['tax_option_pref'] = self::get_tax_option_pref( $connector['settings'] );
-		$connector['settings']['tax_option']      = self::resolve_tax_option( $connector['settings']['tax_option_pref'] );
+		// Defensive fallback for sites that haven't re-saved settings since upgrading.
+		// Connector add-ons (e.g. connect-woocommerce-neo) read `tax_option` straight
+		// from get_option( 'connect_ecommerce' ) in their own constructor rather than
+		// from this resolved array, so the fallback must be persisted back to the
+		// option itself — not just applied to this in-memory copy — or those add-ons
+		// keep seeing the raw/missing value.
+		$tax_option_pref = self::get_tax_option_pref( $connector['settings'] );
+		$tax_option      = self::resolve_tax_option( $tax_option_pref );
+		if ( ( $connector['settings']['tax_option_pref'] ?? null ) !== $tax_option_pref
+			|| ( $connector['settings']['tax_option'] ?? null ) !== $tax_option
+		) {
+			$connector['settings']['tax_option_pref'] = $tax_option_pref;
+			$connector['settings']['tax_option']      = $tax_option;
+			if ( ! empty( $connector['connector'] ) ) {
+				$connector['settings_all'][ $connector['connector'] ]['tax_option_pref'] = $tax_option_pref;
+				$connector['settings_all'][ $connector['connector'] ]['tax_option']      = $tax_option;
+				update_option( 'connect_ecommerce', $connector['settings_all'] );
+			}
+		}
 
 		$connector['settings']['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
 
