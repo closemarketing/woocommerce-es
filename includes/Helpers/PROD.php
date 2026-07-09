@@ -293,6 +293,15 @@ class PROD {
 			'tax_class'        => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 		);
 
+		// Stock is managed on the variations, not the parent — WooCommerce itself
+		// never sets _manage_stock on a variable product's parent. Force this on
+		// every sync (not just at creation) so products that already had it
+		// enabled before this fix get corrected on their next sync too.
+		if ( 'variable' === $type ) {
+			$product_props['manage_stock']   = false;
+			$product_props['stock_quantity'] = null;
+		}
+
 		if ( 'variable' !== $type ) {
 			$product_props['regular_price'] = self::get_rate_price( $item, $rate_id );
 		}
@@ -332,10 +341,6 @@ class PROD {
 				'status'             => $post_status,
 			);
 
-			// Stock is managed on the variations, not the parent — WooCommerce
-			// itself never sets _manage_stock on a variable product's parent,
-			// and doing so here made the parent show as "out of stock" even
-			// when its variations had stock available.
 			if ( 'variable' !== $type ) {
 				$product_props_new['manage_stock']   = 'yes' === $import_stock ? true : false;
 				$product_props_new['stock_quantity'] = null;
