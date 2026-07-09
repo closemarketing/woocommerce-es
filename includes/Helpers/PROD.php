@@ -609,6 +609,7 @@ class PROD {
 				'parent_id'     => $product_id,
 				'attributes'    => $attributes_prod,
 				'regular_price' => $variation_price,
+				'tax_class'     => 'parent',
 			);
 
 			$price_sale = self::get_sale_price( $variant, $settings );
@@ -619,7 +620,6 @@ class PROD {
 				// New variation.
 				$variation_props_new = array(
 					'tax_status'   => 'taxable',
-					'tax_class'    => 'parent',
 					'weight'       => '',
 					'length'       => '',
 					'width'        => '',
