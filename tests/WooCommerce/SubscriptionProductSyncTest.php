@@ -22,10 +22,16 @@ class Mock_WC_Product_Subscription extends WC_Product_Simple {
 
 /**
  * Minimal stub for WC_Product_Variable_Subscription.
+ *
+ * WC_Product::__construct() resolves its data store via
+ * WC_Data_Store::load( 'product-' . $this->get_type() ), so overriding
+ * get_type() alone makes it request a 'product-variable-subscription' store.
+ * That key isn't registered, so WC_Data_Store falls back to the bare
+ * 'product' store (WC_Product_Data_Store_CPT), which has no read_children().
+ * Register the key via the woocommerce_data_stores filter (setUp()) so it
+ * resolves to the same store class as 'product-variable'.
  */
 class Mock_WC_Product_Variable_Subscription extends WC_Product_Variable {
-	protected $data_store_name = 'product-variable';
-
 	public function get_type() {
 		return 'variable-subscription';
 	}
@@ -50,6 +56,11 @@ class SubscriptionProductSyncTest extends WP_UnitTestCase {
 		// Route subscription product types to the mock stubs so wc_get_product()
 		// returns the correct class without WooCommerce Subscriptions installed.
 		add_filter( 'woocommerce_product_class', array( $this, 'map_subscription_classes' ), 10, 2 );
+
+		// Mirror what WooCommerce Subscriptions itself does: register the
+		// 'product-variable-subscription' data store key so the mock's
+		// get_children()/data store calls resolve like a real variable product.
+		add_filter( 'woocommerce_data_stores', array( $this, 'map_subscription_data_stores' ) );
 
 		$this->settings = array(
 			'api'            => '',
@@ -90,7 +101,18 @@ class SubscriptionProductSyncTest extends WP_UnitTestCase {
 
 	public function tearDown(): void {
 		remove_filter( 'woocommerce_product_class', array( $this, 'map_subscription_classes' ) );
+		remove_filter( 'woocommerce_data_stores', array( $this, 'map_subscription_data_stores' ) );
 		parent::tearDown();
+	}
+
+	/**
+	 * Filter callback: reuse the 'product-variable' data store for
+	 * 'product-variable-subscription' so the mock behaves like a real
+	 * variable product (get_children(), variation reads, etc.).
+	 */
+	public function map_subscription_data_stores( $stores ) {
+		$stores['product-variable-subscription'] = $stores['product-variable'];
+		return $stores;
 	}
 
 	/**
@@ -124,6 +146,12 @@ class SubscriptionProductSyncTest extends WP_UnitTestCase {
 		$product_id = $product->get_id();
 		wp_set_object_terms( $product_id, $type, 'product_type' );
 		// Flush all relevant caches so subsequent wc_get_product() reads fresh data.
+		// WC_Product_Data_Store_CPT::get_product_type() caches the resolved type
+		// under its own 'products' cache group key, which clean_post_cache() and
+		// wc_delete_product_transients() do not touch — without this, wc_get_product()
+		// keeps returning the pre-taxonomy-change type (e.g. 'simple').
+		$type_cache_key = WC_Cache_Helper::get_cache_prefix( 'product_' . $product_id ) . '_type_' . $product_id;
+		wp_cache_delete( $type_cache_key, 'products' );
 		clean_post_cache( $product_id );
 		wc_delete_product_transients( $product_id );
 		return $product_id;
@@ -160,10 +188,11 @@ class SubscriptionProductSyncTest extends WP_UnitTestCase {
 	public function test_simple_erp_preserves_subscription_type() {
 		$product_id = $this->create_product_with_type( 'subscription', 'sub-erp-sku-1' );
 
-		PROD::sync_product( $this->settings, $this->simple_item( 'sub-erp-sku-1' ), $this->connapi_erp, $product_id, 'simple', null );
+		PROD::sync_product( $this->settings, $this->simple_item( 'sub-erp-sku-1', 77.5 ), $this->connapi_erp, $product_id, 'simple', null );
 
 		$synced = wc_get_product( $product_id );
 		$this->assertEquals( 'subscription', $synced->get_type() );
+		$this->assertEquals( '77.5', $synced->get_meta( '_subscription_price' ), '_subscription_price must be kept in sync with the ERP price.' );
 
 		wp_delete_post( $product_id, true );
 	}
@@ -230,6 +259,55 @@ class SubscriptionProductSyncTest extends WP_UnitTestCase {
 				"Variation {$child_id}: _subscription_price must match regular_price."
 			);
 		}
+
+		wp_delete_post( $product_id, true );
+	}
+
+	/**
+	 * A new variant added to an existing variable-subscription must inherit
+	 * the billing schedule from an existing sibling variation, not just the
+	 * parent product — WC Subscriptions stores the schedule per-variation,
+	 * so a parent with no such meta must not leave the new variant blank.
+	 */
+	public function test_new_variant_inherits_schedule_from_sibling_not_parent() {
+		$product_id = $this->create_product_with_type( 'variable-subscription', 'varsub-schedule-sku-1' );
+
+		$item          = json_decode( file_get_contents( UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json' ), true )[0];
+		$item['sku']   = 'varsub-schedule-sku-1';
+		$first_variant = $item['variants'][0];
+		$item['variants'] = array( $first_variant );
+
+		// First sync: only one variant exists yet, so it falls back to the
+		// parent's (empty) schedule meta — matches a real first-time import.
+		PROD::sync_product( $this->settings, $item, $this->connapi_erp, $product_id, 'variable', null );
+
+		$parent           = wc_get_product( $product_id );
+		$existing_children = $parent->get_children();
+		$this->assertCount( 1, $existing_children, 'Expected exactly one variation after first sync.' );
+
+		// Simulate the merchant setting a billing schedule directly on the
+		// existing variation (the parent itself still has none).
+		$existing_variation = wc_get_product( $existing_children[0] );
+		$existing_variation->update_meta_data( '_subscription_period', 'month' );
+		$existing_variation->update_meta_data( '_subscription_period_interval', '3' );
+		$existing_variation->save();
+
+		$this->assertEmpty( get_post_meta( $product_id, '_subscription_period', true ), 'Parent must have no schedule meta for this test to be meaningful.' );
+
+		// Second sync: ERP now sends both variants, so the second one is new.
+		$item_full          = json_decode( file_get_contents( UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json' ), true )[0];
+		$item_full['sku']   = 'varsub-schedule-sku-1';
+		PROD::sync_product( $this->settings, $item_full, $this->connapi_erp, $product_id, 'variable', null );
+
+		$parent_after   = wc_get_product( $product_id );
+		$children_after = $parent_after->get_children();
+		$this->assertCount( 2, $children_after, 'Expected a second variation after second sync.' );
+
+		$new_child_id = current( array_diff( $children_after, $existing_children ) );
+		$new_variation = wc_get_product( $new_child_id );
+
+		$this->assertEquals( 'month', $new_variation->get_meta( '_subscription_period' ), 'New variant must inherit schedule from sibling variation.' );
+		$this->assertEquals( '3', $new_variation->get_meta( '_subscription_period_interval' ), 'New variant must inherit schedule from sibling variation.' );
 
 		wp_delete_post( $product_id, true );
 	}

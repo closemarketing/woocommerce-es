@@ -586,6 +586,11 @@ class PROD {
 		$import_stock    = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
 		$message         = '';
 
+		// Snapshot of variation IDs that existed before this sync — unlike
+		// $variations_item (consumed below as each variant is matched), this
+		// stays intact so newly added variants can still find a sibling to
+		// copy the subscription schedule from (see the variant loop below).
+		$existing_variation_ids = array();
 		if ( ! $is_new_product ) {
 			foreach ( $product->get_children() as $child_id ) {
 				// get an instance of the WC_Variation_product Object.
@@ -594,6 +599,7 @@ class PROD {
 					continue;
 				}
 				$variations_item[ $child_id ] = $variation_children->get_sku();
+				$existing_variation_ids[]     = $child_id;
 			}
 		}
 
@@ -615,8 +621,15 @@ class PROD {
 		foreach ( $item['variants'] as $variant ) {
 			$variation_id = 0; // default value.
 			if ( ! $is_new_product && ! empty( $variations_item ) && is_array( $variations_item ) ) {
-				$variation_id = array_search( $variant['sku'], $variations_item );
-				unset( $variations_item[ $variation_id ] );
+				// array_search() returns false (not 0) when the SKU isn't found among
+				// existing variations — normalize back to 0 so "0 === $variation_id"
+				// checks below correctly treat it as a new variation instead of silently
+				// never matching (false !== 0 under strict comparison).
+				$found_variation_id = array_search( $variant['sku'], $variations_item, true );
+				if ( false !== $found_variation_id ) {
+					$variation_id = $found_variation_id;
+					unset( $variations_item[ $variation_id ] );
+				}
 			}
 
 			if ( ! isset( $variant['categoryFields'] ) ) {
@@ -685,8 +698,11 @@ class PROD {
 				$subscription_price = ! empty( $price_sale_var ) ? $price_sale_var : $variation_price;
 				$variation->update_meta_data( '_subscription_price', $subscription_price );
 
-				// Copy the subscription schedule from the parent onto new variants so they
-				// inherit the merchant's billing cadence instead of WooCommerce defaults.
+				// Copy the subscription schedule onto new variants so they inherit the
+				// merchant's billing cadence instead of WooCommerce defaults. WC Subscriptions
+				// stores the schedule per-variation, not on the parent, so prefer an existing
+				// sibling variation as the source and only fall back to the parent's own meta
+				// (e.g. set directly on the product before any variations existed).
 				if ( 0 === $variation_id ) {
 					$schedule_keys = array(
 						'_subscription_period',
@@ -696,10 +712,14 @@ class PROD {
 						'_subscription_trial_period',
 						'_subscription_sign_up_fee',
 					);
+					$schedule_source = ! empty( $existing_variation_ids ) ? reset( $existing_variation_ids ) : $product_id;
 					foreach ( $schedule_keys as $meta_key ) {
-						$parent_value = get_post_meta( $product_id, $meta_key, true );
-						if ( '' !== $parent_value ) {
-							$variation->update_meta_data( $meta_key, $parent_value );
+						$schedule_value = get_post_meta( $schedule_source, $meta_key, true );
+						if ( '' === $schedule_value ) {
+							$schedule_value = get_post_meta( $product_id, $meta_key, true );
+						}
+						if ( '' !== $schedule_value ) {
+							$variation->update_meta_data( $meta_key, $schedule_value );
 						}
 					}
 				}
@@ -725,7 +745,12 @@ class PROD {
 				);
 				continue;
 			}
-			if ( $is_new_product ) {
+			if ( empty( $variation->get_sku( 'edit' ) ) ) {
+				// 'edit' context reads the variation's own raw value — get_sku()'s
+				// default 'view' context falls back to the parent SKU when empty,
+				// which would make this check always look non-empty.
+				// Covers brand-new products and new variants added to an existing
+				// product — both cases need the SKU set once, on creation.
 				$variation->set_sku( $variant['sku'] );
 			}
 
