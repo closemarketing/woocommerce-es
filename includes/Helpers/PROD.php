@@ -644,8 +644,12 @@ class PROD {
 				// array_search() returns false (not 0) when the SKU isn't found among
 				// existing variations — normalize back to 0 so "0 === $variation_id"
 				// checks below correctly treat it as a new variation instead of silently
-				// never matching (false !== 0 under strict comparison).
-				$found_variation_id = array_search( $variant['sku'], $variations_item, true );
+				// never matching (false !== 0 under strict comparison). Cast both sides
+				// to string first: ERPs that serialize numeric SKUs as JSON numbers give
+				// $variant['sku'] as an int, while get_sku() always returns a string.
+				$variant_sku_str        = (string) $variant['sku'];
+				$variations_item_lookup = array_map( 'strval', $variations_item );
+				$found_variation_id     = array_search( $variant_sku_str, $variations_item_lookup, true );
 				if ( false !== $found_variation_id ) {
 					$variation_id = $found_variation_id;
 					unset( $variations_item[ $variation_id ] );
@@ -749,8 +753,15 @@ class PROD {
 				$variation->set_manage_stock( false );
 				$variation->set_stock_status( 'instock' );
 			}
-			$variation_prevent_id = self::find_product( $variant['sku'] );
-			if ( ! empty( $variation_prevent_id ) ) {
+			// Check for a SKU collision with another product AND with another
+			// variation (find_product() defaults to post_type='product', which
+			// misses existing product_variation rows — set_sku() below would
+			// then throw WooCommerce's duplicate-SKU exception and abort the
+			// whole sync instead of skipping just this variant).
+			$duplicate_product_id   = self::find_product( $variant['sku'] );
+			$duplicate_variation_id = self::find_product( $variant['sku'], 'product_variation' );
+			$variation_prevent_id   = ! empty( $duplicate_product_id ) ? $duplicate_product_id : $duplicate_variation_id;
+			if ( ! empty( $variation_prevent_id ) && (int) $variation_prevent_id !== (int) $variation_id ) {
 				$message .= sprintf(
 					/* translators: %s: SKU */
 					__( 'Duplicated SKU: %s (not imported) ', 'woocommerce-es' ),
