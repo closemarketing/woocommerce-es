@@ -2286,26 +2286,14 @@ class Settings {
 							<select name='connect_ecommerce_prod_mergevars[prod_mergevars][<?php echo esc_html( $idx ); ?>][attrprod]' class="attrprod-publish" data-row="<?php echo esc_html( $idx ); ?>">
 								<option value=''></option>
 								<?php
-								foreach ( $attribute_fields as $attribute ) {
-									if ( empty( $attribute['elements'] ) ) {
-										continue;
-									}
-									?>
-									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
-										<?php
-										foreach ( $attribute['elements'] as $value ) {
-											$option_id = $attribute['id'] . '|' . $value;
-											echo '<option value="' . esc_html( $option_id ) . '" ';
-											selected( $option_id, $attrprod );
-											echo '>' . esc_html( $value ) . '</option>';
+								foreach ( $attribute_fields as $key => $label ) {
+									echo '<option value="' . esc_html( $key ) . '" ';
+									selected( $key, $attrprod );
+									echo '>' . esc_html( $label ) . '</option>';
 
-											if ( $option_id === $attrprod ) {
-												$attrprod_label = $attribute['name'];
-											}
-										}
-										?>
-									</optgroup>
-									<?php
+									if ( $key === $attrprod ) {
+										$attrprod_label = $label;
+									}
 								}
 								?>
 							</select>
