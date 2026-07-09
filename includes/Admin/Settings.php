@@ -1526,7 +1526,6 @@ class Settings {
 				'filter'             => '',
 				'pricesale_discount' => '',
 				'filter_sku'         => '',
-				'tax_price'          => 'no',
 				'rates'              => 'default',
 				'catnp'              => 'yes',
 				'doctype'            => 'invoice',
@@ -1554,6 +1553,17 @@ class Settings {
 				$sanitary_values[ $connector ][ $setting ] = $default_value;
 			}
 		}
+
+		// Get prices with Tax? Resolve "Default" now and store it as a plain 'yes'/'no',
+		// so connector add-ons reading `tax_option` directly always get a value they understand.
+		if ( isset( $input[ $connector ]['tax_option'] ) ) {
+			$tax_option_pref = sanitize_text_field( $input[ $connector ]['tax_option'] );
+		} else {
+			$tax_option_pref = HELPER::get_tax_option_pref( $imh_settings[ $connector ] ?? array() );
+		}
+		$sanitary_values[ $connector ]['tax_option_pref'] = $tax_option_pref;
+		$sanitary_values[ $connector ]['tax_option']      = HELPER::resolve_tax_option( $tax_option_pref );
+
 		$sanitary_values['connector'] = $connector;
 
 		return $sanitary_values;
@@ -1859,12 +1869,32 @@ class Settings {
 	 * @return void
 	 */
 	public function tax_option_callback() {
-		$tax_price = isset( $this->settings['tax_price'] ) ? $this->settings['tax_price'] : 'no';
+		$tax_option            = isset( $this->settings['tax_option_pref'] ) ? $this->settings['tax_option_pref'] : 'default';
+		$wc_prices_include_tax = 'yes' === get_option( 'woocommerce_prices_include_tax' );
+		$wc_tax_option_label   = $wc_prices_include_tax ? __( 'Yes, tax included', 'woocommerce-es' ) : __( 'No, tax not included', 'woocommerce-es' );
 		?>
-		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_price]" id="wcsen_tax">
-			<option value="yes" <?php selected( $tax_price, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>
-			<option value="no" <?php selected( $tax_price, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'woocommerce-es' ); ?></option>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_option]" id="wcsen_tax">
+			<option value="default" <?php selected( $tax_option, 'default' ); ?>>
+				<?php
+				printf(
+					/* translators: %s: current value of the WooCommerce "Prices entered with tax" setting. */
+					esc_html__( 'Default (use WooCommerce setting: %s)', 'woocommerce-es' ),
+					esc_html( $wc_tax_option_label )
+				);
+				?>
+			</option>
+			<option value="yes" <?php selected( $tax_option, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $tax_option, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'woocommerce-es' ); ?></option>
 		</select>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: link to the WooCommerce tax settings page. */
+				esc_html__( 'The current WooCommerce setting can be checked and changed on the %s page.', 'woocommerce-es' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=tax' ) ) . '" target="_blank">' . esc_html__( 'WooCommerce &gt; Settings &gt; Tax', 'woocommerce-es' ) . '</a>'
+			);
+			?>
+		</p>
 		<?php
 	}
 

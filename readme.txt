@@ -221,7 +221,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= 3.3.5 =
+= next =
+* Fixed: Reverted the "Get prices with Tax?" setting key from `tax_price` back to `tax_option`. Connector addons still read/write `tax_option`, so the 3.3.4 rename caused the setting to appear to reset to "No" after saving.
+* Enhancement: Added a "Default" option to "Get prices with Tax?" that follows WooCommerce's own "Prices entered with tax" setting (WooCommerce &gt; Settings &gt; Tax), so both settings stay in sync instead of having to be configured twice. It is now the default value for new/unset installs. Explicitly choosing "Yes" or "No" still overrides the WooCommerce setting as before. The resolved `yes`/`no` value (not the literal "default") is what gets saved and kept in sync, so connector add-ons reading `tax_option` directly always get a value they understand.
 * Added: New `TAXES::get_tax_class_by_erp_id()` helper method that resolves a WooCommerce tax class from an ERP/CRM tax id, using the "ERP Tax Type" mapping configured in WooCommerce > Settings > Tax. This lets connectors (e.g. Odoo) map an ERP tax id to the correct WooCommerce tax class when syncing products, reusing the same mapping already used for orders.
 
 = 3.3.4 =
