@@ -2287,6 +2287,12 @@ class Settings {
 								<option value=''></option>
 								<?php
 								foreach ( $attribute_fields as $key => $label ) {
+									// get_product_attributes() must return a flat field => label
+									// map (readme.md); skip any non-scalar label defensively rather
+									// than rendering "Array" or triggering a conversion warning.
+									if ( ! is_scalar( $label ) ) {
+										continue;
+									}
 									echo '<option value="' . esc_html( $key ) . '" ';
 									selected( $key, $attrprod );
 									echo '>' . esc_html( $label ) . '</option>';

@@ -142,14 +142,16 @@ $products['variants'][] = array(
 ```
 
 Method get_product_attributes
+
+Flat map of ERP field key => human-readable label. Used to populate the "Field from [ERP]"
+dropdown in Settings -> Merge Product Variables, and the key is read back as `$item[$key]`
+when syncing a product, so it must match a real top-level key on the item array returned
+by `get_products()`.
 ```
-'custom_fields' => [],
-'product_cat' => [
-	'id'   => 'product_cat',
-	'name' => __( 'Product Category', 'woocommerce-es' ),
-	'elements' => [
-	],
-],
+[
+	'field_name'        => __( 'Field Label', 'woocommerce-es' ),
+	'other_field'       => __( 'Other Field Label', 'woocommerce-es' ),
+]
 ```
 
 Method get_payment_methods
