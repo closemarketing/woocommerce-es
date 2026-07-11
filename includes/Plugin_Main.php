@@ -51,8 +51,8 @@ class Base {
 		if ( is_admin() ) {
 			new Settings( $connectors_data );
 			new Import_Products( $connector );
-			new Widget_Product( $connector );
-			new Widget_Order( $connector );
+			new Widget_Product( $connector, $connectors_data );
+			new Widget_Order( $connector, $connectors_data );
 			new Notices();
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );
