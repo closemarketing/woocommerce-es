@@ -22,8 +22,9 @@ Whether you're managing a small online store or a large e-commerce operation, th
 
 **Available Connectors**
 
-Free connector included:
+Free connectors included:
 - [Clientify](https://close.marketing/likes/clientify/)
+- [Brevo](https://www.brevo.com/)
 
 Premium connectors:
 - [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
@@ -213,7 +214,9 @@ Supported Services:
 - OpenAI: [Terms of use](https://openai.com/policies/row-terms-of-use/) and [Privact policy](https://openai.com/policies/row-privacy-policy/)
 - DeepSeek: [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-terms-of-use.html) and [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html)
 
-The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
+The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad).
+
+The core connector also integrates with Brevo, an email marketing and marketing automation tool. When an order is placed, the customer contact and order data are sent to Brevo. [Terms of use](https://www.brevo.com/legal/termsofuse/) and [privacy policy](https://www.brevo.com/legal/privacypolicy/).
 
 **VAT Number Validation Service**
 
@@ -222,6 +225,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = next =
+* Added: New Brevo connector for order sync with the Brevo email marketing platform. Brevo has no product catalog, so only customer contacts and order data are synced (products, stock, and tax import are not applicable).
 * Fixed: Reverted the "Get prices with Tax?" setting key from `tax_price` back to `tax_option`. Connector addons still read/write `tax_option`, so the 3.3.4 rename caused the setting to appear to reset to "No" after saving.
 * Enhancement: Added a "Default" option to "Get prices with Tax?" that follows WooCommerce's own "Prices entered with tax" setting (WooCommerce &gt; Settings &gt; Tax), so both settings stay in sync instead of having to be configured twice. It is now the default value for new/unset installs. Explicitly choosing "Yes" or "No" still overrides the WooCommerce setting as before. The resolved `yes`/`no` value (not the literal "default") is what gets saved and kept in sync, so connector add-ons reading `tax_option` directly always get a value they understand.
 * Added: New `TAXES::get_tax_class_by_erp_id()` helper method that resolves a WooCommerce tax class from an ERP/CRM tax id, using the "ERP Tax Type" mapping configured in WooCommerce > Settings > Tax. This lets connectors (e.g. Odoo) map an ERP tax id to the correct WooCommerce tax class when syncing products, reusing the same mapping already used for orders.
