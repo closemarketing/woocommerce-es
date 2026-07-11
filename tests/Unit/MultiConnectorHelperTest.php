@@ -701,4 +701,84 @@ class MultiConnectorHelperTest extends WP_UnitTestCase {
 		$this->assertIsArray( $connector['settings']['payment_methods'] );
 		$this->assertIsArray( $connector['settings']['treasury_accounts'] );
 	}
+
+	// -------------------------------------------------------------------------
+	// is_workflow_enabled_for_connector()
+	// -------------------------------------------------------------------------
+
+	/**
+	 * An active connector with workflow 'yes' is enabled.
+	 *
+	 * @return void
+	 */
+	public function test_is_workflow_enabled_returns_true_for_active_connector_with_yes(): void {
+		$meta = array(
+			'status'    => 'active',
+			'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+		);
+
+		$this->assertTrue( HELPER::is_workflow_enabled_for_connector( $meta, 'products' ) );
+		$this->assertTrue( HELPER::is_workflow_enabled_for_connector( $meta, 'orders' ) );
+	}
+
+	/**
+	 * A connector with the workflow explicitly set to 'no' is disabled for that workflow only.
+	 *
+	 * @return void
+	 */
+	public function test_is_workflow_enabled_returns_false_when_workflow_is_no(): void {
+		$meta = array(
+			'status'    => 'active',
+			'workflows' => array( 'products' => 'no', 'orders' => 'yes' ),
+		);
+
+		$this->assertFalse( HELPER::is_workflow_enabled_for_connector( $meta, 'products' ) );
+		$this->assertTrue( HELPER::is_workflow_enabled_for_connector( $meta, 'orders' ) );
+	}
+
+	/**
+	 * An inactive connector is disabled for every workflow, even if workflows say 'yes'.
+	 *
+	 * @return void
+	 */
+	public function test_is_workflow_enabled_returns_false_when_connector_is_inactive(): void {
+		$meta = array(
+			'status'    => 'inactive',
+			'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+		);
+
+		$this->assertFalse( HELPER::is_workflow_enabled_for_connector( $meta, 'products' ) );
+		$this->assertFalse( HELPER::is_workflow_enabled_for_connector( $meta, 'orders' ) );
+	}
+
+	/**
+	 * Missing status/workflows keys default to active/enabled (single-connector
+	 * legacy setups do not always have these keys populated).
+	 *
+	 * @return void
+	 */
+	public function test_is_workflow_enabled_defaults_to_true_when_keys_are_missing(): void {
+		$this->assertTrue( HELPER::is_workflow_enabled_for_connector( array(), 'products' ) );
+		$this->assertTrue( HELPER::is_workflow_enabled_for_connector( array( 'status' => 'active' ), 'orders' ) );
+	}
+
+	/**
+	 * Non-array connector meta (e.g. connector not found, caller passes null) is
+	 * treated as not enabled — this is what guards resolve_connector() against an
+	 * unknown connector_id.
+	 *
+	 * @return void
+	 */
+	public function test_is_workflow_enabled_returns_false_for_non_array_meta(): void {
+		$this->assertFalse( HELPER::is_workflow_enabled_for_connector( null, 'products' ) );
+	}
+
+	/**
+	 * An empty (but valid) meta array defaults like any other missing keys: enabled.
+	 *
+	 * @return void
+	 */
+	public function test_is_workflow_enabled_defaults_to_true_for_empty_array_meta(): void {
+		$this->assertTrue( HELPER::is_workflow_enabled_for_connector( array(), 'products' ) );
+	}
 }

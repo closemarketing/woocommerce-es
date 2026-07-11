@@ -221,6 +221,31 @@ class Orders {
 	}
 
 	/**
+	 * Resolves the connapi_erp/settings/options/meta_key_order quadruplet for a connector ID.
+	 *
+	 * Falls back to this instance's connector when no connector_id is given. When an explicit
+	 * connector_id is requested but that connector is inactive, or has the 'orders' workflow
+	 * disabled, connapi_erp is returned as null: callers must not sync orders in that case.
+	 *
+	 * @param string $connector_id Connector ID from request, or empty for the default connector.
+	 * @return array List of ( $connapi_erp, $settings, $options, $meta_key_order ).
+	 */
+	private function resolve_connector( $connector_id ) {
+		if ( ! empty( $connector_id ) ) {
+			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
+			if ( ! $connector_data || ! HELPER::is_workflow_enabled_for_connector( $connector_data['meta'] ?? array(), 'orders' ) ) {
+				return array( null, array(), array(), '' );
+			}
+			if ( isset( $connector_data['connapi_erp'] ) ) {
+				$options = $connector_data['options'];
+				return array( $connector_data['connapi_erp'], $connector_data['settings'], $options, '_' . $options['slug'] . '_invoice_id' );
+			}
+		}
+		return array( $this->connapi_erp, $this->settings, $this->options, $this->meta_key_order );
+	}
+
+	/**
 	 * Import products from API
 	 *
 	 * @return void
@@ -237,25 +262,10 @@ class Orders {
 
 		// Get connector from request or use default.
 		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
-		if ( ! empty( $connector_id ) ) {
-			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
-			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
-			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
-				$connapi_erp    = $connector_data['connapi_erp'];
-				$settings       = $connector_data['settings'];
-				$options        = $connector_data['options'];
-				$meta_key_order = '_' . $options['slug'] . '_invoice_id';
-			} else {
-				$connapi_erp    = $this->connapi_erp;
-				$settings       = $this->settings;
-				$options        = $this->options;
-				$meta_key_order = $this->meta_key_order;
-			}
-		} else {
-			$connapi_erp    = $this->connapi_erp;
-			$settings       = $this->settings;
-			$options        = $this->options;
-			$meta_key_order = $this->meta_key_order;
+		list( $connapi_erp, $settings, $options, $meta_key_order ) = $this->resolve_connector( $connector_id );
+		if ( empty( $connapi_erp ) ) {
+			wp_send_json_error( array( 'msg' => __( 'Connector not available for orders sync', 'woocommerce-es' ) ) );
+			return;
 		}
 
 		// Start.
@@ -482,20 +492,10 @@ class Orders {
 		$type         = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
 		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
 
-		$connapi_erp    = $this->connapi_erp;
-		$settings       = $this->settings;
-		$meta_key_order = $this->meta_key_order;
-		$options        = $this->options;
-
-		if ( ! empty( $connector_id ) ) {
-			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
-			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
-			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
-				$connapi_erp    = $connector_data['connapi_erp'];
-				$settings       = $connector_data['settings'];
-				$options        = $connector_data['options'];
-				$meta_key_order = '_' . $options['slug'] . '_invoice_id';
-			}
+		list( $connapi_erp, $settings, $options, $meta_key_order ) = $this->resolve_connector( $connector_id );
+		if ( empty( $connapi_erp ) ) {
+			wp_send_json_error( array( 'message' => __( 'Connector not available for orders sync', 'woocommerce-es' ) ) );
+			return;
 		}
 
 		$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';

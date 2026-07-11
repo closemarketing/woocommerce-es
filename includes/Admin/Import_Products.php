@@ -235,6 +235,10 @@ class Import_Products {
 		// Get connector from request or use default.
 		$connector_id                             = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
 		list( $connapi_erp, $settings, $options ) = $this->resolve_connector( $connector_id );
+		if ( empty( $connapi_erp ) ) {
+			wp_send_json_error( array( 'message' => __( 'Connector not available for products sync', 'woocommerce-es' ) ) );
+			return;
+		}
 
 		if ( in_array( 'product', $options['disable_modules'] ?? array(), true ) ) {
 			wp_send_json_success(
@@ -392,14 +396,21 @@ class Import_Products {
 	/**
 	 * Resolves the connapi_erp/settings/options triplet for a connector ID, falling back to this instance's connector.
 	 *
+	 * When an explicit connector_id is requested but that connector is inactive, or has the
+	 * 'products' workflow disabled, null is returned instead of silently falling back to the
+	 * default connector: the caller must not sync products for a connector that disabled it.
+	 *
 	 * @param string $connector_id Connector ID from request, or empty for the default connector.
-	 * @return array List of ( $connapi_erp, $settings, $options ).
+	 * @return array List of ( $connapi_erp, $settings, $options ). $connapi_erp is null when disallowed.
 	 */
 	private function resolve_connector( $connector_id ) {
 		if ( ! empty( $connector_id ) ) {
 			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
 			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
-			if ( $connector_data && isset( $connector_data['connapi_erp'] ) ) {
+			if ( ! $connector_data || ! HELPER::is_workflow_enabled_for_connector( $connector_data['meta'] ?? array(), 'products' ) ) {
+				return array( null, array(), array() );
+			}
+			if ( isset( $connector_data['connapi_erp'] ) ) {
 				return array( $connector_data['connapi_erp'], $connector_data['settings'], $connector_data['options'] );
 			}
 		}
