@@ -271,8 +271,12 @@ class Settings {
 				<?php settings_errors(); ?>
 
 				<?php
-				// Main tabs. Default to settings when connector plugin is not active.
-				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : ( $this->is_connector_active() ? 'synchronization' : 'settings' );
+				// Main tabs. Default to first connector tab, or Settings when no connector plugin is active.
+				$default_tab = 'general';
+				if ( $this->is_connector_active() && ! empty( $this->connector_id ) ) {
+					$default_tab = 'connector_' . $this->connector_id;
+				}
+				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : $default_tab;
 
 				// Detect if active tab is a connector tab (prefix 'connector_').
 				$active_connector_tab = '';
@@ -280,33 +284,49 @@ class Settings {
 					$active_connector_tab = substr( $active_tab, strlen( 'connector_' ) );
 				}
 
+				// Detect if active tab is a license tab (custom tab with slug ending in '-license').
+				$active_license_tab = ( '-license' === substr( $active_tab, -8 ) ) ? $active_tab : '';
+
 				// Subtabs.
 				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
 
 				// Set default subtabs.
-				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
+				if ( ! empty( $active_connector_tab ) && empty( $active_subtab ) ) {
 					$active_subtab = 'sync_products';
 				}
-				if ( ! empty( $active_connector_tab ) && empty( $active_subtab ) ) {
-					$active_subtab = 'connection';
-				}
 				if ( 'general' === $active_tab && empty( $active_subtab ) ) {
-					$active_subtab = 'vat_compliance';
+					$active_subtab = 'connectors';
 				}
-				// Backwards compatibility: redirect old 'settings' tab.
+				// Backwards compatibility: redirect old tab slugs.
 				if ( 'settings' === $active_tab ) {
 					$active_tab    = 'general';
-					$active_subtab = 'vat_compliance';
+					$active_subtab = 'connectors';
+				}
+				if ( 'synchronization' === $active_tab && ! empty( $this->connector_id ) ) {
+					$active_tab           = 'connector_' . $this->connector_id;
+					$active_connector_tab = $this->connector_id;
+					if ( empty( $active_subtab ) || 'automate' === $active_subtab ) {
+						$active_subtab = 'sync_products';
+					}
+				}
+				?>
+				<?php
+				// Support for connect_ecommerce_settings_tabs (custom tabs). License tabs (slug ending in
+				// '-license') are grouped under a single "License" parent tab instead of listed individually.
+				$custom_tabs   = apply_filters( 'connect_ecommerce_settings_tabs', array() );
+				$license_tabs  = array();
+				$other_tabs    = array();
+				foreach ( $custom_tabs as $custom_tab ) {
+					$tab_slug = isset( $custom_tab['tab'] ) ? $custom_tab['tab'] : '';
+					if ( '-license' === substr( $tab_slug, -8 ) ) {
+						$license_tabs[] = $custom_tab;
+					} else {
+						$other_tabs[] = $custom_tab;
+					}
 				}
 				?>
 				<h2 class="nav-tab-wrapper">
 					<?php
-					if ( $this->is_connector_active() ) {
-						?>
-						<a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
-						<?php
-					}
-
 					// One tab per active configured connector.
 					foreach ( $this->connectors as $conn_id => $conn_data ) {
 						$conn_meta   = $conn_data['meta'] ?? array();
@@ -318,16 +338,16 @@ class Settings {
 						$conn_tab_label = $conn_meta['label'] ?? $conn_id;
 						$conn_is_active = $conn_tab_slug === $active_tab ? 'nav-tab-active' : '';
 						printf(
-							'<a href="?page=connect_ecommerce&tab=%s&subtab=connection" class="nav-tab %s">%s</a>',
+							'<a href="?page=connect_ecommerce&tab=%s&subtab=sync_products" class="nav-tab %s">%s</a>',
 							esc_attr( $conn_tab_slug ),
 							esc_attr( $conn_is_active ),
 							esc_html( $conn_tab_label )
 						);
 					}
 
-					// General tab (VAT, AI, Alerts, Connector Manager).
+					// Settings tab (VAT, AI, Alerts, Connector Manager).
 					?>
-					<a href="?page=connect_ecommerce&tab=general&subtab=vat_compliance" class="nav-tab <?php echo 'general' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'General', 'woocommerce-es' ); ?></a>
+					<a href="?page=connect_ecommerce&tab=general&subtab=connectors" class="nav-tab <?php echo 'general' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Settings', 'woocommerce-es' ); ?></a>
 					<?php
 					if ( $this->is_connector_active() && in_array( 'subscriptions', $special_tabs, true ) ) {
 						?>
@@ -335,17 +355,21 @@ class Settings {
 						<?php
 					}
 
-					// Support for connect_ecommerce_settings_tabs (custom tabs).
-					$custom_tabs = apply_filters( 'connect_ecommerce_settings_tabs', array() );
-					if ( ! empty( $custom_tabs ) ) {
-						foreach ( $custom_tabs as $custom_tab ) {
-							$tab_slug  = isset( $custom_tab['tab'] ) ? $custom_tab['tab'] : '';
-							$tab_label = isset( $custom_tab['label'] ) ? $custom_tab['label'] : '';
-							if ( ! empty( $tab_slug ) && ! empty( $tab_label ) ) {
-								?>
-								<a href="?page=connect_ecommerce&tab=<?php echo esc_attr( $tab_slug ); ?>" class="nav-tab <?php echo esc_attr( $tab_slug ) === $active_tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $tab_label ); ?></a>
-								<?php
-							}
+					// License tab (groups each connector's license custom tab as a submenu).
+					if ( ! empty( $license_tabs ) ) {
+						?>
+						<a href="?page=connect_ecommerce&tab=<?php echo esc_attr( $license_tabs[0]['tab'] ); ?>" class="nav-tab <?php echo ! empty( $active_license_tab ) ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'License', 'woocommerce-es' ); ?></a>
+						<?php
+					}
+
+					// Remaining custom tabs (not license tabs).
+					foreach ( $other_tabs as $custom_tab ) {
+						$tab_slug  = isset( $custom_tab['tab'] ) ? $custom_tab['tab'] : '';
+						$tab_label = isset( $custom_tab['label'] ) ? $custom_tab['label'] : '';
+						if ( ! empty( $tab_slug ) && ! empty( $tab_label ) ) {
+							?>
+							<a href="?page=connect_ecommerce&tab=<?php echo esc_attr( $tab_slug ); ?>" class="nav-tab <?php echo esc_attr( $tab_slug ) === $active_tab ? 'nav-tab-active' : ''; ?>"><?php echo esc_html( $tab_label ); ?></a>
+							<?php
 						}
 					}
 
@@ -354,33 +378,24 @@ class Settings {
 				</h2>
 
 				<?php
-				// Subtabs for Synchronization.
-				if ( 'synchronization' === $active_tab && $this->is_connector_active() ) {
+				// Subtabs for connector tab: Products, Orders, Connection, Merge Vars, Payment Methods.
+				if ( ! empty( $active_connector_tab ) && isset( $this->connectors[ $active_connector_tab ] ) ) {
+					$tab_conn_data       = $this->connectors[ $active_connector_tab ];
+					$tab_is_mergevars    = $tab_conn_data['is_mergevars'] ?? false;
+					$tab_is_disabled_ord = $tab_conn_data['is_disabled_orders'] ?? false;
+					$tab_connapi         = $tab_conn_data['connapi_erp'] ?? null;
+					$tab_has_payments    = ! empty( $tab_connapi ) && method_exists( $tab_connapi, 'get_payment_methods' );
+					$tab_conn_prefix     = '?page=connect_ecommerce&tab=' . esc_attr( 'connector_' . $active_connector_tab );
 					?>
 					<ul class="subsubsub">
-						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a> | </li>
+						<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a> | </li>
 						<?php
-						if ( ! $this->is_disabled_orders ) {
+						if ( ! $tab_is_disabled_ord ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a> | </li>
+							<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a> | </li>
 							<?php
 						}
 						?>
-						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=automate" class="<?php echo 'automate' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Automate', 'woocommerce-es' ); ?></a></li>
-					</ul>
-					<br class="clear">
-					<?php
-				}
-
-				// Subtabs for connector tab.
-				if ( ! empty( $active_connector_tab ) && isset( $this->connectors[ $active_connector_tab ] ) ) {
-					$tab_conn_data    = $this->connectors[ $active_connector_tab ];
-					$tab_is_mergevars = $tab_conn_data['is_mergevars'] ?? false;
-					$tab_connapi      = $tab_conn_data['connapi_erp'] ?? null;
-					$tab_has_payments = ! empty( $tab_connapi ) && method_exists( $tab_connapi, 'get_payment_methods' );
-					$tab_conn_prefix  = '?page=connect_ecommerce&tab=' . esc_attr( 'connector_' . $active_connector_tab );
-					?>
-					<ul class="subsubsub">
 						<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=connection" class="<?php echo 'connection' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Connection', 'woocommerce-es' ); ?></a><?php echo $tab_is_mergevars || $tab_has_payments ? ' | ' : ''; ?></li>
 						<?php
 						if ( $tab_is_mergevars ) {
@@ -391,6 +406,27 @@ class Settings {
 						if ( $tab_has_payments ) {
 							?>
 							<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a></li>
+							<?php
+						}
+						?>
+					</ul>
+					<br class="clear">
+					<?php
+				}
+
+				// Subtabs for License tab: one per connector license custom tab.
+				if ( ! empty( $active_license_tab ) && ! empty( $license_tabs ) ) {
+					?>
+					<ul class="subsubsub">
+						<?php
+						$license_tabs_count = count( $license_tabs );
+						foreach ( $license_tabs as $index => $license_tab ) {
+							$lt_slug  = $license_tab['tab'] ?? '';
+							$lt_label = $license_tab['label'] ?? $lt_slug;
+							// Strip a trailing " License" from the label since it repeats under the License parent tab.
+							$lt_label = preg_replace( '/\s*License$/i', '', $lt_label );
+							?>
+							<li><a href="?page=connect_ecommerce&tab=<?php echo esc_attr( $lt_slug ); ?>" class="<?php echo $lt_slug === $active_tab ? 'current' : ''; ?>"><?php echo esc_html( $lt_label ); ?></a><?php echo $index < $license_tabs_count - 1 ? ' | ' : ''; ?></li>
 							<?php
 						}
 						?>
@@ -423,29 +459,6 @@ class Settings {
 				}
 				?>
 				<?php
-				// Synchronization Tab Content.
-				if ( 'synchronization' === $active_tab ) {
-					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
-						$this->page_get_sync( $active_subtab );
-					}
-
-					if ( 'automate' === $active_subtab ) {
-						?>
-						<form method="post" action="options.php">
-							<?php
-							settings_fields( 'connect_ecommerce_settings' );
-							do_settings_sections( 'connect_ecommerce_automate' );
-							submit_button(
-								__( 'Save automate', 'woocommerce-es' ),
-								'primary',
-								'submit_automate'
-							);
-							?>
-						</form>
-						<?php
-					}
-				}
-
 				// Connector tab content.
 				if ( ! empty( $active_connector_tab ) && isset( $this->connectors[ $active_connector_tab ] ) ) {
 					// Temporarily switch context to the selected connector tab.
@@ -463,6 +476,10 @@ class Settings {
 					$this->options      = $tab_conn_data['options'] ?? array();
 					$this->connapi_erp  = $tab_conn_data['connapi_erp'] ?? null;
 					$this->is_mergevars = $tab_conn_data['is_mergevars'] ?? false;
+
+					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
+						$this->page_get_sync( $active_subtab, $active_connector_tab );
+					}
 
 					if ( 'connection' === $active_subtab ) {
 						?>
@@ -998,42 +1015,6 @@ class Settings {
 		}
 
 		/**
-		 * ## Automate
-		 * --------------------------- */
-
-		add_settings_section(
-			'connect_woocommerce_setting_automate',
-			__( 'Automate', 'woocommerce-es' ),
-			array( $this, 'section_automate' ),
-			'connect_ecommerce_automate'
-		);
-
-		add_settings_field(
-			'wcpimh_sync',
-			__( 'When do you want to sync?', 'woocommerce-es' ),
-			array( $this, 'sync_callback' ),
-			'connect_ecommerce_automate',
-			'connect_woocommerce_setting_automate'
-		);
-
-		if ( ! empty( $this->options['table_sync'] ) ) {
-			add_settings_field(
-				'wcpimh_sync_num',
-				__( 'How many products do you want to sync each time?', 'woocommerce-es' ),
-				array( $this, 'sync_num_callback' ),
-				'connect_ecommerce_automate',
-				'connect_woocommerce_setting_automate'
-			);
-			add_settings_field(
-				'wcpimh_sync_email',
-				__( 'Do you want to receive an email when all products are synced?', 'woocommerce-es' ),
-				array( $this, 'sync_email_callback' ),
-				'connect_ecommerce_automate',
-				'connect_woocommerce_setting_automate'
-			);
-		}
-
-		/**
 		 * ## Merge Vars
 		 * --------------------------- */
 
@@ -1227,13 +1208,16 @@ class Settings {
 	 * @param string $type Type of page.
 	 * @return void
 	 */
-	public function page_get_sync( $type = 'sync_products' ) {
+	public function page_get_sync( $type = 'sync_products', $connector_id = '' ) {
 		$ajax_action = 'connect_ecommerce_' . $type;
 		$workflow    = 'sync_orders' === $type ? 'orders' : 'products';
 
 		// Build list of connectors enabled for this workflow.
 		$available_connectors = array();
 		foreach ( $this->connectors_meta as $id => $meta ) {
+			if ( ! empty( $connector_id ) && $id !== $connector_id ) {
+				continue;
+			}
 			if ( 'active' !== ( $meta['status'] ?? 'active' ) ) {
 				continue;
 			}
@@ -1246,21 +1230,21 @@ class Settings {
 		$is_orders = 'sync_orders' === $type;
 		$item_type = $is_orders ? __( 'Orders', 'woocommerce-es' ) : __( 'Products', 'woocommerce-es' );
 		$site_name = get_bloginfo( 'name' );
-		$multiple  = count( $available_connectors ) > 1;
+		$multiple  = empty( $connector_id ) && count( $available_connectors ) > 1;
 
-		// Determine selected connector (first available or URL param).
-		$selected_id = isset( $_GET['connector_id'] ) ? sanitize_key( wp_unslash( $_GET['connector_id'] ) ) : '';
-		if ( empty( $selected_id ) || ! isset( $available_connectors[ $selected_id ] ) ) {
-			$selected_id = (string) array_key_first( $available_connectors );
+		// Determine selected connector (forced connector, URL param, or first available).
+		if ( ! empty( $connector_id ) ) {
+			$selected_id = $connector_id;
+		} else {
+			$selected_id = isset( $_GET['connector_id'] ) ? sanitize_key( wp_unslash( $_GET['connector_id'] ) ) : '';
+			if ( empty( $selected_id ) || ! isset( $available_connectors[ $selected_id ] ) ) {
+				$selected_id = (string) array_key_first( $available_connectors );
+			}
 		}
 
 		$selected_conn    = $this->connectors[ $selected_id ] ?? array();
 		$selected_connapi = $selected_conn['connapi_erp'] ?? null;
 		$selected_no_ai   = $selected_conn['is_disabled_ai'] ?? true;
-		$selected_meta    = $available_connectors[ $selected_id ] ?? array();
-		$selected_label   = $selected_meta['label'] ?? $selected_id;
-		$selected_type    = $selected_meta['type'] ?? $selected_id;
-		$selected_name    = $this->connector_definitions[ $selected_type ]['name'] ?? ucfirst( $selected_type );
 		$can_sync         = false;
 		$message          = '';
 		if ( ! empty( $selected_connapi ) ) {
@@ -1277,7 +1261,7 @@ class Settings {
 		$tab_url = add_query_arg(
 			array(
 				'page'   => 'connect_ecommerce',
-				'tab'    => 'synchronization',
+				'tab'    => empty( $connector_id ) ? 'synchronization' : 'connector_' . $connector_id,
 				'subtab' => $type,
 			),
 			admin_url( 'admin.php' )
@@ -1316,26 +1300,6 @@ class Settings {
 					</div>
 				</div>
 			<?php else : ?>
-				<div class="connwoo-flow-header connwoo-flow-header--single">
-					<div class="connwoo-flow-origin">
-						<span class="connwoo-flow-label"><?php esc_html_e( 'Origin', 'woocommerce-es' ); ?></span>
-						<div class="connwoo-flow-site">
-							<strong><?php echo esc_html( $selected_label ); ?></strong>
-							<small><?php echo esc_html( $selected_name ); ?></small>
-						</div>
-					</div>
-					<div class="connwoo-flow-arrow">
-						<span>→</span>
-						<small><?php echo esc_html( strtolower( $item_type ) ); ?></small>
-					</div>
-					<div class="connwoo-flow-destination">
-						<span class="connwoo-flow-label"><?php esc_html_e( 'Destination', 'woocommerce-es' ); ?></span>
-						<div class="connwoo-flow-site">
-							<strong><?php echo esc_html( $site_name ); ?></strong>
-							<small>WooCommerce</small>
-						</div>
-					</div>
-				</div>
 				<select name="connwoo-connector-select" id="connwoo-connector-select" style="display:none;">
 					<option value="<?php echo esc_attr( $selected_id ); ?>" selected></option>
 				</select>
@@ -1657,7 +1621,7 @@ class Settings {
 			return;
 		}
 		?>
-		<select name="connect_ecommerce[connector]" id="wcpimh_connector" onchange="this.form.submit();">
+		<select id="wcpimh_connector" disabled="disabled">
 			<?php foreach ( $this->connectors_meta as $id => $meta ) : ?>
 				<?php
 				$type_label = $meta['type'] ?? $id;

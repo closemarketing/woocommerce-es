@@ -36,18 +36,55 @@ class Widget_Product {
 	private $is_disabled_ai;
 
 	/**
+	 * Active connector id (default selection).
+	 *
+	 * @var string
+	 */
+	private $connector_id;
+
+	/**
+	 * All configured connectors (id => connector data).
+	 *
+	 * @var array
+	 */
+	private $connectors;
+
+	/**
 	 * Construct of Class
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connector       Active connector.
+	 * @param array $connectors_data Connectors payload from HELPER::get_connectors() (optional).
 	 */
-	public function __construct( $connector ) {
+	public function __construct( $connector, $connectors_data = array() ) {
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) ) {
 			return;
 		}
 		$this->options        = $connector['options'];
 		$this->is_disabled_ai = $connector['is_disabled_ai'] ?? false;
+		$this->connector_id   = $connectors_data['active'] ?? '';
+		$this->connectors     = $connectors_data['items'] ?? array();
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_products' ) );
+	}
+
+	/**
+	 * Connectors with the products workflow enabled, for the connector selector.
+	 *
+	 * @return array Id => label.
+	 */
+	private function get_syncable_connectors() {
+		$syncable = array();
+		foreach ( $this->connectors as $conn_id => $conn_data ) {
+			$conn_meta = $conn_data['meta'] ?? array();
+			if ( 'active' !== ( $conn_meta['status'] ?? 'active' ) ) {
+				continue;
+			}
+			if ( 'yes' !== ( $conn_meta['workflows']['products'] ?? 'yes' ) ) {
+				continue;
+			}
+			$syncable[ $conn_id ] = $conn_meta['label'] ?? $conn_id;
+		}
+		return $syncable;
 	}
 	/**
 	 * Adds metabox
@@ -75,8 +112,18 @@ class Widget_Product {
 		$product_id     = (int) $post->ID;
 		$product        = wc_get_product( $post->ID );
 		$product_erp_id = $product->get_meta( 'connect_ecommerce_id' );
+		$syncable       = $this->get_syncable_connectors();
 
 		echo '<table>';
+		if ( count( $syncable ) > 1 ) {
+			echo '<tr><td><strong>' . esc_html__( 'Connector:', 'woocommerce-es' ) . '</strong></td>';
+			echo '<td><select id="connwoo-widget-connector-' . esc_attr( $product_id ) . '">';
+			foreach ( $syncable as $conn_id => $conn_label ) {
+				echo '<option value="' . esc_attr( $conn_id ) . '" ' . selected( $this->connector_id, $conn_id, false ) . '>';
+				echo esc_html( $conn_label ) . '</option>';
+			}
+			echo '</select></td></tr>';
+		}
 		// Send Product.
 		echo '<tr><td><strong>' . esc_html__( 'Product:', 'woocommerce-es' ) . '</strong></td>';
 		echo '<td>';
@@ -86,6 +133,7 @@ class Widget_Product {
 		echo '\'' . esc_html( $product_erp_id ) . '\',';
 		echo '\'' . esc_html( $product->get_sku() ) . '\',';
 		echo '\'' . esc_html( $product_id ) . '\',';
+		echo '\'connwoo-widget-connector-' . esc_html( $product_id ) . '\'';
 		echo ')">' . esc_html__( 'Sync', 'woocommerce-es' ) . '</div>';
 		echo '</td>';
 		echo '</tr>';

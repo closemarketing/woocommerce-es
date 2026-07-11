@@ -109,14 +109,14 @@ class Orders {
 	 */
 	public function admin_enqueues() {
 		$is_connect_ecommerce_page = isset( $_GET['page'] ) && 'connect_ecommerce' === $_GET['page'];
-		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
+		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : '';
 		$current_subtab            = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : 'sync_products';
 
-		$is_sync_orders_page = $is_connect_ecommerce_page
-			&& 'synchronization' === $current_tab
-			&& 'sync_orders' === $current_subtab;
+		$is_sync_page = $is_connect_ecommerce_page
+			&& str_starts_with( $current_tab, 'connector_' )
+			&& in_array( $current_subtab, array( 'sync_products', 'sync_orders' ), true );
 
-		if ( $is_sync_orders_page ) {
+		if ( $is_sync_page ) {
 			wp_enqueue_style(
 				'conecom-admin-import',
 				CONECOM_PLUGIN_URL . 'includes/assets/admin-import.css',

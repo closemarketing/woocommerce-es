@@ -256,6 +256,70 @@ class Connect_Ecommerce_Clientify {
 	}
 
 	/**
+	 * Gets all products SKUs from Clientify (paginated).
+	 *
+	 * @return array Array of products SKUs with last_updated, or error status.
+	 */
+	public function get_all_product_skus() {
+		$api_key = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
+		if ( ! $api_key ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'No API Key', 'woocommerce-es' ),
+			);
+		}
+
+		$args = array(
+			'method'  => 'GET',
+			'headers' => array(
+				'Content-Type'  => 'application/json',
+				'Authorization' => 'Token ' . $api_key,
+			),
+			'timeout' => 120,
+		);
+
+		$all_products = array();
+		$url          = 'https://api.clientify.net/v1/products/?page_size=' . $this->options['api_pagination'];
+
+		while ( $url ) {
+			$response = wp_remote_request( $url, $args );
+			if ( is_wp_error( $response ) ) {
+				return array(
+					'status'  => 'error',
+					'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
+				);
+			}
+
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			$code = (int) round( wp_remote_retrieve_response_code( $response ) / 100 );
+
+			if ( 2 !== $code || ! isset( $body['results'] ) ) {
+				return array(
+					'status'  => 'error',
+					'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
+				);
+			}
+
+			$all_products = array_merge( $all_products, $body['results'] );
+			$url          = ! empty( $body['next'] ) ? $body['next'] : '';
+		}
+
+		$products_skus = array();
+		foreach ( $all_products as $product ) {
+			if ( empty( $product['sku'] ) ) {
+				continue;
+			}
+			$products_skus[] = array(
+				'sku'          => $product['sku'],
+				'last_updated' => ! empty( $product['modified'] ) ? strtotime( $product['modified'] ) : 0,
+				'tags'         => array(),
+			);
+		}
+
+		return $products_skus;
+	}
+
+	/**
 	 * Creates the order to Clientify
 	 *
 	 * @param array  $order Order prepared to API.

@@ -42,19 +42,56 @@ class Widget_Order {
 	private $connapi_erp;
 
 	/**
+	 * Active connector id (default selection).
+	 *
+	 * @var string
+	 */
+	private $connector_id;
+
+	/**
+	 * All configured connectors (id => connector data).
+	 *
+	 * @var array
+	 */
+	private $connectors;
+
+	/**
 	 * Construct of Class
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connector       Active connector.
+	 * @param array $connectors_data Connectors payload from HELPER::get_connectors() (optional).
 	 */
-	public function __construct( $connector ) {
+	public function __construct( $connector, $connectors_data = array() ) {
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) || empty( $connector['connapi_erp'] ) ) {
 			return;
 		}
-		$this->options     = $connector['options'];
-		$this->settings    = $connector['settings'] ?? array();
-		$this->connapi_erp = $connector['connapi_erp'];
+		$this->options      = $connector['options'];
+		$this->settings     = $connector['settings'] ?? array();
+		$this->connapi_erp  = $connector['connapi_erp'];
+		$this->connector_id = $connectors_data['active'] ?? '';
+		$this->connectors   = $connectors_data['items'] ?? array();
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_orders' ) );
+	}
+
+	/**
+	 * Connectors with the orders workflow enabled, for the connector selector.
+	 *
+	 * @return array Id => label.
+	 */
+	private function get_syncable_connectors() {
+		$syncable = array();
+		foreach ( $this->connectors as $conn_id => $conn_data ) {
+			$conn_meta = $conn_data['meta'] ?? array();
+			if ( 'active' !== ( $conn_meta['status'] ?? 'active' ) ) {
+				continue;
+			}
+			if ( 'yes' !== ( $conn_meta['workflows']['orders'] ?? 'yes' ) ) {
+				continue;
+			}
+			$syncable[ $conn_id ] = $conn_meta['label'] ?? $conn_id;
+		}
+		return $syncable;
 	}
 	/**
 	 * Adds metabox
@@ -86,8 +123,18 @@ class Widget_Order {
 	public function metabox_show_order( $post ) {
 		$order_id = $post->ID;
 		$order    = wc_get_order( $post->ID );
+		$syncable = $this->get_syncable_connectors();
 
 		echo '<table>';
+		if ( count( $syncable ) > 1 ) {
+			echo '<tr><td><strong>' . esc_html__( 'Connector:', 'woocommerce-es' ) . '</strong></td>';
+			echo '<td><select id="connwoo-widget-connector-order-' . esc_attr( $order_id ) . '">';
+			foreach ( $syncable as $conn_id => $conn_label ) {
+				echo '<option value="' . esc_attr( $conn_id ) . '" ' . selected( $this->connector_id, $conn_id, false ) . '>';
+				echo esc_html( $conn_label ) . '</option>';
+			}
+			echo '</select></td></tr>';
+		}
 		// Send Order.
 		echo '<tr><td><strong>' . esc_html__( 'Order', 'woocommerce-es' ) . '</strong></td>';
 		$order_key  = '_' . $this->options['slug'] . '_invoice_id';
@@ -108,7 +155,7 @@ class Widget_Order {
 
 		echo '<br/><br/><div name="sync-erp-orders" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncOrderERP(' . esc_html( $order_id );
-		echo ',this.id,\'erp-post\')">' . esc_html( $label ) . '</div>';
+		echo ',this.id,\'erp-post\',\'connwoo-widget-connector-order-' . esc_html( $order_id ) . '\')">' . esc_html( $label ) . '</div>';
 		echo '</td></tr>';
 
 		echo '</table>';

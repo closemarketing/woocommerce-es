@@ -276,10 +276,11 @@ function loadAsLogs() {
 	});
 }
 
-function syncProductERP( element, action, product_erp_id = 0, product_sku = '', product_id = 0 ) {
+function syncProductERP( element, action, product_erp_id = 0, product_sku = '', product_id = 0, connector_select_id = '' ) {
 	element.classList.add('disabled');
 	element.innerHTML = ConEcom_ajaxAction.label_syncing + ' <span class="spinner is-active"></span>';
 	const productAI = document.querySelector('input[name="connwoo-sync-product-ai"]')?.checked || '';
+	const connectorId = connector_select_id ? ( document.getElementById(connector_select_id)?.value || '' ) : '';
 
 	loop = -1;
 	// AJAX request.
@@ -290,7 +291,7 @@ function syncProductERP( element, action, product_erp_id = 0, product_sku = '', 
 			'Content-Type': 'application/x-www-form-urlencoded',
 			'Cache-Control': 'no-cache',
 		},
-		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_erp_id=' + product_erp_id + '&product_sku=' + product_sku + '&product_id=' + product_id + '&product_ai=' + productAI,
+		body: 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_erp_id=' + product_erp_id + '&product_sku=' + product_sku + '&product_id=' + product_id + '&product_ai=' + productAI + '&connector_id=' + encodeURIComponent(connectorId),
 	})
 	.then( (resp) => resp.json() )
 	.then( function(results) {
