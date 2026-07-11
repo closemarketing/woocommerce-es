@@ -1218,10 +1218,7 @@ class Settings {
 			if ( ! empty( $connector_id ) && $id !== $connector_id ) {
 				continue;
 			}
-			if ( 'active' !== ( $meta['status'] ?? 'active' ) ) {
-				continue;
-			}
-			if ( 'yes' !== ( $meta['workflows'][ $workflow ] ?? 'yes' ) ) {
+			if ( ! HELPER::is_workflow_enabled_for_connector( $meta, $workflow ) ) {
 				continue;
 			}
 			$available_connectors[ $id ] = $meta;

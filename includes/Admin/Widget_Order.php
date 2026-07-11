@@ -85,10 +85,7 @@ class Widget_Order {
 		$syncable = array();
 		foreach ( $this->connectors as $conn_id => $conn_data ) {
 			$conn_meta = $conn_data['meta'] ?? array();
-			if ( 'active' !== ( $conn_meta['status'] ?? 'active' ) ) {
-				continue;
-			}
-			if ( 'yes' !== ( $conn_meta['workflows']['orders'] ?? 'yes' ) ) {
+			if ( ! HELPER::is_workflow_enabled_for_connector( $conn_meta, 'orders' ) ) {
 				continue;
 			}
 			$syncable[ $conn_id ] = $conn_meta['label'] ?? $conn_id;

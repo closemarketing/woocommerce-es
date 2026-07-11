@@ -232,6 +232,29 @@ class HELPER {
 	}
 
 	/**
+	 * Whether a connector is active and has a given workflow enabled.
+	 *
+	 * Mirrors the filtering used by the connector selectors in the admin UI
+	 * (Widget_Product/Widget_Order/Settings::page_get_sync), so that sync
+	 * entry points (AJAX handlers, cron) enforce the same rule: a connector
+	 * that is inactive, or that has a workflow disabled, must not run that
+	 * workflow's sync even if a connector_id is passed explicitly.
+	 *
+	 * @param array  $connector_meta Connector meta (the 'meta' key of a get_connectors() item, or a connectors_meta entry).
+	 * @param string $workflow       Workflow to check: 'products' or 'orders'.
+	 * @return bool
+	 */
+	public static function is_workflow_enabled_for_connector( $connector_meta, $workflow ) {
+		if ( ! is_array( $connector_meta ) ) {
+			return false;
+		}
+		if ( 'active' !== ( $connector_meta['status'] ?? 'active' ) ) {
+			return false;
+		}
+		return 'yes' === ( $connector_meta['workflows'][ $workflow ] ?? 'yes' );
+	}
+
+	/**
 	 * Get connector of plugin (legacy helper).
 	 *
 	 * @param array $options Options of plugin.

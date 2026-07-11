@@ -13,6 +13,7 @@ namespace CLOSE\ConnectEcommerce\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Base;
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
 /**
  * Mejoras productos.
  *
@@ -79,10 +80,7 @@ class Widget_Product {
 		$syncable = array();
 		foreach ( $this->connectors as $conn_id => $conn_data ) {
 			$conn_meta = $conn_data['meta'] ?? array();
-			if ( 'active' !== ( $conn_meta['status'] ?? 'active' ) ) {
-				continue;
-			}
-			if ( 'yes' !== ( $conn_meta['workflows']['products'] ?? 'yes' ) ) {
+			if ( ! HELPER::is_workflow_enabled_for_connector( $conn_meta, 'products' ) ) {
 				continue;
 			}
 			$syncable[ $conn_id ] = $conn_meta['label'] ?? $conn_id;
