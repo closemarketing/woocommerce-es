@@ -193,6 +193,23 @@ class Connect_Ecommerce_Brevo {
 	}
 
 	/**
+	 * Truncates a string without the optional mbstring extension
+	 *
+	 * Plain substr() can split a multi-byte UTF-8 character in half, which
+	 * would later make wp_json_encode() fail on the whole payload, so the
+	 * string is left untouched when mbstring is not available; the byte-size
+	 * cap in build_event_products() still guards the overall payload.
+	 *
+	 * @param string $string String to truncate.
+	 * @param int    $length Max length in characters.
+	 * @return string
+	 */
+	private function truncate_string( $string, $length ) {
+		$string = (string) $string;
+		return function_exists( 'mb_substr' ) ? mb_substr( $string, 0, $length ) : $string;
+	}
+
+	/**
 	 * Builds the products list for the Brevo order event
 	 *
 	 * Brevo limits the size of event properties, so long product names/SKUs
@@ -206,8 +223,8 @@ class Connect_Ecommerce_Brevo {
 		$products = array();
 		foreach ( (array) $items as $item ) {
 			$products[] = array(
-				'name'     => mb_substr( (string) ( $item['name'] ?? '' ), 0, 200 ),
-				'sku'      => mb_substr( (string) ( $item['sku'] ?? '' ), 0, 100 ),
+				'name'     => $this->truncate_string( $item['name'] ?? '', 200 ),
+				'sku'      => $this->truncate_string( $item['sku'] ?? '', 100 ),
 				'quantity' => $item['units'] ?? 0,
 				'price'    => $item['subtotal'] ?? 0,
 			);

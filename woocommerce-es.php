@@ -86,7 +86,7 @@ function conecom_get_options() {
 				'version'                    => CONECOM_VERSION,
 				'plugin_name'                => 'Connect WooCommerce Brevo',
 				'plugin_slug'                => 'connect-ecommerce-brevo',
-				'disable_modules'            => array( 'subscription' ),
+				'disable_modules'            => array( 'subscription', 'product' ),
 				'api_pagination'             => 100,
 				'product_price_tax_option'   => false,
 				'product_price_rate_option'  => false,
