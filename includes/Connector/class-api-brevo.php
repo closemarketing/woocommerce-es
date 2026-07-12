@@ -204,7 +204,9 @@ class Connect_Ecommerce_Brevo {
 	 * @return array Attribute names, empty on API failure (treated as "unknown", not "none").
 	 */
 	private function get_account_attribute_names( $api_key ) {
-		$cache_key = 'conecom_brevo_contact_attributes';
+		// Keyed by API key so switching to a different Brevo account never reuses
+		// another account's cached attribute list.
+		$cache_key = 'conecom_brevo_contact_attrs_' . md5( $api_key );
 		$cached    = get_transient( $cache_key );
 		if ( is_array( $cached ) ) {
 			return $cached;

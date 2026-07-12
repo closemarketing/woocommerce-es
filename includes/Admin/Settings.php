@@ -2078,7 +2078,8 @@ class Settings {
 	 * @return void
 	 */
 	public function freeorder_callback() {
-		$freeorder = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : 'no';
+		$default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$freeorder         = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : $default_freeorder;
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][freeorder]" id="wcpimh_freeorder">
 			<option value="no" <?php selected( $freeorder, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $freeorder, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
