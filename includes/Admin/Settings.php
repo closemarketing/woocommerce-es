@@ -396,7 +396,7 @@ class Settings {
 							<?php
 						}
 						?>
-						<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=connection" class="<?php echo 'connection' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Connection', 'woocommerce-es' ); ?></a><?php echo $tab_is_mergevars || $tab_has_payments ? ' | ' : ''; ?></li>
+						<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=connection" class="<?php echo 'connection' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Connection and Options', 'woocommerce-es' ); ?></a><?php echo $tab_is_mergevars || $tab_has_payments ? ' | ' : ''; ?></li>
 						<?php
 						if ( $tab_is_mergevars ) {
 							?>
