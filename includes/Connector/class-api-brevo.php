@@ -174,6 +174,54 @@ class Connect_Ecommerce_Brevo {
 	}
 
 	/**
+	 * Normalizes a phone number for Brevo's SMS attribute
+	 *
+	 * Brevo validates the SMS attribute as an international number in E.164
+	 * format, while WooCommerce commonly stores local formats. Numbers that
+	 * are not already E.164 are omitted instead of sent, so they cannot make
+	 * the whole contact upsert fail.
+	 *
+	 * @param string $phone Phone number as stored in the order.
+	 * @return string
+	 */
+	private function normalize_phone_e164( $phone ) {
+		$phone = trim( (string) $phone );
+		if ( '' === $phone ) {
+			return '';
+		}
+		return preg_match( '/^\+[1-9]\d{6,14}$/', $phone ) ? $phone : '';
+	}
+
+	/**
+	 * Builds the products list for the Brevo order event
+	 *
+	 * Brevo limits the size of event properties, so long product names/SKUs
+	 * are truncated and, if the encoded payload is still too large, the
+	 * tail of the list is dropped rather than letting the whole request fail.
+	 *
+	 * @param array $items Order items.
+	 * @return array
+	 */
+	private function build_event_products( $items ) {
+		$products = array();
+		foreach ( (array) $items as $item ) {
+			$products[] = array(
+				'name'     => mb_substr( (string) ( $item['name'] ?? '' ), 0, 200 ),
+				'sku'      => mb_substr( (string) ( $item['sku'] ?? '' ), 0, 100 ),
+				'quantity' => $item['units'] ?? 0,
+				'price'    => $item['subtotal'] ?? 0,
+			);
+		}
+
+		$max_bytes = 8000;
+		while ( count( $products ) > 1 && strlen( wp_json_encode( $products ) ) > $max_bytes ) {
+			array_pop( $products );
+		}
+
+		return $products;
+	}
+
+	/**
 	 * Creates the order to Brevo
 	 *
 	 * @param array  $order Order prepared to API.
@@ -201,19 +249,36 @@ class Connect_Ecommerce_Brevo {
 			);
 		}
 
+		// Only report the order to Brevo once it is really final. With "All status orders"
+		// this method also runs on pending/processing/failed/refunded/cancelled transitions,
+		// and the first call always gets its returned id persisted as "synced" - reporting
+		// order_completed there would mark the order as done before it truly is and the
+		// real completion would never be sent.
+		$ecstatus = ! empty( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : ( $this->options['order_only_order_completed'] ?? 'completed' );
+		$is_final = 'completed' === ( $order['woocommerceOrderStatus'] ?? '' ) || ( 'paid' === $ecstatus && ! empty( $order['is_paid'] ) );
+
+		if ( ! $is_final ) {
+			return array(
+				'status'      => 'ok',
+				'message'     => __( 'Order not completed yet, Brevo sync postponed until completion.', 'woocommerce-es' ),
+				'document_id' => '',
+				'invoice_id'  => '',
+			);
+		}
+
 		// Create or update the contact in Brevo.
 		$brevo_contact = array(
 			'email'         => $email,
 			'attributes'    => array(
 				'FIRSTNAME' => $order['contactFirstName'] ?? '',
 				'LASTNAME'  => $order['contactLastName'] ?? '',
-				'SMS'       => $order['contact_phone'] ?? '',
 			),
 			'updateEnabled' => true,
 		);
 
-		if ( ! empty( $this->settings['order_tags'] ) ) {
-			$brevo_contact['attributes']['TAGS'] = $this->settings['order_tags'];
+		$sms = $this->normalize_phone_e164( $order['contact_phone'] ?? '' );
+		if ( ! empty( $sms ) ) {
+			$brevo_contact['attributes']['SMS'] = $sms;
 		}
 
 		$result_contact = $this->api( 'contacts', $api_key, 'POST', $brevo_contact );
@@ -225,30 +290,29 @@ class Connect_Ecommerce_Brevo {
 			);
 		}
 
-		// Products are only sent as order event data, Brevo has no product catalog to keep in sync.
-		$products = array();
-		foreach ( $order['items'] as $item ) {
-			$products[] = array(
-				'name'     => $item['name'] ?? '',
-				'sku'      => $item['sku'] ?? '',
-				'quantity' => $item['units'] ?? 0,
-				'price'    => $item['subtotal'] ?? 0,
-			);
+		$order_id         = $order['woocommerceReference'] ?? $order['woocommerceOrderId'];
+		$event_properties = array(
+			'order_id'  => $order_id,
+			'total'     => $order['total'] ?? 0,
+			'currency'  => $order['currency'] ?? 'EUR',
+			'order_url' => $order['woocommerceOrderEdit'] ?? '',
+			// Products are only sent as order event data, Brevo has no product catalog to keep in sync.
+			'products'  => $this->build_event_products( $order['items'] ),
+		);
+
+		if ( ! empty( $this->settings['order_tags'] ) ) {
+			// Tags are sent as event data, not as a contact attribute: custom Brevo contact
+			// attributes must already exist in the account, and "TAGS" is not a default one.
+			$event_properties['tags'] = array_map( 'trim', explode( ',', $this->settings['order_tags'] ) );
 		}
 
-		$order_id    = $order['woocommerceReference'] ?? $order['woocommerceOrderId'];
 		$order_event = array(
-			'event_name'        => 'order_completed',
-			'identifiers'       => array(
+			'event_name'       => 'order_completed',
+			'identifiers'      => array(
 				'email_id' => $email,
 			),
-			'event_properties'  => array(
-				'order_id'  => $order_id,
-				'total'     => $order['total'] ?? 0,
-				'currency'  => $order['currency'] ?? 'EUR',
-				'order_url' => $order['woocommerceOrderEdit'] ?? '',
-				'products'  => $products,
-			),
+			'event_date'       => ! empty( $order['date'] ) ? gmdate( 'c', (int) $order['date'] ) : gmdate( 'c' ),
+			'event_properties' => $event_properties,
 		);
 
 		$result_event = $this->api( 'events', $api_key, 'POST', $order_event );
