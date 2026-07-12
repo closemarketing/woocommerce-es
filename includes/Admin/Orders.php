@@ -265,6 +265,7 @@ class Orders {
 						$args = array(
 							'message'      => $message,
 							'orders_count' => $orders_count,
+							'finish'       => $orders_synced >= $orders_count,
 						);
 						if ( $doing_ajax ) {
 							if ( $orders_synced < $orders_count ) {

@@ -193,6 +193,38 @@ class Connect_Ecommerce_Brevo {
 	}
 
 	/**
+	 * Gets the contact attribute names that exist in the Brevo account
+	 *
+	 * Brevo rejects the whole contact upsert if it includes an attribute name
+	 * that was not created in the account (accounts can rename/remove the
+	 * default FIRSTNAME/LASTNAME/SMS fields), so the account's actual
+	 * attribute list is fetched once and cached to validate against it.
+	 *
+	 * @param string $api_key API Key of Brevo.
+	 * @return array Attribute names, empty on API failure (treated as "unknown", not "none").
+	 */
+	private function get_account_attribute_names( $api_key ) {
+		$cache_key = 'conecom_brevo_contact_attributes';
+		$cached    = get_transient( $cache_key );
+		if ( is_array( $cached ) ) {
+			return $cached;
+		}
+
+		$names  = array();
+		$result = $this->api( 'contacts/attributes', $api_key );
+		if ( 'ok' === $result['status'] && ! empty( $result['data']['attributes'] ) ) {
+			foreach ( $result['data']['attributes'] as $attribute ) {
+				if ( ! empty( $attribute['name'] ) ) {
+					$names[] = $attribute['name'];
+				}
+			}
+			set_transient( $cache_key, $names, 12 * HOUR_IN_SECONDS );
+		}
+
+		return $names;
+	}
+
+	/**
 	 * Truncates a string without the optional mbstring extension
 	 *
 	 * Plain substr() can split a multi-byte UTF-8 character in half, which
@@ -283,20 +315,33 @@ class Connect_Ecommerce_Brevo {
 			);
 		}
 
-		// Create or update the contact in Brevo.
-		$brevo_contact = array(
-			'email'         => $email,
-			'attributes'    => array(
-				'FIRSTNAME' => $order['contactFirstName'] ?? '',
-				'LASTNAME'  => $order['contactLastName'] ?? '',
-			),
-			'updateEnabled' => true,
-		);
+		// Create or update the contact in Brevo. Only attributes that exist in the
+		// account are sent, an unknown attribute name would fail the whole upsert
+		// and the account's list could not be fetched, name fields are sent anyway
+		// since FIRSTNAME/LASTNAME are Brevo's own defaults.
+		$account_attributes = $this->get_account_attribute_names( $api_key );
+		$known_attribute    = static function ( $name ) use ( $account_attributes ) {
+			return empty( $account_attributes ) || in_array( $name, $account_attributes, true );
+		};
+
+		$attributes = array();
+		if ( $known_attribute( 'FIRSTNAME' ) ) {
+			$attributes['FIRSTNAME'] = $order['contactFirstName'] ?? '';
+		}
+		if ( $known_attribute( 'LASTNAME' ) ) {
+			$attributes['LASTNAME'] = $order['contactLastName'] ?? '';
+		}
 
 		$sms = $this->normalize_phone_e164( $order['contact_phone'] ?? '' );
-		if ( ! empty( $sms ) ) {
-			$brevo_contact['attributes']['SMS'] = $sms;
+		if ( ! empty( $sms ) && $known_attribute( 'SMS' ) ) {
+			$attributes['SMS'] = $sms;
 		}
+
+		$brevo_contact = array(
+			'email'         => $email,
+			'attributes'    => $attributes,
+			'updateEnabled' => true,
+		);
 
 		$result_contact = $this->api( 'contacts', $api_key, 'POST', $brevo_contact );
 		if ( 'error' === $result_contact['status'] ) {
