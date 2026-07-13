@@ -63,6 +63,13 @@ class Widget_Product {
 		$this->is_disabled_ai = $connector['is_disabled_ai'] ?? false;
 		$this->connector_id   = $connectors_data['active'] ?? '';
 		$this->connectors     = $connectors_data['items'] ?? array();
+
+		// Bail only when NO configured connector supports product sync — otherwise the
+		// metabox stays registered so the connector selector can route to one that does.
+		if ( empty( $this->get_syncable_connectors() ) ) {
+			return;
+		}
+
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_products' ) );
 	}
@@ -80,6 +87,9 @@ class Widget_Product {
 				continue;
 			}
 			if ( 'yes' !== ( $conn_meta['workflows']['products'] ?? 'yes' ) ) {
+				continue;
+			}
+			if ( ! empty( $conn_data['is_disabled_products'] ) ) {
 				continue;
 			}
 			$syncable[ $conn_id ] = $conn_meta['label'] ?? $conn_id;

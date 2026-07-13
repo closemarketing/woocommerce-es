@@ -237,6 +237,16 @@ class Import_Products {
 		list( $connapi_erp, $settings, $options ) = $this->resolve_connector( $connector_id );
 		$api_pagination                           = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
 
+		if ( in_array( 'product', $options['disable_modules'] ?? array(), true ) ) {
+			wp_send_json_success(
+				array(
+					'finish'  => true,
+					'message' => __( 'This connector does not manage a product catalog.', 'woocommerce-es' ),
+				)
+			);
+			return;
+		}
+
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {
 			$result_api = $connapi_erp->get_products( $product_erp_id );

@@ -97,12 +97,22 @@ class Taxes_Types_ERP {
 		);
 		$options_html .= '</option>';
 		if ( ! empty( $taxes ) && is_array( $taxes ) ) {
+			// Odoo can have several taxes sharing the same display name (e.g.
+			// different companies/fiscal positions). Count labels first so
+			// duplicates get their ID appended and the user can tell them apart.
+			$label_counts = array();
+			foreach ( $taxes as $tax ) {
+				$label                  = isset( $tax['name'] ) ? $tax['name'] : '';
+				$label_counts[ $label ] = ( isset( $label_counts[ $label ] ) ? $label_counts[ $label ] : 0 ) + 1;
+			}
+
 			foreach ( $taxes as $tax ) {
 				$id    = isset( $tax['id'] ) ? $tax['id'] : '';
 				$label = isset( $tax['name'] ) ? $tax['name'] : $id;
 
 				if ( $id ) {
-					$options_html .= '<option value="' . esc_attr( $id ) . '">' . esc_html( $label ) . '</option>';
+					$option_label = $label_counts[ $label ] > 1 ? $label . ' (ID: ' . $id . ')' : $label;
+					$options_html .= '<option value="' . esc_attr( $id ) . '">' . esc_html( $option_label ) . '</option>';
 				}
 			}
 		}

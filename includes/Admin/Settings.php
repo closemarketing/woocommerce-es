@@ -155,6 +155,13 @@ class Settings {
 
 
 	/**
+	 * Whether the active connector does not manage a product catalog.
+	 *
+	 * @var bool
+	 */
+	private $is_disabled_products;
+
+	/**
 	 * Available connector definitions.
 	 *
 	 * @var array
@@ -189,11 +196,12 @@ class Settings {
 			$this->connector_definitions = conecom_get_options();
 		}
 
-		$this->options            = $current_connector['options'] ?? array();
-		$this->connapi_erp        = $current_connector['connapi_erp'] ?? null;
-		$this->is_mergevars       = $current_connector['is_mergevars'] ?? false;
-		$this->is_disabled_orders = $current_connector['is_disabled_orders'] ?? false;
-		$this->is_disabled_ai     = $current_connector['is_disabled_ai'] ?? false;
+		$this->options              = $current_connector['options'] ?? array();
+		$this->connapi_erp          = $current_connector['connapi_erp'] ?? null;
+		$this->is_mergevars         = $current_connector['is_mergevars'] ?? false;
+		$this->is_disabled_orders   = $current_connector['is_disabled_orders'] ?? false;
+		$this->is_disabled_ai       = $current_connector['is_disabled_ai'] ?? false;
+		$this->is_disabled_products = in_array( 'product', $this->options['disable_modules'] ?? array(), true );
 		add_action( 'admin_menu', array( $this, 'add_plugin_page' ) );
 		add_action( 'admin_init', array( $this, 'page_init' ) );
 		add_action( 'wp_ajax_conecom_remove_connector', array( $this, 'ajax_remove_connector' ) );
@@ -292,7 +300,16 @@ class Settings {
 
 				// Set default subtabs.
 				if ( ! empty( $active_connector_tab ) && empty( $active_subtab ) ) {
-					$active_subtab = 'sync_products';
+					$conn_for_default = $this->connectors[ $active_connector_tab ] ?? array();
+					$is_products_off  = $conn_for_default['is_disabled_products'] ?? false;
+					$active_subtab    = $is_products_off ? 'sync_orders' : 'sync_products';
+				}
+				// Connectors without a product catalog only expose the Orders subtab.
+				if ( ! empty( $active_connector_tab ) && 'sync_products' === $active_subtab ) {
+					$conn_for_default = $this->connectors[ $active_connector_tab ] ?? array();
+					if ( $conn_for_default['is_disabled_products'] ?? false ) {
+						$active_subtab = 'sync_orders';
+					}
 				}
 				if ( 'general' === $active_tab && empty( $active_subtab ) ) {
 					$active_subtab = 'connectors';
@@ -334,12 +351,15 @@ class Settings {
 						if ( 'active' !== $conn_status ) {
 							continue;
 						}
-						$conn_tab_slug  = 'connector_' . $conn_id;
-						$conn_tab_label = $conn_meta['label'] ?? $conn_id;
-						$conn_is_active = $conn_tab_slug === $active_tab ? 'nav-tab-active' : '';
+						$conn_tab_slug    = 'connector_' . $conn_id;
+						$conn_tab_label   = $conn_meta['label'] ?? $conn_id;
+						$conn_is_active   = $conn_tab_slug === $active_tab ? 'nav-tab-active' : '';
+						$conn_no_products = $conn_data['is_disabled_products'] ?? false;
+						$conn_tab_subtab  = $conn_no_products ? 'sync_orders' : 'sync_products';
 						printf(
-							'<a href="?page=connect_ecommerce&tab=%s&subtab=sync_products" class="nav-tab %s">%s</a>',
+							'<a href="?page=connect_ecommerce&tab=%s&subtab=%s" class="nav-tab %s">%s</a>',
 							esc_attr( $conn_tab_slug ),
+							esc_attr( $conn_tab_subtab ),
 							esc_attr( $conn_is_active ),
 							esc_html( $conn_tab_label )
 						);
@@ -383,12 +403,15 @@ class Settings {
 					$tab_conn_data       = $this->connectors[ $active_connector_tab ];
 					$tab_is_mergevars    = $tab_conn_data['is_mergevars'] ?? false;
 					$tab_is_disabled_ord = $tab_conn_data['is_disabled_orders'] ?? false;
+					$tab_is_disabled_prd = $tab_conn_data['is_disabled_products'] ?? false;
 					$tab_connapi         = $tab_conn_data['connapi_erp'] ?? null;
 					$tab_has_payments    = ! empty( $tab_connapi ) && method_exists( $tab_connapi, 'get_payment_methods' );
 					$tab_conn_prefix     = '?page=connect_ecommerce&tab=' . esc_attr( 'connector_' . $active_connector_tab );
 					?>
 					<ul class="subsubsub">
+						<?php if ( ! $tab_is_disabled_prd ) : ?>
 						<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a> | </li>
+						<?php endif; ?>
 						<?php
 						if ( ! $tab_is_disabled_ord ) {
 							?>
@@ -800,6 +823,28 @@ class Settings {
 					'wcpimh_api',
 					__( 'API Key', 'woocommerce-es' ),
 					array( $this, 'api_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			// Manufacturer Code.
+			if ( in_array( 'manufacturer_code', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_manufacturer_code',
+					__( 'Manufacturer Code', 'woocommerce-es' ),
+					array( $this, 'manufacturer_code_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+			}
+
+			// Customer Code.
+			if ( in_array( 'customer_code', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_customer_code',
+					__( 'Customer Code', 'woocommerce-es' ),
+					array( $this, 'customer_code_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
@@ -1584,6 +1629,16 @@ class Settings {
 		if ( ! empty( $connector_id ) && isset( $input[ $connector_id ] ) ) {
 			$current_settings         = $updated[ $connector_id ] ?? array();
 			$updated[ $connector_id ] = $this->sanitize_connector_settings_values( $input[ $connector_id ], $current_settings );
+
+			// Get prices with Tax? Resolve "Default" now and store it as a plain 'yes'/'no',
+			// so connector add-ons reading `tax_option` directly always get a value they understand.
+			if ( isset( $input[ $connector_id ]['tax_option'] ) ) {
+				$tax_option_pref = sanitize_text_field( $input[ $connector_id ]['tax_option'] );
+			} else {
+				$tax_option_pref = HELPER::get_tax_option_pref( $current_settings );
+			}
+			$updated[ $connector_id ]['tax_option_pref'] = $tax_option_pref;
+			$updated[ $connector_id ]['tax_option']      = HELPER::resolve_tax_option( $tax_option_pref );
 		}
 
 		return $updated;
@@ -1802,6 +1857,32 @@ class Settings {
 	}
 
 	/**
+	 * Manufacturer Code field
+	 *
+	 * @return void
+	 */
+	public function manufacturer_code_callback() {
+		printf(
+			'<input class="regular-text" type="text" name="connect_ecommerce[%s][manufacturer_code]" id="wcpimh_manufacturer_code" value="%s">',
+			esc_html( $this->connector ),
+			isset( $this->settings['manufacturer_code'] ) ? esc_attr( $this->settings['manufacturer_code'] ) : ''
+		);
+	}
+
+	/**
+	 * Customer Code field
+	 *
+	 * @return void
+	 */
+	public function customer_code_callback() {
+		printf(
+			'<input class="regular-text" type="text" name="connect_ecommerce[%s][customer_code]" id="wcpimh_customer_code" value="%s">',
+			esc_html( $this->connector ),
+			isset( $this->settings['customer_code'] ) ? esc_attr( $this->settings['customer_code'] ) : ''
+		);
+	}
+
+	/**
 	 * Stock field
 	 *
 	 * @return void
@@ -1936,12 +2017,32 @@ class Settings {
 	 * @return void
 	 */
 	public function tax_option_callback() {
-		$tax_price = isset( $this->settings['tax_price'] ) ? $this->settings['tax_price'] : 'no';
+		$tax_option            = isset( $this->settings['tax_option_pref'] ) ? $this->settings['tax_option_pref'] : 'default';
+		$wc_prices_include_tax = 'yes' === get_option( 'woocommerce_prices_include_tax' );
+		$wc_tax_option_label   = $wc_prices_include_tax ? __( 'Yes, tax included', 'woocommerce-es' ) : __( 'No, tax not included', 'woocommerce-es' );
 		?>
-		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_price]" id="wcsen_tax">
-			<option value="yes" <?php selected( $tax_price, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>
-			<option value="no" <?php selected( $tax_price, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'woocommerce-es' ); ?></option>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][tax_option]" id="wcsen_tax">
+			<option value="default" <?php selected( $tax_option, 'default' ); ?>>
+				<?php
+				printf(
+					/* translators: %s: current value of the WooCommerce "Prices entered with tax" setting. */
+					esc_html__( 'Default (use WooCommerce setting: %s)', 'woocommerce-es' ),
+					esc_html( $wc_tax_option_label )
+				);
+				?>
+			</option>
+			<option value="yes" <?php selected( $tax_option, 'yes' ); ?>><?php esc_html_e( 'Yes, tax included', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $tax_option, 'no' ); ?>><?php esc_html_e( 'No, tax not included', 'woocommerce-es' ); ?></option>
 		</select>
+		<p class="description">
+			<?php
+			printf(
+				/* translators: %s: link to the WooCommerce tax settings page. */
+				esc_html__( 'The current WooCommerce setting can be checked and changed on the %s page.', 'woocommerce-es' ),
+				'<a href="' . esc_url( admin_url( 'admin.php?page=wc-settings&tab=tax' ) ) . '" target="_blank">' . esc_html__( 'WooCommerce &gt; Settings &gt; Tax', 'woocommerce-es' ) . '</a>'
+			);
+			?>
+		</p>
 		<?php
 	}
 
@@ -2084,7 +2185,8 @@ class Settings {
 	 * @return void
 	 */
 	public function freeorder_callback() {
-		$freeorder = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : 'no';
+		$default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$freeorder         = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : $default_freeorder;
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][freeorder]" id="wcpimh_freeorder">
 			<option value="no" <?php selected( $freeorder, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $freeorder, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
@@ -2830,11 +2932,20 @@ class Settings {
 									?>
 								</td>
 								<td>
+									<?php
+									$conn_type         = $meta['type'] ?? $connector_id;
+									$conn_type_options = $this->connector_definitions[ $conn_type ] ?? array();
+									$disabled_modules  = $conn_type_options['disable_modules'] ?? array();
+									?>
 									<?php foreach ( HELPER::get_workflows() as $workflow ) : ?>
-										<?php $enabled = isset( $meta['workflows'][ $workflow ] ) ? $meta['workflows'][ $workflow ] : 'yes'; ?>
-										<label style="display:block;">
+										<?php
+										$workflow_module    = 'products' === $workflow ? 'product' : 'order';
+										$workflow_supported = ! in_array( $workflow_module, $disabled_modules, true );
+										$enabled            = $workflow_supported && ( isset( $meta['workflows'][ $workflow ] ) ? $meta['workflows'][ $workflow ] : 'yes' );
+										?>
+										<label style="display:block;" <?php echo $workflow_supported ? '' : 'title="' . esc_attr__( 'Not supported by this connector', 'woocommerce-es' ) . '"'; ?>>
 											<input type="hidden" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="no"/>
-											<input type="checkbox" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="yes" <?php checked( 'yes', $enabled ); ?>/>
+											<input type="checkbox" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="yes" <?php checked( 'yes', $enabled ); ?> <?php disabled( ! $workflow_supported ); ?>/>
 											<?php echo esc_html( $this->get_workflow_label( $workflow ) ); ?>
 										</label>
 									<?php endforeach; ?>
@@ -2947,8 +3058,13 @@ class Settings {
 				$meta[ $connector_id ]['label']  = sanitize_text_field( $meta_input['label'] ?? $meta[ $connector_id ]['label'] );
 				$meta[ $connector_id ]['status'] = isset( $meta_input['status'] ) && 'inactive' === $meta_input['status'] ? 'inactive' : 'active';
 
+				$conn_type        = $meta[ $connector_id ]['type'] ?? $connector_id;
+				$disabled_modules = $this->connector_definitions[ $conn_type ]['disable_modules'] ?? array();
+
 				foreach ( HELPER::get_workflows() as $workflow ) {
-					$value = isset( $meta_input['workflows'][ $workflow ] ) && 'yes' === $meta_input['workflows'][ $workflow ] ? 'yes' : 'no';
+					$workflow_module    = 'products' === $workflow ? 'product' : 'order';
+					$workflow_supported = ! in_array( $workflow_module, $disabled_modules, true );
+					$value              = $workflow_supported && isset( $meta_input['workflows'][ $workflow ] ) && 'yes' === $meta_input['workflows'][ $workflow ] ? 'yes' : 'no';
 					$meta[ $connector_id ]['workflows'][ $workflow ] = $value;
 				}
 			}
@@ -2972,8 +3088,10 @@ class Settings {
 					'workflows' => array(),
 				);
 
+				$new_disabled_modules = $this->connector_definitions[ $type ]['disable_modules'] ?? array();
 				foreach ( HELPER::get_workflows() as $workflow ) {
-					$meta[ $new_id ]['workflows'][ $workflow ] = 'yes';
+					$workflow_module = 'products' === $workflow ? 'product' : 'order';
+					$meta[ $new_id ]['workflows'][ $workflow ] = in_array( $workflow_module, $new_disabled_modules, true ) ? 'no' : 'yes';
 				}
 
 				$stored[ $new_id ]   = isset( $stored[ $new_id ] ) ? $stored[ $new_id ] : array();
@@ -3040,6 +3158,8 @@ class Settings {
 			'filter'             => '',
 			'pricesale_discount' => '',
 			'filter_sku'         => '',
+			'manufacturer_code'  => '',
+			'customer_code'      => '',
 			'tax_option'         => 'no',
 			'rates'              => 'default',
 			'catnp'              => 'yes',

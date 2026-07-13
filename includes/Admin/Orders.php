@@ -55,6 +55,14 @@ class Orders {
 	private $msg_error_orders;
 
 	/**
+	 * Fallback for the "Create document for free Orders?" setting, from the
+	 * connector's own order_import_free_order option.
+	 *
+	 * @var string
+	 */
+	private $default_freeorder;
+
+	/**
 	 * Init and hook in the integration.
 	 *
 	 * @param array $connector Connector.
@@ -68,6 +76,7 @@ class Orders {
 		$this->connapi_erp                = $connector['connapi_erp'];
 		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
 		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
+		$this->default_freeorder          = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
@@ -144,7 +153,7 @@ class Orders {
 				as_schedule_single_action( time() + 30, 'conecom_async_send_order_erp', array( $order_id ), 'connect-ecommerce' );
 			}
 		} else {
-			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
 		}
 	}
 
@@ -155,7 +164,7 @@ class Orders {
 	 * @return void
 	 */
 	public function async_send_order_erp( $order_id ) {
-		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
+		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
 	}
 
 	/**
@@ -254,22 +263,22 @@ class Orders {
 							)
 						);
 					} else {
-					die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
-				}
-			} else {
-				$ec_invoice_id = $order->get_meta( $meta_key_order );
-
-				if ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
-					$message .= __( 'Order already exported to API ID:', 'woocommerce-es' ) . $ec_invoice_id;
-				} elseif ( 'nocreate' === $ec_invoice_id ) {
-					$message .= __( 'Free order not exported', 'woocommerce-es' );
+						die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
+					}
 				} else {
-					$result = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp );
+					$ec_invoice_id = $order->get_meta( $meta_key_order );
 
-					$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
-					$message .= ' ' . $result['message'];
+					if ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
+						$message .= __( 'Order already exported to API ID:', 'woocommerce-es' ) . $ec_invoice_id;
+					} elseif ( 'nocreate' === $ec_invoice_id ) {
+						$message .= __( 'Free order not exported', 'woocommerce-es' );
+					} else {
+						$result = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp );
+
+						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
+						$message .= ' ' . $result['message'];
+					}
 				}
-			}
 
 				if ( $doing_ajax || $not_sapi_cli ) {
 					$orders_synced = $sync_loop + 1;
@@ -288,6 +297,7 @@ class Orders {
 						$args = array(
 							'message'      => $message,
 							'orders_count' => $orders_count,
+							'finish'       => $orders_synced >= $orders_count,
 						);
 						if ( $doing_ajax ) {
 							if ( $orders_synced < $orders_count ) {
@@ -424,15 +434,28 @@ class Orders {
 			}
 		}
 
+		$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
+
 		if ( 'erp-post' === $type ) {
-			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true );
+			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder );
 		}
-		wp_send_json_success(
-			array(
-				'message'  => $result['message'] ?? '',
-				'order_id' => $order_id,
-			)
-		);
+
+		// Check result status and respond accordingly.
+		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
+			wp_send_json_error(
+				array(
+					'message'  => $result['message'] ?? __( 'Unknown error occurred', 'woocommerce-es' ),
+					'order_id' => $order_id,
+				)
+			);
+		} else {
+			wp_send_json_success(
+				array(
+					'message'  => $result['message'] ?? __( 'Order sent successfully', 'woocommerce-es' ),
+					'order_id' => $order_id,
+				)
+			);
+		}
 	}
 }
 

@@ -389,6 +389,114 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that importing a variable product never enables stock management on the
+	 * parent product, even when stock import is enabled — stock is tracked on the
+	 * variations only. A parent with manage_stock enabled and no stock quantity of
+	 * its own shows as "out of stock" regardless of variation availability.
+	 *
+	 * @see https://github.com/closemarketing/woocommerce-es/issues/204
+	 */
+	public function test_variable_product_parent_never_manages_stock() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		// Enable stock import — this is exactly the setting that previously
+		// leaked manage_stock=true onto the parent.
+		$this->settings['stock']   = 'yes';
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		$image_path  = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url'          => $image_path,
+			'file'         => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images']                = [ $image_dummy ];
+		$item['variants'][0]['image']  = $image_dummy;
+		$item['variants'][1]['image']  = $image_dummy;
+
+		// Both variants have stock, so the parent must be sellable.
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		$this->assertEquals( 'ok', $result_sync['status'] );
+		$this->assertIsInt( $result_prod_id );
+
+		$product = wc_get_product( $result_prod_id );
+		$this->assertInstanceOf( 'WC_Product_Variable', $product );
+
+		$this->assertFalse( $product->get_manage_stock(), 'Parent product must never manage stock — stock is tracked on variations.' );
+		$this->assertEquals( 'instock', $product->get_stock_status(), 'Parent must show in stock when its variations have stock.' );
+
+		// Variations must still have stock management enabled, since that's
+		// where stock is actually tracked.
+		$variations = $product->get_children();
+		$this->assertNotEmpty( $variations );
+		foreach ( $variations as $variation_id ) {
+			$prod_variation = new WC_Product_Variation( $variation_id );
+			$this->assertTrue( $prod_variation->get_manage_stock(), 'Variations must manage their own stock.' );
+		}
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test
+	}
+
+	/**
+	 * Test that resyncing a variable product created before the fix (parent still
+	 * has manage_stock enabled from an old import) corrects the parent on the next
+	 * sync, instead of only preventing the issue on brand-new products.
+	 *
+	 * @see https://github.com/closemarketing/woocommerce-es/issues/204
+	 */
+	public function test_variable_product_parent_stock_management_corrected_on_resync() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		$image_path  = UNIT_TESTS_DATA_PLUGIN_DIR . 'dummy-image.png';
+		$image_dummy = [
+			'url'          => $image_path,
+			'file'         => $image_path,
+			'content_type' => 'image/png',
+		];
+		$item['images']               = [ $image_dummy ];
+		$item['variants'][0]['image'] = $image_dummy;
+		$item['variants'][1]['image'] = $image_dummy;
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		$this->settings['stock'] = 'yes';
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		// Simulate a product imported before this fix: force manage_stock back on
+		// at the parent, bypassing PROD, the way the old buggy code used to leave it.
+		$product = wc_get_product( $result_prod_id );
+		$product->set_manage_stock( true );
+		$product->set_stock_status( 'outofstock' );
+		$product->save();
+
+		$this->assertTrue( wc_get_product( $result_prod_id )->get_manage_stock(), 'Setup: parent must start with manage_stock enabled for this test to be meaningful.' );
+
+		// Resync — must correct the parent even though it already existed.
+		$result_resync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+		$this->assertEquals( 'ok', $result_resync['status'] );
+
+		$product_after = wc_get_product( $result_prod_id );
+		$this->assertFalse( $product_after->get_manage_stock(), 'Resync must disable manage_stock on the parent even if it was already enabled.' );
+		$this->assertEquals( 'instock', $product_after->get_stock_status(), 'Resync must recompute stock status from variations, not leave the stale "out of stock" value.' );
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test
+	}
+
+	/**
 	 * Test that stock import setting is respected when updating existing variable products.
 	 */
 	public function test_variable_product_stock_respected_on_update() {
@@ -540,5 +648,101 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		}
 
 		wp_delete_post( $result_prod_id, true );
+	}
+
+	/**
+	 * When the ERP serializes a numeric SKU as a JSON number, json_decode() gives
+	 * $variant['sku'] as an int, while WC_Product_Variation::get_sku() always
+	 * returns a string. The strict array_search() used to match existing
+	 * variations must not miss this case, or the sync treats an existing
+	 * variation as new (and duplicate-SKU logic can then reject it).
+	 */
+	public function test_variation_matched_when_erp_sku_is_numeric() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		// Numeric SKUs, as an ERP that serializes them as JSON numbers would.
+		$item['variants'][0]['sku'] = 1001;
+		$item['variants'][1]['sku'] = 1002;
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		$this->assertEquals( 'ok', $result_sync['status'] );
+
+		$product    = wc_get_product( $result_prod_id );
+		$variations = $product->get_children();
+		$this->assertCount( 2, $variations, 'Expected two variations after first sync.' );
+
+		// Resync with the same (numeric) SKUs — must match the existing
+		// variations rather than creating duplicates or new ones.
+		$result_resync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+		$this->assertEquals( 'ok', $result_resync['status'] );
+
+		$product_after    = wc_get_product( $result_prod_id );
+		$variations_after = $product_after->get_children();
+		$this->assertCount( 2, $variations_after, 'Resync with numeric SKUs must not create duplicate variations.' );
+		$this->assertEqualsCanonicalizing( $variations, $variations_after, 'Resync with numeric SKUs must match the same existing variations, not create new ones.' );
+
+		wp_delete_post( $result_prod_id, true );
+	}
+
+	/**
+	 * A new ERP variant whose SKU already belongs to a variation of a DIFFERENT
+	 * product must be rejected gracefully ("Duplicated SKU" message), not cause
+	 * WooCommerce's own duplicate-SKU exception to abort the whole sync — the
+	 * duplicate check must also search product_variation posts, not just
+	 * top-level products.
+	 */
+	public function test_duplicate_sku_against_another_products_variation_is_handled_gracefully() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+
+		// Create a first variable product normally.
+		$result_sync      = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$first_product_id = $result_sync['post_id'];
+		$this->assertEquals( 'ok', $result_sync['status'] );
+
+		$taken_sku = $item['variants'][0]['sku'];
+
+		// A second, already-existing variable product (created directly with its
+		// own parent SKU, bypassing the ERP-variant-SKU parent-discovery in
+		// sync_product_item(), which is not what this test is about) whose first
+		// variant reuses a SKU that already belongs to a variation of the first
+		// product.
+		$second_parent = new WC_Product_Variable();
+		$second_parent->set_name( 'Second Shoes' );
+		$second_parent->set_sku( 'second-parent-sku' );
+		$second_parent->set_status( 'publish' );
+		$second_parent->save();
+		$second_product_id = $second_parent->get_id();
+
+		$second_item                        = $item;
+		$second_item['sku']                 = 'second-parent-sku';
+		$second_item['variants'][0]['sku']  = $taken_sku;
+		$second_item['variants'][1]['sku']  = 'second-parent-variant-2';
+
+		$result_second = PROD::sync_product( $this->settings, $second_item, $this->connapi_erp, $second_product_id, 'variable', null );
+
+		// Must complete gracefully — not "error" from an uncaught WooCommerce
+		// duplicate-SKU exception.
+		$this->assertEquals( 'ok', $result_second['status'], 'Sync must not abort when a variant SKU collides with another product\'s variation.' );
+		$this->assertStringContainsString( 'Duplicated SKU', $result_second['message'], 'Result message must report the duplicated SKU.' );
+
+		$second_product    = wc_get_product( $second_product_id );
+		$second_variations = $second_product->get_children();
+
+		// Only the non-colliding variant should have been created.
+		$this->assertCount( 1, $second_variations, 'Only the variant with a unique SKU should be created.' );
+
+		wp_delete_post( $first_product_id, true );
+		wp_delete_post( $second_product_id, true );
 	}
 }
