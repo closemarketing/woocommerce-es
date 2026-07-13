@@ -15,7 +15,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * API Brevo.
  *
- * @since 1.0
+ * @since 3.3.5
  */
 class Connect_Ecommerce_Brevo {
 	/**
@@ -193,17 +193,19 @@ class Connect_Ecommerce_Brevo {
 	}
 
 	/**
-	 * Gets the contact attribute names that exist in the Brevo account
+	 * Gets the contact attributes map (field_key => name) that exist in the Brevo account
 	 *
 	 * Brevo rejects the whole contact upsert if it includes an attribute name
-	 * that was not created in the account (accounts can rename/remove the
-	 * default FIRSTNAME/LASTNAME/SMS fields), so the account's actual
-	 * attribute list is fetched once and cached to validate against it.
+	 * that was not created in the account, and accounts can rename the default
+	 * FIRSTNAME/LASTNAME/SMS fields to any custom name (Brevo still reports
+	 * their original purpose via "field_key": firstname/lastname/sms), so the
+	 * account's actual attribute list is fetched once and cached, keyed by
+	 * field_key, to resolve the current name for each field.
 	 *
 	 * @param string $api_key API Key of Brevo.
-	 * @return array Attribute names, empty on API failure (treated as "unknown", not "none").
+	 * @return array Map of field_key => attribute name, empty on API failure (treated as "unknown", not "none").
 	 */
-	private function get_account_attribute_names( $api_key ) {
+	private function get_account_attributes_by_field_key( $api_key ) {
 		// Keyed by API key so switching to a different Brevo account never reuses
 		// another account's cached attribute list.
 		$cache_key = 'conecom_brevo_contact_attrs_' . md5( $api_key );
@@ -212,18 +214,18 @@ class Connect_Ecommerce_Brevo {
 			return $cached;
 		}
 
-		$names  = array();
-		$result = $this->api( 'contacts/attributes', $api_key );
+		$by_field_key = array();
+		$result       = $this->api( 'contacts/attributes', $api_key );
 		if ( 'ok' === $result['status'] && ! empty( $result['data']['attributes'] ) ) {
 			foreach ( $result['data']['attributes'] as $attribute ) {
-				if ( ! empty( $attribute['name'] ) ) {
-					$names[] = $attribute['name'];
+				if ( ! empty( $attribute['name'] ) && ! empty( $attribute['field_key'] ) ) {
+					$by_field_key[ $attribute['field_key'] ] = $attribute['name'];
 				}
 			}
-			set_transient( $cache_key, $names, 12 * HOUR_IN_SECONDS );
+			set_transient( $cache_key, $by_field_key, 12 * HOUR_IN_SECONDS );
 		}
 
-		return $names;
+		return $by_field_key;
 	}
 
 	/**
@@ -317,31 +319,28 @@ class Connect_Ecommerce_Brevo {
 			);
 		}
 
-		// Create or update the contact in Brevo. Only attributes that exist in the
-		// account are sent, an unknown attribute name would fail the whole upsert
-		// and the account's list could not be fetched, name fields are sent anyway
-		// since FIRSTNAME/LASTNAME are Brevo's own defaults.
-		$account_attributes = $this->get_account_attribute_names( $api_key );
-		$known_attribute    = static function ( $name ) use ( $account_attributes ) {
-			return empty( $account_attributes ) || in_array( $name, $account_attributes, true );
+		// Create or update the contact in Brevo. Accounts can rename the default
+		// FIRSTNAME/LASTNAME/SMS fields to any custom name, so the current name for
+		// each is resolved via its field_key; if the account's list could not be
+		// fetched, the Brevo defaults are used as a fallback.
+		$account_attributes = $this->get_account_attributes_by_field_key( $api_key );
+		$attribute_name     = static function ( $field_key, $default ) use ( $account_attributes ) {
+			return $account_attributes[ $field_key ] ?? $default;
 		};
 
 		$attributes = array();
-		if ( $known_attribute( 'FIRSTNAME' ) ) {
-			$attributes['FIRSTNAME'] = $order['contactFirstName'] ?? '';
-		}
-		if ( $known_attribute( 'LASTNAME' ) ) {
-			$attributes['LASTNAME'] = $order['contactLastName'] ?? '';
-		}
+		$attributes[ $attribute_name( 'firstname', 'FIRSTNAME' ) ] = $order['contactFirstName'] ?? '';
+		$attributes[ $attribute_name( 'lastname', 'LASTNAME' ) ]   = $order['contactLastName'] ?? '';
 
 		$sms = $this->normalize_phone_e164( $order['contact_phone'] ?? '' );
-		if ( ! empty( $sms ) && $known_attribute( 'SMS' ) ) {
-			$attributes['SMS'] = $sms;
+		if ( ! empty( $sms ) ) {
+			$attributes[ $attribute_name( 'sms', 'SMS' ) ] = $sms;
 		}
 
 		$brevo_contact = array(
 			'email'         => $email,
-			'attributes'    => $attributes,
+			// Empty PHP arrays encode to JSON "[]", but Brevo's API requires an object ("{}") here.
+			'attributes'    => ! empty( $attributes ) ? $attributes : new stdClass(),
 			'updateEnabled' => true,
 		);
 
