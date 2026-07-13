@@ -232,6 +232,16 @@ class Import_Products {
 			return;
 		}
 
+		if ( in_array( 'product', $this->options['disable_modules'] ?? array(), true ) ) {
+			wp_send_json_success(
+				array(
+					'finish'  => true,
+					'message' => __( 'This connector does not manage a product catalog.', 'woocommerce-es' ),
+				)
+			);
+			return;
+		}
+
 		$sync_loop      = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$product_erp_id = isset( $_POST['product_erp_id'] ) ? sanitize_text_field( wp_unslash( $_POST['product_erp_id'] ) ) : '';
 		$product_sku    = isset( $_POST['product_sku'] ) ? sanitize_text_field( wp_unslash( $_POST['product_sku'] ) ) : '';

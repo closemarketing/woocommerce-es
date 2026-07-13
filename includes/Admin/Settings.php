@@ -126,6 +126,13 @@ class Settings {
 	private $is_disabled_ai;
 
 	/**
+	 * Whether the active connector does not manage a product catalog.
+	 *
+	 * @var bool
+	 */
+	private $is_disabled_products;
+
+	/**
 	 * Payment methods page handler.
 	 *
 	 * @var Settings_Payment_Methods|null
@@ -148,6 +155,7 @@ class Settings {
 		$this->is_mergevars          = $connector['is_mergevars'] ?? false;
 		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
 		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
+		$this->is_disabled_products  = in_array( 'product', $this->options['disable_modules'] ?? array(), true );
 		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
 
 		// If connector is saved but the plugin is no longer active (no options/api loaded), still register the admin page so the user can change the connector.
@@ -256,7 +264,11 @@ class Settings {
 
 				// Set default subtabs.
 				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
-					$active_subtab = 'sync_products';
+					$active_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+				}
+				// Connectors without a product catalog only expose the Orders subtab.
+				if ( 'synchronization' === $active_tab && 'sync_products' === $active_subtab && $this->is_disabled_products ) {
+					$active_subtab = 'sync_orders';
 				}
 				if ( 'settings' === $active_tab && empty( $active_subtab ) ) {
 					$active_subtab = 'connection';
@@ -265,8 +277,9 @@ class Settings {
 				<h2 class="nav-tab-wrapper">
 					<?php
 					if ( $this->is_connector_active() ) {
+						$sync_tab_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
 						?>
-						<a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
+						<a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $sync_tab_subtab ); ?>" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
 						<?php
 					}
 					?>
@@ -301,7 +314,9 @@ class Settings {
 				if ( 'synchronization' === $active_tab && $this->is_connector_active() ) {
 					?>
 					<ul class="subsubsub">
+						<?php if ( ! $this->is_disabled_products ) : ?>
 						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ''; ?></li>
+						<?php endif; ?>
 						<?php
 						if ( ! $this->is_disabled_orders ) {
 							?>
@@ -2063,7 +2078,8 @@ class Settings {
 	 * @return void
 	 */
 	public function freeorder_callback() {
-		$freeorder = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : 'no';
+		$default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$freeorder         = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : $default_freeorder;
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][freeorder]" id="wcpimh_freeorder">
 			<option value="no" <?php selected( $freeorder, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $freeorder, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
