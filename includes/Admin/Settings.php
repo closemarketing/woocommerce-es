@@ -488,7 +488,9 @@ class Settings {
 							settings_fields( 'connect_ecommerce_settings' );
 							// Hidden field to ensure this connector's settings are saved.
 							echo '<input type="hidden" name="connect_ecommerce[connector]" value="' . esc_attr( $active_connector_tab ) . '">';
+							echo '<div class="connwoo-connector-settings">';
 							do_settings_sections( 'connect_ecommerce_admin' );
+							echo '</div>';
 							submit_button(
 								__( 'Save settings', 'woocommerce-es' ),
 								'primary',
@@ -688,8 +690,22 @@ class Settings {
 
 		add_settings_section(
 			'connect_woocommerce_setting_section',
-			__( 'Settings for Importing in WooCommerce', 'woocommerce-es' ),
+			__( 'Connection', 'woocommerce-es' ),
 			array( $this, 'connect_woocommerce_section_info' ),
+			'connect_ecommerce_admin'
+		);
+
+		add_settings_section(
+			'connect_woocommerce_setting_section_products',
+			__( 'Products synchronization options', 'woocommerce-es' ),
+			'__return_false',
+			'connect_ecommerce_admin'
+		);
+
+		add_settings_section(
+			'connect_woocommerce_setting_section_orders',
+			__( 'Orders synchronization options', 'woocommerce-es' ),
+			'__return_false',
 			'connect_ecommerce_admin'
 		);
 
@@ -809,13 +825,16 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
+			$short_field = array( 'class' => 'connwoo-field-short' );
+
 			if ( ! empty( $this->options['product_option_stock'] ) ) {
 					add_settings_field(
 						'wcpimh_stock',
 						__( 'Import stock?', 'woocommerce-es' ),
 						array( $this, 'stock_callback' ),
 						'connect_ecommerce_admin',
-						'connect_woocommerce_setting_section'
+						'connect_woocommerce_setting_section_products',
+						$short_field
 					);
 			}
 
@@ -824,7 +843,8 @@ class Settings {
 				__( 'Default status for new products?', 'woocommerce-es' ),
 				array( $this, 'prodst_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products',
+				$short_field
 			);
 
 			add_settings_field(
@@ -832,7 +852,8 @@ class Settings {
 				__( 'Virtual products?', 'woocommerce-es' ),
 				array( $this, 'virtual_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products',
+				$short_field
 			);
 
 			add_settings_field(
@@ -840,7 +861,8 @@ class Settings {
 				__( 'Allow backorders?', 'woocommerce-es' ),
 				array( $this, 'backorders_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products',
+				$short_field
 			);
 
 			add_settings_field(
@@ -848,7 +870,8 @@ class Settings {
 				__( 'Category separator', 'woocommerce-es' ),
 				array( $this, 'catsep_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products',
+				$short_field
 			);
 
 			if ( ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_attributes' ) ) {
@@ -857,7 +880,8 @@ class Settings {
 					__( 'Attribute to use as category', 'woocommerce-es' ),
 					array( $this, 'catattr_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_products',
+					$short_field
 				);
 			}
 
@@ -866,7 +890,8 @@ class Settings {
 				__( 'Import category only in new products?', 'woocommerce-es' ),
 				array( $this, 'catnp_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products',
+				$short_field
 			);
 
 			add_settings_field(
@@ -874,7 +899,7 @@ class Settings {
 				__( 'Filter products by tags? Only import this tags (separated by comma and no space)', 'woocommerce-es' ),
 				array( $this, 'filter_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products'
 			);
 
 			add_settings_field(
@@ -882,7 +907,7 @@ class Settings {
 				__( 'Filter products by SKU? Only the products that complies these formula (use * for formula)', 'woocommerce-es' ),
 				array( $this, 'filter_sku_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products'
 			);
 
 			if ( ! empty( $this->options['product_price_tax_option'] ) ) {
@@ -891,7 +916,8 @@ class Settings {
 					__( 'Get prices with Tax?', 'woocommerce-es' ),
 					array( $this, 'tax_option_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_products',
+					$short_field
 				);
 			}
 
@@ -900,7 +926,8 @@ class Settings {
 				__( 'Percentage to Make a discount from prices and save in sale price?', 'woocommerce-es' ),
 				array( $this, 'pricesale_discount_option_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_products',
+				$short_field
 			);
 
 			if ( ! empty( $this->options['product_price_rate_option'] ) ) {
@@ -909,7 +936,8 @@ class Settings {
 					__( 'Product price rate for this eCommerce', 'woocommerce-es' ),
 					array( $this, 'rates_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_products',
+					$short_field
 				);
 			}
 
@@ -919,7 +947,8 @@ class Settings {
 					__( 'Serie number', 'woocommerce-es' ),
 					array( $this, 'serie_number_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_products',
+					$short_field
 				);
 			}
 
@@ -928,7 +957,8 @@ class Settings {
 				__( 'Clean special characters for Verifactu?', 'woocommerce-es' ),
 				array( $this, 'cleanchars_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_orders',
+				$short_field
 			);
 
 			if ( in_array( 'approve_document', $settings_fields, true ) ) {
@@ -937,7 +967,8 @@ class Settings {
 					__( 'Approve document by default for validations?', 'woocommerce-es' ),
 					array( $this, 'approve_document_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_orders',
+					$short_field
 				);
 			}
 
@@ -947,7 +978,8 @@ class Settings {
 					__( 'Document to create after order completed?', 'woocommerce-es' ),
 					array( $this, 'doctype_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_orders',
+					$short_field
 				);
 			}
 
@@ -957,7 +989,8 @@ class Settings {
 					__( 'ID Holded design for document', 'woocommerce-es' ),
 					array( $this, 'wcpimh_design_id_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_orders',
+					$short_field
 				);
 			}
 
@@ -967,7 +1000,8 @@ class Settings {
 					__( 'Create document for free Orders?', 'woocommerce-es' ),
 					array( $this, 'freeorder_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_orders',
+					$short_field
 				);
 
 				add_settings_field(
@@ -975,7 +1009,8 @@ class Settings {
 					__( 'Status to sync Orders?', 'woocommerce-es' ),
 					array( $this, 'ecstatus_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_orders',
+					$short_field
 				);
 			}
 
@@ -985,7 +1020,7 @@ class Settings {
 					__( 'Order Tag by default (separated by coma)?', 'woocommerce-es' ),
 					array( $this, 'order_tags_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_orders'
 				);
 			}
 
@@ -1001,7 +1036,8 @@ class Settings {
 						__( 'Custom field for Equivalence with weight', 'woocommerce-es' ),
 						array( $this, 'product_weight_equivalence_callback' ),
 						'connect_ecommerce_admin',
-						'connect_woocommerce_setting_section'
+						'connect_woocommerce_setting_section_orders',
+						$short_field
 					);
 				}
 			}
@@ -1010,7 +1046,8 @@ class Settings {
 				__( 'Debug Mode', 'woocommerce-es' ),
 				array( $this, 'debug_log_callback' ),
 				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
+				'connect_woocommerce_setting_section_orders',
+				$short_field
 			);
 		}
 
@@ -1605,7 +1642,7 @@ class Settings {
 		);
 
 		if ( ! empty( $this->options['settings_admin_message'] ) ) {
-			echo wp_kses( $this->options['settings_admin_message'], $arr );
+			echo '<p class="connwoo-section-description">' . wp_kses( $this->options['settings_admin_message'], $arr ) . '</p>';
 		}
 	}
 
