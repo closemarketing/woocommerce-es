@@ -337,10 +337,12 @@ class Connect_Ecommerce_Brevo {
 			$attributes[ $attribute_name( 'sms', 'SMS' ) ] = $sms;
 		}
 
+		// $attributes always has at least firstname/lastname set above, so it is never
+		// empty here - no need to guard against PHP's empty-array-as-JSON-"[]" quirk
+		// (Brevo's API needs an object, "{}") the way an empty attributes map would.
 		$brevo_contact = array(
 			'email'         => $email,
-			// Empty PHP arrays encode to JSON "[]", but Brevo's API requires an object ("{}") here.
-			'attributes'    => ! empty( $attributes ) ? $attributes : new stdClass(),
+			'attributes'    => $attributes,
 			'updateEnabled' => true,
 		);
 
