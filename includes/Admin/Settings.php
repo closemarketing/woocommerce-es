@@ -323,6 +323,18 @@ class Settings {
 							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a></li>
 							<?php
 						}
+
+						/**
+						 * Allows connector plugins (e.g. connect-woocommerce-sage) to register
+						 * extra subtabs on the Synchronization tab for custom (non-WooCommerce)
+						 * entities. Shape: [ slug => label ].
+						 */
+						$sync_custom_subtabs = apply_filters( 'conecom_sync_subtabs', array(), $this->connector );
+						foreach ( $sync_custom_subtabs as $subtab_slug => $subtab_label ) {
+							?>
+							<li> | <a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $subtab_slug ); ?>" class="<?php echo esc_attr( $subtab_slug ) === $active_subtab ? 'current' : ''; ?>"><?php echo esc_html( $subtab_label ); ?></a></li>
+							<?php
+						}
 						?>
 					</ul>
 					<br class="clear">
@@ -367,6 +379,13 @@ class Settings {
 				if ( 'synchronization' === $active_tab ) {
 					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
 						$this->page_get_sync( $active_subtab );
+					} elseif ( ! empty( $active_subtab ) ) {
+						/**
+						 * Renders a connector-registered custom sync subtab's body.
+						 * Connector plugins hook this action for the exact subtab
+						 * slug they registered via the `conecom_sync_subtabs` filter.
+						 */
+						do_action( "conecom_render_sync_subtab_{$active_subtab}" );
 					}
 				}
 
@@ -690,6 +709,17 @@ class Settings {
 					'connect_woocommerce_setting_section'
 				);
 			}
+
+			/**
+			 * Fires after the built-in connection fields are registered, so a
+			 * connector plugin can add its own custom `add_settings_field()`
+			 * entries to the same 'connect_ecommerce_admin' page /
+			 * 'connect_woocommerce_setting_section' section.
+			 *
+			 * @param string $connector Active connector slug.
+			 * @param array  $settings  Saved settings for the active connector.
+			 */
+			do_action( 'conecom_settings_connection_fields', $this->connector, get_option( 'connect_ecommerce', array() )[ $this->connector ] ?? array() );
 
 		// API Connection Status.
 		add_settings_field(
