@@ -867,6 +867,14 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
+
+				add_settings_field(
+					'wcpimh_order_sync_from_date',
+					__( 'Sync orders from this date?', 'woocommerce-es' ),
+					array( $this, 'order_sync_from_date_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
 			}
 
 			if ( ! empty( $this->options['order_tags'] ) ) {
@@ -1523,39 +1531,40 @@ class Settings {
 
 		$admin_settings = [
 			$connector => [
-				'api'                => '',
-				'idcentre'           => '',
-				'url'                => '',
-				'username'           => '',
-				'password'           => '',
-				'company'            => '',
-				'company_id'         => '',
-				'domain'             => '',
-				'dbname'             => '',
-				'stock'              => 'no',
-				'prodst'             => 'draft',
-				'virtual'            => 'no',
-				'backorders'         => 'no',
-				'catsep'             => '',
-				'catattr'            => '',
-				'filter'             => '',
-				'pricesale_discount' => '',
-				'filter_sku'         => '',
-				'rates'              => 'default',
-				'catnp'              => 'yes',
-				'doctype'            => 'invoice',
-				'cleanchars'         => '',
-				'approve_document'   => 'no',
-			'manufacturer_code'  => '',
-			'customer_code'      => '',
-				'series'             => '',
-				'freeorder'          => 'no',
-				'ecstatus'           => 'all',
-				'order_tags'         => '',
-				'design_id'          => '',
-				'sync'               => 'no',
-				'prod_weight_eq'     => '',
-				'debug_log'          => 'no',
+				'api'                   => '',
+				'idcentre'              => '',
+				'url'                   => '',
+				'username'              => '',
+				'password'              => '',
+				'company'               => '',
+				'company_id'            => '',
+				'domain'                => '',
+				'dbname'                => '',
+				'stock'                 => 'no',
+				'prodst'                => 'draft',
+				'virtual'               => 'no',
+				'backorders'            => 'no',
+				'catsep'                => '',
+				'catattr'               => '',
+				'filter'                => '',
+				'pricesale_discount'    => '',
+				'filter_sku'            => '',
+				'rates'                 => 'default',
+				'catnp'                 => 'yes',
+				'doctype'               => 'invoice',
+				'cleanchars'            => '',
+				'approve_document'      => 'no',
+				'manufacturer_code'     => '',
+				'customer_code'         => '',
+				'series'                => '',
+				'freeorder'             => 'no',
+				'ecstatus'              => 'all',
+				'order_tags'            => '',
+				'order_sync_from_date'  => '',
+				'design_id'             => '',
+				'sync'                  => 'no',
+				'prod_weight_eq'        => '',
+				'debug_log'             => 'no',
 			],
 		];
 
@@ -2116,6 +2125,20 @@ class Settings {
 			'<input class="regular-text" type="text" name="connect_ecommerce[' . esc_html( $this->connector ) . '][order_tags]" id="wcpimh_order_tags" value="%s">',
 			isset( $this->settings['order_tags'] ) ? esc_attr( $this->settings['order_tags'] ) : ''
 		);
+	}
+
+	/**
+	 * Sync orders from date. Orders created before this date are skipped
+	 * by the manual order sync.
+	 *
+	 * @return void
+	 */
+	public function order_sync_from_date_callback() {
+		printf(
+			'<input class="regular-text" type="date" name="connect_ecommerce[' . esc_html( $this->connector ) . '][order_sync_from_date]" id="wcpimh_order_sync_from_date" value="%s">',
+			isset( $this->settings['order_sync_from_date'] ) ? esc_attr( $this->settings['order_sync_from_date'] ) : ''
+		);
+		echo '<p class="description">' . esc_html__( 'Orders created before this date are skipped by the manual order sync. Leave empty to sync all orders.', 'woocommerce-es' ) . '</p>';
 	}
 
 	/**

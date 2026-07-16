@@ -197,22 +197,22 @@ class Orders {
 			session_start();
 		}
 		if ( 0 === $sync_loop ) {
-			$orders = wc_get_orders(
-				array(
-					'status'         => array( 'wc-completed' ),
-					'posts_per_page' => -1,
-					'orderby'        => 'date',
-					'order'          => 'DESC',
-				)
+			$query_args = array(
+				'status'  => array( 'wc-completed' ),
+				'limit'   => -1,
+				'orderby' => 'date',
+				'order'   => 'DESC',
+				'return'  => 'ids',
 			);
+			if ( ! empty( $this->settings['order_sync_from_date'] ) ) {
+				$query_args['date_created'] = '>=' . $this->settings['order_sync_from_date'];
+			}
+			// Only order IDs are fetched here, not full WC_Order objects, so stores
+			// with years of history don't exhaust PHP memory building this list.
+			$order_ids   = wc_get_orders( $query_args );
 			$sync_orders = array();
-			foreach ( $orders as $order ) {
-				if ( $order->has_status( 'completed' ) ) {
-					$sync_orders[] = array(
-						'id'   => $order->ID,
-						'date' => $order->get_date_completed(),
-					);
-				}
+			foreach ( $order_ids as $order_id ) {
+				$sync_orders[] = array( 'id' => $order_id );
 			}
 			$_SESSION['conecom_sync_orders'] = HELPER::sanitize_array_recursive( $sync_orders );
 		} else {
