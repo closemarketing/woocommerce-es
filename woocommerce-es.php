@@ -80,6 +80,33 @@ function conecom_get_options() {
 				'table_sync'                 => $wpdb->prefix . 'sync_conecom-clientify',
 				'file'                       => __FILE__,
 			),
+			'brevo'     => array(
+				'name'                       => 'Brevo',
+				'slug'                       => 'conecom-brevo',
+				'version'                    => CONECOM_VERSION,
+				'plugin_name'                => 'Connect WooCommerce Brevo',
+				'plugin_slug'                => 'connect-ecommerce-brevo',
+				'disable_modules'            => array( 'subscription', 'product' ),
+				'api_pagination'             => 100,
+				'product_price_tax_option'   => false,
+				'product_price_rate_option'  => false,
+				'product_option_stock'       => false,
+				'order_send_attachments'     => false,
+				'order_sync_partial'         => true,
+				'order_import_free_order'    => true,
+				'order_only_order_completed' => 'completed',
+				'order_tags'                 => true,
+				'settings_logo'              => CONECOM_PLUGIN_URL . 'includes/Connector/assets/brevo-logo.svg',
+				'settings_admin_message'     => sprintf(
+					// translators: %s url of Brevo API keys page.
+					__( 'Put your Brevo API key in order to connect and sync orders. You can find it here <a href = "%s" target = "_blank">Brevo API Keys</a>.', 'woocommerce-es' ),
+					'https://app.brevo.com/settings/keys/api'
+				),
+				'settings_special_tabs'      => array(),
+				'settings_fields'            => array( 'apipassword' ),
+				'table_sync'                 => $wpdb->prefix . 'sync_conecom-brevo',
+				'file'                       => __FILE__,
+			),
 		)
 	);
 }
@@ -93,6 +120,7 @@ add_action( 'init', 'conecom_loads' );
 function conecom_loads() {
 	require_once CONECOM_PLUGIN_PATH . 'includes/Plugin_Main.php';
 	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-clientify.php';
+	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-brevo.php';
 
 	$conecom_options = conecom_get_options();
 	new CLOSE\ConnectEcommerce\Base( $conecom_options );

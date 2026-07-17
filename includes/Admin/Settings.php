@@ -126,6 +126,13 @@ class Settings {
 	private $is_disabled_ai;
 
 	/**
+	 * Whether the active connector does not manage a product catalog.
+	 *
+	 * @var bool
+	 */
+	private $is_disabled_products;
+
+	/**
 	 * Payment methods page handler.
 	 *
 	 * @var Settings_Payment_Methods|null
@@ -148,6 +155,7 @@ class Settings {
 		$this->is_mergevars          = $connector['is_mergevars'] ?? false;
 		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
 		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
+		$this->is_disabled_products  = in_array( 'product', $this->options['disable_modules'] ?? array(), true );
 		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
 
 		// If connector is saved but the plugin is no longer active (no options/api loaded), still register the admin page so the user can change the connector.
@@ -256,7 +264,11 @@ class Settings {
 
 				// Set default subtabs.
 				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
-					$active_subtab = 'sync_products';
+					$active_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+				}
+				// Connectors without a product catalog only expose the Orders subtab.
+				if ( 'synchronization' === $active_tab && 'sync_products' === $active_subtab && $this->is_disabled_products ) {
+					$active_subtab = 'sync_orders';
 				}
 				if ( 'settings' === $active_tab && empty( $active_subtab ) ) {
 					$active_subtab = 'connection';
@@ -265,8 +277,9 @@ class Settings {
 				<h2 class="nav-tab-wrapper">
 					<?php
 					if ( $this->is_connector_active() ) {
+						$sync_tab_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
 						?>
-						<a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
+						<a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $sync_tab_subtab ); ?>" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
 						<?php
 					}
 					?>
@@ -301,7 +314,9 @@ class Settings {
 				if ( 'synchronization' === $active_tab && $this->is_connector_active() ) {
 					?>
 					<ul class="subsubsub">
+						<?php if ( ! $this->is_disabled_products ) : ?>
 						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ''; ?></li>
+						<?php endif; ?>
 						<?php
 						if ( ! $this->is_disabled_orders ) {
 							?>
@@ -690,6 +705,14 @@ class Settings {
 					'wcpimh_stock',
 					__( 'Import stock?', 'woocommerce-es' ),
 					array( $this, 'stock_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
+
+				add_settings_field(
+					'wcpimh_stock_visibility',
+					__( 'Hide out-of-stock products?', 'woocommerce-es' ),
+					array( $this, 'stock_visibility_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
@@ -1518,6 +1541,7 @@ class Settings {
 				'domain'             => '',
 				'dbname'             => '',
 				'stock'              => 'no',
+				'stock_visibility'   => 'hide',
 				'prodst'             => 'draft',
 				'virtual'            => 'no',
 				'backorders'         => 'no',
@@ -1746,6 +1770,26 @@ class Settings {
 			<option value="yes" <?php selected( $stock_option, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 			<option value="no" <?php selected( $stock_option, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 		</select>
+		<?php
+	}
+
+	/**
+	 * Stock visibility field
+	 *
+	 * Controls whether the sync is allowed to change a product's catalog
+	 * visibility based on stock. Defaults to "hide" to keep the historic
+	 * behaviour for existing installs.
+	 *
+	 * @return void
+	 */
+	public function stock_visibility_callback() {
+		$stock_visibility_option = isset( $this->settings['stock_visibility'] ) ? $this->settings['stock_visibility'] : 'hide';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][stock_visibility]" id="wcpimh_stock_visibility">
+			<option value="hide" <?php selected( $stock_visibility_option, 'hide' ); ?>><?php esc_html_e( 'Yes, hide out-of-stock products (default)', 'woocommerce-es' ); ?></option>
+			<option value="no_change" <?php selected( $stock_visibility_option, 'no_change' ); ?>><?php esc_html_e( 'No, do not change catalog visibility', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'When set to "No", the sync will still update stock status and quantity, but will not modify the catalog visibility of the product, so manual changes are preserved.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 
@@ -2063,7 +2107,8 @@ class Settings {
 	 * @return void
 	 */
 	public function freeorder_callback() {
-		$freeorder = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : 'no';
+		$default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$freeorder         = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : $default_freeorder;
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][freeorder]" id="wcpimh_freeorder">
 			<option value="no" <?php selected( $freeorder, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $freeorder, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
