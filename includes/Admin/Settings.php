@@ -708,6 +708,14 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
+
+				add_settings_field(
+					'wcpimh_stock_visibility',
+					__( 'Hide out-of-stock products?', 'woocommerce-es' ),
+					array( $this, 'stock_visibility_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
 			}
 
 			add_settings_field(
@@ -1571,40 +1579,41 @@ class Settings {
 
 		$admin_settings = [
 			$connector => [
-				'api'                   => '',
-				'idcentre'              => '',
-				'url'                   => '',
-				'username'              => '',
-				'password'              => '',
-				'company'               => '',
-				'company_id'            => '',
-				'domain'                => '',
-				'dbname'                => '',
-				'stock'                 => 'no',
-				'prodst'                => 'draft',
-				'virtual'               => 'no',
-				'backorders'            => 'no',
-				'catsep'                => '',
-				'catattr'               => '',
-				'filter'                => '',
-				'pricesale_discount'    => '',
-				'filter_sku'            => '',
-				'rates'                 => 'default',
-				'catnp'                 => 'yes',
-				'doctype'               => 'invoice',
-				'cleanchars'            => '',
-				'approve_document'      => 'no',
-				'manufacturer_code'     => '',
-				'customer_code'         => '',
-				'series'                => '',
-				'freeorder'             => 'no',
-				'ecstatus'              => 'all',
-				'order_tags'            => '',
-				'order_sync_from_date'  => '',
-				'design_id'             => '',
-				'sync'                  => 'no',
-				'prod_weight_eq'        => '',
-				'debug_log'             => 'no',
+				'api'                  => '',
+				'idcentre'             => '',
+				'url'                  => '',
+				'username'             => '',
+				'password'             => '',
+				'company'              => '',
+				'company_id'           => '',
+				'domain'               => '',
+				'dbname'               => '',
+				'stock'                => 'no',
+				'stock_visibility'     => 'hide',
+				'prodst'               => 'draft',
+				'virtual'              => 'no',
+				'backorders'           => 'no',
+				'catsep'               => '',
+				'catattr'              => '',
+				'filter'               => '',
+				'pricesale_discount'   => '',
+				'filter_sku'           => '',
+				'rates'                => 'default',
+				'catnp'                => 'yes',
+				'doctype'              => 'invoice',
+				'cleanchars'           => '',
+				'approve_document'     => 'no',
+				'manufacturer_code'    => '',
+				'customer_code'        => '',
+				'series'               => '',
+				'freeorder'            => 'no',
+				'ecstatus'             => 'all',
+				'order_tags'           => '',
+				'order_sync_from_date' => '',
+				'design_id'            => '',
+				'sync'                 => 'no',
+				'prod_weight_eq'       => '',
+				'debug_log'            => 'no',
 			],
 		];
 
@@ -1810,6 +1819,26 @@ class Settings {
 			<option value="yes" <?php selected( $stock_option, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 			<option value="no" <?php selected( $stock_option, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 		</select>
+		<?php
+	}
+
+	/**
+	 * Stock visibility field
+	 *
+	 * Controls whether the sync is allowed to change a product's catalog
+	 * visibility based on stock. Defaults to "hide" to keep the historic
+	 * behaviour for existing installs.
+	 *
+	 * @return void
+	 */
+	public function stock_visibility_callback() {
+		$stock_visibility_option = isset( $this->settings['stock_visibility'] ) ? $this->settings['stock_visibility'] : 'hide';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][stock_visibility]" id="wcpimh_stock_visibility">
+			<option value="hide" <?php selected( $stock_visibility_option, 'hide' ); ?>><?php esc_html_e( 'Yes, hide out-of-stock products (default)', 'woocommerce-es' ); ?></option>
+			<option value="no_change" <?php selected( $stock_visibility_option, 'no_change' ); ?>><?php esc_html_e( 'No, do not change catalog visibility', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'When set to "No", the sync will still update stock status and quantity, but will not modify the catalog visibility of the product, so manual changes are preserved.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 
@@ -2365,26 +2394,20 @@ class Settings {
 							<select name='connect_ecommerce_prod_mergevars[prod_mergevars][<?php echo esc_html( $idx ); ?>][attrprod]' class="attrprod-publish" data-row="<?php echo esc_html( $idx ); ?>">
 								<option value=''></option>
 								<?php
-								foreach ( $attribute_fields as $attribute ) {
-									if ( empty( $attribute['elements'] ) ) {
+								foreach ( $attribute_fields as $key => $label ) {
+									// get_product_attributes() must return a flat field => label
+									// map (readme.md); skip any non-scalar label defensively rather
+									// than rendering "Array" or triggering a conversion warning.
+									if ( ! is_scalar( $label ) ) {
 										continue;
 									}
-									?>
-									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
-										<?php
-										foreach ( $attribute['elements'] as $value ) {
-											$option_id = $attribute['id'] . '|' . $value;
-											echo '<option value="' . esc_html( $option_id ) . '" ';
-											selected( $option_id, $attrprod );
-											echo '>' . esc_html( $value ) . '</option>';
+									echo '<option value="' . esc_html( $key ) . '" ';
+									selected( $key, $attrprod );
+									echo '>' . esc_html( $label ) . '</option>';
 
-											if ( $option_id === $attrprod ) {
-												$attrprod_label = $attribute['name'];
-											}
-										}
-										?>
-									</optgroup>
-									<?php
+									if ( $key === $attrprod ) {
+										$attrprod_label = $label;
+									}
 								}
 								?>
 							</select>
