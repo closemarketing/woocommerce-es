@@ -1147,7 +1147,7 @@ class Settings {
 					</div>
 					<?php
 				} else {
-					$this->render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus );
+					$this->render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus, $type );
 				}
 				?>
 			</div>
@@ -1161,21 +1161,31 @@ class Settings {
 	 * @param string $ajax_action AJAX action name.
 	 * @param int    $api_pagination Products per page for sync.
 	 * @param bool   $has_get_all_product_skus Whether connector has get_all_product_skus (shows indicators).
+	 * @param string $type Subtab type, 'sync_products' or 'sync_orders'.
 	 * @return void
 	 */
-	private function render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus = false ) {
-		$cron_enabled        = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
-		$has_product_updated = $has_get_all_product_skus && (
+	private function render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus = false, $type = 'sync_products' ) {
+		$is_orders            = 'sync_orders' === $type;
+		$cron_enabled         = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
+		$has_product_updated  = $has_get_all_product_skus && (
 			! method_exists( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated()
 		);
 		?>
 		<h2>
 			<?php
-			printf(
-				/* translators: %s: Name of the connector */
-				esc_html__( 'Import Products from %s', 'woocommerce-es' ),
-				esc_html( $this->options['name'] )
-			);
+			if ( $is_orders ) {
+				printf(
+					/* translators: %s: Name of the connector */
+					esc_html__( 'Export Orders to %s', 'woocommerce-es' ),
+					esc_html( $this->options['name'] )
+				);
+			} else {
+				printf(
+					/* translators: %s: Name of the connector */
+					esc_html__( 'Import Products from %s', 'woocommerce-es' ),
+					esc_html( $this->options['name'] )
+				);
+			}
 			?>
 		</h2>
 
@@ -1244,8 +1254,9 @@ class Settings {
 		}
 		?>
 
-		<!-- Two columns: Automatic Sync + Manual Import -->
-		<div class="conecom-two-columns">
+		<!-- Manual Import -->
+		<div class="conecom-two-columns<?php echo $is_orders ? ' conecom-single-column' : ''; ?>">
+			<?php if ( ! $is_orders ) : ?>
 			<div class="conecom-cron-logs">
 				<h3>
 					<span class="dashicons dashicons-clock" style="vertical-align: middle;"></span>
@@ -1269,6 +1280,7 @@ class Settings {
 					</p>
 				</form>
 			</div>
+			<?php endif; ?>
 
 			<div class="conecom-manual-import">
 				<h3>
@@ -1276,13 +1288,37 @@ class Settings {
 					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
 				</h3>
 
+				<?php if ( $is_orders ) : ?>
+				<p style="color: #646970; font-size: 13px; margin: 0 0 10px;">
+					<?php
+					$ecstatus       = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : 'all';
+					$ecstatus_label = array(
+						'all'       => __( 'All status orders', 'woocommerce-es' ),
+						'paid'      => __( 'Paid orders', 'woocommerce-es' ),
+						'completed' => __( 'Only Completed', 'woocommerce-es' ),
+					);
+					printf(
+						/* translators: %s: Order status label configured in Settings (e.g. "Paid orders") */
+						esc_html__( 'Orders are synced according to your settings: %s.', 'woocommerce-es' ),
+						'<strong>' . esc_html( $ecstatus_label[ $ecstatus ] ?? $ecstatus_label['all'] ) . '</strong>'
+					);
+					?>
+				</p>
+				<?php endif; ?>
 				<div class="import-button-wrapper">
+					<?php if ( $is_orders ) : ?>
+					<label for="orders-date-from" style="margin: 0;"><?php esc_html_e( 'From', 'woocommerce-es' ); ?></label>
+					<input type="date" id="orders-date-from" class="orders-date-input" value="<?php echo esc_attr( gmdate( 'Y-m-d', strtotime( '-1 month' ) ) ); ?>" />
+					<label for="orders-date-to" style="margin: 0;"><?php esc_html_e( 'To', 'woocommerce-es' ); ?></label>
+					<input type="date" id="orders-date-to" class="orders-date-input" value="<?php echo esc_attr( gmdate( 'Y-m-d' ) ); ?>" />
+					<?php else : ?>
 					<select id="import-mode" class="import-mode-select">
 						<?php if ( $has_product_updated ) : ?>
 						<option value="updated"><?php esc_html_e( 'Products to update', 'woocommerce-es' ); ?></option>
 						<?php endif; ?>
 						<option value="all"><?php esc_html_e( 'All products', 'woocommerce-es' ); ?></option>
 					</select>
+					<?php endif; ?>
 					<button type="button" id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItemsWithMode(this, '<?php echo esc_attr( $ajax_action ); ?>', 0, <?php echo (int) $api_pagination; ?>);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></button>
 					<?php
 					if ( $has_get_all_product_skus ) {
@@ -1297,7 +1333,7 @@ class Settings {
 					<span class="spinner"></span>
 				</div>
 				<?php
-				if ( ! $this->is_disabled_ai ) {
+				if ( ! $is_orders && ! $this->is_disabled_ai ) {
 					?>
 					<p style="margin-top: 10px;">
 						<label for="connect_ecommerce_ai_stats"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
@@ -1313,6 +1349,7 @@ class Settings {
 
 		<!-- Log container with tabs -->
 		<div class="conecom-log-container">
+			<?php if ( ! $is_orders ) : ?>
 			<div class="conecom-log-tabs">
 				<button class="conecom-tab-button active" data-tab="automatic">
 					<span class="dashicons dashicons-clock"></span>
@@ -1323,8 +1360,10 @@ class Settings {
 					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
 				</button>
 			</div>
+			<?php endif; ?>
 
 			<div class="conecom-tab-content">
+			<?php if ( ! $is_orders ) : ?>
 			<div class="conecom-tab-pane active" id="tab-automatic">
 				<div id="conecom-as-logs-container">
 					<p style="color: #666; font-style: italic; padding: 20px; text-align: center;">
@@ -1332,7 +1371,8 @@ class Settings {
 					</p>
 				</div>
 			</div>
-				<div class="conecom-tab-pane" id="tab-manual">
+			<?php endif; ?>
+				<div class="conecom-tab-pane<?php echo $is_orders ? ' active' : ''; ?>" id="tab-manual">
 					<fieldset id="logwrapper" style="border: none; padding: 0; margin: 0;">
 						<div id="loglist"></div>
 					</fieldset>

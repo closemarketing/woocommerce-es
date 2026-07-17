@@ -63,6 +63,13 @@ class Orders {
 	private $default_freeorder;
 
 	/**
+	 * Order statuses that trigger/qualify for ERP sync: 'all', 'paid' or 'completed'.
+	 *
+	 * @var string
+	 */
+	private $ecstatus;
+
+	/**
 	 * Init and hook in the integration.
 	 *
 	 * @param array $connector Connector.
@@ -75,6 +82,7 @@ class Orders {
 		$this->settings                   = $connector['settings'] ?? array();
 		$this->connapi_erp                = $connector['connapi_erp'];
 		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$this->ecstatus                   = $ecstatus;
 		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
 		$this->default_freeorder          = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
 
@@ -197,14 +205,31 @@ class Orders {
 			session_start();
 		}
 		if ( 0 === $sync_loop ) {
+			$date_from = isset( $_POST['date_from'] ) ? sanitize_text_field( wp_unslash( $_POST['date_from'] ) ) : '';
+			$date_to   = isset( $_POST['date_to'] ) ? sanitize_text_field( wp_unslash( $_POST['date_to'] ) ) : '';
+
+			if ( 'all' === $this->ecstatus ) {
+				$sync_statuses = array( 'pending', 'failed', 'processing', 'refunded', 'cancelled', 'completed' );
+			} elseif ( 'paid' === $this->ecstatus ) {
+				$sync_statuses = wc_get_is_paid_statuses();
+			} else {
+				$sync_statuses = array( 'completed' );
+			}
+
 			$query_args = array(
-				'status'  => array( 'wc-completed' ),
-				'limit'   => -1,
+				'status'  => $sync_statuses,
+				'limit'   => PHP_INT_MAX,
 				'orderby' => 'date',
 				'order'   => 'DESC',
 				'return'  => 'ids',
 			);
-			if ( ! empty( $this->settings['order_sync_from_date'] ) ) {
+			if ( $date_from && $date_to ) {
+				$query_args['date_created'] = $date_from . '...' . $date_to;
+			} elseif ( $date_from ) {
+				$query_args['date_created'] = '>=' . $date_from;
+			} elseif ( $date_to ) {
+				$query_args['date_created'] = '<=' . $date_to;
+			} elseif ( ! empty( $this->settings['order_sync_from_date'] ) ) {
 				$query_args['date_created'] = '>=' . $this->settings['order_sync_from_date'];
 			}
 			// Only order IDs are fetched here, not full WC_Order objects, so stores
