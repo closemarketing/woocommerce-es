@@ -256,6 +256,7 @@ class PROD {
 	 */
 	public static function sync_product( $settings, $item, $api_erp, $product_id = 0, $type = 'simple', $pack_items = null ) {
 		$import_stock       = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
+		$stock_visibility   = ! empty( $settings['stock_visibility'] ) ? $settings['stock_visibility'] : 'hide';
 		$is_virtual         = ! empty( $settings['virtual'] ) && 'yes' === $settings['virtual'] ? true : false;
 		$allow_backorders   = ! empty( $settings['backorders'] ) ? $settings['backorders'] : 'yes';
 		$rate_id            = ! empty( $settings['rates'] ) ? $settings['rates'] : 'default';
@@ -393,41 +394,52 @@ class PROD {
 				// Values for simple products.
 				// Check if the product can be sold.
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['stock_status'] = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && $item_stock > 0 ) {
-					$product_props['manage_stock']       = true;
-					$product_props['stock_quantity']     = $item_stock;
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item_stock;
+					$product_props['stock_status']   = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && 0 === $item_stock ) {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = 0;
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = 0;
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} else {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = $item['stock'];
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item['stock'];
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				}
 				break;
 			case 'variable':

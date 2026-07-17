@@ -708,6 +708,14 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 				);
+
+				add_settings_field(
+					'wcpimh_stock_visibility',
+					__( 'Hide out-of-stock products?', 'woocommerce-es' ),
+					array( $this, 'stock_visibility_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+				);
 			}
 
 			add_settings_field(
@@ -1533,6 +1541,7 @@ class Settings {
 				'domain'             => '',
 				'dbname'             => '',
 				'stock'              => 'no',
+				'stock_visibility'   => 'hide',
 				'prodst'             => 'draft',
 				'virtual'            => 'no',
 				'backorders'         => 'no',
@@ -1761,6 +1770,26 @@ class Settings {
 			<option value="yes" <?php selected( $stock_option, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 			<option value="no" <?php selected( $stock_option, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 		</select>
+		<?php
+	}
+
+	/**
+	 * Stock visibility field
+	 *
+	 * Controls whether the sync is allowed to change a product's catalog
+	 * visibility based on stock. Defaults to "hide" to keep the historic
+	 * behaviour for existing installs.
+	 *
+	 * @return void
+	 */
+	public function stock_visibility_callback() {
+		$stock_visibility_option = isset( $this->settings['stock_visibility'] ) ? $this->settings['stock_visibility'] : 'hide';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][stock_visibility]" id="wcpimh_stock_visibility">
+			<option value="hide" <?php selected( $stock_visibility_option, 'hide' ); ?>><?php esc_html_e( 'Yes, hide out-of-stock products (default)', 'woocommerce-es' ); ?></option>
+			<option value="no_change" <?php selected( $stock_visibility_option, 'no_change' ); ?>><?php esc_html_e( 'No, do not change catalog visibility', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'When set to "No", the sync will still update stock status and quantity, but will not modify the catalog visibility of the product, so manual changes are preserved.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 
