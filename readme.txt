@@ -231,6 +231,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Added: New `TAXES::get_tax_class_by_erp_id()` helper method that resolves a WooCommerce tax class from an ERP/CRM tax id, using the "ERP Tax Type" mapping configured in WooCommerce > Settings > Tax. This lets connectors (e.g. Odoo) map an ERP tax id to the correct WooCommerce tax class when syncing products, reusing the same mapping already used for orders.
 * Fixed: Importing a variable product no longer enables "Stock management" on the parent product. Stock is tracked on the variations only; enabling it on the parent as well made the parent show as "out of stock" even when its variations had stock available. The parent's stock status is now correctly recalculated from its variations after each sync.
 * Added: WooCommerce Subscriptions support — product sync from ERP no longer overwrites the product type when it already exists in the store as a subscription or variable-subscription.
+* Fixed: Merge vars for product custom fields was not getting properly the values from the API.
 * Added: Option to hide products out-of-stock or not change the visibility.
 
 = 3.3.4 =

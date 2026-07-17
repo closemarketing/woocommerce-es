@@ -2331,26 +2331,20 @@ class Settings {
 							<select name='connect_ecommerce_prod_mergevars[prod_mergevars][<?php echo esc_html( $idx ); ?>][attrprod]' class="attrprod-publish" data-row="<?php echo esc_html( $idx ); ?>">
 								<option value=''></option>
 								<?php
-								foreach ( $attribute_fields as $attribute ) {
-									if ( empty( $attribute['elements'] ) ) {
+								foreach ( $attribute_fields as $key => $label ) {
+									// get_product_attributes() must return a flat field => label
+									// map (readme.md); skip any non-scalar label defensively rather
+									// than rendering "Array" or triggering a conversion warning.
+									if ( ! is_scalar( $label ) ) {
 										continue;
 									}
-									?>
-									<optgroup label="<?php echo esc_html( $attribute['name'] ); ?>">
-										<?php
-										foreach ( $attribute['elements'] as $value ) {
-											$option_id = $attribute['id'] . '|' . $value;
-											echo '<option value="' . esc_html( $option_id ) . '" ';
-											selected( $option_id, $attrprod );
-											echo '>' . esc_html( $value ) . '</option>';
+									echo '<option value="' . esc_html( $key ) . '" ';
+									selected( $key, $attrprod );
+									echo '>' . esc_html( $label ) . '</option>';
 
-											if ( $option_id === $attrprod ) {
-												$attrprod_label = $attribute['name'];
-											}
-										}
-										?>
-									</optgroup>
-									<?php
+									if ( $key === $attrprod ) {
+										$attrprod_label = $label;
+									}
 								}
 								?>
 							</select>
