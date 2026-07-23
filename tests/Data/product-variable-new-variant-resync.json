@@ -1,8 +1,8 @@
 [
 	{
-		"id": "32999-embrace-503",
+		"id": "999-generic-bra",
 		"kind": "variants",
-		"name": "Sujetador Embrace | ABC Ibérica",
+		"name": "Generic Bra",
 		"desc": "",
 		"typeId": "",
 		"contactId": "",
@@ -15,12 +15,12 @@
 		"hasStock": true,
 		"stock": 0,
 		"barcode": "",
-		"sku": "503",
+		"sku": "GENBRA",
 		"cost": 20,
 		"purchasePrice": "",
 		"weight": 0.2,
 		"tags": [],
-		"categoryId": "cat-sujetadores",
+		"categoryId": "cat-bras",
 		"factoryCode": "",
 		"forSale": 1,
 		"forPurchase": 1,
@@ -40,20 +40,20 @@
 			{
 				"id": "attr-cat",
 				"name": "categoria",
-				"value": "Sujetadores"
+				"value": "Bras"
 			}
 		],
 		"variants": [
 			{
-				"id": "32374",
-				"barcode": "876003009001",
-				"sku": "503-85D-CH",
+				"id": "9001",
+				"barcode": "0000000000001",
+				"sku": "GENBRA-85D-CH",
 				"price": 39.9,
 				"cost": 20,
 				"purchasePrice": 0,
 				"stock": 0,
 				"categoryFields": [
-					{ "id": "field-color", "name": "color", "field": "champang" },
+					{ "id": "field-color", "name": "color", "field": "beige" },
 					{ "id": "field-talla", "name": "talla", "field": "75AA" }
 				],
 				"rates": {
@@ -61,15 +61,15 @@
 				}
 			},
 			{
-				"id": "32407",
-				"barcode": "818679017522",
-				"sku": "503-85D-SM",
+				"id": "9002",
+				"barcode": "0000000000002",
+				"sku": "GENBRA-85D-MC",
 				"price": 39.9,
 				"cost": 20,
 				"purchasePrice": 0,
 				"stock": 0,
 				"categoryFields": [
-					{ "id": "field-color", "name": "color", "field": "suave-mocca" },
+					{ "id": "field-color", "name": "color", "field": "mocha" },
 					{ "id": "field-talla", "name": "talla", "field": "75AA" }
 				],
 				"rates": {

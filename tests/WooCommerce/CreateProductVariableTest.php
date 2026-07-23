@@ -748,12 +748,12 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Regression test: blank SKU when Odoo renames an existing variant's SKU on resync.
+	 * Regression test: blank SKU when the ERP renames an existing variant's SKU on resync.
 	 *
-	 * Reproduces production issue (medicalbodycontrol.com, post #8028, "Sujetador
-	 * Embrace | ABC Ibérica"): Odoo variant id 32374 was originally synced with
-	 * SKU "503-85D-CH". Odoo later corrected the SKU to "503-75AA-CH" (same Odoo
-	 * variant id, same attributes) and the product was resynced.
+	 * Reproduces a production issue reported for an Odoo-synced variable product:
+	 * a variant was originally synced with one SKU, then the ERP corrected that
+	 * SKU on a later sync (same ERP variant id, same attributes, no change to
+	 * the underlying variant identity).
 	 *
 	 * woocommerce-es matches an incoming variant to an existing WC variation by
 	 * SKU equality (`array_search()` against the current variations' SKUs), not
@@ -765,8 +765,6 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 	 * parent-level $is_new_product flag) and documents the still-present
 	 * orphan/draft side effect as a known follow-up (matching should key off
 	 * the ERP's variant id, not SKU).
-	 *
-	 * @see docs/issues/Blank-SKU-New-Variant-On-Resync.md
 	 */
 	public function test_variant_sku_renamed_on_resync_gets_new_sku() {
 		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable-new-variant-resync.json';
@@ -776,7 +774,7 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->settings['catattr'] = 'categoria';
 		$this->settings['catnp']   = 'yes';
 
-		// First sync: variant 32374 comes in with SKU "503-85D-CH" (as it existed in prod).
+		// First sync: variant 9001 comes in with SKU "GENBRA-85D-CH".
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
 
@@ -790,16 +788,16 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$old_variation_id = null;
 		foreach ( $variations as $variation_id ) {
 			$prod_variation = new WC_Product_Variation( $variation_id );
-			if ( '503-85D-CH' === $prod_variation->get_sku() ) {
+			if ( 'GENBRA-85D-CH' === $prod_variation->get_sku() ) {
 				$old_variation_id = $variation_id;
 			}
 		}
-		$this->assertNotNull( $old_variation_id, 'First sync should create a variation with SKU 503-85D-CH' );
+		$this->assertNotNull( $old_variation_id, 'First sync should create a variation with SKU GENBRA-85D-CH' );
 
-		// Second sync (resync of the SAME product): Odoo renamed variant 32374's
-		// SKU from "503-85D-CH" to "503-75AA-CH" — same Odoo variant id, same attributes.
+		// Second sync (resync of the SAME product): ERP renamed variant 9001's
+		// SKU from "GENBRA-85D-CH" to "GENBRA-75AA-CH" — same ERP variant id, same attributes.
 		$item_resync                        = $item;
-		$item_resync['variants'][0]['sku']  = '503-75AA-CH';
+		$item_resync['variants'][0]['sku']  = 'GENBRA-75AA-CH';
 
 		$result_sync_upd = PROD::sync_product_item( $this->settings, $item_resync, $this->connapi_erp, false, $result_prod_id );
 
@@ -813,21 +811,21 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$renamed_variation      = null;
 		foreach ( $variations_updated as $variation_id ) {
 			$prod_variation = new WC_Product_Variation( $variation_id );
-			if ( '876003009001' === $prod_variation->get_global_unique_id() ) {
+			if ( '0000000000001' === $prod_variation->get_global_unique_id() ) {
 				$renamed_variation = $prod_variation;
 			}
 		}
 
-		$this->assertNotNull( $renamed_variation, 'A variation for the renamed variant (barcode 876003009001) should exist after resync' );
+		$this->assertNotNull( $renamed_variation, 'A variation for the renamed variant (barcode 0000000000001) should exist after resync' );
 		$this->assertEquals(
-			'503-75AA-CH',
+			'GENBRA-75AA-CH',
 			$renamed_variation->get_sku(),
 			'Variation for a variant whose SKU was renamed in the ERP must carry the new SKU, not be left blank'
 		);
 
-		// The stale old variation (SKU 503-85D-CH) should not remain published with its old SKU
+		// The stale old variation (SKU GENBRA-85D-CH) should not remain published with its old SKU
 		// still active — WooCommerce would otherwise report it in stock listings using a SKU
-		// that no longer represents the current Odoo state.
+		// that no longer represents the current ERP state.
 		$old_variation_status = get_post_status( $old_variation_id );
 		if ( $renamed_variation->get_id() !== $old_variation_id ) {
 			$this->assertEquals( 'draft', $old_variation_status, 'Orphaned old variation should be set to draft when superseded by a renamed-SKU variant' );
