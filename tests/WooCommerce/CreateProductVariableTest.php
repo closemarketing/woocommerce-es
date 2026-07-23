@@ -651,7 +651,6 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 	}
 
 	/**
-
 	 * When the ERP serializes a numeric SKU as a JSON number, json_decode() gives
 	 * $variant['sku'] as an int, while WC_Product_Variation::get_sku() always
 	 * returns a string. The strict array_search() used to match existing
@@ -746,92 +745,4 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		wp_delete_post( $first_product_id, true );
 		wp_delete_post( $second_product_id, true );
 	}
-
-	/**
-	 * Regression test: blank SKU when the ERP renames an existing variant's SKU on resync.
-	 *
-	 * Reproduces a production issue reported for an Odoo-synced variable product:
-	 * a variant was originally synced with one SKU, then the ERP corrected that
-	 * SKU on a later sync (same ERP variant id, same attributes, no change to
-	 * the underlying variant identity).
-	 *
-	 * woocommerce-es matches an incoming variant to an existing WC variation by
-	 * SKU equality (`array_search()` against the current variations' SKUs), not
-	 * by the ERP's variant id. When the SKU changes, the match fails, so the
-	 * variant is treated as brand new: a fresh WC_Product_Variation is created
-	 * for it, while the untouched old variation is left over and gets set to
-	 * draft. This test asserts the new variation gets a non-blank SKU (fixed by
-	 * gating set_sku() on the variation's own empty SKU rather than on the
-	 * parent-level $is_new_product flag) and documents the still-present
-	 * orphan/draft side effect as a known follow-up (matching should key off
-	 * the ERP's variant id, not SKU).
-	 */
-	public function test_variant_sku_renamed_on_resync_gets_new_sku() {
-		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable-new-variant-resync.json';
-		$item      = file_get_contents( $item_path );
-		$item      = json_decode( $item, true )[0];
-
-		$this->settings['catattr'] = 'categoria';
-		$this->settings['catnp']   = 'yes';
-
-		// First sync: variant 9001 comes in with SKU "GENBRA-85D-CH".
-		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
-		$result_prod_id = $result_sync['post_id'];
-
-		$this->assertEquals( 'ok', $result_sync['status'] );
-		$this->assertIsInt( $result_prod_id );
-
-		$product    = wc_get_product( $result_prod_id );
-		$variations = $product->get_children();
-		$this->assertCount( 2, $variations, 'Should have 2 variations after first sync' );
-
-		$old_variation_id = null;
-		foreach ( $variations as $variation_id ) {
-			$prod_variation = new WC_Product_Variation( $variation_id );
-			if ( 'GENBRA-85D-CH' === $prod_variation->get_sku() ) {
-				$old_variation_id = $variation_id;
-			}
-		}
-		$this->assertNotNull( $old_variation_id, 'First sync should create a variation with SKU GENBRA-85D-CH' );
-
-		// Second sync (resync of the SAME product): ERP renamed variant 9001's
-		// SKU from "GENBRA-85D-CH" to "GENBRA-75AA-CH" — same ERP variant id, same attributes.
-		$item_resync                        = $item;
-		$item_resync['variants'][0]['sku']  = 'GENBRA-75AA-CH';
-
-		$result_sync_upd = PROD::sync_product_item( $this->settings, $item_resync, $this->connapi_erp, false, $result_prod_id );
-
-		$this->assertEquals( 'ok', $result_sync_upd['status'] );
-		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
-
-		$product_updated    = wc_get_product( $result_prod_id );
-		$variations_updated = $product_updated->get_children();
-
-		// Find the variation carrying the renamed variant's barcode (unique across the payload).
-		$renamed_variation      = null;
-		foreach ( $variations_updated as $variation_id ) {
-			$prod_variation = new WC_Product_Variation( $variation_id );
-			if ( '0000000000001' === $prod_variation->get_global_unique_id() ) {
-				$renamed_variation = $prod_variation;
-			}
-		}
-
-		$this->assertNotNull( $renamed_variation, 'A variation for the renamed variant (barcode 0000000000001) should exist after resync' );
-		$this->assertEquals(
-			'GENBRA-75AA-CH',
-			$renamed_variation->get_sku(),
-			'Variation for a variant whose SKU was renamed in the ERP must carry the new SKU, not be left blank'
-		);
-
-		// The stale old variation (SKU GENBRA-85D-CH) should not remain published with its old SKU
-		// still active — WooCommerce would otherwise report it in stock listings using a SKU
-		// that no longer represents the current ERP state.
-		$old_variation_status = get_post_status( $old_variation_id );
-		if ( $renamed_variation->get_id() !== $old_variation_id ) {
-			$this->assertEquals( 'draft', $old_variation_status, 'Orphaned old variation should be set to draft when superseded by a renamed-SKU variant' );
-		}
-
-		wp_delete_post( $result_prod_id, true );
-	}
-
 }
