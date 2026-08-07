@@ -63,6 +63,67 @@ class Connect_Ecommerce_Clientify {
 	}
 
 	/**
+	 * Checks read/write permissions per facet (products, customers, orders)
+	 *
+	 * Clientify's API is built on Django REST Framework, so an OPTIONS request
+	 * to each endpoint returns an "Allow" header limited to the HTTP methods the
+	 * API key is actually permitted to use, without performing any write action.
+	 *
+	 * @return array|false Array keyed by facet with 'read'/'write' booleans, or false if no API key.
+	 */
+	public function check_permissions() {
+		if ( empty( $this->settings['api'] ) ) {
+			return false;
+		}
+
+		$facets = array(
+			'products'  => 'products/',
+			'customers' => 'contacts/',
+			'orders'    => 'orders/',
+		);
+
+		$permissions = array();
+		foreach ( $facets as $facet => $endpoint ) {
+			$permissions[ $facet ] = $this->get_facet_permissions( $endpoint, $this->settings['api'] );
+		}
+
+		return $permissions;
+	}
+
+	/**
+	 * Gets read/write permission for one endpoint via an OPTIONS request.
+	 *
+	 * @param string $endpoint Endpoint of API.
+	 * @param string $apikey API Key of Clientify.
+	 * @return array
+	 */
+	private function get_facet_permissions( $endpoint, $apikey ) {
+		$args = array(
+			'method'  => 'OPTIONS',
+			'headers' => array(
+				'Authorization' => 'Token ' . $apikey,
+			),
+			'timeout' => 30,
+		);
+		$result_api = wp_remote_request( 'https://api.clientify.net/v1/' . $endpoint, $args );
+
+		if ( is_wp_error( $result_api ) ) {
+			return array(
+				'read'  => false,
+				'write' => false,
+			);
+		}
+
+		$allow = wp_remote_retrieve_header( $result_api, 'allow' );
+		$allow = $allow ? strtoupper( $allow ) : '';
+
+		return array(
+			'read'  => false !== strpos( $allow, 'GET' ),
+			'write' => false !== strpos( $allow, 'POST' ),
+		);
+	}
+
+	/**
 	 * Compatibility for Library
 	 *
 	 * @return string

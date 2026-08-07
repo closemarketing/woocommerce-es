@@ -2290,6 +2290,64 @@ class Settings {
 		} else {
 			echo '<span style="color: red; font-weight: bold;">✗ ' . esc_html__( 'Connection failed. Please check your credentials.', 'woocommerce-es' ) . '</span>';
 		}
+
+		$this->render_api_permissions();
+	}
+
+	/**
+	 * Renders the read/write permissions per facet (products, customers, orders)
+	 *
+	 * Only shown for connectors that implement check_permissions(), since older
+	 * connectors have a single all-or-nothing API key with no scopes to report.
+	 *
+	 * @return void
+	 */
+	private function render_api_permissions() {
+		if ( ! method_exists( $this->connapi_erp, 'check_permissions' ) ) {
+			return;
+		}
+		$permissions = $this->connapi_erp->check_permissions();
+		if ( ! is_array( $permissions ) ) {
+			return;
+		}
+
+		$facet_labels = array(
+			'products'  => __( 'Products', 'woocommerce-es' ),
+			'customers' => __( 'Customers', 'woocommerce-es' ),
+			'orders'    => __( 'Orders', 'woocommerce-es' ),
+		);
+		?>
+		<table class="widefat" style="max-width: 420px; margin-top: 10px;">
+			<thead>
+				<tr>
+					<th><?php esc_html_e( 'Permission', 'woocommerce-es' ); ?></th>
+					<th><?php esc_html_e( 'Read', 'woocommerce-es' ); ?></th>
+					<th><?php esc_html_e( 'Write', 'woocommerce-es' ); ?></th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $facet_labels as $facet => $label ) : ?>
+					<tr>
+						<td><?php echo esc_html( $label ); ?></td>
+						<td><?php echo $this->render_permission_check( ! empty( $permissions[ $facet ]['read'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+						<td><?php echo $this->render_permission_check( ! empty( $permissions[ $facet ]['write'] ) ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Renders a check/false mark for a permission.
+	 *
+	 * @param bool $allowed Whether the permission is granted.
+	 * @return string
+	 */
+	private function render_permission_check( $allowed ) {
+		return $allowed
+			? '<span style="color: green; font-weight: bold;">✓</span>'
+			: '<span style="color: red; font-weight: bold;">✗</span>';
 	}
 
 	/**
