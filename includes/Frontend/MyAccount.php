@@ -142,7 +142,7 @@ class MyAccount {
 		$order    = $order_id ? wc_get_order( $order_id ) : false;
 
 		$can_manage_order = current_user_can( 'manage_woocommerce' );
-		$is_order_owner   = $order && get_current_user_id() && $order->get_customer_id() === get_current_user_id();
+		$is_order_owner   = $order && get_current_user_id() && $order->get_customer_id() === get_current_user_id() && 'completed' === $order->get_status();
 
 		if ( ! $order || ( ! $can_manage_order && ! $is_order_owner ) ) {
 			wp_die( "Hmmm, you're not supposed to be here." );
