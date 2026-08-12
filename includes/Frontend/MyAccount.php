@@ -155,8 +155,7 @@ class MyAccount {
 
 		$file_document_path = false;
 		if ( $api_doc_id && $this->connapi_erp ) {
-			$settings           = get_option( $this->options['slug'] );
-			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
+			$file_document_path = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
 		}
 
 		if ( ! file_exists( $file_document_path ) ) {
