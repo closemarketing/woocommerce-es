@@ -225,6 +225,8 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = next =
+* Added: The order admin widget now shows a "Download" link for the ERP document PDF (invoice), matching the one already available in My Account.
+* Fixed: The document download endpoint required the `manage_options` capability, so Shop Managers and customers downloading their own invoice from My Account were rejected. It now allows the `manage_woocommerce` capability or the order's own customer.
 * Added: Manual order sync now lets you filter by a From/To date range instead of syncing all history every time. The "Sync Orders" screen title now reads "Export Orders to {Connector}", and the Automatic Sync (cron) column/log tab — not applicable to order sync — has been removed from that screen; a notice shows which order statuses will sync based on your configured setting (All / Paid / Only Completed).
 * Fixed: Manual order sync (`sync_orders()`) was returning zero orders on stores with HPOS (High-Performance Order Storage) enabled, because `wc_get_orders()` does not treat `'limit' => -1` as "no limit" under HPOS. It also ignored the connector's order status sync setting, always querying only `completed` orders regardless of the "All status orders" / "Paid orders" / "Only Completed" setting.
 * Added: New Brevo connector for order sync with the Brevo email marketing platform. Brevo has no product catalog, so only customer contacts and order data are synced (products, stock, and tax import are not applicable).
