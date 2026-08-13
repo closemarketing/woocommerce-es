@@ -306,9 +306,11 @@ class Connect_Ecommerce_Brevo {
 		// this method also runs on pending/processing/failed/refunded/cancelled transitions,
 		// and the first call always gets its returned id persisted as "synced" - reporting
 		// order_completed there would mark the order as done before it truly is and the
-		// real completion would never be sent.
+		// real completion would never be sent. $force is true only for an explicit manual
+		// export request (e.g. the "Send to ERP" button), which is always reported regardless
+		// of status - otherwise "Manual" mode could never export a non-completed order.
 		$ecstatus = ! empty( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : ( $this->options['order_only_order_completed'] ?? 'completed' );
-		$is_final = 'completed' === ( $order['woocommerceOrderStatus'] ?? '' ) || ( 'paid' === $ecstatus && ! empty( $order['is_paid'] ) );
+		$is_final = $force || 'completed' === ( $order['woocommerceOrderStatus'] ?? '' ) || ( 'paid' === $ecstatus && ! empty( $order['is_paid'] ) );
 
 		if ( ! $is_final ) {
 			return array(
