@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 3.3.5
-Version: 3.3.5
+Stable tag: 3.4.0
+Version: 3.4.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -224,11 +224,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= next =
+= 3.4.0 =
 * Fixed: Products imported from the ERP always got WooCommerce's standard tax class, ignoring the actual tax configured in the ERP. Products now read the ERP's tax key (e.g. Holded's `s_iva_21`) and resolve it to a WooCommerce tax class via the existing "ERP Tax Type" mapping (WooCommerce > Settings > Tax) — the same mapping already used for the order sync direction.
 * Added: First-install setup wizard guides new users through connecting WooCommerce to their ERP/CRM, configuring EU VAT compliance, setting up AI-assisted product descriptions, and running an initial product sync. Runs automatically on first activation; can be re-run from the "Reset wizard" link on the settings page.
-
-= 3.3.5 =
 * Added: New "Manual" option for the order status sync setting. When selected, no document is created automatically on order status changes (including "Completed"); use the "Send to ERP" button on the order, or the manual order sync, to create it on request.
 * Added: Manual order sync now lets you filter by a From/To date range instead of syncing all history every time. The "Sync Orders" screen title now reads "Export Orders to {Connector}", and the Automatic Sync (cron) column/log tab — not applicable to order sync — has been removed from that screen; a notice shows which order statuses will sync based on your configured setting (All / Paid / Only Completed / Manual).
 * Added: The order admin widget now shows a "Download" link for the ERP document PDF (invoice), matching the one already available in My Account.
