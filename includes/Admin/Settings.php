@@ -1304,6 +1304,7 @@ class Settings {
 						'all'       => __( 'All status orders', 'woocommerce-es' ),
 						'paid'      => __( 'Paid orders', 'woocommerce-es' ),
 						'completed' => __( 'Only Completed', 'woocommerce-es' ),
+						'manual'    => __( 'Manual (no automatic document creation)', 'woocommerce-es' ),
 					);
 					printf(
 						/* translators: %s: Order status label configured in Settings (e.g. "Paid orders") */
@@ -2180,7 +2181,10 @@ class Settings {
 			<option value="paid" <?php selected( $ecstatus, 'paid' ); ?>><?php esc_html_e( 'Paid orders', 'woocommerce-es' ); ?></option>
 
 			<option value="completed" <?php selected( $ecstatus, 'completed' ); ?>><?php esc_html_e( 'Only Completed', 'woocommerce-es' ); ?></option>
+
+			<option value="manual" <?php selected( $ecstatus, 'manual' ); ?>><?php esc_html_e( 'Manual (no automatic document creation)', 'woocommerce-es' ); ?></option>
 		</select>
+		<p class="description"><?php esc_html_e( 'With Manual, no document is created automatically when the order status changes. Use the "Send to ERP" button on the order to create it on request.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 

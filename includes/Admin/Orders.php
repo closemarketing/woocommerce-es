@@ -63,7 +63,7 @@ class Orders {
 	private $default_freeorder;
 
 	/**
-	 * Order statuses that trigger/qualify for ERP sync: 'all', 'paid' or 'completed'.
+	 * Order statuses that trigger/qualify for ERP sync: 'all', 'paid', 'completed' or 'manual'.
 	 *
 	 * @var string
 	 */
@@ -100,7 +100,12 @@ class Orders {
 		} elseif ( 'paid' === $ecstatus ) {
 			add_action( 'woocommerce_payment_complete', array( $this, 'send_order_erp' ) );
 		}
-		add_action( 'woocommerce_order_status_completed', array( $this, 'send_order_erp' ) );
+		// With "manual", the document is only created on request (order metabox button
+		// or manual sync), so none of the automatic status hooks are registered, including
+		// the "completed" one that otherwise always applies regardless of $ecstatus.
+		if ( 'manual' !== $ecstatus ) {
+			add_action( 'woocommerce_order_status_completed', array( $this, 'send_order_erp' ) );
+		}
 
 		// Email attachments.
 		if ( $this->options['order_send_attachments'] ) {
@@ -208,7 +213,7 @@ class Orders {
 			$date_from = isset( $_POST['date_from'] ) ? sanitize_text_field( wp_unslash( $_POST['date_from'] ) ) : '';
 			$date_to   = isset( $_POST['date_to'] ) ? sanitize_text_field( wp_unslash( $_POST['date_to'] ) ) : '';
 
-			if ( 'all' === $this->ecstatus ) {
+			if ( 'all' === $this->ecstatus || 'manual' === $this->ecstatus ) {
 				$sync_statuses = array( 'pending', 'failed', 'processing', 'refunded', 'cancelled', 'completed' );
 			} elseif ( 'paid' === $this->ecstatus ) {
 				$sync_statuses = wc_get_is_paid_statuses();
