@@ -30,7 +30,7 @@
 		"szepeviktor/phpstan-wordpress": "^2.0",
 		"phpstan/extension-installer": "^1.4",
 		"php-stubs/wordpress-stubs": "^6.8",
-		"php-stubs/woocommerce-stubs": "^10.1",
+		"php-stubs/woocommerce-stubs": "^11.0",
 		"phpunit/phpunit": "^9.6"
 	},
 	"scripts": {
