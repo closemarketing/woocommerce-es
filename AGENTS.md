@@ -87,6 +87,33 @@ Each ERP/CRM connector is a separate plugin that hooks `conecom_options_plugin` 
 
 `CONECOM_VAT_FIELD_SLUGS` (defined in main file) lists all known meta key variants for the VAT/NIF field to ensure compatibility across checkout block and classic checkout.
 
+## Releasing a New Version
+
+Version and changelog live in two files that must stay in sync:
+
+- `woocommerce-es.php` — `Version:` header comment AND `CONECOM_VERSION` constant (both must match).
+- `readme.txt` — `Stable tag:` / `Version:` header fields, AND the `== Changelog ==` section.
+
+During development, unreleased changes accumulate under a `= next =` heading in the changelog (each PR appends its own `* Added:` / `* Fixed:` / `* Enhancement:` bullet there — see existing entries for the tone/format). To ship a release:
+
+1. Rename `= next =` to `= X.Y.Z =` in `readme.txt` (keep its bullets as-is — that heading becomes the release notes).
+2. Bump `Stable tag:` and `Version:` in the `readme.txt` header to `X.Y.Z`.
+3. Bump `Version:` and `CONECOM_VERSION` in `woocommerce-es.php` to `X.Y.Z` (drop any `-beta.N` suffix).
+4. Add a fresh empty placeholder below the just-renamed heading, for the next round of changes to accumulate into:
+   ```
+   = next =
+   *
+
+   = X.Y.Z =
+   ...
+   ```
+5. Run `composer lint`, `composer phpstan`, `composer test` — all must pass before tagging.
+6. Commit (conventionally as a standalone `version` commit) and tag/push per the usual release flow.
+
+Between releases, a beta suffix (`X.Y.Z-beta.N`) may be used in both files' version fields while a feature is still in review — drop it in step 3 above.
+
+`.distignore` controls what's excluded from the packaged plugin zip (composer/npm manifests, CI config, test tooling, docs). Check it before adding new dev-only files at the plugin root so they don't ship in releases.
+
 ## Code Style
 
 - **Tabs** for indentation; align `=` operators vertically within variable groups.
