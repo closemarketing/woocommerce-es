@@ -348,8 +348,7 @@ class Orders {
 	 * @return file
 	 */
 	public function attach_file_woocommerce_email( $attachments, $action, $email_order ) {
-		$settings = get_option( $this->options['slug'] );
-		$order    = wc_get_order( $email_order );
+		$order = wc_get_order( $email_order );
 		if ( ! $order ) {
 			return $attachments;
 		}
@@ -357,7 +356,7 @@ class Orders {
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
 		if ( $api_doc_id && ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
-			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
+			$file_document_path = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
 
 			// Check if file exists and is readable before attaching.
 			if ( is_readable( $file_document_path ) && is_file( $file_document_path ) ) {
