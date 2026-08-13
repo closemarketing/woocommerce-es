@@ -10,6 +10,7 @@ composer.lock
 .editorconfig
 .git
 .gitignore
+.wordpress-playground
 
 # Develop
 node_modules/
@@ -36,6 +37,7 @@ bin/
 # AI
 AGENTS.md
 CLAUDE.md
+REVIEW.md
 .claude/
 .cursor/
 docs/
