@@ -100,7 +100,16 @@ During development, unreleased changes accumulate under a `= next =` heading in 
 2. Bump `Stable tag:` and `Version:` in the `readme.txt` header to `X.Y.Z`.
 3. Bump `Version:` and `CONECOM_VERSION` in `woocommerce-es.php` to `X.Y.Z` (drop any `-beta.N` suffix).
 4. Run `composer lint`, `composer phpstan`, `composer test` — all must pass before tagging.
-5. Commit (conventionally as a standalone `version` commit) and tag/push per the usual release flow.
+5. Commit (conventionally as a standalone `version` commit) and push to `trunk`.
+6. Create the GitHub release, tagged at that commit:
+   ```bash
+   gh release create X.Y.Z --repo closemarketing/woocommerce-es \
+     --title "Version X.Y.Z" \
+     --notes "## What's Changed
+
+   <paste the readme.txt changelog bullets for this version verbatim>"
+   ```
+   Match past releases' format exactly: title is `Version X.Y.Z`, tag is the bare version, body is `## What's Changed` followed by the same `* Added:` / `* Fixed:` / `* Enhancement:` bullets just written to `readme.txt` — don't reword them.
 
 A new `= next =` placeholder is added later, by whichever PR is the first to need it after the release — not as part of the release itself.
 
