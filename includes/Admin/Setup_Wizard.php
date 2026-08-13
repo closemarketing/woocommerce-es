@@ -48,9 +48,9 @@ class Setup_Wizard {
 
 		add_action( 'wp_ajax_conecom_wizard_save_connection', array( $this, 'ajax_save_connection' ) );
 		add_action( 'wp_ajax_conecom_wizard_test_connection', array( $this, 'ajax_test_connection' ) );
-		add_action( 'wp_ajax_conecom_wizard_save_vat',        array( $this, 'ajax_save_vat' ) );
-		add_action( 'wp_ajax_conecom_wizard_save_ai',         array( $this, 'ajax_save_ai' ) );
-		add_action( 'wp_ajax_conecom_wizard_complete',        array( $this, 'ajax_complete' ) );
+		add_action( 'wp_ajax_conecom_wizard_save_vat', array( $this, 'ajax_save_vat' ) );
+		add_action( 'wp_ajax_conecom_wizard_save_ai', array( $this, 'ajax_save_ai' ) );
+		add_action( 'wp_ajax_conecom_wizard_complete', array( $this, 'ajax_complete' ) );
 	}
 
 	/**
@@ -82,6 +82,7 @@ class Setup_Wizard {
 		if ( get_option( 'conecom_wizard_complete' ) || defined( 'DOING_AJAX' ) ) {
 			return;
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only comparison, gated by a one-time transient, not a state change.
 		if ( isset( $_GET['page'] ) && 'conecom-setup-wizard' === $_GET['page'] ) {
 			return;
 		}
@@ -116,7 +117,7 @@ class Setup_Wizard {
 	 * @return void
 	 */
 	public function render() {
-		$connector_data   = array();
+		$connector_data = array();
 		foreach ( $this->all_options as $slug => $opts ) {
 			$connector_data[ $slug ] = array(
 				'name'          => $opts['name'] ?? $slug,
@@ -126,28 +127,28 @@ class Setup_Wizard {
 			);
 		}
 
-		$current_settings   = get_option( 'connect_ecommerce', array() );
-		$current_connector  = $current_settings['connector'] ?? '';
-		$current_vat        = get_option( 'connect_ecommerce_public', array() );
-		$current_ai         = get_option( 'connect_ecommerce_ai', array() );
-		$has_ai             = AI::has_wp_ai();
-		$ai_models          = $has_ai ? AI::get_available_models() : array();
-		$nonce              = wp_create_nonce( $this->nonce_action );
-		$sync_nonce         = wp_create_nonce( 'conecom_manual_import_nonce' );
-		$ajax_url           = admin_url( 'admin-ajax.php' );
-		$settings_url       = admin_url( 'admin.php?page=connect_ecommerce' );
-		$sync_url           = admin_url( 'admin.php?page=connect_ecommerce&tab=synchronization&subtab=sync_products' );
-		$css_url            = esc_url( CONECOM_PLUGIN_URL . 'includes/assets/setup-wizard.css' );
-		$js_url             = esc_url( CONECOM_PLUGIN_URL . 'includes/assets/setup-wizard.js' );
-		$logo_url           = esc_url( CONECOM_PLUGIN_URL . 'includes/assets/logo.png' );
+		$current_settings  = get_option( 'connect_ecommerce', array() );
+		$current_connector = $current_settings['connector'] ?? '';
+		$current_vat       = get_option( 'connect_ecommerce_public', array() );
+		$current_ai        = get_option( 'connect_ecommerce_ai', array() );
+		$has_ai            = AI::has_wp_ai();
+		$ai_models         = $has_ai ? AI::get_available_models() : array();
+		$nonce             = wp_create_nonce( $this->nonce_action );
+		$sync_nonce        = wp_create_nonce( 'conecom_manual_import_nonce' );
+		$ajax_url          = admin_url( 'admin-ajax.php' );
+		$settings_url      = admin_url( 'admin.php?page=connect_ecommerce' );
+		$sync_url          = admin_url( 'admin.php?page=connect_ecommerce&tab=synchronization&subtab=sync_products' );
+		$css_url           = esc_url( CONECOM_PLUGIN_URL . 'includes/assets/setup-wizard.css' );
+		$js_url            = esc_url( CONECOM_PLUGIN_URL . 'includes/assets/setup-wizard.js' );
+		$logo_url          = esc_url( CONECOM_PLUGIN_URL . 'includes/assets/logo.png' );
 
 		$step_labels = array(
-			1 => __( 'Welcome',    'woocommerce-es' ),
+			1 => __( 'Welcome', 'woocommerce-es' ),
 			2 => __( 'Connection', 'woocommerce-es' ),
-			3 => __( 'VAT',        'woocommerce-es' ),
-			4 => __( 'AI',         'woocommerce-es' ),
-			5 => __( 'Sync',       'woocommerce-es' ),
-			6 => __( 'Done',       'woocommerce-es' ),
+			3 => __( 'VAT', 'woocommerce-es' ),
+			4 => __( 'AI', 'woocommerce-es' ),
+			5 => __( 'Sync', 'woocommerce-es' ),
+			6 => __( 'Done', 'woocommerce-es' ),
 		);
 		?>
 		<!DOCTYPE html>
@@ -156,14 +157,15 @@ class Setup_Wizard {
 		<meta charset="<?php bloginfo( 'charset' ); ?>">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<title><?php esc_html_e( 'Setup Wizard — Connect Ecommerce', 'woocommerce-es' ); ?></title>
-		<link rel="stylesheet" href="<?php echo $css_url; ?>">
+		<?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet -- standalone full-page markup with no wp_head(), so wp_enqueue_style() has nothing to print into. ?>
+		<link rel="stylesheet" href="<?php echo esc_url( $css_url ); ?>">
 		</head>
 		<body class="conecom-wizard-body">
 
 		<div class="wiz-shell">
 
 			<header class="wiz-top-bar">
-				<img src="<?php echo $logo_url; ?>" alt="Connect Ecommerce" height="34">
+				<img src="<?php echo esc_url( $logo_url ); ?>" alt="Connect Ecommerce" height="34">
 				<a href="<?php echo esc_url( admin_url() ); ?>" class="wiz-skip-link" id="js-skip-wizard">
 					<?php esc_html_e( 'Skip setup', 'woocommerce-es' ); ?>
 				</a>
@@ -171,11 +173,11 @@ class Setup_Wizard {
 
 			<nav class="wiz-progress" id="js-progress" aria-label="<?php esc_attr_e( 'Setup steps', 'woocommerce-es' ); ?>">
 				<?php foreach ( $step_labels as $n => $label ) { ?>
-				<div class="wiz-step-node<?php echo 1 === $n ? ' is-active' : ''; ?>" data-step="<?php echo $n; ?>">
-					<div class="wiz-step-circle"><span><?php echo $n; ?></span></div>
+				<div class="wiz-step-node<?php echo 1 === $n ? ' is-active' : ''; ?>" data-step="<?php echo (int) $n; ?>">
+					<div class="wiz-step-circle"><span><?php echo (int) $n; ?></span></div>
 					<span class="wiz-step-label"><?php echo esc_html( $label ); ?></span>
 				</div>
-				<?php if ( $n < count( $step_labels ) ) { ?>
+					<?php if ( $n < count( $step_labels ) ) { ?>
 				<div class="wiz-step-line"></div>
 				<?php } ?>
 				<?php } ?>
@@ -224,9 +226,10 @@ class Setup_Wizard {
 						<?php } ?>
 					</div>
 
-					<?php foreach ( $connector_data as $slug => $info ) {
+					<?php
+					foreach ( $connector_data as $slug => $info ) {
 						$s = $current_settings[ $slug ] ?? array();
-					?>
+						?>
 					<div class="wiz-conn-fields" data-connector-fields="<?php echo esc_attr( $slug ); ?>" hidden>
 						<?php if ( ! empty( $info['admin_message'] ) ) { ?>
 						<p class="wiz-admin-msg"><?php echo wp_kses_post( $info['admin_message'] ); ?></p>
@@ -296,10 +299,10 @@ class Setup_Wizard {
 						<?php } ?>
 
 						<div class="wiz-test-row">
-							<button type="button" class="button button-secondary" id="js-test-conn">
+							<button type="button" class="button button-secondary js-test-conn">
 								<?php esc_html_e( 'Test connection', 'woocommerce-es' ); ?>
 							</button>
-							<span class="wiz-test-msg" id="js-test-msg" aria-live="polite"></span>
+							<span class="wiz-test-msg js-test-msg" aria-live="polite"></span>
 						</div>
 					</div>
 					<?php } ?>
@@ -321,7 +324,7 @@ class Setup_Wizard {
 						<div class="wiz-field wiz-field--row">
 							<label for="wiz_vat_show"><?php esc_html_e( 'Ask for VAT number at checkout', 'woocommerce-es' ); ?></label>
 							<select name="vat_show" id="wiz_vat_show">
-								<option value=""  <?php selected( $current_vat['vat_show'] ?? '', '' ); ?>><?php esc_html_e( 'No',  'woocommerce-es' ); ?></option>
+								<option value=""  <?php selected( $current_vat['vat_show'] ?? '', '' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 								<option value="yes" <?php selected( $current_vat['vat_show'] ?? '', 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 							</select>
 						</div>
@@ -329,7 +332,7 @@ class Setup_Wizard {
 						<div class="wiz-field wiz-field--row" id="wiz-vat-extra" <?php echo empty( $current_vat['vat_show'] ) ? 'hidden' : ''; ?>>
 							<label for="wiz_vat_mandatory"><?php esc_html_e( 'VAT number required', 'woocommerce-es' ); ?></label>
 							<select name="vat_mandatory" id="wiz_vat_mandatory">
-								<option value=""  <?php selected( $current_vat['vat_mandatory'] ?? '', '' ); ?>><?php esc_html_e( 'No',  'woocommerce-es' ); ?></option>
+								<option value=""  <?php selected( $current_vat['vat_mandatory'] ?? '', '' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 								<option value="yes" <?php selected( $current_vat['vat_mandatory'] ?? '', 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 							</select>
 						</div>
@@ -337,7 +340,7 @@ class Setup_Wizard {
 						<div class="wiz-field wiz-field--row" id="wiz-vies-field" <?php echo empty( $current_vat['vat_show'] ) ? 'hidden' : ''; ?>>
 							<label for="wiz_vat_vies"><?php esc_html_e( 'Validate EU VAT via VIES', 'woocommerce-es' ); ?></label>
 							<select name="vat_vies_enabled" id="wiz_vat_vies">
-								<option value=""  <?php selected( $current_vat['vat_vies_enabled'] ?? '', '' ); ?>><?php esc_html_e( 'No',  'woocommerce-es' ); ?></option>
+								<option value=""  <?php selected( $current_vat['vat_vies_enabled'] ?? '', '' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 								<option value="yes" <?php selected( $current_vat['vat_vies_enabled'] ?? '', 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 							</select>
 						</div>
@@ -469,15 +472,16 @@ class Setup_Wizard {
 			connectorData: <?php echo wp_json_encode( $connector_data ); ?>,
 			settingsUrl:   <?php echo wp_json_encode( $settings_url ); ?>,
 			i18n: {
-				testing:     <?php echo wp_json_encode( __( 'Testing…',              'woocommerce-es' ) ); ?>,
+				testing:     <?php echo wp_json_encode( __( 'Testing…', 'woocommerce-es' ) ); ?>,
 				connOk:      <?php echo wp_json_encode( __( 'Connection successful!', 'woocommerce-es' ) ); ?>,
-				saving:      <?php echo wp_json_encode( __( 'Saving…',               'woocommerce-es' ) ); ?>,
-				syncing:     <?php echo wp_json_encode( __( 'Syncing…',              'woocommerce-es' ) ); ?>,
-				syncDone:    <?php echo wp_json_encode( __( 'Sync complete.',         'woocommerce-es' ) ); ?>
+				saving:      <?php echo wp_json_encode( __( 'Saving…', 'woocommerce-es' ) ); ?>,
+				syncing:     <?php echo wp_json_encode( __( 'Syncing…', 'woocommerce-es' ) ); ?>,
+				syncDone:    <?php echo wp_json_encode( __( 'Sync complete.', 'woocommerce-es' ) ); ?>
 			}
 		};
 		</script>
-		<script src="<?php echo $js_url; ?>"></script>
+		<?php // phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript -- standalone full-page markup with no wp_footer(), so wp_enqueue_script() has nothing to print into. ?>
+		<script src="<?php echo esc_url( $js_url ); ?>"></script>
 
 		</body>
 		</html>
@@ -502,22 +506,28 @@ class Setup_Wizard {
 	/**
 	 * Persists the connector + credential fields from the POST payload.
 	 *
+	 * Callers must have already run verify_request() — this method only ever
+	 * runs from an ajax_* handler that does so as its first line.
+	 *
 	 * @return bool True if a recognised connector was found and saved.
 	 */
 	private function do_save_connection() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- verified by verify_request() in the calling ajax_* handler.
 		$slug = sanitize_key( $_POST['connector'] ?? '' );
 		if ( empty( $slug ) || ! isset( $this->all_options[ $slug ] ) ) {
 			return false;
 		}
 
-		$allowed = array( 'url', 'username', 'password', 'api', 'company', 'domain', 'dbname', 'manufacturer_code', 'customer_code' );
-		$settings             = get_option( 'connect_ecommerce', array() );
+		$allowed               = array( 'url', 'username', 'password', 'api', 'company', 'domain', 'dbname', 'manufacturer_code', 'customer_code' );
+		$settings              = get_option( 'connect_ecommerce', array() );
 		$settings['connector'] = $slug;
 
 		$connector_settings = $settings[ $slug ] ?? array();
 		foreach ( $allowed as $field ) {
+			// verify_request() in the calling ajax_* handler already checked the nonce.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing
 			if ( isset( $_POST[ $field ] ) ) {
-				$connector_settings[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+				$connector_settings[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			}
 		}
 		$settings[ $slug ] = $connector_settings;
@@ -574,8 +584,10 @@ class Setup_Wizard {
 		$vat_fields = array( 'vat_show', 'vat_mandatory', 'company_field', 'vat_vies_enabled', 'vat_vies_mandatory', 'vatsense_api_key' );
 		$settings   = get_option( 'connect_ecommerce_public', array() );
 		foreach ( $vat_fields as $field ) {
+			// verify_request() above already checked the nonce.
+			// phpcs:ignore WordPress.Security.NonceVerification.Missing
 			if ( isset( $_POST[ $field ] ) ) {
-				$settings[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) );
+				$settings[ $field ] = sanitize_text_field( wp_unslash( $_POST[ $field ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 			}
 		}
 		update_option( 'connect_ecommerce_public', $settings );
@@ -591,11 +603,14 @@ class Setup_Wizard {
 		$this->verify_request();
 
 		$settings = get_option( 'connect_ecommerce_ai', array() );
+		// verify_request() above already checked the nonce.
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( isset( $_POST['ai_model'] ) ) {
-			$settings['model'] = sanitize_text_field( wp_unslash( $_POST['ai_model'] ) );
+			$settings['model'] = sanitize_text_field( wp_unslash( $_POST['ai_model'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
 		if ( isset( $_POST['ai_prompt'] ) ) {
-			$settings['prompt'] = sanitize_textarea_field( wp_unslash( $_POST['ai_prompt'] ) );
+			$settings['prompt'] = sanitize_textarea_field( wp_unslash( $_POST['ai_prompt'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
 		}
 		update_option( 'connect_ecommerce_ai', $settings );
 		wp_send_json_success( array( 'message' => __( 'AI settings saved.', 'woocommerce-es' ) ) );

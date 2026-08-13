@@ -252,6 +252,21 @@ body.conecom-wizard-body {
 	object-fit: contain;
 }
 
+/* Holded's logo asset is white-on-transparent (designed for a dark background),
+   so its card needs a dark backdrop regardless of hover/selected state. */
+.wiz-connector-card[data-slug="holded"] {
+	background: #1D2327;
+}
+
+.wiz-connector-card[data-slug="holded"]:hover,
+.wiz-connector-card[data-slug="holded"].is-selected {
+	background: #32373C;
+}
+
+.wiz-connector-card[data-slug="holded"] .wiz-connector-name {
+	color: #fff;
+}
+
 .wiz-connector-name {
 	font-size: 13px;
 	font-weight: 600;
@@ -266,6 +281,10 @@ body.conecom-wizard-body {
 	flex-direction: column;
 	gap: 16px;
 	margin-bottom: 28px;
+}
+
+.wiz-conn-fields[hidden] {
+	display: none;
 }
 
 .wiz-admin-msg {

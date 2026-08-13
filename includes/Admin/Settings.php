@@ -357,7 +357,7 @@ class Settings {
 							<?php
 						}
 						if ( $this->is_connector_active() ) {
-						?>
+							?>
 							<li><a href="?page=connect_ecommerce&tab=settings&subtab=alerts" class="<?php echo 'alerts' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Alerts', 'woocommerce-es' ); ?></a></li>
 							<?php
 						}
@@ -696,16 +696,16 @@ class Settings {
 				);
 			}
 
-		// API Connection Status.
-		add_settings_field(
-			'wcpimh_api_status',
-			__( 'Connection Status', 'woocommerce-es' ),
-			array( $this, 'api_status_callback' ),
-			'connect_ecommerce_admin',
-			'connect_woocommerce_setting_section'
-		);
+			// API Connection Status.
+			add_settings_field(
+				'wcpimh_api_status',
+				__( 'Connection Status', 'woocommerce-es' ),
+				array( $this, 'api_status_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+			);
 
-		if ( $this->options['product_option_stock'] ) {
+			if ( $this->options['product_option_stock'] ) {
 				add_settings_field(
 					'wcpimh_stock',
 					__( 'Import stock?', 'woocommerce-es' ),
@@ -714,13 +714,13 @@ class Settings {
 					'connect_woocommerce_setting_section'
 				);
 
-				add_settings_field(
-					'wcpimh_stock_visibility',
-					__( 'Hide out-of-stock products?', 'woocommerce-es' ),
-					array( $this, 'stock_visibility_callback' ),
-					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
-				);
+					add_settings_field(
+						'wcpimh_stock_visibility',
+						__( 'Hide out-of-stock products?', 'woocommerce-es' ),
+						array( $this, 'stock_visibility_callback' ),
+						'connect_ecommerce_admin',
+						'connect_woocommerce_setting_section'
+					);
 			}
 
 			add_settings_field(
@@ -806,7 +806,7 @@ class Settings {
 			);
 
 			if ( $this->options['product_price_rate_option'] ) {
-				$desc_tip     = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
+				$desc_tip = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
 				add_settings_field(
 					'wcpimh_rates',
 					__( 'Product price rate for this eCommerce', 'woocommerce-es' ),
@@ -1178,9 +1178,9 @@ class Settings {
 	 * @return void
 	 */
 	private function render_import_with_stats( $ajax_action, $api_pagination, $has_get_all_product_skus = false, $type = 'sync_products' ) {
-		$is_orders            = 'sync_orders' === $type;
-		$cron_enabled         = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
-		$has_product_updated  = $has_get_all_product_skus && (
+		$is_orders           = 'sync_orders' === $type;
+		$cron_enabled        = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
+		$has_product_updated = $has_get_all_product_skus && (
 			! method_exists( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated()
 		);
 		?>
@@ -1557,7 +1557,7 @@ class Settings {
 		<div id="<?php echo esc_attr( $this->options['slug'] ); ?>-engine-subscriptions">
 			<input type="text" id="conwoo-wp-email">						
 			<button id="wp-get-user-data" class="button button-primary">
-			get wordpress user by email
+			get WordPress user by email
 			</button>
 			<div id="wp-user-data">
 			</div>
@@ -1582,8 +1582,8 @@ class Settings {
 		$imh_settings    = get_option( 'connect_ecommerce' );
 		$connector       = isset( $input['connector'] ) ? $input['connector'] : '';
 
-		$admin_settings = [
-			$connector => [
+		$admin_settings = array(
+			$connector => array(
 				'api'                  => '',
 				'idcentre'             => '',
 				'url'                  => '',
@@ -1619,8 +1619,8 @@ class Settings {
 				'sync'                 => 'no',
 				'prod_weight_eq'       => '',
 				'debug_log'            => 'no',
-			],
-		];
+			),
+		);
 
 		foreach ( $admin_settings[ $connector ] as $setting => $default_value ) {
 			if ( isset( $input[ $connector ][ $setting ] ) ) {
@@ -2037,7 +2037,7 @@ class Settings {
 	 * @return void
 	 */
 	public function serie_number_callback() {
-		$type = ! empty( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
+		$type           = ! empty( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		$series_options = $this->connapi_erp->get_series_number( $type );
 		if ( empty( $series_options ) ) {
 			return;
@@ -2141,7 +2141,7 @@ class Settings {
 			'salesorder'   => __( 'Sales order', 'woocommerce-es' ),
 			'waybill'      => __( 'Waybill', 'woocommerce-es' ),
 		);
-		$doctype = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
+		$doctype        = isset( $this->settings['doctype'] ) ? $this->settings['doctype'] : 'invoice';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][doctype]" id="wcpimh_doctype">
 			<?php
@@ -2365,11 +2365,11 @@ class Settings {
 	 * @return void
 	 */
 	public function prod_mergevars_callback() {
-		$product_fields      = PROD::get_all_product_fields();
-		$custom_fields       = PROD::get_all_custom_fields();
-		$custom_taxonomies   = TAX::get_all_custom_taxonomies();
-		$product_cat_terms   = TAX::get_terms_product_cat();
-		$attribute_fields    = $this->connapi_erp->get_product_attributes();
+		$product_fields    = PROD::get_all_product_fields();
+		$custom_fields     = PROD::get_all_custom_fields();
+		$custom_taxonomies = TAX::get_all_custom_taxonomies();
+		$product_cat_terms = TAX::get_terms_product_cat();
+		$attribute_fields  = $this->connapi_erp->get_product_attributes();
 
 		$settings_mergevars = ! empty( $this->settings_prod_mergevars['prod_mergevars'] ) ? $this->settings_prod_mergevars['prod_mergevars'] : array();
 
@@ -2384,9 +2384,14 @@ class Settings {
 		<div id="<?php echo esc_attr( $this->options['slug'] ); ?>-products-mergevars" class="repeater-section">
 			<div class="wrap">
 				<div class="product-mergevars">
-					<div class="save-item"><strong><?php esc_html_e( 'Field from ', 'woocommerce-es' ); echo ' ' . esc_html( $this->options['name'] ); ?></strong></div>
+					<div class="save-item"><strong>
+					<?php
+					esc_html_e( 'Field from ', 'woocommerce-es' );
+					echo ' ' . esc_html( $this->options['name'] );
+					?>
+					</strong></div>
 					<div></div>
-					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'woocommerce-es' );?></strong></div>
+					<div class="save-item"><strong><?php esc_html_e( 'WooCommerce Field', 'woocommerce-es' ); ?></strong></div>
 				</div>
 				<?php
 				$size = ! empty( $settings_mergevars ) ? count( $settings_mergevars ) : 0;
@@ -2428,7 +2433,7 @@ class Settings {
 						<div class="save-item">
 							<?php
 							$saved_custom_field = isset( $saved_attr[ $idx ]['custom_field'] ) ? $saved_attr[ $idx ]['custom_field'] : '';
-							$all_fields = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
+							$all_fields         = array_merge( $product_fields, $product_cat_terms, $custom_taxonomies, $custom_fields );
 							if ( ! array_key_exists( $saved_custom_field, $all_fields ) ) {
 								$custom_fields[] = $saved_custom_field;
 							}
@@ -2499,8 +2504,8 @@ class Settings {
 	 * @return array
 	 */
 	public function sanitize_fields_ai( $input ) {
-		$sanitary_values          = array();
-		$sanitary_values['model'] = isset( $input['model'] ) ? sanitize_text_field( $input['model'] ) : '';
+		$sanitary_values           = array();
+		$sanitary_values['model']  = isset( $input['model'] ) ? sanitize_text_field( $input['model'] ) : '';
 		$sanitary_values['prompt'] = isset( $input['prompt'] ) ? sanitize_textarea_field( $input['prompt'] ) : '';
 		return $sanitary_values;
 	}

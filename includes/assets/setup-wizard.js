@@ -106,8 +106,7 @@
 	function initStep2() {
 		var grid    = $( 'js-connector-grid' );
 		var nextBtn = $( 'js-conn-next' );
-		var testBtn = $( 'js-test-conn' );
-		var testMsg = $( 'js-test-msg' );
+		var panel   = qs( '.wiz-panel[data-step="2"]' );
 
 		// If a connector is already pre-selected, show its fields.
 		var preSelected = qs( 'input[name="wiz_connector"]:checked' );
@@ -128,44 +127,54 @@
 					if ( card ) { setClass( card, 'is-selected', true ); }
 
 					showConnectorFields( e.target.value );
-					connectionTested    = false;
-					nextBtn.disabled    = true;
-					testMsg.textContent = '';
-					testMsg.className   = 'wiz-test-msg';
+					connectionTested = false;
+					nextBtn.disabled = true;
+
+					var msg = qs( '[data-connector-fields="' + e.target.value + '"] .js-test-msg' );
+					if ( msg ) { msg.textContent = ''; msg.className = 'wiz-test-msg js-test-msg'; }
 				}
 			} );
 		}
 
-		if ( testBtn ) {
-			testBtn.addEventListener( 'click', function () {
+		// Delegate the click: each connector renders its own "Test connection"
+		// button/message pair inside its own .wiz-conn-fields block, so a single
+		// getElementById() would only ever reach the first one in the DOM.
+		if ( panel ) {
+			panel.addEventListener( 'click', function ( e ) {
+				var testBtn = e.target.closest( '.js-test-conn' );
+				if ( ! testBtn ) { return; }
+
 				var slug = selectedConnector();
 				if ( ! slug ) { return; }
+
+				var testMsg = testBtn.closest( '.wiz-conn-fields' ).querySelector( '.js-test-msg' );
 
 				testBtn.disabled    = true;
 				testBtn.textContent = cfg.i18n.testing;
 				testMsg.textContent = '';
-				testMsg.className   = 'wiz-test-msg';
+				testMsg.className   = 'wiz-test-msg js-test-msg';
 
 				post( 'conecom_wizard_test_connection', getConnectorFields( slug ) )
 					.then( function ( res ) {
 						testBtn.disabled    = false;
-						testBtn.textContent = cfg.i18n.connOk ? 'Test connection' : 'Test connection';
+						testBtn.textContent = 'Test connection';
 
 						if ( res.success ) {
 							testMsg.textContent = res.data.message || cfg.i18n.connOk;
-							testMsg.className   = 'wiz-test-msg is-ok';
+							testMsg.className   = 'wiz-test-msg js-test-msg is-ok';
 							connectionTested    = true;
 							nextBtn.disabled    = false;
 						} else {
 							testMsg.textContent = res.data.message || 'Connection failed.';
-							testMsg.className   = 'wiz-test-msg is-error';
+							testMsg.className   = 'wiz-test-msg js-test-msg is-error';
 							connectionTested    = false;
 						}
 					} )
 					.catch( function () {
 						testBtn.disabled    = false;
+						testBtn.textContent = 'Test connection';
 						testMsg.textContent = 'Request failed. Please try again.';
-						testMsg.className   = 'wiz-test-msg is-error';
+						testMsg.className   = 'wiz-test-msg js-test-msg is-error';
 					} );
 			} );
 		}
