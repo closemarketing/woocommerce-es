@@ -198,6 +198,26 @@ class Orders {
 	}
 
 	/**
+	 * Order statuses eligible for the "Manual" bulk export, including any
+	 * custom status a store has registered (e.g. "awaiting-fulfillment"),
+	 * excluding checkout-draft orders which were never actually placed.
+	 *
+	 * @return array
+	 */
+	private function get_exportable_order_statuses() {
+		$excluded = array( 'checkout-draft' );
+		$statuses = array();
+		foreach ( array_keys( wc_get_order_statuses() ) as $status ) {
+			$status = str_replace( 'wc-', '', $status );
+			if ( in_array( $status, $excluded, true ) ) {
+				continue;
+			}
+			$statuses[] = $status;
+		}
+		return $statuses;
+	}
+
+	/**
 	 * Import products from API
 	 *
 	 * @return void
@@ -220,8 +240,12 @@ class Orders {
 			$date_from = isset( $_POST['date_from'] ) ? sanitize_text_field( wp_unslash( $_POST['date_from'] ) ) : '';
 			$date_to   = isset( $_POST['date_to'] ) ? sanitize_text_field( wp_unslash( $_POST['date_to'] ) ) : '';
 
-			if ( 'all' === $this->ecstatus || 'manual' === $this->ecstatus ) {
+			if ( 'all' === $this->ecstatus ) {
 				$sync_statuses = array( 'pending', 'failed', 'processing', 'on-hold', 'refunded', 'cancelled', 'completed' );
+			} elseif ( 'manual' === $this->ecstatus ) {
+				// Manual is the only mode with no automatic hook to catch orders left out here,
+				// so it also includes any custom status a store may have registered.
+				$sync_statuses = $this->get_exportable_order_statuses();
 			} elseif ( 'paid' === $this->ecstatus ) {
 				$sync_statuses = wc_get_is_paid_statuses();
 			} else {
@@ -287,7 +311,9 @@ class Orders {
 					} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
 						$message .= __( 'Free order not exported', 'woocommerce-es' );
 					} else {
-						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
+						// Manual has no completion hook to retry a postponed order later, so this
+						// batch export is treated the same as an explicit per-order manual request.
+						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp, 'manual' === $this->ecstatus, $this->default_freeorder );
 
 						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
 						$message .= ' ' . $result['message'];

@@ -224,6 +224,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
+= next =
+* 
+
 = 3.3.5 =
 * Added: New "Manual" option for the order status sync setting. When selected, no document is created automatically on order status changes (including "Completed"); use the "Send to ERP" button on the order, or the manual order sync, to create it on request.
 * Added: Manual order sync now lets you filter by a From/To date range instead of syncing all history every time. The "Sync Orders" screen title now reads "Export Orders to {Connector}", and the Automatic Sync (cron) column/log tab — not applicable to order sync — has been removed from that screen; a notice shows which order statuses will sync based on your configured setting (All / Paid / Only Completed / Manual).
