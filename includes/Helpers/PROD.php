@@ -712,6 +712,19 @@ class PROD {
 			}
 			$variation = new \WC_Product_Variation( $variation_id );
 			if ( ! empty( $variant['barcode'] ) ) {
+				// Free the barcode from whatever product/variation currently holds it before
+				// assigning it here — WooCommerce validates global_unique_id uniqueness store-wide,
+				// so a variant that kept its barcode but got a new SKU/ID on resync (e.g. the ERP
+				// renamed it) would otherwise collide with the still-published old variation and
+				// silently fail to carry its barcode over (see catch below).
+				$barcode_holder_id = wc_get_product_id_by_global_unique_id( $variant['barcode'] );
+				if ( $barcode_holder_id && (int) $barcode_holder_id !== (int) $variation_id ) {
+					$barcode_holder = wc_get_product( $barcode_holder_id );
+					if ( $barcode_holder ) {
+						$barcode_holder->set_global_unique_id( '' );
+						$barcode_holder->save();
+					}
+				}
 				try {
 					$variation->set_global_unique_id( $variant['barcode'] );
 				} catch ( \Exception $e ) {
