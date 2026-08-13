@@ -256,6 +256,7 @@ class PROD {
 	 */
 	public static function sync_product( $settings, $item, $api_erp, $product_id = 0, $type = 'simple', $pack_items = null ) {
 		$import_stock       = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
+		$stock_visibility   = ! empty( $settings['stock_visibility'] ) ? $settings['stock_visibility'] : 'hide';
 		$is_virtual         = ! empty( $settings['virtual'] ) && 'yes' === $settings['virtual'] ? true : false;
 		$allow_backorders   = ! empty( $settings['backorders'] ) ? $settings['backorders'] : 'yes';
 		$rate_id            = ! empty( $settings['rates'] ) ? $settings['rates'] : 'default';
@@ -266,14 +267,37 @@ class PROD {
 		$product            = null;
 		$item_sku           = ! empty( $item['sku'] ) ? $item['sku'] : '';
 
+		// Preserve subscription product types — ERP has no subscription concept.
+		// Read the type directly from the taxonomy (not via wc_get_product, which may be cached),
+		// then restore it with wp_set_object_terms after every save so WooCommerce internals
+		// cannot overwrite it. Any ERP shape (simple or variable) preserves the subscription
+		// type because the ERP may legitimately change shape while the subscription remains.
+		$preserved_sub_type = null;
+		if ( ! $is_new_product ) {
+			$existing_terms = get_the_terms( $product_id, 'product_type' );
+			$existing_type  = ( ! empty( $existing_terms ) && ! is_wp_error( $existing_terms ) )
+				? sanitize_title( current( $existing_terms )->name )
+				: '';
+			if ( in_array( $existing_type, array( 'subscription', 'variable-subscription' ), true ) ) {
+				$preserved_sub_type = $existing_type;
+			}
+			unset( $existing_terms, $existing_type );
+		}
+
 		// Start.
 		try {
-			if ( 'simple' === $type ) {
-				$product = new \WC_Product( $product_id );
-			} elseif ( 'variable' === $type ) {
-				$product = new \WC_Product_Variable( $product_id );
-			} elseif ( 'pack' === $type ) {
-				$product = new \WC_Product( $product_id );
+			if ( null !== $preserved_sub_type ) {
+				// Load via wc_get_product so the correct WC class is used for the sync.
+				$product = wc_get_product( $product_id ) ?: null;
+			}
+			if ( null === $product ) {
+				if ( 'simple' === $type ) {
+					$product = new \WC_Product( $product_id );
+				} elseif ( 'variable' === $type ) {
+					$product = new \WC_Product_Variable( $product_id );
+				} elseif ( 'pack' === $type ) {
+					$product = new \WC_Product( $product_id );
+				}
 			}
 		} catch ( \Exception $e ) {
 			return array(
@@ -292,6 +316,15 @@ class PROD {
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
 			'tax_class'        => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 		);
+
+		// Stock is managed on the variations, not the parent — WooCommerce itself
+		// never sets _manage_stock on a variable product's parent. Force this on
+		// every sync (not just at creation) so products that already had it
+		// enabled before this fix get corrected on their next sync too.
+		if ( 'variable' === $type ) {
+			$product_props['manage_stock']   = false;
+			$product_props['stock_quantity'] = null;
+		}
 
 		if ( 'variable' !== $type ) {
 			$product_props['regular_price'] = self::get_rate_price( $item, $rate_id );
@@ -317,8 +350,6 @@ class PROD {
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
 				'tax_class'          => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
-				'manage_stock'       => 'yes' === $import_stock ? true : false,
-				'stock_quantity'     => null,
 				'sold_individually'  => false,
 				'weight'             => $is_virtual ? '' : $item['weight'],
 				'upsell_ids'         => '',
@@ -333,6 +364,11 @@ class PROD {
 				'gallery_image_ids'  => '',
 				'status'             => $post_status,
 			);
+
+			if ( 'variable' !== $type ) {
+				$product_props_new['manage_stock']   = 'yes' === $import_stock ? true : false;
+				$product_props_new['stock_quantity'] = null;
+			}
 		}
 
 		if ( ! empty( $item['barcode'] ) ) {
@@ -358,41 +394,52 @@ class PROD {
 				// Values for simple products.
 				// Check if the product can be sold.
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['stock_status'] = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && $item_stock > 0 ) {
-					$product_props['manage_stock']       = true;
-					$product_props['stock_quantity']     = $item_stock;
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item_stock;
+					$product_props['stock_status']   = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && 0 === $item_stock ) {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = 0;
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = 0;
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} else {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = $item['stock'];
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item['stock'];
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				}
 				break;
 			case 'variable':
@@ -467,14 +514,37 @@ class PROD {
 		}
 		$product->update_meta_data( 'conecom_updated', $updated_ts );
 
+		// For simple subscription products, keep _subscription_price in sync.
+		// Use sale price as the recurring amount when active (WC Subscriptions behaviour).
+		if ( 'subscription' === $preserved_sub_type ) {
+			$price_sale_sub     = self::get_sale_price( $item, $settings );
+			$subscription_price = ! empty( $price_sale_sub ) ? $price_sale_sub : self::get_rate_price( $item, $rate_id );
+			$product->update_meta_data( '_subscription_price', $subscription_price );
+		}
+
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
+
 		if ( 'pack' === $type ) {
 			// Only call taxonomy functions if taxonomy exists
 			if ( taxonomy_exists( 'product_type' ) ) {
 				wp_set_object_terms( $product_id, 'woosb', 'product_type' );
 			}
+		}
+
+		// Restore subscription type after all saves — WooCommerce may reset the taxonomy
+		// term during save when the WC class does not match the registered subscription type.
+		if ( null !== $preserved_sub_type && taxonomy_exists( 'product_type' ) ) {
+			wp_set_object_terms( $product_id, $preserved_sub_type, 'product_type' );
+		}
+
+		if ( 'variable' === $type ) {
+			// Recalculate the parent's price range and stock status from its
+			// variations now that they're all saved. The parent itself never
+			// manages its own stock (see above), so WooCommerce must derive
+			// its stock status from the variations instead.
+			\WC_Product_Variable::sync( $product_id );
 		}
 
 		return array(
@@ -548,6 +618,11 @@ class PROD {
 		$import_stock    = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
 		$message         = '';
 
+		// Snapshot of variation IDs that existed before this sync — unlike
+		// $variations_item (consumed below as each variant is matched), this
+		// stays intact so newly added variants can still find a sibling to
+		// copy the subscription schedule from (see the variant loop below).
+		$existing_variation_ids = array();
 		if ( ! $is_new_product ) {
 			foreach ( $product->get_children() as $child_id ) {
 				// get an instance of the WC_Variation_product Object.
@@ -556,6 +631,7 @@ class PROD {
 					continue;
 				}
 				$variations_item[ $child_id ] = $variation_children->get_sku();
+				$existing_variation_ids[]     = $child_id;
 			}
 		}
 
@@ -577,8 +653,19 @@ class PROD {
 		foreach ( $item['variants'] as $variant ) {
 			$variation_id = 0; // default value.
 			if ( ! $is_new_product && ! empty( $variations_item ) && is_array( $variations_item ) ) {
-				$variation_id = array_search( $variant['sku'], $variations_item );
-				unset( $variations_item[ $variation_id ] );
+				// array_search() returns false (not 0) when the SKU isn't found among
+				// existing variations — normalize back to 0 so "0 === $variation_id"
+				// checks below correctly treat it as a new variation instead of silently
+				// never matching (false !== 0 under strict comparison). Cast both sides
+				// to string first: ERPs that serialize numeric SKUs as JSON numbers give
+				// $variant['sku'] as an int, while get_sku() always returns a string.
+				$variant_sku_str        = (string) $variant['sku'];
+				$variations_item_lookup = array_map( 'strval', $variations_item );
+				$found_variation_id     = array_search( $variant_sku_str, $variations_item_lookup, true );
+				if ( false !== $found_variation_id ) {
+					$variation_id = $found_variation_id;
+					unset( $variations_item[ $variation_id ] );
+				}
 			}
 
 			if ( ! isset( $variant['categoryFields'] ) ) {
@@ -596,19 +683,13 @@ class PROD {
 					$attributes_prod[ 'attribute_pa_' . $attribute_name ] = wc_sanitize_taxonomy_name( $category_fields['field'] );
 				}
 			}
-			// Set stock parent product.
-			if ( 'yes' === $import_stock ) {
-				$product->set_manage_stock( true );
-			} else {
-				$product->set_manage_stock( false );
-			}
-
 			// Make Variations.
 			$variation_price = self::get_rate_price( $variant, $rate_id );
 			$variation_props = array(
 				'parent_id'     => $product_id,
 				'attributes'    => $attributes_prod,
 				'regular_price' => $variation_price,
+				'tax_class'     => 'parent',
 			);
 
 			$price_sale = self::get_sale_price( $variant, $settings );
@@ -619,7 +700,6 @@ class PROD {
 				// New variation.
 				$variation_props_new = array(
 					'tax_status'   => 'taxable',
-					'tax_class'    => 'parent',
 					'weight'       => '',
 					'length'       => '',
 					'width'        => '',
@@ -631,14 +711,42 @@ class PROD {
 				$variation_props     = array_merge( $variation_props, $variation_props_new );
 			}
 			$variation = new \WC_Product_Variation( $variation_id );
-			if ( ! empty( $variant['barcode'] ) ) {
-				try {
-					$variation->set_global_unique_id( $variant['barcode'] );
-				} catch ( \Exception $e ) {
-					// Error.
+			$variation->set_props( $variation_props );
+
+			// For variable-subscription products, sync subscription price and schedule.
+			if ( 'variable-subscription' === $product->get_type() ) {
+				// Use sale price as the recurring amount when active (WC Subscriptions behaviour).
+				$price_sale_var     = self::get_sale_price( $variant, $settings );
+				$subscription_price = ! empty( $price_sale_var ) ? $price_sale_var : $variation_price;
+				$variation->update_meta_data( '_subscription_price', $subscription_price );
+
+				// Copy the subscription schedule onto new variants so they inherit the
+				// merchant's billing cadence instead of WooCommerce defaults. WC Subscriptions
+				// stores the schedule per-variation, not on the parent, so prefer an existing
+				// sibling variation as the source and only fall back to the parent's own meta
+				// (e.g. set directly on the product before any variations existed).
+				if ( 0 === $variation_id ) {
+					$schedule_keys = array(
+						'_subscription_period',
+						'_subscription_period_interval',
+						'_subscription_length',
+						'_subscription_trial_length',
+						'_subscription_trial_period',
+						'_subscription_sign_up_fee',
+					);
+					$schedule_source = ! empty( $existing_variation_ids ) ? reset( $existing_variation_ids ) : $product_id;
+					foreach ( $schedule_keys as $meta_key ) {
+						$schedule_value = get_post_meta( $schedule_source, $meta_key, true );
+						if ( '' === $schedule_value ) {
+							$schedule_value = get_post_meta( $product_id, $meta_key, true );
+						}
+						if ( '' !== $schedule_value ) {
+							$variation->update_meta_data( $meta_key, $schedule_value );
+						}
+					}
 				}
 			}
-			$variation->set_props( $variation_props );
+
 			// Stock.
 			if ( 'yes' === $import_stock && isset( $variant['stock'] ) ) {
 				$item_stock   = (int) $variant['stock'];
@@ -650,8 +758,15 @@ class PROD {
 				$variation->set_manage_stock( false );
 				$variation->set_stock_status( 'instock' );
 			}
-			$variation_prevent_id = self::find_product( $variant['sku'] );
-			if ( ! empty( $variation_prevent_id ) ) {
+			// Check for a SKU collision with another product AND with another
+			// variation (find_product() defaults to post_type='product', which
+			// misses existing product_variation rows — set_sku() below would
+			// then throw WooCommerce's duplicate-SKU exception and abort the
+			// whole sync instead of skipping just this variant).
+			$duplicate_product_id   = self::find_product( $variant['sku'] );
+			$duplicate_variation_id = self::find_product( $variant['sku'], 'product_variation' );
+			$variation_prevent_id   = ! empty( $duplicate_product_id ) ? $duplicate_product_id : $duplicate_variation_id;
+			if ( ! empty( $variation_prevent_id ) && (int) $variation_prevent_id !== (int) $variation_id ) {
 				$message .= sprintf(
 					/* translators: %s: SKU */
 					__( 'Duplicated SKU: %s (not imported) ', 'woocommerce-es' ),
@@ -659,8 +774,39 @@ class PROD {
 				);
 				continue;
 			}
-			if ( $is_new_product ) {
+			if ( empty( $variation->get_sku( 'edit' ) ) ) {
+				// 'edit' context reads the variation's own raw value — get_sku()'s
+				// default 'view' context falls back to the parent SKU when empty,
+				// which would make this check always look non-empty.
+				// Covers brand-new products and new variants added to an existing
+				// product — both cases need the SKU set once, on creation.
 				$variation->set_sku( $variant['sku'] );
+			}
+
+			if ( ! empty( $variant['barcode'] ) ) {
+				// WooCommerce validates global_unique_id uniqueness store-wide, so if the ERP
+				// renamed this variant's SKU on resync (new $variation_id, unmatched by SKU),
+				// its own barcode is still held by the now-orphaned sibling variation of this
+				// same parent — free it there first, but only when it's confirmed to be that
+				// stale sibling (same parent, same ERP variant id when available), never an
+				// unrelated product that merely happens to share the barcode.
+				$barcode_holder_id = wc_get_product_id_by_global_unique_id( $variant['barcode'] );
+				if ( $barcode_holder_id && (int) $barcode_holder_id !== (int) $variation_id ) {
+					$barcode_holder   = wc_get_product( $barcode_holder_id );
+					$is_stale_sibling = $barcode_holder
+						&& $barcode_holder->is_type( 'variation' )
+						&& (int) $barcode_holder->get_parent_id() === (int) $product_id
+						&& (string) $barcode_holder->get_meta( '_connect_ecommerce_productid' ) === (string) $variant['id'];
+					if ( $is_stale_sibling ) {
+						$barcode_holder->set_global_unique_id( '' );
+						$barcode_holder->save();
+					}
+				}
+				try {
+					$variation->set_global_unique_id( $variant['barcode'] );
+				} catch ( \Exception $e ) {
+					// Error.
+				}
 			}
 
 			// Custom fields for variations.

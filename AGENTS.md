@@ -1,6 +1,4 @@
-# CLAUDE.md
-
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+# Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance
 
 ## Plugin Overview
 
@@ -97,3 +95,4 @@ Each ERP/CRM connector is a separate plugin that hooks `conecom_options_plugin` 
 - Inline comments: capital letter, end with period. Comment blocks of logic, not individual lines.
 - **No jQuery** — vanilla JavaScript only.
 - All documentation goes in `/docs/` and is listed in `.distignore`.
+- **Language convention**: all code, comments, PR and issues written in English.

@@ -55,6 +55,21 @@ class Orders {
 	private $msg_error_orders;
 
 	/**
+	 * Fallback for the "Create document for free Orders?" setting, from the
+	 * connector's own order_import_free_order option.
+	 *
+	 * @var string
+	 */
+	private $default_freeorder;
+
+	/**
+	 * Order statuses that trigger/qualify for ERP sync: 'all', 'paid' or 'completed'.
+	 *
+	 * @var string
+	 */
+	private $ecstatus;
+
+	/**
 	 * Init and hook in the integration.
 	 *
 	 * @param array $connector Connector.
@@ -67,7 +82,9 @@ class Orders {
 		$this->settings                   = $connector['settings'] ?? array();
 		$this->connapi_erp                = $connector['connapi_erp'];
 		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$this->ecstatus                   = $ecstatus;
 		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
+		$this->default_freeorder          = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
@@ -144,7 +161,7 @@ class Orders {
 				as_schedule_single_action( time() + 30, 'conecom_async_send_order_erp', array( $order_id ), 'connect-ecommerce' );
 			}
 		} else {
-			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
 		}
 	}
 
@@ -155,7 +172,7 @@ class Orders {
 	 * @return void
 	 */
 	public function async_send_order_erp( $order_id ) {
-		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
+		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
 	}
 
 	/**
@@ -188,22 +205,39 @@ class Orders {
 			session_start();
 		}
 		if ( 0 === $sync_loop ) {
-			$orders = wc_get_orders(
-				array(
-					'status'         => array( 'wc-completed' ),
-					'posts_per_page' => -1,
-					'orderby'        => 'date',
-					'order'          => 'DESC',
-				)
+			$date_from = isset( $_POST['date_from'] ) ? sanitize_text_field( wp_unslash( $_POST['date_from'] ) ) : '';
+			$date_to   = isset( $_POST['date_to'] ) ? sanitize_text_field( wp_unslash( $_POST['date_to'] ) ) : '';
+
+			if ( 'all' === $this->ecstatus ) {
+				$sync_statuses = array( 'pending', 'failed', 'processing', 'refunded', 'cancelled', 'completed' );
+			} elseif ( 'paid' === $this->ecstatus ) {
+				$sync_statuses = wc_get_is_paid_statuses();
+			} else {
+				$sync_statuses = array( 'completed' );
+			}
+
+			$query_args = array(
+				'status'  => $sync_statuses,
+				'limit'   => PHP_INT_MAX,
+				'orderby' => 'date',
+				'order'   => 'DESC',
+				'return'  => 'ids',
 			);
+			if ( $date_from && $date_to ) {
+				$query_args['date_created'] = $date_from . '...' . $date_to;
+			} elseif ( $date_from ) {
+				$query_args['date_created'] = '>=' . $date_from;
+			} elseif ( $date_to ) {
+				$query_args['date_created'] = '<=' . $date_to;
+			} elseif ( ! empty( $this->settings['order_sync_from_date'] ) ) {
+				$query_args['date_created'] = '>=' . $this->settings['order_sync_from_date'];
+			}
+			// Only order IDs are fetched here, not full WC_Order objects, so stores
+			// with years of history don't exhaust PHP memory building this list.
+			$order_ids   = wc_get_orders( $query_args );
 			$sync_orders = array();
-			foreach ( $orders as $order ) {
-				if ( $order->has_status( 'completed' ) ) {
-					$sync_orders[] = array(
-						'id'   => $order->ID,
-						'date' => $order->get_date_completed(),
-					);
-				}
+			foreach ( $order_ids as $order_id ) {
+				$sync_orders[] = array( 'id' => $order_id );
 			}
 			$_SESSION['conecom_sync_orders'] = HELPER::sanitize_array_recursive( $sync_orders );
 		} else {
@@ -241,7 +275,7 @@ class Orders {
 					} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
 						$message .= __( 'Free order not exported', 'woocommerce-es' );
 					} else {
-						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp );
+						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
 
 						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
 						$message .= ' ' . $result['message'];
@@ -265,6 +299,7 @@ class Orders {
 						$args = array(
 							'message'      => $message,
 							'orders_count' => $orders_count,
+							'finish'       => $orders_synced >= $orders_count,
 						);
 						if ( $doing_ajax ) {
 							if ( $orders_synced < $orders_count ) {
@@ -301,8 +336,7 @@ class Orders {
 	 * @return file
 	 */
 	public function attach_file_woocommerce_email( $attachments, $action, $email_order ) {
-		$settings = get_option( $this->options['slug'] );
-		$order    = wc_get_order( $email_order );
+		$order = wc_get_order( $email_order );
 		if ( ! $order ) {
 			return $attachments;
 		}
@@ -310,7 +344,7 @@ class Orders {
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
 		if ( $api_doc_id && ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
-			$file_document_path = $this->connapi_erp->get_order_pdf( $settings, $api_doc_type, $api_doc_id );
+			$file_document_path = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
 
 			// Check if file exists and is readable before attaching.
 			if ( is_readable( $file_document_path ) && is_file( $file_document_path ) ) {
@@ -390,7 +424,7 @@ class Orders {
 		);
 
 		if ( 'erp-post' === $type ) {
-			$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true );
+			$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true, $this->default_freeorder );
 		}
 
 		// Check result status and respond accordingly.

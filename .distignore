@@ -15,6 +15,7 @@ composer.lock
 node_modules/
 package.json
 package-lock.json
+.npmrc
 
 # WordPress
 .wordpress-org

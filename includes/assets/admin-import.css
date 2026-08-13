@@ -109,6 +109,10 @@
 	}
 }
 
+.conecom-two-columns.conecom-single-column {
+	grid-template-columns: 1fr;
+}
+
 .conecom-cron-logs h3,
 .conecom-manual-import h3 {
 	margin-top: 0;
