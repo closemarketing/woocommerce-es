@@ -711,13 +711,6 @@ class PROD {
 				$variation_props     = array_merge( $variation_props, $variation_props_new );
 			}
 			$variation = new \WC_Product_Variation( $variation_id );
-			if ( ! empty( $variant['barcode'] ) ) {
-				try {
-					$variation->set_global_unique_id( $variant['barcode'] );
-				} catch ( \Exception $e ) {
-					// Error.
-				}
-			}
 			$variation->set_props( $variation_props );
 
 			// For variable-subscription products, sync subscription price and schedule.
@@ -788,6 +781,32 @@ class PROD {
 				// Covers brand-new products and new variants added to an existing
 				// product — both cases need the SKU set once, on creation.
 				$variation->set_sku( $variant['sku'] );
+			}
+
+			if ( ! empty( $variant['barcode'] ) ) {
+				// WooCommerce validates global_unique_id uniqueness store-wide, so if the ERP
+				// renamed this variant's SKU on resync (new $variation_id, unmatched by SKU),
+				// its own barcode is still held by the now-orphaned sibling variation of this
+				// same parent — free it there first, but only when it's confirmed to be that
+				// stale sibling (same parent, same ERP variant id when available), never an
+				// unrelated product that merely happens to share the barcode.
+				$barcode_holder_id = wc_get_product_id_by_global_unique_id( $variant['barcode'] );
+				if ( $barcode_holder_id && (int) $barcode_holder_id !== (int) $variation_id ) {
+					$barcode_holder   = wc_get_product( $barcode_holder_id );
+					$is_stale_sibling = $barcode_holder
+						&& $barcode_holder->is_type( 'variation' )
+						&& (int) $barcode_holder->get_parent_id() === (int) $product_id
+						&& (string) $barcode_holder->get_meta( '_connect_ecommerce_productid' ) === (string) $variant['id'];
+					if ( $is_stale_sibling ) {
+						$barcode_holder->set_global_unique_id( '' );
+						$barcode_holder->save();
+					}
+				}
+				try {
+					$variation->set_global_unique_id( $variant['barcode'] );
+				} catch ( \Exception $e ) {
+					// Error.
+				}
 			}
 
 			// Custom fields for variations.
