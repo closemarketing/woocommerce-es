@@ -228,6 +228,26 @@ class HELPER {
 		$connector['settings']     = $connector['settings_all'][ $connector['connector'] ] ?? array();
 		$connector['all_options']  = $options;
 
+		// Defensive fallback for sites that haven't re-saved settings since upgrading.
+		// Connector add-ons (e.g. connect-woocommerce-neo) read `tax_option` straight
+		// from get_option( 'connect_ecommerce' ) in their own constructor rather than
+		// from this resolved array, so the fallback must be persisted back to the
+		// option itself — not just applied to this in-memory copy — or those add-ons
+		// keep seeing the raw/missing value.
+		$tax_option_pref = self::get_tax_option_pref( $connector['settings'] );
+		$tax_option      = self::resolve_tax_option( $tax_option_pref );
+		if ( ( $connector['settings']['tax_option_pref'] ?? null ) !== $tax_option_pref
+			|| ( $connector['settings']['tax_option'] ?? null ) !== $tax_option
+		) {
+			$connector['settings']['tax_option_pref'] = $tax_option_pref;
+			$connector['settings']['tax_option']      = $tax_option;
+			if ( ! empty( $connector['connector'] ) ) {
+				$connector['settings_all'][ $connector['connector'] ]['tax_option_pref'] = $tax_option_pref;
+				$connector['settings_all'][ $connector['connector'] ]['tax_option']      = $tax_option;
+				update_option( 'connect_ecommerce', $connector['settings_all'] );
+			}
+		}
+
 		$connector['settings']['prod_mergevars'] = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
 
 		// Initialize payment method mappings.
@@ -262,5 +282,66 @@ class HELPER {
 		}
 
 		return $connector;
+	}
+
+	/**
+	 * Determine the "Get prices with Tax?" preference from a connector settings array,
+	 * migrating the pre-"Default" `tax_option` value and the short-lived 3.3.4 `tax_price` key.
+	 *
+	 * @param array $settings Connector settings array, as stored.
+	 * @return string 'default', 'yes' or 'no'.
+	 */
+	public static function get_tax_option_pref( $settings ) {
+		if ( isset( $settings['tax_option_pref'] ) ) {
+			return $settings['tax_option_pref'];
+		}
+		if ( isset( $settings['tax_option'] ) ) {
+			return $settings['tax_option'];
+		}
+		if ( isset( $settings['tax_price'] ) ) {
+			return $settings['tax_price'];
+		}
+		return 'default';
+	}
+
+	/**
+	 * Resolve a "Get prices with Tax?" preference to a concrete 'yes'/'no', following
+	 * WooCommerce's own "Prices entered with tax" setting when the preference is "default".
+	 *
+	 * @param string $preference 'default', 'yes' or 'no'.
+	 * @return string 'yes' or 'no'.
+	 */
+	public static function resolve_tax_option( $preference ) {
+		if ( 'yes' === $preference || 'no' === $preference ) {
+			return $preference;
+		}
+		return 'yes' === get_option( 'woocommerce_prices_include_tax' ) ? 'yes' : 'no';
+	}
+
+	/**
+	 * Keep the "Get prices with Tax?" setting in sync with WooCommerce's own tax setting
+	 * whenever the active connector's preference is "Default". Hooked on
+	 * `update_option_woocommerce_prices_include_tax` so connector add-ons that read
+	 * `tax_option` straight from the `connect_ecommerce` option always get 'yes'/'no',
+	 * even without the plugin's settings form being re-saved.
+	 *
+	 * @return void
+	 */
+	public static function sync_tax_option_with_woocommerce() {
+		$settings_all = get_option( 'connect_ecommerce' );
+		$connector    = is_array( $settings_all ) && isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
+
+		if ( empty( $connector ) || empty( $settings_all[ $connector ] ) ) {
+			return;
+		}
+
+		$tax_option_pref = self::get_tax_option_pref( $settings_all[ $connector ] );
+		if ( 'default' !== $tax_option_pref ) {
+			return;
+		}
+
+		$settings_all[ $connector ]['tax_option_pref'] = $tax_option_pref;
+		$settings_all[ $connector ]['tax_option']      = self::resolve_tax_option( $tax_option_pref );
+		update_option( 'connect_ecommerce', $settings_all );
 	}
 }

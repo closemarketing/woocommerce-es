@@ -44,6 +44,9 @@ class Widget_Product {
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) ) {
 			return;
 		}
+		if ( in_array( 'product', $connector['options']['disable_modules'] ?? array(), true ) ) {
+			return;
+		}
 		$this->options        = $connector['options'];
 		$this->is_disabled_ai = $connector['is_disabled_ai'] ?? false;
 		// Register Meta box for post type product.

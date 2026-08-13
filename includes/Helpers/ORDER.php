@@ -27,14 +27,18 @@ class ORDER {
 	 * @param string $option_prefix Option prefix.
 	 * @param object $api_erp API ERP.
 	 * @param bool   $force    Force create.
+	 * @param string $default_freeorder Fallback for the "Create document for free Orders?"
+	 *                                  setting when the merchant never saved it, lets a
+	 *                                  connector (e.g. one with no document to skip) opt in
+	 *                                  to processing free orders by default.
 	 *
 	 * @return array
 	 */
-	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false ) {
+	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false, $default_freeorder = 'no' ) {
 		$order          = wc_get_order( $order_id );
 		$order_total    = (float) $order->get_total();
 		$ec_invoice_id  = $order->get_meta( $meta_key_order );
-		$freeorder      = isset( $settings['freeorder'] ) ? $settings['freeorder'] : 'no';
+		$freeorder      = isset( $settings['freeorder'] ) ? $settings['freeorder'] : $default_freeorder;
 		$order_free_msg = __( 'Free order not created ', 'woocommerce-es' );
 		$is_debug_log   = isset( $settings['debug_log'] ) && 'on' === $settings['debug_log'] ? true : false;
 

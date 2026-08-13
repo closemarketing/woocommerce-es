@@ -48,6 +48,8 @@ class Base {
 		$this->options = $options;
 		$connector     = HELPER::get_connector( $options );
 
+		add_action( 'update_option_woocommerce_prices_include_tax', array( HELPER::class, 'sync_tax_option_with_woocommerce' ) );
+
 		if ( is_admin() ) {
 			new Settings( $connector );
 			new Setup_Wizard( $options );
