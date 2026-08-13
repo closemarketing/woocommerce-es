@@ -21,7 +21,9 @@ body.conecom-wizard-body {
 	align-items: center;
 	justify-content: space-between;
 	padding: 14px 32px;
-	background: #fff;
+	background: #010101 url('background.jpg');
+	background-repeat: no-repeat;
+	background-size: cover;
 	border-bottom: 1px solid #DDE3EA;
 }
 
@@ -31,12 +33,12 @@ body.conecom-wizard-body {
 
 .wiz-skip-link {
 	font-size: 13px;
-	color: #646970;
+	color: #fff;
 	text-decoration: none;
 }
 
 .wiz-skip-link:hover {
-	color: #135E96;
+	color: #fff;
 	text-decoration: underline;
 }
 
@@ -226,7 +228,7 @@ body.conecom-wizard-body {
 	border-radius: 4px;
 	cursor: pointer;
 	min-width: 120px;
-	background: #fff;
+	background: #1D2327;
 	transition: border-color 0.15s, background 0.15s;
 }
 
@@ -238,12 +240,12 @@ body.conecom-wizard-body {
 
 .wiz-connector-card:hover {
 	border-color: #007CBA;
-	background: #F5FAFD;
+	background: #32373C;
 }
 
 .wiz-connector-card.is-selected {
 	border-color: #007CBA;
-	background: #EEF5FA;
+	background: #32373C;
 }
 
 .wiz-connector-logo {
@@ -252,25 +254,10 @@ body.conecom-wizard-body {
 	object-fit: contain;
 }
 
-/* Holded's logo asset is white-on-transparent (designed for a dark background),
-   so its card needs a dark backdrop regardless of hover/selected state. */
-.wiz-connector-card[data-slug="holded"] {
-	background: #1D2327;
-}
-
-.wiz-connector-card[data-slug="holded"]:hover,
-.wiz-connector-card[data-slug="holded"].is-selected {
-	background: #32373C;
-}
-
-.wiz-connector-card[data-slug="holded"] .wiz-connector-name {
-	color: #fff;
-}
-
 .wiz-connector-name {
 	font-size: 13px;
+	color: #fff;
 	font-weight: 600;
-	color: #1D2327;
 }
 
 /* ── Connector fields ────────────────────────────────────────────────────── */

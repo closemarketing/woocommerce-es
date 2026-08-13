@@ -565,11 +565,23 @@ class Setup_Wizard {
 		}
 
 		$result = $connector['connapi_erp']->check_can_sync();
-		if ( true === $result ) {
-			wp_send_json_success( array( 'message' => __( 'Connection successful!', 'woocommerce-es' ) ) );
+
+		// check_can_sync() has no single return contract across connectors: some return a
+		// plain bool (Odoo, NEO, Clientify, Brevo...), others an array with a 'status' key
+		// ('ok'/'error', e.g. Holded, Factusol), and FacturaDirecta returns its raw API
+		// response. Treat true or an explicit status=ok as success; everything else as failure.
+		$is_success = true === $result || ( is_array( $result ) && 'ok' === ( $result['status'] ?? '' ) );
+
+		if ( $is_success ) {
+			$message = is_array( $result ) && ! empty( $result['message'] )
+				? $result['message']
+				: __( 'Connection successful!', 'woocommerce-es' );
+			wp_send_json_success( array( 'message' => $message ) );
 		} else {
-			$msg = is_array( $result ) ? implode( ' ', array_filter( $result ) ) : __( 'Connection failed. Check your credentials and try again.', 'woocommerce-es' );
-			wp_send_json_error( array( 'message' => $msg ) );
+			$message = is_array( $result ) && ! empty( $result['message'] )
+				? $result['message']
+				: __( 'Connection failed. Check your credentials and try again.', 'woocommerce-es' );
+			wp_send_json_error( array( 'message' => $message ) );
 		}
 	}
 
