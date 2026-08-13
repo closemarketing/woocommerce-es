@@ -266,6 +266,9 @@ class PROD {
 		$message            = '';
 		$product            = null;
 		$item_sku           = ! empty( $item['sku'] ) ? $item['sku'] : '';
+		$tax_slug           = ! empty( $item['taxes'] ) ? ( is_array( $item['taxes'] ) ? reset( $item['taxes'] ) : $item['taxes'] ) : '';
+		$tax_class          = TAXES::get_tax_class_by_erp_id( $tax_slug );
+		$tax_class          = null === $tax_class ? '' : $tax_class;
 
 		// Preserve subscription product types — ERP has no subscription concept.
 		// Read the type directly from the taxonomy (not via wc_get_product, which may be cached),
@@ -314,7 +317,7 @@ class PROD {
 			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
-			'tax_class'        => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
+			'tax_class'        => $tax_class,
 		);
 
 		// Stock is managed on the variations, not the parent — WooCommerce itself
@@ -349,7 +352,6 @@ class PROD {
 				'date_on_sale_to'    => '',
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
-				'tax_class'          => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 				'sold_individually'  => false,
 				'weight'             => $is_virtual ? '' : $item['weight'],
 				'upsell_ids'         => '',
