@@ -225,7 +225,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = next =
-* 
+* Added: First-install setup wizard guides new users through connecting WooCommerce to their ERP/CRM, configuring EU VAT compliance, setting up AI-assisted product descriptions, and running an initial product sync. Runs automatically on first activation; can be re-run from the "Reset wizard" link on the settings page.
 
 = 3.3.5 =
 * Added: New "Manual" option for the order status sync setting. When selected, no document is created automatically on order status changes (including "Completed"); use the "Send to ERP" button on the order, or the manual order sync, to create it on request.
