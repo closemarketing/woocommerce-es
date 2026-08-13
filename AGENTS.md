@@ -99,16 +99,10 @@ During development, unreleased changes accumulate under a `= next =` heading in 
 1. Rename `= next =` to `= X.Y.Z =` in `readme.txt` (keep its bullets as-is — that heading becomes the release notes).
 2. Bump `Stable tag:` and `Version:` in the `readme.txt` header to `X.Y.Z`.
 3. Bump `Version:` and `CONECOM_VERSION` in `woocommerce-es.php` to `X.Y.Z` (drop any `-beta.N` suffix).
-4. Add a fresh empty placeholder below the just-renamed heading, for the next round of changes to accumulate into:
-   ```
-   = next =
-   *
+4. Run `composer lint`, `composer phpstan`, `composer test` — all must pass before tagging.
+5. Commit (conventionally as a standalone `version` commit) and tag/push per the usual release flow.
 
-   = X.Y.Z =
-   ...
-   ```
-5. Run `composer lint`, `composer phpstan`, `composer test` — all must pass before tagging.
-6. Commit (conventionally as a standalone `version` commit) and tag/push per the usual release flow.
+A new `= next =` placeholder is added later, by whichever PR is the first to need it after the release — not as part of the release itself.
 
 Between releases, a beta suffix (`X.Y.Z-beta.N`) may be used in both files' version fields while a feature is still in review — drop it in step 3 above.
 
