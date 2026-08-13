@@ -173,10 +173,17 @@ class Orders {
 	/**
 	 * Process async order sync via Action Scheduler.
 	 *
+	 * Re-checks the current setting instead of trusting the hook that queued this action:
+	 * with the 30 second delay before this runs, the merchant may have switched to "manual"
+	 * in between, and an already-queued action must not create the document automatically.
+	 *
 	 * @param int $order_id Order id.
 	 * @return void
 	 */
 	public function async_send_order_erp( $order_id ) {
+		if ( 'manual' === $this->ecstatus ) {
+			return;
+		}
 		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
 	}
 
@@ -214,7 +221,7 @@ class Orders {
 			$date_to   = isset( $_POST['date_to'] ) ? sanitize_text_field( wp_unslash( $_POST['date_to'] ) ) : '';
 
 			if ( 'all' === $this->ecstatus || 'manual' === $this->ecstatus ) {
-				$sync_statuses = array( 'pending', 'failed', 'processing', 'refunded', 'cancelled', 'completed' );
+				$sync_statuses = array( 'pending', 'failed', 'processing', 'on-hold', 'refunded', 'cancelled', 'completed' );
 			} elseif ( 'paid' === $this->ecstatus ) {
 				$sync_statuses = wc_get_is_paid_statuses();
 			} else {
