@@ -267,7 +267,8 @@ class PROD {
 		$product            = null;
 		$item_sku           = ! empty( $item['sku'] ) ? $item['sku'] : '';
 		$tax_slug           = ! empty( $item['taxes'] ) ? ( is_array( $item['taxes'] ) ? reset( $item['taxes'] ) : $item['taxes'] ) : '';
-		$tax_class          = TAXES::get_wc_tax_class_by_erp_taxes( $tax_slug );
+		$tax_class          = TAXES::get_tax_class_by_erp_id( $tax_slug );
+		$tax_class          = null === $tax_class ? '' : $tax_class;
 
 		// Preserve subscription product types — ERP has no subscription concept.
 		// Read the type directly from the taxonomy (not via wc_get_product, which may be cached),

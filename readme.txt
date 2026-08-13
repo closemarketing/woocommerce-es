@@ -225,6 +225,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = next =
+* Fixed: Products imported from the ERP always got WooCommerce's standard tax class, ignoring the actual tax configured in the ERP. Products now read the ERP's tax key (e.g. Holded's `s_iva_21`) and resolve it to a WooCommerce tax class via the existing "ERP Tax Type" mapping (WooCommerce > Settings > Tax) — the same mapping already used for the order sync direction.
 * Added: First-install setup wizard guides new users through connecting WooCommerce to their ERP/CRM, configuring EU VAT compliance, setting up AI-assisted product descriptions, and running an initial product sync. Runs automatically on first activation; can be re-run from the "Reset wizard" link on the settings page.
 
 = 3.3.5 =
