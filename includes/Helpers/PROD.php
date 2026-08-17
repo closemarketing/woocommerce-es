@@ -141,8 +141,9 @@ class PROD {
 				$pack_items = '';
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
 					foreach ( $item['packItems'] as $pack_item ) {
+						// Guard against API errors and list responses: a valid single product always has an id.
 						$item_simple = $api_erp->get_products( $pack_item['pid'] );
-						if ( empty( $item_simple ) || ! is_array( $item_simple ) ) {
+						if ( empty( $item_simple ) || ! is_array( $item_simple ) || isset( $item_simple['status'] ) || empty( $item_simple['id'] ) ) {
 							$message .= '<span class="warning">' . __( 'Pack subproduct not found in ERP: ', 'woocommerce-es' ) . $pack_item['pid'] . '</span>';
 							continue;
 						}
