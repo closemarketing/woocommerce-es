@@ -141,10 +141,22 @@ class PROD {
 				$pack_items = '';
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
 					foreach ( $item['packItems'] as $pack_item ) {
-						$item_simple     = $api_erp->get_products( $pack_item['pid'] );
-						$product_pack_id = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
-						$pack_items     .= $product_pack_id . '/' . $pack_item['u'] . ',';
-						$message        .= ' x ' . $pack_item['u'];
+						$item_simple = $api_erp->get_products( $pack_item['pid'] );
+						if ( empty( $item_simple ) || ! is_array( $item_simple ) ) {
+							$message .= '<span class="warning">' . __( 'Pack subproduct not found in ERP: ', 'woocommerce-es' ) . $pack_item['pid'] . '</span>';
+							continue;
+						}
+
+						// sync_product_simple() returns an array, the subproduct ID is in post_id.
+						$result_pack_item = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
+						$product_pack_id  = $result_pack_item['post_id'] ?? 0;
+						if ( empty( $product_pack_id ) ) {
+							$message .= '<span class="warning">' . __( 'Pack subproduct could not be created: ', 'woocommerce-es' ) . ( $item_simple['name'] ?? $pack_item['pid'] ) . '</span>';
+							continue;
+						}
+
+						$pack_items .= $product_pack_id . '/' . $pack_item['u'] . ',';
+						$message    .= ' x ' . $pack_item['u'];
 					}
 					$message   .= ' ';
 					$pack_items = substr( $pack_items, 0, -1 );
