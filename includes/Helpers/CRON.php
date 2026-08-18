@@ -106,6 +106,10 @@ class CRON {
 	/**
 	 * Get products to sync
 	 *
+	 * Limited to a smaller batch than the manual import (CONECOM_SYNC_PRODUCTS_PER_BATCH):
+	 * this runs unattended on a timer, so each tick must stay light on CPU/DB instead of
+	 * draining the whole pending queue at once.
+	 *
 	 * @param array  $settings Settings of plugin.
 	 * @param string $options Options of plugin.
 	 * @param object $connapi_erp API Object.
@@ -124,7 +128,7 @@ class CRON {
 		}
 		// Method with table sync.
 		global $wpdb;
-		$limit = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
+		$limit = defined( 'CONECOM_SYNC_CRON_BATCH_SIZE' ) ? CONECOM_SYNC_CRON_BATCH_SIZE : 20;
 
 		$results = $wpdb->get_results(
 			$wpdb->prepare(

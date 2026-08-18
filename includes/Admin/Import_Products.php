@@ -448,33 +448,46 @@ class Import_Products {
 		if ( empty( $this->connapi_erp ) ) {
 			return;
 		}
-		$is_table_sync = ! empty( $this->options['table_sync'] ) ? true : false;
-		if ( $is_table_sync ) {
-			HELPER::check_table_sync( $this->options['table_sync'] );
-		} else {
-			// Check if the API method exists.
-			if ( ! method_exists( $this->connapi_erp, 'get_products_ids_since' ) ) {
-				return;
-			}
-		}
 
-		// Get products to sync.
-		$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
-		if ( empty( $products_sync ) && $is_table_sync ) {
-			CRON::send_sync_ended_products( $this->settings, $this->options['table_sync'], $this->options['name'], $this->options['slug'] );
-			CRON::fill_table_sync( $this->settings, $this->options, $this->connapi_erp );
-			$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
+		// Skip this run if a previous one is still processing (e.g. a slow ERP API made it
+		// overrun the sync interval) — otherwise runs pile up and spike CPU concurrently.
+		$lock_key = 'conecom_sync_products_running_' . $this->options['slug'];
+		if ( get_transient( $lock_key ) ) {
+			return;
 		}
-		if ( ! empty( $products_sync ) ) {
-			foreach ( $products_sync as $product_sync ) {
-				$product_id = isset( $product_sync['prod_id'] ) ? $product_sync['prod_id'] : $product_sync;
+		set_transient( $lock_key, true, 10 * MINUTE_IN_SECONDS );
 
-				$product_api = $this->connapi_erp->get_products( $product_id );
-				$result      = PROD::sync_product_item( $this->settings, $product_api, $this->connapi_erp );
-				if ( $is_table_sync ) {
-					CRON::save_product_sync( $this->options['table_sync'], $result['prod_id'], $this->options['slug'] );
+		try {
+			$is_table_sync = ! empty( $this->options['table_sync'] ) ? true : false;
+			if ( $is_table_sync ) {
+				HELPER::check_table_sync( $this->options['table_sync'] );
+			} else {
+				// Check if the API method exists.
+				if ( ! method_exists( $this->connapi_erp, 'get_products_ids_since' ) ) {
+					return;
 				}
 			}
+
+			// Get products to sync.
+			$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
+			if ( empty( $products_sync ) && $is_table_sync ) {
+				CRON::send_sync_ended_products( $this->settings, $this->options['table_sync'], $this->options['name'], $this->options['slug'] );
+				CRON::fill_table_sync( $this->settings, $this->options, $this->connapi_erp );
+				$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
+			}
+			if ( ! empty( $products_sync ) ) {
+				foreach ( $products_sync as $product_sync ) {
+					$product_id = isset( $product_sync['prod_id'] ) ? $product_sync['prod_id'] : $product_sync;
+
+					$product_api = $this->connapi_erp->get_products( $product_id );
+					$result      = PROD::sync_product_item( $this->settings, $product_api, $this->connapi_erp );
+					if ( $is_table_sync ) {
+						CRON::save_product_sync( $this->options['table_sync'], $result['prod_id'], $this->options['slug'] );
+					}
+				}
+			}
+		} finally {
+			delete_transient( $lock_key );
 		}
 	}
 }
