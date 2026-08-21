@@ -134,7 +134,7 @@ class ORDER {
 		$first_name           = $order->get_billing_first_name();
 		$last_name            = $order->get_billing_last_name();
 		$billing_company      = $order->get_billing_company();
-		$billing_address      = $order->get_billing_address_1() . ',' . $order->get_billing_address_2();
+		$billing_address      = implode( ', ', array_filter( array( $order->get_billing_address_1(), $order->get_billing_address_2() ), 'strlen' ) );
 		$billing_city         = $order->get_billing_city();
 		$billing_postcode     = $order->get_billing_postcode();
 		$billing_state_code   = $order->get_billing_state();
