@@ -705,14 +705,15 @@ class Settings {
 				'connect_woocommerce_setting_section'
 			);
 
-			if ( $this->options['product_option_stock'] ) {
-				add_settings_field(
+			if ( ! $this->is_disabled_products ) {
+				if ( $this->options['product_option_stock'] ) {
+					add_settings_field(
 					'wcpimh_stock',
 					__( 'Import stock?', 'woocommerce-es' ),
 					array( $this, 'stock_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
-				);
+					);
 
 					add_settings_field(
 						'wcpimh_stock_visibility',
@@ -721,99 +722,102 @@ class Settings {
 						'connect_ecommerce_admin',
 						'connect_woocommerce_setting_section'
 					);
-			}
+				}
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_prodst',
 				__( 'Default status for new products?', 'woocommerce-es' ),
 				array( $this, 'prodst_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_virtual',
 				__( 'Virtual products?', 'woocommerce-es' ),
 				array( $this, 'virtual_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_backorders',
 				__( 'Allow backorders?', 'woocommerce-es' ),
 				array( $this, 'backorders_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_catsep',
 				__( 'Category separator', 'woocommerce-es' ),
 				array( $this, 'catsep_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			add_settings_field(
-				'wcpimh_catattr',
-				__( 'Attribute to use as category', 'woocommerce-es' ),
-				array( $this, 'catattr_callback' ),
-				'connect_ecommerce_admin',
-				'connect_woocommerce_setting_section'
-			);
+				if ( is_object( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_attributes' ) ) {
+					add_settings_field(
+					'wcpimh_catattr',
+					__( 'Attribute to use as category', 'woocommerce-es' ),
+					array( $this, 'catattr_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section'
+					);
+				}
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_catnp',
 				__( 'Import category only in new products?', 'woocommerce-es' ),
 				array( $this, 'catnp_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_filter',
 				__( 'Filter products by tags? Only import this tags (separated by comma and no space)', 'woocommerce-es' ),
 				array( $this, 'filter_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_filter_sku',
 				__( 'Filter products by SKU? Only the products that complies these formula (use * for formula)', 'woocommerce-es' ),
 				array( $this, 'filter_sku_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			if ( $this->options['product_price_tax_option'] ) {
-				add_settings_field(
+				if ( $this->options['product_price_tax_option'] ) {
+					add_settings_field(
 					'wcpimh_tax_option',
 					__( 'Get prices with Tax?', 'woocommerce-es' ),
 					array( $this, 'tax_option_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
-				);
-			}
+					);
+				}
 
-			add_settings_field(
+				add_settings_field(
 				'wcpimh_make_discount',
 				__( 'Percentage to Make a discount from prices and save in sale price?', 'woocommerce-es' ),
 				array( $this, 'pricesale_discount_option_callback' ),
 				'connect_ecommerce_admin',
 				'connect_woocommerce_setting_section'
-			);
+				);
 
-			if ( $this->options['product_price_rate_option'] ) {
-				$desc_tip = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
-				add_settings_field(
+				if ( $this->options['product_price_rate_option'] ) {
+					$desc_tip = __( 'Copy and paste the ID of the rates for publishing in the web', 'woocommerce-es' );
+					add_settings_field(
 					'wcpimh_rates',
 					__( 'Product price rate for this eCommerce', 'woocommerce-es' ),
 					array( $this, 'rates_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
-				);
+					);
+				}
 			}
 
 			if ( ( isset( $this->options['order_series_number'] ) && $this->options['order_series_number'] ) || 'Holded' === $this->options['name'] ) {
@@ -900,7 +904,7 @@ class Settings {
 				);
 			}
 
-			if ( ! empty( $this->options['product_weight_equivalence'] ) ) {
+			if ( ! $this->is_disabled_products && ! empty( $this->options['product_weight_equivalence'] ) ) {
 				$attributes = get_transient( 'conecom_query_attributes' );
 				if ( false === $attributes ) { // Query attributes.
 					$attributes = $this->connapi_erp->get_product_attributes();
@@ -1660,7 +1664,12 @@ class Settings {
 				'target' => array(),
 			),
 		);
-		echo wp_kses( $this->options['settings_admin_message'], $arr );
+		$message = isset( $this->options['settings_admin_message'] ) && is_string( $this->options['settings_admin_message'] ) ? $this->options['settings_admin_message'] : '';
+		if ( '' === $message ) {
+			return;
+		}
+
+		echo wp_kses( $message, $arr );
 	}
 
 	/**
@@ -1920,6 +1929,10 @@ class Settings {
 	 * @return void
 	 */
 	public function catattr_callback() {
+		if ( ! is_object( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_attributes' ) ) {
+			return;
+		}
+
 		$catattr_options = $this->connapi_erp->get_attributes();
 		if ( empty( $catattr_options ) ) {
 			return;
