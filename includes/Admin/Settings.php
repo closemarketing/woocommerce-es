@@ -337,27 +337,31 @@ class Settings {
 
 				// Subtabs for Settings.
 				if ( 'settings' === $active_tab ) {
+					$has_settings_alerts   = $this->is_connector_active();
+					$has_settings_ai       = ! $this->is_disabled_ai && $this->is_connector_active();
+					$has_settings_payments = $this->is_connector_active() && $this->have_payments_methods;
+					$has_settings_merge    = $this->is_connector_active() && $this->is_mergevars;
 					?>
 					<ul class="subsubsub">
 						<li><a href="?page=connect_ecommerce&tab=settings&subtab=connection" class="<?php echo 'connection' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Connection', 'woocommerce-es' ); ?></a> | </li>
-						<li><a href="?page=connect_ecommerce&tab=settings&subtab=vat_compliance" class="<?php echo 'vat_compliance' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'EU VAT Compliance', 'woocommerce-es' ); ?></a><?php echo ( $this->is_connector_active() && $this->is_mergevars ) || ( ! $this->is_disabled_ai && $this->is_connector_active() ) ? ' | ' : ''; ?></li>
+						<li><a href="?page=connect_ecommerce&tab=settings&subtab=vat_compliance" class="<?php echo 'vat_compliance' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'EU VAT Compliance', 'woocommerce-es' ); ?></a><?php echo $has_settings_merge || $has_settings_payments || $has_settings_ai || $has_settings_alerts ? ' | ' : ''; ?></li>
 						<?php
-						if ( $this->is_connector_active() && $this->is_mergevars ) {
+						if ( $has_settings_merge ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->is_connector_active() ) ? ' | ' : ''; ?></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=merge_vars" class="<?php echo 'merge_vars' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Merge Vars', 'woocommerce-es' ); ?></a><?php echo $has_settings_payments || $has_settings_ai || $has_settings_alerts ? ' | ' : ''; ?></li>
 							<?php
 						}
-						if ( $this->is_connector_active() && $this->have_payments_methods ) {
+						if ( $has_settings_payments ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_ai && $this->is_connector_active() ) ? ' | ' : ''; ?></li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a><?php echo $has_settings_ai || $has_settings_alerts ? ' | ' : ''; ?></li>
 							<?php
 						}
-						if ( ! $this->is_disabled_ai && $this->is_connector_active() ) {
+						if ( $has_settings_ai ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'woocommerce-es' ); ?></a> | </li>
+							<li><a href="?page=connect_ecommerce&tab=settings&subtab=ai_products" class="<?php echo 'ai_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'AI Products', 'woocommerce-es' ); ?></a><?php echo $has_settings_alerts ? ' | ' : ''; ?></li>
 							<?php
 						}
-						if ( $this->is_connector_active() ) {
+						if ( $has_settings_alerts ) {
 							?>
 							<li><a href="?page=connect_ecommerce&tab=settings&subtab=alerts" class="<?php echo 'alerts' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Alerts', 'woocommerce-es' ); ?></a></li>
 							<?php
