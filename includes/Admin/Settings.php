@@ -156,7 +156,8 @@ class Settings {
 		$this->is_disabled_orders    = $connector['is_disabled_orders'] ?? false;
 		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
 		$this->is_disabled_products  = in_array( 'product', $this->options['disable_modules'] ?? array(), true );
-		$this->have_payments_methods = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
+		$payment_methods_enabled     = ! array_key_exists( 'payment_methods', $this->options ) || ! empty( $this->options['payment_methods'] );
+		$this->have_payments_methods = $payment_methods_enabled && ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
 
 		// If connector is saved but the plugin is no longer active (no options/api loaded), still register the admin page so the user can change the connector.
 		if ( ! empty( $this->connector ) && empty( $this->options ) && ! empty( $this->connapi_erp ) ) {

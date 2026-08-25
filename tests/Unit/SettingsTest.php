@@ -126,4 +126,36 @@ class SettingsTest extends WP_UnitTestCase {
 		$this->assertArrayNotHasKey( 'wcpimh_catattr', $fields );
 		$this->assertArrayNotHasKey( 'wcpimh_rates', $fields );
 	}
+
+	/**
+	 * Connectors can explicitly opt out of payment-method mappings.
+	 */
+	public function test_connector_can_disable_payment_method_mapping() {
+		$settings = new Settings(
+			array(
+				'settings_all' => array(),
+				'connector'    => 'orders-only',
+				'settings'     => array(),
+				'all_options'  => array(),
+				'options'      => array(
+					'payment_methods' => false,
+				),
+				'connapi_erp'  => new class() {
+					/**
+					 * Returns connector payment methods.
+					 *
+					 * @return array
+					 */
+					public function get_payment_methods() {
+						return array();
+					}
+				},
+			)
+		);
+
+		$property = new ReflectionProperty( Settings::class, 'have_payments_methods' );
+		$property->setAccessible( true );
+
+		$this->assertFalse( $property->getValue( $settings ) );
+	}
 }
