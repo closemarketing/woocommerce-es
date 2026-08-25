@@ -188,6 +188,44 @@ class HelperTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Connectors that opt out of payment mappings must not export old mappings.
+	 *
+	 * @return void
+	 */
+	public function test_connector_without_payment_methods_ignores_saved_mappings(): void {
+		$connector_slug = 'orders-only';
+		update_option(
+			$this->option_name,
+			array(
+				'connector'       => $connector_slug,
+				$connector_slug   => array(),
+			)
+		);
+		update_option(
+			$this->payment_option_name,
+			array(
+				$connector_slug => array(
+					'bacs' => array(
+						'method'   => 'connector_bacs',
+						'treasury' => 'treasury_1',
+					),
+				),
+			)
+		);
+
+		$connector = HELPER::get_connector(
+			array(
+				$connector_slug => array(
+					'payment_methods' => false,
+				),
+			)
+		);
+
+		$this->assertEmpty( $connector['settings']['payment_methods'] );
+		$this->assertEmpty( $connector['settings']['treasury_accounts'] );
+	}
+
+	/**
 	 * Should return connector with settings from connector slug.
 	 *
 	 * @return void
@@ -574,4 +612,3 @@ class HelperTest extends WP_UnitTestCase {
 		$this->assertSame( 0, $rewrite_count, 'get_connector() must not rewrite the option when the stored value already matches.' );
 	}
 }
-

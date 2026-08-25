@@ -255,16 +255,18 @@ class HELPER {
 		$connector['settings']['treasury_accounts'] = array();
 
 		if ( ! empty( $connector['connector'] ) ) {
-			// Get payment method mappings.
-			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
-			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
-			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
-
 			if ( ! isset( $options[ $connector['connector'] ] ) ) {
 				return $connector;
 			}
 
-			$connector['options'] = $options[ $connector['connector'] ];
+			$connector['options']    = $options[ $connector['connector'] ];
+			$payment_methods_enabled = ! array_key_exists( 'payment_methods', $connector['options'] ) || ! empty( $connector['options']['payment_methods'] );
+			if ( $payment_methods_enabled ) {
+				$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
+				$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+				$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+			}
+
 			if ( empty( $connector['options']['name'] ) ) {
 				$connector['settings_all']['connector'] = '';
 				update_option( 'connect_ecommerce', $connector['settings_all'] );
