@@ -1094,6 +1094,10 @@ class PROD {
 		if ( ! empty( $item['images'] ) ) {
 			$images = $item['images'] ?? array();
 		} else {
+			if ( ! method_exists( $api_erp, 'get_image_product' ) ) {
+				return false;
+			}
+
 			// Ask API for image.
 			$result_api = $api_erp->get_image_product( $settings, $item['id'], $product_id );
 

@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 3.3.5
  */
-class Connect_Ecommerce_Brevo {
+class Connect_Ecommerce_Brevo extends CONECOM_Abstract_Connector_API {
 	/**
 	 * Options of plugin.
 	 *
@@ -56,33 +56,6 @@ class Connect_Ecommerce_Brevo {
 			return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Compatibility for Library
-	 *
-	 * @return string
-	 */
-	public function get_attributes() {
-		return '';
-	}
-
-	/**
-	 * Compatibility for Library
-	 *
-	 * @return string
-	 */
-	public function get_image_product() {
-		return '';
-	}
-
-	/**
-	 * URL for orders.
-	 *
-	 * @return string
-	 */
-	public function get_url_link_api() {
-		return '';
 	}
 
 	/**

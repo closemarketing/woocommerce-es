@@ -61,6 +61,7 @@ class Import_Products_Command {
 		$options        = $connector_data['options'];
 		$connapi_erp    = $connector_data['connapi_erp'];
 		$api_pagination  = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
+		$api_is_paginated = ! array_key_exists( 'product_api_pagination', $options ) || ! empty( $options['product_api_pagination'] );
 		$generate_ai     = $assoc_args['ai'] ?? 'none';
 
 		// Loop Products.
@@ -77,7 +78,7 @@ class Import_Products_Command {
 			WP_CLI::line( $this->cli_header_line() . $message );
 
 			// Get products from API.
-			$api_products = $connapi_erp->get_products( null, $sync_loop );
+			$api_products = $connapi_erp->get_products( null, $api_is_paginated ? $sync_loop : null );
 			$res_status   = $api_products['status'] ?? 'ok';
 
 			if ( 'error' === $res_status ) {
@@ -106,7 +107,7 @@ class Import_Products_Command {
 				++$sync_loop;
 			}
 
-			$continue = $products_count < $api_pagination ? false : true;
+			$continue = $api_is_paginated && $products_count >= $api_pagination;
 
 		} while ( $continue );
 

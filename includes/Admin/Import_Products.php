@@ -254,6 +254,7 @@ class Import_Products {
 		$mode = in_array( $mode, array( 'updated', 'all' ), true ) ? $mode : 'all';
 		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
 		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
+		$api_is_paginated = ! array_key_exists( 'product_api_pagination', $this->options ) || ! empty( $this->options['product_api_pagination'] );
 
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {
@@ -283,8 +284,8 @@ class Import_Products {
 			$page      = intval( $sync_loop / $api_pagination, 0 );
 		}
 
-		if ( 0 === $sync_loop || ( $api_pagination && $api_pagination > 0 && 0 === $loop_page ) ) {
-			$api_products                     = $this->connapi_erp->get_products( null, $sync_loop );
+		if ( 0 === $sync_loop || ( $api_is_paginated && $api_pagination && $api_pagination > 0 && 0 === $loop_page ) ) {
+			$api_products                     = $this->connapi_erp->get_products( null, $api_is_paginated ? $sync_loop : null );
 			$_SESSION['conecom_api_products'] = HELPER::sanitize_array_recursive( $api_products );
 			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
 
@@ -310,7 +311,8 @@ class Import_Products {
 		}
 
 		$products_count           = count( $api_products );
-		$item                     = $api_products[ $sync_loop - ( $api_pagination * $page ) ];
+		$item_index               = $api_is_paginated ? $sync_loop - ( $api_pagination * $page ) : $sync_loop;
+		$item                     = $api_products[ $item_index ];
 		$this->msg_error_products = array();
 
 		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, $generate_ai, $product_id );

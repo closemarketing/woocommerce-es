@@ -17,7 +17,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 1.0
  */
-class Connect_Ecommerce_Clientify {
+class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 	/**
 	 * Options of plugin.
 	 *
@@ -60,33 +60,6 @@ class Connect_Ecommerce_Clientify {
 			return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Compatibility for Library
-	 *
-	 * @return string
-	 */
-	public function get_attributes() {
-		return '';
-	}
-
-	/**
-	 * Compatibility for Library
-	 *
-	 * @return string
-	 */
-	public function get_image_product() {
-		return '';
-	}
-
-	/**
-	 * URL for orders.
-	 *
-	 * @return string
-	 */
-	public function get_url_link_api() {
-		return '';
 	}
 
 	/**
