@@ -182,7 +182,7 @@ class Import_Products {
 			true
 		);
 
-		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_all_product_skus' );
+		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_all_product_skus' );
 
 		wp_localize_script(
 			'connect-ecommerce-import',
@@ -271,7 +271,7 @@ class Import_Products {
 				wp_send_json_error( array( 'message' => 'No products' ) );
 			}
 			$api_products = array( -1 => $result_api );
-		} elseif ( ! empty( $product_sku ) && method_exists( $this->connapi_erp, 'get_product_by_sku' ) ) {
+		} elseif ( ! empty( $product_sku ) && HELPER::connector_supports( $this->connapi_erp, 'get_product_by_sku' ) ) {
 			$result_api = $this->connapi_erp->get_product_by_sku( $product_sku );
 			if ( empty( $result_api ) ) {
 				wp_send_json_error( array( 'message' => 'No products' ) );
@@ -316,7 +316,7 @@ class Import_Products {
 		}
 
 		$products_count           = count( $api_products );
-		if ( 0 <= $sync_loop && $sync_loop >= $products_count ) {
+		if ( ! $api_is_paginated && 0 <= $sync_loop && $sync_loop >= $products_count ) {
 			wp_send_json_success(
 				array(
 					'loop'          => $sync_loop,
@@ -471,7 +471,7 @@ class Import_Products {
 			HELPER::check_table_sync( $this->options['table_sync'] );
 		} else {
 			// Check if the API method exists.
-			if ( ! method_exists( $this->connapi_erp, 'get_products_ids_since' ) ) {
+			if ( ! HELPER::connector_supports( $this->connapi_erp, 'get_products_ids_since' ) ) {
 				return;
 			}
 		}

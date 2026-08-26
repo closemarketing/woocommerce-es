@@ -10,6 +10,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
+
 /**
  * LoadsAPI.
  *

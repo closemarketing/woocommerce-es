@@ -157,7 +157,7 @@ class Settings {
 		$this->is_disabled_ai        = $connector['is_disabled_ai'] ?? false;
 		$this->is_disabled_products  = in_array( 'product', $this->options['disable_modules'] ?? array(), true );
 		$payment_methods_enabled     = ! array_key_exists( 'payment_methods', $this->options ) || ! empty( $this->options['payment_methods'] );
-		$this->have_payments_methods = $payment_methods_enabled && ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_payment_methods' );
+		$this->have_payments_methods = $payment_methods_enabled && ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_payment_methods' );
 
 		// If connector is saved but the plugin is no longer active (no options/api loaded), still register the admin page so the user can change the connector.
 		if ( ! empty( $this->connector ) && empty( $this->options ) && ! empty( $this->connapi_erp ) ) {
@@ -761,7 +761,7 @@ class Settings {
 				'connect_woocommerce_setting_section'
 				);
 
-				if ( is_object( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_attributes' ) ) {
+				if ( is_object( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_attributes' ) ) {
 					add_settings_field(
 					'wcpimh_catattr',
 					__( 'Attribute to use as category', 'woocommerce-es' ),
@@ -1152,7 +1152,7 @@ class Settings {
 			$message  = $login_api ? '' : __( 'We couln\'t connect to the API', 'woocommerce-es' );
 		}
 
-		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_all_product_skus' );
+		$has_get_all_product_skus = ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_all_product_skus' );
 		$api_pagination           = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
 		?>
 		<div class="connwoo-sync-engine connwoo-sync-with-stats">
@@ -1190,7 +1190,7 @@ class Settings {
 		$is_orders           = 'sync_orders' === $type;
 		$cron_enabled        = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
 		$has_product_updated = $has_get_all_product_skus && (
-			! method_exists( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated()
+			! HELPER::connector_supports( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated()
 		);
 		?>
 		<h2>
@@ -1788,7 +1788,7 @@ class Settings {
 	 * @return void
 	 */
 	public function company_select_callback() {
-		if ( empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_companies' ) ) {
+		if ( empty( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_companies' ) ) {
 			echo '<p>' . esc_html__( 'By default', 'woocommerce-es' ) . '</p>';
 			return;
 		}
@@ -1934,7 +1934,7 @@ class Settings {
 	 * @return void
 	 */
 	public function catattr_callback() {
-		if ( ! is_object( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_attributes' ) ) {
+		if ( ! is_object( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_attributes' ) ) {
 			return;
 		}
 

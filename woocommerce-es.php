@@ -39,6 +39,7 @@ define(
 );
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
+require_once CONECOM_PLUGIN_PATH . 'includes/Connector/Abstract_Connector_API.php';
 
 /**
  * Gets the options for the plugin.
@@ -119,7 +120,6 @@ add_action( 'init', 'conecom_loads' );
  */
 function conecom_loads() {
 	require_once CONECOM_PLUGIN_PATH . 'includes/Plugin_Main.php';
-	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/Abstract_Connector_API.php';
 	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-clientify.php';
 	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-brevo.php';
 

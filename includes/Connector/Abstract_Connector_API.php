@@ -6,6 +6,8 @@
  * @author Closetechnology
  */
 
+namespace CLOSE\ConnectEcommerce\Connector;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -19,6 +21,21 @@ defined( 'ABSPATH' ) || exit;
  * @since 3.4.1
  */
 abstract class CONECOM_Abstract_Connector_API {
+	/**
+	 * Checks whether a connector overrides an optional contract method.
+	 *
+	 * @param string $method Method name.
+	 * @return bool
+	 */
+	public function supports_capability( $method ) {
+		if ( ! method_exists( $this, $method ) ) {
+			return false;
+		}
+
+		$reflection = new \ReflectionMethod( $this, $method );
+		return self::class !== $reflection->getDeclaringClass()->getName();
+	}
+
 	/**
 	 * Checks whether the API credentials can synchronize data.
 	 *

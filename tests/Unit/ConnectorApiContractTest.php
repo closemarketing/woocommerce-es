@@ -5,6 +5,8 @@
  * @package Connect_Ecommerce
  */
 
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
+
 class ConnectorApiContractTest extends WP_UnitTestCase {
 	/**
 	 * Native connectors inherit the safe optional API defaults.
@@ -26,6 +28,7 @@ class ConnectorApiContractTest extends WP_UnitTestCase {
 			$this->assertSame( '', $connector->get_attributes() );
 			$this->assertSame( '', $connector->get_image_product( array(), 'remote-product', 123 ) );
 			$this->assertSame( '', $connector->get_url_link_api() );
+			$this->assertFalse( $connector->supports_capability( 'get_all_product_skus' ) );
 		}
 	}
 

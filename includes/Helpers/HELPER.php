@@ -11,6 +11,7 @@
 namespace CLOSE\ConnectEcommerce\Helpers;
 
 use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -278,12 +279,34 @@ class HELPER {
 				return $connector;
 			}
 			$connector['connapi_erp']        = new $apiname( $options );
-			$connector['is_mergevars']       = method_exists( $connector['connapi_erp'], 'get_product_attributes' ) ? true : false;
+			$connector['is_mergevars']       = self::connector_supports( $connector['connapi_erp'], 'get_product_attributes' );
 			$connector['is_disabled_orders'] = isset( $connector['options']['disable_modules'] ) && in_array( 'order', $connector['options']['disable_modules'], true ) ? true : false;
 			$connector['is_disabled_ai']     = isset( $connector['options']['disable_modules'] ) && in_array( 'ai', $connector['options']['disable_modules'], true ) ? true : false;
 		}
 
 		return $connector;
+	}
+
+	/**
+	 * Checks whether a connector implements an optional capability.
+	 *
+	 * Legacy connectors keep their method-based capability detection. Connectors
+	 * using the shared contract must override an optional method to enable it.
+	 *
+	 * @param object $connector Connector API instance.
+	 * @param string $method Connector method name.
+	 * @return bool
+	 */
+	public static function connector_supports( $connector, $method ) {
+		if ( ! is_object( $connector ) || ! method_exists( $connector, $method ) ) {
+			return false;
+		}
+
+		if ( $connector instanceof CONECOM_Abstract_Connector_API ) {
+			return $connector->supports_capability( $method );
+		}
+
+		return true;
 	}
 
 	/**

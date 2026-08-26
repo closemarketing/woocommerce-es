@@ -13,6 +13,7 @@ namespace CLOSE\ConnectEcommerce\Frontend;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Base;
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
 /**
  * My Account.
  *
@@ -121,7 +122,7 @@ class MyAccount {
 	public function add_account_orders_column_rows( $order ) {
 		$api_doc_id = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 
-		if ( ! empty( $api_doc_id ) && ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_order_pdf' ) && 'completed' === $order->get_status() ) {
+		if ( ! empty( $api_doc_id ) && ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) && 'completed' === $order->get_status() ) {
 			$nonce = wp_create_nonce( 'cwc-document-nonce' );
 			echo '<a href=' . esc_url( admin_url( 'admin-ajax.php?action=cwc_document_download&order_id=' . esc_attr( $order->get_id() ) . '&nonce=' . $nonce ) ) . ' class="button button-primary" target="_blank">';
 			echo esc_html__( 'Download', 'woocommerce-es' ) . '</a>';

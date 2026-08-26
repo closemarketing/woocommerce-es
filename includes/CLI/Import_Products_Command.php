@@ -69,6 +69,7 @@ class Import_Products_Command {
 		$continue        = false;
 		$page            = 0;
 		$synced_products = 0;
+		$processed_products = 0;
 		do {
 			$message = sprintf(
 				__( 'Fetching %s products from %s', 'woocommerce-es' ),
@@ -90,10 +91,10 @@ class Import_Products_Command {
 			$products_count = count( $api_products );
 			foreach ( $api_products as $key => $item ) {
 				$item        = HELPER::sanitize_array_recursive( $item );
-				$page        = intval( $sync_loop / $api_pagination, 0 );
+				$page        = $api_is_paginated ? intval( $sync_loop / $api_pagination, 0 ) : 0;
 				$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $generate_ai );
 
-				$sync_loop   = $page * $api_pagination + $key;
+				$sync_loop   = $api_is_paginated ? $page * $api_pagination + $key : $processed_products;
 				$message = '[' . $sync_loop + 1 . '/' . $page . '] ';
 				$message .= $result_sync['status'] . ' ';
 				$message .= wp_strip_all_tags($result_sync['message']);
@@ -104,6 +105,7 @@ class Import_Products_Command {
 					$synced_products++;
 				}
 
+				$processed_products++;
 				++$sync_loop;
 			}
 
