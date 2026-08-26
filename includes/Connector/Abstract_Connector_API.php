@@ -23,7 +23,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * Checks whether the API credentials can synchronize data.
 	 *
 	 * @param array $settings Optional settings to validate before saving them.
-	 * @return array
+	 * @return array{status: string, message: string} Example: array( 'status' => 'ok', 'message' => 'Connected.' ).
 	 */
 	public function check_can_sync( $settings = array() ) {
 		unset( $settings );
@@ -35,7 +35,8 @@ abstract class CONECOM_Abstract_Connector_API {
 	 *
 	 * @param string|int|null $product_id Remote product ID.
 	 * @param string|int|null $period     Pagination cursor or synchronization period.
-	 * @return array
+	 * @return array<int, array{id: string|int, name: string, sku: string, price: float|int, kind: string, full_info: array}>|array{status: string, message: string} Product items, or an error response.
+	 * @example array( array( 'id' => 'erp-123', 'name' => 'Product', 'sku' => 'SKU-123', 'price' => 12.5, 'kind' => 'simple', 'full_info' => array() ) ).
 	 */
 	public function get_products( $product_id = null, $period = null ) {
 		unset( $product_id, $period );
@@ -46,7 +47,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * Gets products that have changed since a remote timestamp.
 	 *
 	 * @param string $modified_since_date Remote timestamp.
-	 * @return array
+	 * @return array<int, string|int> Example: array( 'erp-123', 'erp-456' ).
 	 */
 	public function get_products_ids_since( $modified_since_date ) {
 		unset( $modified_since_date );
@@ -57,7 +58,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * Gets remote stock changes.
 	 *
 	 * @param string|int|null $period Synchronization period.
-	 * @return false
+	 * @return false|array<int, array{id: string|int, stock: float|int}> Example: array( array( 'id' => 'erp-123', 'stock' => 10 ) ).
 	 */
 	public function get_products_stock( $period = null ) {
 		unset( $period );
@@ -68,7 +69,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * Gets a remote product by SKU.
 	 *
 	 * @param string $sku Product SKU.
-	 * @return array
+	 * @return array{id: string|int, name: string, sku: string, price: float|int, kind: string, full_info: array}|array{status: string, message: string} A product, or an error response.
 	 */
 	public function get_product_by_sku( $sku ) {
 		unset( $sku );
@@ -78,7 +79,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets all remote product SKUs for import statistics.
 	 *
-	 * @return array
+	 * @return array{status: string, data: array<int, string>}|array{status: string, message: string} Example: array( 'status' => 'ok', 'data' => array( 'SKU-123' ) ).
 	 */
 	public function get_all_product_skus() {
 		return $this->unsupported_capability( 'product import statistics' );
@@ -91,7 +92,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * @param string|int  $doc_id     Remote document ID.
 	 * @param string|int  $invoice_id Existing remote invoice ID.
 	 * @param bool|string $force      Whether to force a resend.
-	 * @return array
+	 * @return array{status: string, message: string, document_id?: string|int, invoice_id?: string|int} Example: array( 'status' => 'ok', 'message' => 'Order sent.', 'document_id' => '123' ).
 	 */
 	public function create_order( $order, $doc_id = '', $invoice_id = '', $force = false ) {
 		unset( $order, $doc_id, $invoice_id, $force );
@@ -101,7 +102,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets payment methods from the remote API.
 	 *
-	 * @return array
+	 * @return array<string, string> Example: array( 'paymentmethods|bank' => 'Bank transfer' ).
 	 */
 	public function get_payment_methods() {
 		return array();
@@ -110,7 +111,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets price rates from the remote API.
 	 *
-	 * @return array
+	 * @return array<string, string> Example: array( 'general' => 'General rate' ).
 	 */
 	public function get_rates() {
 		return array();
@@ -119,7 +120,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets tax types from the remote API.
 	 *
-	 * @return array
+	 * @return array<int, array{id: string|int, name: string, rate?: float|int}> Example: array( array( 'id' => 'vat-21', 'name' => 'VAT 21%', 'rate' => 21 ) ).
 	 */
 	public function get_taxes() {
 		return array();
@@ -128,7 +129,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets companies from the remote API.
 	 *
-	 * @return array
+	 * @return array<int, array{id: string|int, name: string}> Example: array( array( 'id' => 'company-1', 'name' => 'Main company' ) ).
 	 */
 	public function get_companies() {
 		return array();
@@ -138,7 +139,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * Gets remote document series for an order type.
 	 *
 	 * @param string $type Order document type.
-	 * @return array
+	 * @return array<string, string> Example: array( 'A' => 'Series A' ).
 	 */
 	public function get_series_number( $type ) {
 		unset( $type );
@@ -148,7 +149,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets the attributes available from the remote API.
 	 *
-	 * @return string
+	 * @return string|array<string, string> Example: array( 'brand' => 'Brand' ).
 	 */
 	public function get_attributes() {
 		return '';
@@ -157,7 +158,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets product fields available for merge variables.
 	 *
-	 * @return array
+	 * @return array<string, string> Example: array( 'factoryCode' => 'Factory code' ).
 	 */
 	public function get_product_attributes() {
 		return array();
@@ -169,7 +170,8 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * @param array      $settings      Connector settings.
 	 * @param string|int $product_id    Remote product ID.
 	 * @param int        $attachment_id WordPress product ID.
-	 * @return string
+	 * @return string|array{upload: array{url: string, file?: string, content_type?: string}}|array{errors: array<int, array{message: string}>} Empty when unsupported, or an upload/error response.
+	 * @example array( 'upload' => array( 'url' => 'https://example.com/product.jpg', 'content_type' => 'image/jpeg' ) ).
 	 */
 	public function get_image_product( $settings = array(), $product_id = '', $attachment_id = 0 ) {
 		unset( $settings, $product_id, $attachment_id );
@@ -180,7 +182,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * Gets the remote API URL for an order.
 	 *
 	 * @param array $order Order data.
-	 * @return string
+	 * @return string Example: 'https://erp.example.com/orders/123'.
 	 */
 	public function get_url_link_api( $order = array() ) {
 		unset( $order );
@@ -193,7 +195,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * @param array      $settings Connector settings.
 	 * @param string     $type Remote document type.
 	 * @param string|int $doc_id Remote document ID.
-	 * @return string
+	 * @return string Absolute PDF file path, or an empty string when unsupported.
 	 */
 	public function get_order_pdf( $settings = array(), $type = '', $doc_id = '' ) {
 		unset( $settings, $type, $doc_id );
@@ -203,7 +205,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Indicates whether the remote API can report changed products.
 	 *
-	 * @return bool
+	 * @return bool True only when get_products_ids_since() is implemented.
 	 */
 	public function has_product_updated() {
 		return false;
