@@ -126,6 +126,15 @@ abstract class CONECOM_Abstract_Connector_API {
 	}
 
 	/**
+	 * Gets treasury accounts from the remote API for payment mappings.
+	 *
+	 * @return array<string, string> Example: array( 'bank-1' => 'Main bank account' ).
+	 */
+	public function get_treasury_accounts() {
+		return array();
+	}
+
+	/**
 	 * Gets price rates from the remote API.
 	 *
 	 * @return array<string, string> Example: array( 'general' => 'General rate' ).
