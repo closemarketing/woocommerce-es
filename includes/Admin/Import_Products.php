@@ -102,10 +102,11 @@ class Import_Products {
 	 *
 	 * @param int      $sync_loop       Current loop iteration (0-indexed).
 	 * @param int      $products_count  Number of products in current batch/page.
-	 * @param int|bool $api_pagination  Products per page, or false for non-paginated.
+	 * @param int|bool  $api_pagination     Products per page, or false for non-paginated.
+	 * @param bool|null $api_is_paginated   Whether the remote API paginates products.
 	 * @return bool True if import should finish, false otherwise.
 	 */
-	public static function should_finish_import( $sync_loop, $products_count, $api_pagination = false ) {
+	public static function should_finish_import( $sync_loop, $products_count, $api_pagination = false, $api_is_paginated = null ) {
 		// Special case: single product import with sync_loop = -1.
 		if ( -1 === $sync_loop ) {
 			return true;
@@ -113,7 +114,11 @@ class Import_Products {
 
 		$products_synced = $sync_loop + 1;
 
-		if ( $api_pagination && $api_pagination > 0 ) {
+		if ( null === $api_is_paginated ) {
+			$api_is_paginated = $api_pagination && $api_pagination > 0;
+		}
+
+		if ( $api_is_paginated && $api_pagination && $api_pagination > 0 ) {
 			// Calculate position within current page (0-indexed).
 			$loop_page = $sync_loop % $api_pagination;
 
@@ -311,6 +316,17 @@ class Import_Products {
 		}
 
 		$products_count           = count( $api_products );
+		if ( 0 <= $sync_loop && $sync_loop >= $products_count ) {
+			wp_send_json_success(
+				array(
+					'loop'          => $sync_loop,
+					'message'       => '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>',
+					'finish'        => true,
+					'product_count' => $products_count,
+				)
+			);
+			return;
+		}
 		$item_index               = $api_is_paginated ? $sync_loop - ( $api_pagination * $page ) : $sync_loop;
 		$item                     = $api_products[ $item_index ];
 		$this->msg_error_products = array();
@@ -328,7 +344,7 @@ class Import_Products {
 		$message .= $result_sync['message'];
 
 		$products_synced = $sync_loop + 1;
-		$finish          = self::should_finish_import( $sync_loop, $products_count, $api_pagination );
+		$finish          = self::should_finish_import( $sync_loop, $products_count, $api_pagination, $api_is_paginated );
 
 		$res_message .= '[' . date_i18n( 'H:i:s' ) . ']';
 		if ( 0 <= $sync_loop ) {
