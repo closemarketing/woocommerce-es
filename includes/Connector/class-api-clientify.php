@@ -51,7 +51,8 @@ class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 	 *
 	 * @return boolean
 	 */
-	public function check_can_sync() {
+	public function check_can_sync( $settings = array() ) {
+		unset( $settings );
 		if ( ! isset( $this->settings['api'] ) ) {
 			return false;
 		}
@@ -223,7 +224,7 @@ class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 	 *
 	 * @return array
 	 */
-	public function create_order( $order, $doc_id, $invoice_id, $force ) {
+	public function create_order( $order, $doc_id = '', $invoice_id = '', $force = false ) {
 		$api_key   = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
 
 		if ( empty( $order ) ) {

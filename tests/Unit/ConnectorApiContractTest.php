@@ -28,4 +28,27 @@ class ConnectorApiContractTest extends WP_UnitTestCase {
 			$this->assertSame( '', $connector->get_url_link_api() );
 		}
 	}
+
+	/**
+	 * The contract exposes safe defaults for every optional core capability.
+	 */
+	public function test_contract_has_safe_defaults_for_optional_capabilities() {
+		$connector = new class() extends CONECOM_Abstract_Connector_API {};
+
+		$this->assertSame( array(), $connector->get_products() );
+		$this->assertSame( array(), $connector->get_products_ids_since( '2026-01-01' ) );
+		$this->assertFalse( $connector->get_products_stock() );
+		$this->assertSame( array(), $connector->get_payment_methods() );
+		$this->assertSame( array(), $connector->get_rates() );
+		$this->assertSame( array(), $connector->get_taxes() );
+		$this->assertSame( array(), $connector->get_companies() );
+		$this->assertSame( array(), $connector->get_series_number( 'invoice' ) );
+		$this->assertSame( array(), $connector->get_product_attributes() );
+		$this->assertSame( '', $connector->get_order_pdf() );
+		$this->assertFalse( $connector->has_product_updated() );
+		$this->assertSame( 'error', $connector->check_can_sync()['status'] );
+		$this->assertSame( 'error', $connector->get_product_by_sku( 'missing' )['status'] );
+		$this->assertSame( 'error', $connector->get_all_product_skus()['status'] );
+		$this->assertSame( 'error', $connector->create_order( array() )['status'] );
+	}
 }
