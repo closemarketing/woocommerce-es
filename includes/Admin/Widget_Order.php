@@ -12,6 +12,8 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
+
 /**
  * Widget in Orders
  *
@@ -125,7 +127,7 @@ class Widget_Order {
 	private function show_document_download_row( $order ) {
 		$api_doc_id = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 
-		if ( empty( $api_doc_id ) || empty( $this->connapi_erp ) || ! method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
+		if ( empty( $api_doc_id ) || empty( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
 			return;
 		}
 

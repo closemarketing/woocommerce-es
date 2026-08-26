@@ -39,6 +39,7 @@ define(
 );
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
+require_once CONECOM_PLUGIN_PATH . 'includes/Connector/Abstract_Connector_API.php';
 
 /**
  * Gets the options for the plugin.

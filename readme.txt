@@ -225,6 +225,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = next =
+
+* Added: A documented connector API contract with safe defaults for optional ERP and CRM capabilities.
+* Fixed: Product imports from non-paginated APIs now finish at the catalogue end.
 * Fixed: Order-only connectors can now disable product, subscription, AI and payment-mapping settings without causing errors or exporting previously saved payment and treasury mappings. Settings submenus now preserve their separators when optional sections are hidden.
 
 = 3.4.0 =

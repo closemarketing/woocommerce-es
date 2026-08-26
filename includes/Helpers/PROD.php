@@ -1094,6 +1094,10 @@ class PROD {
 		if ( ! empty( $item['images'] ) ) {
 			$images = $item['images'] ?? array();
 		} else {
+			if ( ! HELPER::connector_supports( $api_erp, 'get_image_product' ) ) {
+				return false;
+			}
+
 			// Ask API for image.
 			$result_api = $api_erp->get_image_product( $settings, $item['id'], $product_id );
 
@@ -1102,12 +1106,12 @@ class PROD {
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
-			if ( isset( $result_api['upload']['url'] ) ){
-				$images[] = [
+			if ( isset( $result_api['upload']['url'] ) ) {
+				$images[] = array(
 					'url'          => $result_api['upload']['url'],
-					'file'         => $result_api['upload']['file'],
-					'content_type' => $result_api['content_type'],
-				];
+					'file'         => $result_api['upload']['file'] ?? '',
+					'content_type' => $result_api['upload']['content_type'] ?? $result_api['content_type'] ?? '',
+				);
 			}
 		}
 
@@ -1437,7 +1441,7 @@ class PROD {
 	 * @return array Import statistics.
 	 */
 	public static function get_import_stats( $connapi_erp, $options, $settings = array() ) {
-		if ( ! $connapi_erp || ! method_exists( $connapi_erp, 'get_all_product_skus' ) ) {
+		if ( ! $connapi_erp || ! HELPER::connector_supports( $connapi_erp, 'get_all_product_skus' ) ) {
 			return array(
 				'status'  => 'error',
 				'message' => __( 'Connector does not support import statistics', 'woocommerce-es' ),

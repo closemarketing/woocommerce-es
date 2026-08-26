@@ -381,7 +381,7 @@ class Orders {
 		$api_doc_id   = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
-		if ( $api_doc_id && ! empty( $this->connapi_erp ) && method_exists( $this->connapi_erp, 'get_order_pdf' ) ) {
+		if ( $api_doc_id && ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
 			$file_document_path = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
 
 			// Check if file exists and is readable before attaching.
@@ -483,4 +483,3 @@ class Orders {
 		}
 	}
 }
-

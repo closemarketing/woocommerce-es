@@ -53,12 +53,16 @@ class CRON {
 		if ( empty( $table_sync ) ) {
 			return false;
 		}
-		$wpdb->query( "TRUNCATE TABLE $table_sync;" );
-
 		// Get ALL products from API.
 		$products       = array();
 		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
-		if ( $api_pagination ) {
+		$api_is_paginated = ! array_key_exists( 'product_api_pagination', $options ) || ! empty( $options['product_api_pagination'] );
+		if ( ! $api_is_paginated ) {
+			$products = $api_erp->get_products();
+			if ( isset( $products['status'] ) && 'error' === $products['status'] ) {
+				return false;
+			}
+		} elseif ( $api_pagination ) {
 			$sync_loop = 0;
 
 			do {
@@ -67,6 +71,9 @@ class CRON {
 				if ( empty( $api_products ) ) {
 					break;
 				}
+				if ( isset( $api_products['status'] ) && 'error' === $api_products['status'] ) {
+					return false;
+				}
 				$sync_loop++;
 				$count_products = count( $api_products );
 				$products       = array_merge( $products, $api_products );
@@ -74,11 +81,16 @@ class CRON {
 
 		} else {
 			$products = $api_erp->get_products();
+			if ( isset( $products['status'] ) && 'error' === $products['status'] ) {
+				return false;
+			}
 		}
-			
+
 		if ( ! is_array( $products ) ) {
 			return false;
 		}
+
+		$wpdb->query( "TRUNCATE TABLE $table_sync;" );
 
 		update_option( 'conecom_total_api_products', count( $products ) );
 		update_option( 'conecom_sync_start_time', strtotime( 'now' ) );
@@ -117,7 +129,7 @@ class CRON {
 		if ( empty( $options['table_sync'] ) ) {
 			$period              = self::get_active_period( $settings );
 			$modified_since_date = isset( $period['interval'] ) ? strtotime( '-' . $period['interval'] . ' seconds' ) : strtotime( '-1 day' );
-			if ( ! method_exists( $connapi_erp, 'get_products_ids_since' ) ) {
+			if ( ! HELPER::connector_supports( $connapi_erp, 'get_products_ids_since' ) ) {
 				return false;
 			}
 			return $connapi_erp->get_products_ids_since( $modified_since_date );
