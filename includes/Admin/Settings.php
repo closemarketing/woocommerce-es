@@ -18,6 +18,7 @@ use CLOSE\ConnectEcommerce\Helpers\HELPER;
 use CLOSE\ConnectEcommerce\Helpers\AI;
 use CLOSE\ConnectEcommerce\Helpers\CRON;
 use CLOSE\ConnectEcommerce\Helpers\ALERT;
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
 
 /**
  * Library for WooCommerce Settings
@@ -1190,7 +1191,9 @@ class Settings {
 		$is_orders           = 'sync_orders' === $type;
 		$cron_enabled        = ! empty( $this->settings['sync'] ) && 'no' !== $this->settings['sync'];
 		$has_product_updated = $has_get_all_product_skus && (
-			! HELPER::connector_supports( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated()
+			$this->connapi_erp instanceof CONECOM_Abstract_Connector_API
+				? $this->connapi_erp->has_product_updated()
+				: ( ! method_exists( $this->connapi_erp, 'has_product_updated' ) || $this->connapi_erp->has_product_updated() )
 		);
 		?>
 		<h2>

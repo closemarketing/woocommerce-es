@@ -52,7 +52,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 *
 	 * @param string|int|null $product_id Remote product ID.
 	 * @param string|int|null $period     Pagination cursor or synchronization period.
-	 * @return array<int, array{id: string|int, name: string, sku: string, price: float|int, kind: string, full_info: array}>|array{status: string, message: string} Product items, or an error response.
+	 * @return array{id: string|int, name: string, sku: string, price: float|int, kind: string, full_info: array}|array<int, array{id: string|int, name: string, sku: string, price: float|int, kind: string, full_info: array}>|array{status: string, message: string} A single item when $product_id is not null, a catalogue otherwise, or an error response.
 	 * @example array( array( 'id' => 'erp-123', 'name' => 'Product', 'sku' => 'SKU-123', 'price' => 12.5, 'kind' => 'simple', 'full_info' => array() ) ).
 	 */
 	public function get_products( $product_id = null, $period = null ) {
@@ -109,7 +109,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * @param string|int  $doc_id     Remote document ID.
 	 * @param string|int  $invoice_id Existing remote invoice ID.
 	 * @param bool|string $force      Whether to force a resend.
-	 * @return array{status: string, message: string, document_id?: string|int, invoice_id?: string|int} Example: array( 'status' => 'ok', 'message' => 'Order sent.', 'document_id' => '123' ).
+	 * @return array{status: 'ok', message: string, document_id: string|int, invoice_id?: string|int}|array{status: 'error', message: string} Example: array( 'status' => 'ok', 'message' => 'Order sent.', 'document_id' => '123' ).
 	 */
 	public function create_order( $order, $doc_id = '', $invoice_id = '', $force = false ) {
 		unset( $order, $doc_id, $invoice_id, $force );
@@ -146,7 +146,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets companies from the remote API.
 	 *
-	 * @return array<int, array{id: string|int, name: string}> Example: array( array( 'id' => 'company-1', 'name' => 'Main company' ) ).
+	 * @return array{status: 'ok', data: array<string, string>}|array{status: 'error', message: string} Example: array( 'status' => 'ok', 'data' => array( 'company-1' => 'Main company' ) ).
 	 */
 	public function get_companies() {
 		return array();
@@ -198,7 +198,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets the remote API URL for an order.
 	 *
-	 * @param array $order Order data.
+	 * @param \WC_Order $order WooCommerce order object.
 	 * @return string Example: 'https://erp.example.com/orders/123'.
 	 */
 	public function get_url_link_api( $order = array() ) {

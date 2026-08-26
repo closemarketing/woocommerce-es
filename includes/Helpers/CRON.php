@@ -58,7 +58,10 @@ class CRON {
 		// Get ALL products from API.
 		$products       = array();
 		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
-		if ( $api_pagination ) {
+		$api_is_paginated = ! array_key_exists( 'product_api_pagination', $options ) || ! empty( $options['product_api_pagination'] );
+		if ( ! $api_is_paginated ) {
+			$products = $api_erp->get_products();
+		} elseif ( $api_pagination ) {
 			$sync_loop = 0;
 
 			do {
@@ -75,7 +78,7 @@ class CRON {
 		} else {
 			$products = $api_erp->get_products();
 		}
-			
+
 		if ( ! is_array( $products ) ) {
 			return false;
 		}
