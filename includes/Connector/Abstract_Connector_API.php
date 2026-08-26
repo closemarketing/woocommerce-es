@@ -166,7 +166,7 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Gets the attributes available from the remote API.
 	 *
-	 * @return string|array<string, string> Example: array( 'brand' => 'Brand' ).
+	 * @return array<string, string> Example: array( 'brand' => 'Brand' ).
 	 */
 	public function get_attributes() {
 		return '';

@@ -1106,12 +1106,12 @@ class PROD {
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
-			if ( isset( $result_api['upload']['url'] ) ){
-				$images[] = [
+			if ( isset( $result_api['upload']['url'] ) ) {
+				$images[] = array(
 					'url'          => $result_api['upload']['url'],
-					'file'         => $result_api['upload']['file'],
-					'content_type' => $result_api['content_type'],
-				];
+					'file'         => $result_api['upload']['file'] ?? '',
+					'content_type' => $result_api['upload']['content_type'] ?? $result_api['content_type'] ?? '',
+				);
 			}
 		}
 

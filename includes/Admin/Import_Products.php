@@ -273,6 +273,9 @@ class Import_Products {
 			$api_products = array( -1 => $result_api );
 		} elseif ( ! empty( $product_sku ) && HELPER::connector_supports( $this->connapi_erp, 'get_product_by_sku' ) ) {
 			$result_api = $this->connapi_erp->get_product_by_sku( $product_sku );
+			if ( isset( $result_api['status'] ) && 'error' === $result_api['status'] ) {
+				wp_send_json_error( array( 'message' => __( 'Error getting product', 'woocommerce-es' ) . ': ' . $result_api['message'] ) );
+			}
 			if ( empty( $result_api ) ) {
 				wp_send_json_error( array( 'message' => 'No products' ) );
 			}

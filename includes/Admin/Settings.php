@@ -1942,7 +1942,7 @@ class Settings {
 		}
 
 		$catattr_options = $this->connapi_erp->get_attributes();
-		if ( empty( $catattr_options ) ) {
+		if ( ! is_array( $catattr_options ) || empty( $catattr_options ) ) {
 			return;
 		}
 		$saved_attr = isset( $this->settings['catattr'] ) ? $this->settings['catattr'] : '';
