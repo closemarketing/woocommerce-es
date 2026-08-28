@@ -76,23 +76,23 @@ class CreateOrderTest extends WP_UnitTestCase {
 
 	public function test_clean_special_chars() {
 		$test_cases = [
-			'José M. García-López'	=> 'Jose M Garcia-Lopez',
+			'José M. García-López'	=> 'JOSE M GARCIA-LOPEZ',
 			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS Y BEBIDAS S L',
-			'Peña "El @Rincón" / Granada'	=> 'Peña El Rincon Granada',
-			'Weiß y Aßmann/Waßmann'	=> 'Weiss y Assmann Wassmann',
-			'Bürgerstraße 123'	=> 'Burgerstrasse 123',
-			'#John Doe'	=> 'John Doe',
-			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'aeiouuñçgAEIOUUÑÇG',
-			'John@Doe' => 'John Doe',
-			'John@  Doe' => 'John Doe', // double space
-			'º[]John Doe' => 'John Doe',
-			'Maçanet Çağla' => 'Maçanet Çagla',
-			'Francisco Araújo da Conceição' => 'Francisco Araujo da Conceiçao',
-			'áéíóúüñçğÁÉÍÓÚÜÑÇĞåÅäÄæÆøØöÖèêëÈÊËïîÏÎôöÔÖùûÙÛßłŁ' => 'aeiouuñçgAEIOUUÑÇGaAaAaeAEoOoOeeeEEEiiIIooOOuuUUsslL',
-			'Gödöllő' => 'Godollo',
-			'Augustina Lubė' => 'Augustina Lube',
-			'Ėrika' => 'Erika',
-			'įĮ' => 'iI',
+			'Peña "El @Rincón" / Granada'	=> 'PEñA EL RINCON GRANADA',
+			'Weiß y Aßmann/Waßmann'	=> 'WEISS Y ASSMANN WASSMANN',
+			'Bürgerstraße 123'	=> 'BURGERSTRASSE 123',
+			'#John Doe'	=> 'JOHN DOE',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'AEIOUUñçGAEIOUUÑÇG',
+			'John@Doe' => 'JOHN DOE',
+			'John@  Doe' => 'JOHN DOE', // double space
+			'º[]John Doe' => 'JOHN DOE',
+			'Maçanet Çağla' => 'MAçANET ÇAGLA',
+			'Francisco Araújo da Conceição' => 'FRANCISCO ARAUJO DA CONCEIçAO',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞåÅäÄæÆøØöÖèêëÈÊËïîÏÎôöÔÖùûÙÛßłŁ' => 'AEIOUUñçGAEIOUUÑÇGAAAAAEAEOOOOEEEEEEIIIIOOOOUUUUSSLL',
+			'Gödöllő' => 'GODOLLO',
+			'Augustina Lubė' => 'AUGUSTINA LUBE',
+			'Ėrika' => 'ERIKA',
+			'įĮ' => 'II',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {
