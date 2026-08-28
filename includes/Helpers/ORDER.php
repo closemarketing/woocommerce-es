@@ -508,7 +508,7 @@ class ORDER {
 		$ascii = strtr( strtoupper( $ascii ), array( 'ñ' => 'Ñ', 'ç' => 'Ç' ) );
 
 		// Replace non-whitelisted characters with spaces.
-		$ascii = preg_replace( '/[^' . $whitelist . ']/', ' ', $ascii );
+		$ascii = preg_replace( '/[^' . $whitelist . ']/u', ' ', $ascii );
 
 		// Collapse multiple spaces and clean up
 		$ascii = preg_replace('/\s+/', ' ', $ascii);

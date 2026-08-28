@@ -100,6 +100,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 		}
 
 		$this->assertSame( '', ORDER::clean_special_chars( 'abc', 120, 'a-z' ) );
+		$this->assertSame( '', ORDER::clean_special_chars( 'Массачусетс' ) );
 	}
 
 	public function test_create_order_company_without_errors() {
