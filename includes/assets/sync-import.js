@@ -6,7 +6,7 @@ function syncManualItems( element, action, loop = 0 ) {
 
 	const isOdd = number => number % 2 !== 0;
 	class_task = isOdd(loop) ? 'odd' : 'even';
-	
+
 	// AJAX request.
 	fetch( ConEcom_ajaxAction.url, {
 		method: 'POST',
