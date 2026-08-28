@@ -307,7 +307,7 @@ function syncProductERP( element, action, product_erp_id = 0, product_sku = '', 
 				const aiMessage = document.createElement('div');
 				aiMessage.className = 'ai-message';
 				aiMessage.innerHTML = results.data.message;
-				
+
 				const targetElement = aiLabel || aiInput;
 				if (targetElement.nextSibling) {
 					targetElement.parentNode.insertBefore(aiMessage, targetElement.nextSibling);
