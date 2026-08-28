@@ -100,8 +100,8 @@ class Import_Products {
 	/**
 	 * Determines if product import should finish based on pagination status.
 	 *
-	 * @param int      $sync_loop       Current loop iteration (0-indexed).
-	 * @param int      $products_count  Number of products in current batch/page.
+	 * @param int       $sync_loop       Current loop iteration (0-indexed).
+	 * @param int       $products_count  Number of products in current batch/page.
 	 * @param int|bool  $api_pagination     Products per page, or false for non-paginated.
 	 * @param bool|null $api_is_paginated   Whether the remote API paginates products.
 	 * @return bool True if import should finish, false otherwise.

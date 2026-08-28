@@ -347,9 +347,9 @@ class Settings {
 				<?php
 				// Support for connect_ecommerce_settings_tabs (custom tabs). License tabs (slug ending in
 				// '-license') are grouped under a single "License" parent tab instead of listed individually.
-				$custom_tabs   = apply_filters( 'connect_ecommerce_settings_tabs', array() );
-				$license_tabs  = array();
-				$other_tabs    = array();
+				$custom_tabs  = apply_filters( 'connect_ecommerce_settings_tabs', array() );
+				$license_tabs = array();
+				$other_tabs   = array();
 				foreach ( $custom_tabs as $custom_tab ) {
 					$tab_slug = isset( $custom_tab['tab'] ) ? $custom_tab['tab'] : '';
 					if ( '-license' === substr( $tab_slug, -8 ) ) {
@@ -417,15 +417,15 @@ class Settings {
 				<?php
 				// Subtabs for connector tab: Products, Orders, Connection, Merge Vars, Payment Methods.
 				if ( ! empty( $active_connector_tab ) && isset( $this->connectors[ $active_connector_tab ] ) ) {
-					$tab_conn_data       = $this->connectors[ $active_connector_tab ];
-					$tab_is_mergevars    = $tab_conn_data['is_mergevars'] ?? false;
-					$tab_is_disabled_ord = $tab_conn_data['is_disabled_orders'] ?? false;
-					$tab_is_disabled_prd = $tab_conn_data['is_disabled_products'] ?? false;
-					$tab_connapi         = $tab_conn_data['connapi_erp'] ?? null;
-					$tab_conn_options    = $tab_conn_data['options'] ?? array();
+					$tab_conn_data        = $this->connectors[ $active_connector_tab ];
+					$tab_is_mergevars     = $tab_conn_data['is_mergevars'] ?? false;
+					$tab_is_disabled_ord  = $tab_conn_data['is_disabled_orders'] ?? false;
+					$tab_is_disabled_prd  = $tab_conn_data['is_disabled_products'] ?? false;
+					$tab_connapi          = $tab_conn_data['connapi_erp'] ?? null;
+					$tab_conn_options     = $tab_conn_data['options'] ?? array();
 					$tab_payments_enabled = ! array_key_exists( 'payment_methods', $tab_conn_options ) || ! empty( $tab_conn_options['payment_methods'] );
-					$tab_has_payments    = $tab_payments_enabled && ! empty( $tab_connapi ) && HELPER::connector_supports( $tab_connapi, 'get_payment_methods' );
-					$tab_conn_prefix     = '?page=connect_ecommerce&tab=' . esc_attr( 'connector_' . $active_connector_tab );
+					$tab_has_payments     = $tab_payments_enabled && ! empty( $tab_connapi ) && HELPER::connector_supports( $tab_connapi, 'get_payment_methods' );
+					$tab_conn_prefix      = '?page=connect_ecommerce&tab=' . esc_attr( 'connector_' . $active_connector_tab );
 					?>
 					<ul class="subsubsub">
 						<?php if ( ! $tab_is_disabled_prd ) : ?>
@@ -3208,7 +3208,7 @@ class Settings {
 
 				$new_disabled_modules = $this->connector_definitions[ $type ]['disable_modules'] ?? array();
 				foreach ( HELPER::get_workflows() as $workflow ) {
-					$workflow_module = 'products' === $workflow ? 'product' : 'order';
+					$workflow_module                           = 'products' === $workflow ? 'product' : 'order';
 					$meta[ $new_id ]['workflows'][ $workflow ] = in_array( $workflow_module, $new_disabled_modules, true ) ? 'no' : 'yes';
 				}
 
@@ -3258,44 +3258,44 @@ class Settings {
 	 */
 	private function get_connector_default_settings() {
 		return array(
-			'api'                => '',
-			'idcentre'           => '',
-			'url'                => '',
-			'username'           => '',
-			'password'           => '',
-			'company'            => '',
-			'company_id'         => '',
-			'domain'             => '',
-			'dbname'             => '',
-			'stock'              => 'no',
-			'stock_visibility'   => 'hide',
-			'prodst'             => 'draft',
-			'virtual'            => 'no',
-			'backorders'         => 'no',
-			'catsep'             => '',
-			'catattr'            => '',
-			'filter'             => '',
-			'pricesale_discount' => '',
-			'filter_sku'         => '',
-			'manufacturer_code'  => '',
-			'customer_code'      => '',
-			'tax_option'         => 'no',
-			'rates'              => 'default',
-			'catnp'              => 'yes',
-			'doctype'            => 'invoice',
-			'cleanchars'         => '',
-			'approve_document'   => 'no',
-			'series'             => '',
-			'freeorder'          => 'no',
-			'ecstatus'           => 'all',
-			'order_tags'         => '',
+			'api'                  => '',
+			'idcentre'             => '',
+			'url'                  => '',
+			'username'             => '',
+			'password'             => '',
+			'company'              => '',
+			'company_id'           => '',
+			'domain'               => '',
+			'dbname'               => '',
+			'stock'                => 'no',
+			'stock_visibility'     => 'hide',
+			'prodst'               => 'draft',
+			'virtual'              => 'no',
+			'backorders'           => 'no',
+			'catsep'               => '',
+			'catattr'              => '',
+			'filter'               => '',
+			'pricesale_discount'   => '',
+			'filter_sku'           => '',
+			'manufacturer_code'    => '',
+			'customer_code'        => '',
+			'tax_option'           => 'no',
+			'rates'                => 'default',
+			'catnp'                => 'yes',
+			'doctype'              => 'invoice',
+			'cleanchars'           => '',
+			'approve_document'     => 'no',
+			'series'               => '',
+			'freeorder'            => 'no',
+			'ecstatus'             => 'all',
+			'order_tags'           => '',
 			'order_sync_from_date' => '',
-			'design_id'          => '',
-			'sync'               => 'no',
-			'sync_num'           => 5,
-			'sync_email'         => 'yes',
-			'prod_weight_eq'     => '',
-			'debug_log'          => 'no',
+			'design_id'            => '',
+			'sync'                 => 'no',
+			'sync_num'             => 5,
+			'sync_email'           => 'yes',
+			'prod_weight_eq'       => '',
+			'debug_log'            => 'no',
 		);
 	}
 

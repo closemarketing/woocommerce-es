@@ -192,14 +192,14 @@ class HELPER {
 		$time_end = microtime( true );
 
 		$execution_time = round( $time_end - $time_start, 2 );
-		$end = "seg";
+		$end            = 'seg';
 
 		if ( $execution_time > 3600 ) {
 			$execution_time = round( $execution_time / 3600, 2 );
-			$end = "horas";
+			$end            = 'horas';
 		} elseif ( $execution_time > 60 ) {
 			$execution_time = round( $execution_time / 60, 2 );
-			$end = "min";
+			$end            = 'min';
 		}
 		return $execution_time . ' ' . $end;
 	}
@@ -327,7 +327,7 @@ class HELPER {
 	 * @return array
 	 */
 	private static function normalize_connectors_structure( $settings_all, $options ) {
-		$settings_all   = is_array( $settings_all ) ? $settings_all : array();
+		$settings_all    = is_array( $settings_all ) ? $settings_all : array();
 		$connectors_meta = $settings_all['connectors_meta'] ?? array();
 		$dirty           = false;
 
@@ -343,7 +343,7 @@ class HELPER {
 					),
 					'status'    => 'active',
 				);
-				$dirty = true;
+				$dirty                                = true;
 			}
 		}
 
@@ -376,10 +376,10 @@ class HELPER {
 		}
 
 		return array(
-			'settings_all'    => $settings_all,
-			'connectors_meta' => $connectors_meta,
-			'active_connector'=> $settings_all['connector'] ?? '',
-			'dirty'           => $dirty,
+			'settings_all'     => $settings_all,
+			'connectors_meta'  => $connectors_meta,
+			'active_connector' => $settings_all['connector'] ?? '',
+			'dirty'            => $dirty,
 		);
 	}
 
@@ -394,15 +394,15 @@ class HELPER {
 	 * @return array
 	 */
 	private static function build_connector_context( $connector_id, $meta, $options, $settings_all, $prod_mergevar ) {
-		$connector_type   = $meta['type'] ?? $connector_id;
+		$connector_type    = $meta['type'] ?? $connector_id;
 		$connector_options = $options[ $connector_type ] ?? array();
 		$connector         = array(
-			'id'            => $connector_id,
-			'connector'     => $connector_type,
-			'meta'          => $meta,
-			'settings_all'  => $settings_all,
-			'settings'      => $settings_all[ $connector_id ] ?? array(),
-			'all_options'   => $options,
+			'id'           => $connector_id,
+			'connector'    => $connector_type,
+			'meta'         => $meta,
+			'settings_all' => $settings_all,
+			'settings'     => $settings_all[ $connector_id ] ?? array(),
+			'all_options'  => $options,
 		);
 
 		$connector['settings']['prod_mergevars']    = $prod_mergevar;
@@ -430,8 +430,8 @@ class HELPER {
 		if ( ( $connector['settings']['tax_option_pref'] ?? null ) !== $tax_option_pref
 			|| ( $connector['settings']['tax_option'] ?? null ) !== $tax_option
 		) {
-			$connector['settings']['tax_option_pref'] = $tax_option_pref;
-			$connector['settings']['tax_option']      = $tax_option;
+			$connector['settings']['tax_option_pref']         = $tax_option_pref;
+			$connector['settings']['tax_option']              = $tax_option;
 			$settings_all[ $connector_id ]['tax_option_pref'] = $tax_option_pref;
 			$settings_all[ $connector_id ]['tax_option']      = $tax_option;
 			update_option( 'connect_ecommerce', $settings_all );
@@ -446,8 +446,8 @@ class HELPER {
 			return $connector;
 		}
 
-		$connector['options']          = $connector_options;
-		$apiname                       = 'Connect_Ecommerce_' . $connector_options['name'];
+		$connector['options']            = $connector_options;
+		$apiname                         = 'Connect_Ecommerce_' . $connector_options['name'];
 		$connector['is_disabled_orders'] = isset( $connector_options['disable_modules'] ) && in_array( 'order', $connector_options['disable_modules'], true );
 		$connector['is_disabled_ai']     = isset( $connector_options['disable_modules'] ) && in_array( 'ai', $connector_options['disable_modules'], true );
 

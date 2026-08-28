@@ -78,13 +78,13 @@ class Orders {
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) || empty( $connector['connapi_erp'] ) ) {
 			return;
 		}
-		$this->options                    = $connector['options'];
-		$this->settings                   = $connector['settings'] ?? array();
-		$this->connapi_erp                = $connector['connapi_erp'];
-		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
-		$this->ecstatus                   = $ecstatus;
-		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
-		$this->default_freeorder          = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$this->options           = $connector['options'];
+		$this->settings          = $connector['settings'] ?? array();
+		$this->connapi_erp       = $connector['connapi_erp'];
+		$ecstatus                = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$this->ecstatus          = $ecstatus;
+		$this->meta_key_order    = '_' . $this->options['slug'] . '_invoice_id';
+		$this->default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
@@ -157,11 +157,14 @@ class Orders {
 	 */
 	public function send_order_erp( $order_id ) {
 		if ( function_exists( 'as_schedule_single_action' ) ) {
-			$pending = as_get_scheduled_actions( array(
-				'hook'   => 'conecom_async_send_order_erp',
-				'args'   => array( $order_id ),
-				'status' => \ActionScheduler_Store::STATUS_PENDING,
-			), 'ids' );
+			$pending = as_get_scheduled_actions(
+				array(
+					'hook'   => 'conecom_async_send_order_erp',
+					'args'   => array( $order_id ),
+					'status' => \ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			);
 			if ( empty( $pending ) ) {
 				as_schedule_single_action( time() + 30, 'conecom_async_send_order_erp', array( $order_id ), 'connect-ecommerce' );
 			}
@@ -337,7 +340,7 @@ class Orders {
 						// Manual has no completion hook to retry a postponed order later, so this
 						// batch export is treated the same as an explicit per-order manual request.
 						$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
-						$result             = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp, 'manual' === $this->ecstatus, $default_freeorder );
+						$result            = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp, 'manual' === $this->ecstatus, $default_freeorder );
 
 						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
 						$message .= ' ' . $result['message'];
@@ -376,12 +379,10 @@ class Orders {
 						}
 					}
 				}
+			} elseif ( $doing_ajax ) {
+				wp_send_json_error( array( 'msg' => __( 'No orders to import', 'woocommerce-es' ) ) );
 			} else {
-				if ( $doing_ajax ) {
-					wp_send_json_error( array( 'msg' => __( 'No orders to import', 'woocommerce-es' ) ) );
-				} else {
-					die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
-				}
+				die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
 			}
 		}
 		if ( $doing_ajax ) {
@@ -447,7 +448,7 @@ class Orders {
 		switch ( $column ) {
 			case $this->options['slug']:
 				// Get custom order meta data.
-				$order      = wc_get_order( $order_id );
+				$order = wc_get_order( $order_id );
 				if ( ! $order ) {
 					break;
 				}
@@ -455,7 +456,7 @@ class Orders {
 				if ( 'nocreate' === $invoice_id ) {
 					break;
 				}
-				$edit_url   = $this->connapi_erp->get_url_link_api( $order );
+				$edit_url = $this->connapi_erp->get_url_link_api( $order );
 				if ( $edit_url ) {
 					echo '<a href="' . esc_url( $edit_url ) . '" target="_blank">';
 				}

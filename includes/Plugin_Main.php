@@ -37,7 +37,7 @@ class Base {
 	 *
 	 * @var array
 	 */
-	private $options  = array();
+	private $options = array();
 
 	/**
 	 * Construct of class
