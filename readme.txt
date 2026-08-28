@@ -226,6 +226,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 
+* Fixed: Order data cleaning now normalizes country and state codes before resolving the state name, preserves custom whitelists, and consistently uppercases retained Spanish characters.
 * Added: A documented connector API contract with safe defaults for optional ERP and CRM capabilities.
 * Fixed: Product imports from non-paginated APIs now finish at the catalogue end.
 * Fixed: Order-only connectors can now disable product, subscription, AI and payment-mapping settings without causing errors or exporting previously saved payment and treasury mappings. Settings submenus now preserve their separators when optional sections are hidden.

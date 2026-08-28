@@ -78,17 +78,17 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$test_cases = [
 			'José M. García-López'	=> 'JOSE M GARCIA-LOPEZ',
 			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS Y BEBIDAS S L',
-			'Peña "El @Rincón" / Granada'	=> 'PEñA EL RINCON GRANADA',
+			'Peña "El @Rincón" / Granada'	=> 'PEÑA EL RINCON GRANADA',
 			'Weiß y Aßmann/Waßmann'	=> 'WEISS Y ASSMANN WASSMANN',
 			'Bürgerstraße 123'	=> 'BURGERSTRASSE 123',
 			'#John Doe'	=> 'JOHN DOE',
-			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'AEIOUUñçGAEIOUUÑÇG',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'AEIOUUÑÇGAEIOUUÑÇG',
 			'John@Doe' => 'JOHN DOE',
 			'John@  Doe' => 'JOHN DOE', // double space
 			'º[]John Doe' => 'JOHN DOE',
-			'Maçanet Çağla' => 'MAçANET ÇAGLA',
-			'Francisco Araújo da Conceição' => 'FRANCISCO ARAUJO DA CONCEIçAO',
-			'áéíóúüñçğÁÉÍÓÚÜÑÇĞåÅäÄæÆøØöÖèêëÈÊËïîÏÎôöÔÖùûÙÛßłŁ' => 'AEIOUUñçGAEIOUUÑÇGAAAAAEAEOOOOEEEEEEIIIIOOOOUUUUSSLL',
+			'Maçanet Çağla' => 'MAÇANET ÇAGLA',
+			'Francisco Araújo da Conceição' => 'FRANCISCO ARAUJO DA CONCEIÇAO',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞåÅäÄæÆøØöÖèêëÈÊËïîÏÎôöÔÖùûÙÛßłŁ' => 'AEIOUUÑÇGAEIOUUÑÇGAAAAAEAEOOOOEEEEEEIIIIOOOOUUUUSSLL',
 			'Gödöllő' => 'GODOLLO',
 			'Augustina Lubė' => 'AUGUSTINA LUBE',
 			'Ėrika' => 'ERIKA',
@@ -98,6 +98,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 		foreach ( $test_cases as $input => $expected ) {
 			$this->assertEquals( ORDER::clean_special_chars( $input ), $expected );
 		}
+
+		$this->assertSame( '', ORDER::clean_special_chars( 'abc', 120, 'a-z' ) );
 	}
 
 	public function test_create_order_company_without_errors() {
