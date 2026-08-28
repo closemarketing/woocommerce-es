@@ -122,7 +122,7 @@ class MyAccount {
 	public function add_account_orders_column_rows( $order ) {
 		$api_doc_id = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 
-		if ( ! empty( $api_doc_id ) && ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) && 'completed' === $order->get_status() ) {
+		if ( ! empty( $api_doc_id ) && ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
 			$nonce = wp_create_nonce( 'cwc-document-nonce' );
 			echo '<a href=' . esc_url( admin_url( 'admin-ajax.php?action=cwc_document_download&order_id=' . esc_attr( $order->get_id() ) . '&nonce=' . $nonce ) ) . ' class="button button-primary" target="_blank">';
 			echo esc_html__( 'Download', 'woocommerce-es' ) . '</a>';
@@ -154,29 +154,28 @@ class MyAccount {
 		$api_doc_id   = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
-		$file_document_path = false;
+		$file_document = false;
 		if ( $api_doc_id && $this->connapi_erp ) {
-			$file_document_path = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
+			$file_document = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
 		}
 
-		if ( ! file_exists( $file_document_path ) ) {
+		if ( empty( $file_document ) ) {
 			wp_die();
 		}
 
-		$basename = basename( $file_document_path );
-		$filesize = filesize( $file_document_path );
+		$basename = sanitize_file_name( $api_doc_type . '-' . $api_doc_id . '.pdf' );
 
 		header( 'Content-Description: File Transfer' );
-		header( 'Content-Type: text/plain' );
+		header( 'Content-Type: application/pdf' );
 		header( 'Cache-Control: no-cache, must-revalidate' );
 		header( 'Expires: 0' );
 		header( 'Content-Disposition: attachment; filename=' . $basename );
-		header( 'Content-Length: ' . $filesize );
+		header( 'Content-Length: ' . strlen( $file_document ) );
 		header( 'Pragma: public' );
 
 		flush();
 
-		readfile( $file_document_path );
+		echo $file_document; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 
 		wp_die();
 	}
