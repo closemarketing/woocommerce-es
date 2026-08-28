@@ -595,8 +595,16 @@ class HelperTest extends WP_UnitTestCase {
 		update_option(
 			$this->option_name,
 			array(
-				'connector'      => 'test_connector',
-				'test_connector' => array(
+				'connector'       => 'test_connector',
+				'connectors_meta' => array(
+					'test_connector' => array(
+						'type'      => 'test_connector',
+						'label'     => 'Test Connector',
+						'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+						'status'    => 'active',
+					),
+				),
+				'test_connector'  => array(
 					'tax_option_pref' => 'no',
 					'tax_option'      => 'no',
 				),

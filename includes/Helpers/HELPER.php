@@ -552,7 +552,12 @@ class HELPER {
 		$connectors_meta = is_array( $settings_all ) ? ( $settings_all['connectors_meta'] ?? array() ) : array();
 
 		if ( empty( $connectors_meta ) ) {
-			return;
+			// Not yet migrated to the multi-connector structure: fall back to the single active connector.
+			$connector = is_array( $settings_all ) && isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
+			if ( empty( $connector ) || empty( $settings_all[ $connector ] ) ) {
+				return;
+			}
+			$connectors_meta = array( $connector => array() );
 		}
 
 		$dirty = false;
