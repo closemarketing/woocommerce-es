@@ -1,4 +1,4 @@
-# AGENTS.md
+# Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance
 
 This file provides guidance to AI coding agents (Claude Code, Cursor, etc.) when working with code in this repository.
 
@@ -59,16 +59,17 @@ Test data fixtures live in `tests/Data/`.
 
 ### `includes/Plugin_Main.php` — `Base` class
 
-The central bootstrap class. Receives the `$options` array, resolves the active connector via `HELPER::get_connector()`, then wires up all subsystems:
+The central bootstrap class. Receives the `$options` array, resolves the configured connector(s) via `HELPER::get_connector()` / `HELPER::get_connectors()`, then wires up all subsystems:
 
-- Admin context (only when `is_admin()`): `Settings`, `Import_Products`, `Widget_Product`, `Widget_Order`, `Notices`, `Taxes_Rates`, `Taxes_Types_ERP`
+- Admin context (only when `is_admin()`): `Settings`, `Setup_Wizard`, `Import_Products`, `Widget_Product`, `Widget_Order`, `Notices`, `Taxes_Rates`, `Taxes_Types_ERP`
 - Always: `Orders`, `Checkout`, `MyAccount`
 
 ### `includes/` namespace layout
 
 | Path | Responsibility |
 |------|---------------|
-| `Admin/Settings.php` | Plugin settings page, renders connector-specific fields |
+| `Admin/Settings.php` | Plugin settings page, renders connector-specific fields, manages the multi-connector list |
+| `Admin/Setup_Wizard.php` | First-install setup wizard (AJAX-driven onboarding) |
 | `Admin/Import_Products.php` | Batch product import from ERP (AJAX + pagination) |
 | `Admin/Orders.php` | Order admin column, sync actions |
 | `Admin/Taxes_Rates.php` | Imports EU tax rates into WooCommerce |
@@ -86,18 +87,26 @@ The central bootstrap class. Receives the `$options` array, resolves the active 
 | `Helpers/AI.php` | AI-assisted product descriptions |
 | `Helpers/ALERT.php` | Admin alert/notification system |
 | `Helpers/HELPER.php` | Shared utilities (connector resolution, settings migration, logging) |
+| `Connector/Abstract_Connector_API.php` | Base class defining the connector API contract (optional capabilities) |
 | `Connector/class-api-clientify.php` | Example connector (Clientify CRM) |
+| `Connector/class-api-brevo.php` | Brevo connector (order/email sync only, no product catalog) |
 | `CLI/Import_Products_Command.php` | WP-CLI: `wp conecom` commands |
 
 The connector object is passed into helpers as `$api_erp`.
 
 ### Connector pattern
 
-Each ERP/CRM connector is a separate plugin that hooks `conecom_options_plugin` to inject its config. The config array drives: API credentials fields, product/order sync options, admin UI labels, and the DB sync table name (`{prefix}sync_{slug}`). The `Connector/` directory holds the connector class; `Connector/assets/` holds its logo.
+Each ERP/CRM connector is a separate plugin (or class in `Connector/`) that hooks `conecom_options_plugin` to inject its config. The config array drives: API credentials fields, product/order sync options, admin UI labels, and the DB sync table name (`{prefix}sync_{slug}`). The `Connector/` directory holds the connector class; `Connector/assets/` holds its logo.
+
+Connectors may extend `CONECOM_Abstract_Connector_API` to declare which optional capabilities they implement; use `HELPER::connector_supports( $connector, $method )` (rather than a raw `method_exists()`) wherever an optional method is called, so both legacy and contract-based connectors are handled consistently.
+
+### Multi-connector support
+
+The plugin can hold several simultaneously configured connectors (see `docs/multi-connectors.md`). `HELPER::get_connectors()` builds a context (`connapi_erp`, `settings`, `options`, capability flags) per connector ID; `HELPER::get_connector()` resolves the single active/default one for backwards compatibility. Admin AJAX handlers (`Import_Products`, `Orders`) accept an optional `connector_id` from the request and resolve that connector's own `connapi_erp`/`settings`/`options` before acting, falling back to the default connector when none is specified.
 
 ### Options storage
 
-- `connect_ecommerce` — main plugin settings keyed by connector slug (e.g. `['holded' => [...]]`)
+- `connect_ecommerce` — main plugin settings keyed by connector ID (e.g. `['holded' => [...]]`), plus a `connectors_meta` entry describing each configured connector (type, label, workflow flags, status) and a `connector` key naming the active one.
 - `connect_ecommerce_prod_mergevars` — product field mappings (`prod_mergevars` key); format: `[ 'sourceField' => 'type|destination' ]` where type is `cf` (custom field meta), `tax` (taxonomy), or `prod` (product prop)
 - `connect_ecommerce_payment_methods` — payment method mappings
 
@@ -109,16 +118,47 @@ Each ERP/CRM connector is a separate plugin that hooks `conecom_options_plugin` 
 
 `CONECOM_VAT_FIELD_SLUGS` (defined in main file) lists all known meta key variants for the VAT/NIF field to ensure compatibility across checkout block and classic checkout.
 
+## Releasing a New Version
+
+Version and changelog live in two files that must stay in sync:
+
+- `woocommerce-es.php` — `Version:` header comment AND `CONECOM_VERSION` constant (both must match).
+- `readme.txt` — `Stable tag:` / `Version:` header fields, AND the `== Changelog ==` section.
+
+During development, unreleased changes accumulate under a `= next =` heading in the changelog (each PR appends its own `* Added:` / `* Fixed:` / `* Enhancement:` bullet there — see existing entries for the tone/format). To ship a release:
+
+1. Rename `= next =` to `= X.Y.Z =` in `readme.txt` (keep its bullets as-is — that heading becomes the release notes).
+2. Bump `Stable tag:` and `Version:` in the `readme.txt` header to `X.Y.Z`.
+3. Bump `Version:` and `CONECOM_VERSION` in `woocommerce-es.php` to `X.Y.Z` (drop any `-beta.N` suffix).
+4. Run `composer lint`, `composer phpstan`, `composer test` — all must pass before tagging.
+5. Commit (conventionally as a standalone `version` commit) and push to `trunk`.
+6. Create the GitHub release, tagged at that commit:
+   ```bash
+   gh release create X.Y.Z --repo closemarketing/woocommerce-es \
+     --title "Version X.Y.Z" \
+     --notes "## What's Changed
+
+   <paste the readme.txt changelog bullets for this version verbatim>"
+   ```
+   Match past releases' format exactly: title is `Version X.Y.Z`, tag is the bare version, body is `## What's Changed` followed by the same `* Added:` / `* Fixed:` / `* Enhancement:` bullets just written to `readme.txt` — don't reword them.
+
+A new `= next =` placeholder is added later, by whichever PR is the first to need it after the release — not as part of the release itself.
+
+Between releases, a beta suffix (`X.Y.Z-beta.N`) may be used in both files' version fields while a feature is still in review — drop it in step 3 above.
+
+`.distignore` controls what's excluded from the packaged plugin zip (composer/npm manifests, CI config, test tooling, docs). Check it before adding new dev-only files at the plugin root so they don't ship in releases.
+
 ## Code Style
 
 - **Tabs** for indentation; align `=` operators vertically within variable groups.
 - **Yoda conditions** always (`null === $var`).
 - PHP file header: `/** ... @author Closetechnology ... */` → `namespace ...;` → `defined( 'ABSPATH' ) || exit;`
-- Inline comments: capital letter, end with period, English only. Comment blocks of logic, not individual lines.
+- Inline comments: capital letter, end with period. Comment blocks of logic, not individual lines.
 - **No jQuery** — vanilla JavaScript only.
 - Global functions/options prefixed with `conecom_`; classes namespaced under `CLOSE\ConnectEcommerce\`.
 - Text domain: `woocommerce-es`.
 - All documentation goes in `/docs/` and is listed in `.distignore`.
+- **Language convention**: all code, comments, PR and issues written in English.
 
 ## Cursor Cloud specific instructions
 

@@ -4,9 +4,9 @@ Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 7.0
-Stable tag: 3.3.5
-Version: 3.3.5
+Tested up to: 7.1
+Stable tag: 3.4.0
+Version: 3.4.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -225,12 +225,29 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 == Changelog ==
 
 = next =
+
+* Added: A documented connector API contract with safe defaults for optional ERP and CRM capabilities.
+* Fixed: Product imports from non-paginated APIs now finish at the catalogue end.
+* Fixed: Order-only connectors can now disable product, subscription, AI and payment-mapping settings without causing errors or exporting previously saved payment and treasury mappings. Settings submenus now preserve their separators when optional sections are hidden.
+
+= 3.4.0 =
+* Fixed: Products imported from the ERP always got WooCommerce's standard tax class, ignoring the actual tax configured in the ERP. Products now read the ERP's tax key (e.g. Holded's `s_iva_21`) and resolve it to a WooCommerce tax class via the existing "ERP Tax Type" mapping (WooCommerce > Settings > Tax) — the same mapping already used for the order sync direction.
+* Added: First-install setup wizard guides new users through connecting WooCommerce to their ERP/CRM, configuring EU VAT compliance, setting up AI-assisted product descriptions, and running an initial product sync. Runs automatically on first activation; can be re-run from the "Reset wizard" link on the settings page.
+* Added: New "Manual" option for the order status sync setting. When selected, no document is created automatically on order status changes (including "Completed"); use the "Send to ERP" button on the order, or the manual order sync, to create it on request.
+* Added: Manual order sync now lets you filter by a From/To date range instead of syncing all history every time. The "Sync Orders" screen title now reads "Export Orders to {Connector}", and the Automatic Sync (cron) column/log tab — not applicable to order sync — has been removed from that screen; a notice shows which order statuses will sync based on your configured setting (All / Paid / Only Completed / Manual).
+* Added: The order admin widget now shows a "Download" link for the ERP document PDF (invoice), matching the one already available in My Account.
+* Fixed: The document download endpoint required the `manage_options` capability, so Shop Managers and customers downloading their own invoice from My Account were rejected. It now allows the `manage_woocommerce` capability or the order's own customer.
+* Fixed: The document download always failed with a blank page because it fetched connector settings from the legacy `get_option( $slug )` location instead of the resolved settings already available on the class, which are empty on sites that migrated to the nested `connect_ecommerce` option (e.g. after the Holded connector's settings migration). The order email PDF attachment (`attach_file_woocommerce_email()`) had the same issue and is fixed the same way.
+* Fixed: Manual order sync (`sync_orders()`) was returning zero orders on stores with HPOS (High-Performance Order Storage) enabled, because `wc_get_orders()` does not treat `'limit' => -1` as "no limit" under HPOS. It also ignored the connector's order status sync setting, always querying only `completed` orders regardless of the "All status orders" / "Paid orders" / "Only Completed" setting.
+* Fixed: When the ERP renamed a variant's SKU on resync, WooCommerce's store-wide GTIN/barcode uniqueness check silently rejected assigning the barcode to the new variation because the now-orphaned old variation still held it — leaving the new variation without its barcode. The barcode is now freed from the confirmed stale sibling variation before being reassigned.
 * Added: New Brevo connector for order sync with the Brevo email marketing platform. Brevo has no product catalog, so only customer contacts and order data are synced (products, stock, and tax import are not applicable).
 * Fixed: Reverted the "Get prices with Tax?" setting key from `tax_price` back to `tax_option`. Connector addons still read/write `tax_option`, so the 3.3.4 rename caused the setting to appear to reset to "No" after saving.
 * Enhancement: Added a "Default" option to "Get prices with Tax?" that follows WooCommerce's own "Prices entered with tax" setting (WooCommerce &gt; Settings &gt; Tax), so both settings stay in sync instead of having to be configured twice. It is now the default value for new/unset installs. Explicitly choosing "Yes" or "No" still overrides the WooCommerce setting as before. The resolved `yes`/`no` value (not the literal "default") is what gets saved and kept in sync, so connector add-ons reading `tax_option` directly always get a value they understand.
 * Added: New `TAXES::get_tax_class_by_erp_id()` helper method that resolves a WooCommerce tax class from an ERP/CRM tax id, using the "ERP Tax Type" mapping configured in WooCommerce > Settings > Tax. This lets connectors (e.g. Odoo) map an ERP tax id to the correct WooCommerce tax class when syncing products, reusing the same mapping already used for orders.
 * Fixed: Importing a variable product no longer enables "Stock management" on the parent product. Stock is tracked on the variations only; enabling it on the parent as well made the parent show as "out of stock" even when its variations had stock available. The parent's stock status is now correctly recalculated from its variations after each sync.
 * Added: WooCommerce Subscriptions support — product sync from ERP no longer overwrites the product type when it already exists in the store as a subscription or variable-subscription.
+* Fixed: Merge vars for product custom fields was not getting properly the values from the API.
+* Added: Option to hide products out-of-stock or not change the visibility.
 
 = 3.3.4 =
 * Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.

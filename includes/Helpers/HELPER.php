@@ -11,6 +11,7 @@
 namespace CLOSE\ConnectEcommerce\Helpers;
 
 use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -411,9 +412,12 @@ class HELPER {
 		$connector['is_disabled_ai']                = false;
 		$connector['is_mergevars']                  = false;
 
-		$payment_mappings = PAYMENTS::get_payment_method_mappings( $connector_id, $connector_type );
-		$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
-		$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+		$payment_methods_enabled = ! array_key_exists( 'payment_methods', $connector_options ) || ! empty( $connector_options['payment_methods'] );
+		if ( $payment_methods_enabled ) {
+			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector_id, $connector_type );
+			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+		}
 
 		// Defensive fallback for sites that haven't re-saved settings since upgrading.
 		// Connector add-ons (e.g. connect-woocommerce-neo) read `tax_option` straight
@@ -449,7 +453,7 @@ class HELPER {
 
 		if ( class_exists( $apiname ) ) {
 			$connector['connapi_erp']  = new $apiname( $options, $connector_id );
-			$connector['is_mergevars'] = method_exists( $connector['connapi_erp'], 'get_product_attributes' );
+			$connector['is_mergevars'] = self::connector_supports( $connector['connapi_erp'], 'get_product_attributes' );
 		}
 
 		$connector['actions'] = array(
@@ -474,6 +478,28 @@ class HELPER {
 			return sanitize_key( $base_action );
 		}
 		return sanitize_key( $base_action . '_' . $connector_id );
+	}
+
+	/**
+	 * Checks whether a connector implements an optional capability.
+	 *
+	 * Legacy connectors keep their method-based capability detection. Connectors
+	 * using the shared contract must override an optional method to enable it.
+	 *
+	 * @param object $connector Connector API instance.
+	 * @param string $method Connector method name.
+	 * @return bool
+	 */
+	public static function connector_supports( $connector, $method ) {
+		if ( ! is_object( $connector ) || ! method_exists( $connector, $method ) ) {
+			return false;
+		}
+
+		if ( $connector instanceof CONECOM_Abstract_Connector_API ) {
+			return $connector->supports_capability( $method );
+		}
+
+		return true;
 	}
 
 	/**

@@ -77,7 +77,7 @@ class ORDER {
 				$invoice_id = $order->get_meta( $meta_key_order );
 				$result     = $api_erp->create_order( $order_data, $doc_id, $invoice_id, $force );
 
-				$doc_id     = 'error' === $result['status'] ? '' : $result['document_id'];
+				$doc_id     = 'error' === $result['status'] ? '' : ( $result['document_id'] ?? '' );
 				$invoice_id = isset( $result['invoice_id'] ) ? $result['invoice_id'] : $invoice_id;
 				$order->update_meta_data( $meta_key_order, $invoice_id );
 				$order->update_meta_data( '_' . $option_prefix . '_doc_id', $doc_id );

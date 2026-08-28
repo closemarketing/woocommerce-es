@@ -15,6 +15,7 @@ namespace CLOSE\ConnectEcommerce\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Helpers\TAXES;
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
 
 /**
  * Class ERP Tax Types
@@ -70,7 +71,7 @@ class Taxes_Types_ERP {
 		$connector_instance = null;
 		if ( is_object( $this->connector ) && method_exists( $this->connector, 'get_taxes' ) ) {
 			$connector_instance = $this->connector;
-		} elseif ( is_array( $this->connector ) && ! empty( $this->connector['connapi_erp'] ) && method_exists( $this->connector['connapi_erp'], 'get_taxes' ) ) {
+		} elseif ( is_array( $this->connector ) && ! empty( $this->connector['connapi_erp'] ) && HELPER::connector_supports( $this->connector['connapi_erp'], 'get_taxes' ) ) {
 			$connector_instance = $this->connector['connapi_erp'];
 		}
 

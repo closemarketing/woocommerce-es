@@ -50,6 +50,8 @@ function syncManualItems( element, action, loop = 0 ) {
 function syncManualItemsWithMode( element, action, loop, pagination ) {
 	const importMode = document.getElementById('import-mode');
 	const mode = importMode ? importMode.value : 'all';
+	const dateFrom = document.getElementById('orders-date-from');
+	const dateTo = document.getElementById('orders-date-to');
 	const refreshButton = document.getElementById('refresh_stats');
 	const spinner = element.parentElement ? element.parentElement.querySelector('.spinner') : null;
 	const connectorId = document.querySelector('select[name="connwoo-connector-select"]')?.value || '';
@@ -64,6 +66,8 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 	element.disabled = true;
 	element.textContent = ConEcom_ajaxAction.label_syncing;
 	if ( importMode ) { importMode.disabled = true; }
+	if ( dateFrom ) { dateFrom.disabled = true; }
+	if ( dateTo ) { dateTo.disabled = true; }
 	if ( refreshButton ) { refreshButton.disabled = true; }
 	if ( spinner ) { spinner.classList.add('is-active'); }
 
@@ -71,8 +75,14 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 	const isOdd = number => number % 2 !== 0;
 	const class_task = isOdd(loop) ? 'odd' : 'even';
 
-	const body = 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI
+	let body = 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI
 		+ '&mode=' + encodeURIComponent(mode) + '&pagination=' + (pagination || 100) + '&connector_id=' + connectorId;
+	if ( dateFrom && dateFrom.value ) {
+		body += '&date_from=' + encodeURIComponent(dateFrom.value);
+	}
+	if ( dateTo && dateTo.value ) {
+		body += '&date_to=' + encodeURIComponent(dateTo.value);
+	}
 
 	fetch( ConEcom_ajaxAction.url, {
 		method: 'POST',
@@ -101,6 +111,8 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 				element.disabled = false;
 				element.textContent = ConEcom_ajaxAction.label_sync;
 				if ( importMode ) { importMode.disabled = false; }
+				if ( dateFrom ) { dateFrom.disabled = false; }
+				if ( dateTo ) { dateTo.disabled = false; }
 				if ( refreshButton ) { refreshButton.disabled = false; }
 				if ( spinner ) { spinner.classList.remove('is-active'); }
 				if ( typeof loadImportStats === 'function' ) {
@@ -111,6 +123,8 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 			element.disabled = false;
 			element.textContent = ConEcom_ajaxAction.label_sync;
 			if ( importMode ) { importMode.disabled = false; }
+			if ( dateFrom ) { dateFrom.disabled = false; }
+			if ( dateTo ) { dateTo.disabled = false; }
 			if ( refreshButton ) { refreshButton.disabled = false; }
 			if ( spinner ) { spinner.classList.remove('is-active'); }
 			if ( results.data && results.data.message ) {

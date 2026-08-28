@@ -21,7 +21,7 @@
 		"squizlabs/php_codesniffer": "^3",
 		"dealerdirect/phpcodesniffer-composer-installer": "^1.2",
 		"phpcompatibility/phpcompatibility-wp": "^2",
-		"sirbrillig/phpcs-variable-analysis": "^2",
+		"sirbrillig/phpcs-variable-analysis": "^3",
 		"wp-coding-standards/wpcs": "^3.1",
 		"phpcsstandards/phpcsutils": "^1.x-dev",
 		"yoast/phpunit-polyfills": "^4.0",
@@ -30,7 +30,7 @@
 		"szepeviktor/phpstan-wordpress": "^2.0",
 		"phpstan/extension-installer": "^1.4",
 		"php-stubs/wordpress-stubs": "^6.8",
-		"php-stubs/woocommerce-stubs": "^10.1",
+		"php-stubs/woocommerce-stubs": "^11.0",
 		"phpunit/phpunit": "^9.6"
 	},
 	"scripts": {

@@ -5,7 +5,7 @@
  * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock. Includes EU VAT Compliance. Import European Taxes and check VAT compliance.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
- * Version:           3.3.5-beta.2
+ * Version:           3.4.0
  * Requires PHP:      7.4
  * Requires at least: 6.3
  * Text Domain:       woocommerce-es
@@ -20,7 +20,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.3.5-beta.2' );
+define( 'CONECOM_VERSION', '3.4.0' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
@@ -39,6 +39,7 @@ define(
 );
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
+require_once CONECOM_PLUGIN_PATH . 'includes/Connector/Abstract_Connector_API.php';
 
 /**
  * Gets the options for the plugin.
@@ -142,12 +143,16 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	add_action( 'cli_init', 'conecom_import_products_register_commands', 20 );
 }
 
-register_activation_hook( __FILE__, 'conecom_move_settings' );
+register_activation_hook( __FILE__, 'conecom_activation' );
 /**
- * Move settings from old plugin to new plugin
+ * Runs on plugin activation: migrates legacy settings and queues the setup wizard redirect.
  *
  * @return void
  */
-function conecom_move_settings() {
+function conecom_activation() {
 	CLOSE\ConnectEcommerce\Helpers\HELPER::move_settings();
+
+	if ( ! get_option( 'conecom_wizard_complete' ) ) {
+		set_transient( 'conecom_wizard_redirect', true, 30 );
+	}
 }

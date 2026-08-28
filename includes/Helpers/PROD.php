@@ -256,6 +256,7 @@ class PROD {
 	 */
 	public static function sync_product( $settings, $item, $api_erp, $product_id = 0, $type = 'simple', $pack_items = null ) {
 		$import_stock       = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
+		$stock_visibility   = ! empty( $settings['stock_visibility'] ) ? $settings['stock_visibility'] : 'hide';
 		$is_virtual         = ! empty( $settings['virtual'] ) && 'yes' === $settings['virtual'] ? true : false;
 		$allow_backorders   = ! empty( $settings['backorders'] ) ? $settings['backorders'] : 'yes';
 		$rate_id            = ! empty( $settings['rates'] ) ? $settings['rates'] : 'default';
@@ -265,6 +266,9 @@ class PROD {
 		$message            = '';
 		$product            = null;
 		$item_sku           = ! empty( $item['sku'] ) ? $item['sku'] : '';
+		$tax_slug           = ! empty( $item['taxes'] ) ? ( is_array( $item['taxes'] ) ? reset( $item['taxes'] ) : $item['taxes'] ) : '';
+		$tax_class          = TAXES::get_tax_class_by_erp_id( $tax_slug );
+		$tax_class          = null === $tax_class ? '' : $tax_class;
 
 		// Preserve subscription product types — ERP has no subscription concept.
 		// Read the type directly from the taxonomy (not via wc_get_product, which may be cached),
@@ -313,7 +317,7 @@ class PROD {
 			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
-			'tax_class'        => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
+			'tax_class'        => $tax_class,
 		);
 
 		// Stock is managed on the variations, not the parent — WooCommerce itself
@@ -348,7 +352,6 @@ class PROD {
 				'date_on_sale_to'    => '',
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
-				'tax_class'          => isset( $item['tax_type'] ) ? $item['tax_type'] : '',
 				'sold_individually'  => false,
 				'weight'             => $is_virtual ? '' : $item['weight'],
 				'upsell_ids'         => '',
@@ -393,41 +396,52 @@ class PROD {
 				// Values for simple products.
 				// Check if the product can be sold.
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['stock_status'] = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && $item_stock > 0 ) {
-					$product_props['manage_stock']       = true;
-					$product_props['stock_quantity']     = $item_stock;
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item_stock;
+					$product_props['stock_status']   = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && 0 === $item_stock ) {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = 0;
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = 0;
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} else {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = $item['stock'];
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item['stock'];
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				}
 				break;
 			case 'variable':
@@ -699,13 +713,6 @@ class PROD {
 				$variation_props     = array_merge( $variation_props, $variation_props_new );
 			}
 			$variation = new \WC_Product_Variation( $variation_id );
-			if ( ! empty( $variant['barcode'] ) ) {
-				try {
-					$variation->set_global_unique_id( $variant['barcode'] );
-				} catch ( \Exception $e ) {
-					// Error.
-				}
-			}
 			$variation->set_props( $variation_props );
 
 			// For variable-subscription products, sync subscription price and schedule.
@@ -776,6 +783,32 @@ class PROD {
 				// Covers brand-new products and new variants added to an existing
 				// product — both cases need the SKU set once, on creation.
 				$variation->set_sku( $variant['sku'] );
+			}
+
+			if ( ! empty( $variant['barcode'] ) ) {
+				// WooCommerce validates global_unique_id uniqueness store-wide, so if the ERP
+				// renamed this variant's SKU on resync (new $variation_id, unmatched by SKU),
+				// its own barcode is still held by the now-orphaned sibling variation of this
+				// same parent — free it there first, but only when it's confirmed to be that
+				// stale sibling (same parent, same ERP variant id when available), never an
+				// unrelated product that merely happens to share the barcode.
+				$barcode_holder_id = wc_get_product_id_by_global_unique_id( $variant['barcode'] );
+				if ( $barcode_holder_id && (int) $barcode_holder_id !== (int) $variation_id ) {
+					$barcode_holder   = wc_get_product( $barcode_holder_id );
+					$is_stale_sibling = $barcode_holder
+						&& $barcode_holder->is_type( 'variation' )
+						&& (int) $barcode_holder->get_parent_id() === (int) $product_id
+						&& (string) $barcode_holder->get_meta( '_connect_ecommerce_productid' ) === (string) $variant['id'];
+					if ( $is_stale_sibling ) {
+						$barcode_holder->set_global_unique_id( '' );
+						$barcode_holder->save();
+					}
+				}
+				try {
+					$variation->set_global_unique_id( $variant['barcode'] );
+				} catch ( \Exception $e ) {
+					// Error.
+				}
 			}
 
 			// Custom fields for variations.
@@ -1061,6 +1094,10 @@ class PROD {
 		if ( ! empty( $item['images'] ) ) {
 			$images = $item['images'] ?? array();
 		} else {
+			if ( ! HELPER::connector_supports( $api_erp, 'get_image_product' ) ) {
+				return false;
+			}
+
 			// Ask API for image.
 			$result_api = $api_erp->get_image_product( $settings, $item['id'], $product_id );
 
@@ -1069,12 +1106,12 @@ class PROD {
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
-			if ( isset( $result_api['upload']['url'] ) ){
-				$images[] = [
+			if ( isset( $result_api['upload']['url'] ) ) {
+				$images[] = array(
 					'url'          => $result_api['upload']['url'],
-					'file'         => $result_api['upload']['file'],
-					'content_type' => $result_api['content_type'],
-				];
+					'file'         => $result_api['upload']['file'] ?? '',
+					'content_type' => $result_api['upload']['content_type'] ?? $result_api['content_type'] ?? '',
+				);
 			}
 		}
 
@@ -1404,7 +1441,7 @@ class PROD {
 	 * @return array Import statistics.
 	 */
 	public static function get_import_stats( $connapi_erp, $options, $settings = array() ) {
-		if ( ! $connapi_erp || ! method_exists( $connapi_erp, 'get_all_product_skus' ) ) {
+		if ( ! $connapi_erp || ! HELPER::connector_supports( $connapi_erp, 'get_all_product_skus' ) ) {
 			return array(
 				'status'  => 'error',
 				'message' => __( 'Connector does not support import statistics', 'woocommerce-es' ),

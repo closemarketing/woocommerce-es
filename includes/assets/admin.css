@@ -221,6 +221,19 @@
 	margin: 0;
 }
 
+.connect-ecommerce-settings .connwoo-header .connwoo-header-btn {
+	color: #fff;
+	border-color: #fff;
+	background: transparent;
+}
+
+.connect-ecommerce-settings .connwoo-header .connwoo-header-btn:hover,
+.connect-ecommerce-settings .connwoo-header .connwoo-header-btn:focus {
+	color: #010101;
+	border-color: #fff;
+	background: #fff;
+}
+
 .connect-ecommerce-settings .repeater-section .product-mergevars {
 	display: grid;
 	grid-template-columns: 3fr 1fr 1fr 3fr 1fr;
