@@ -268,6 +268,7 @@ class Settings {
 
 				// Subtabs.
 				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
+				$sync_custom_subtabs = array();
 
 				// Set default subtabs.
 				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
@@ -330,6 +331,13 @@ class Settings {
 							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a></li>
 							<?php
 						}
+
+						$sync_custom_subtabs = apply_filters( 'conecom_sync_subtabs', array(), $this->connector );
+						foreach ( $sync_custom_subtabs as $subtab_slug => $subtab_label ) {
+							?>
+							<li> | <a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $subtab_slug ); ?>" class="<?php echo esc_attr( $subtab_slug ) === $active_subtab ? 'current' : ''; ?>"><?php echo esc_html( $subtab_label ); ?></a></li>
+							<?php
+						}
 						?>
 					</ul>
 					<br class="clear">
@@ -378,6 +386,8 @@ class Settings {
 				if ( 'synchronization' === $active_tab ) {
 					if ( 'sync_products' === $active_subtab || 'sync_orders' === $active_subtab ) {
 						$this->page_get_sync( $active_subtab );
+					} elseif ( isset( $sync_custom_subtabs[ $active_subtab ] ) ) {
+						do_action( "conecom_render_sync_subtab_{$active_subtab}" );
 					}
 				}
 
@@ -703,6 +713,12 @@ class Settings {
 			}
 
 			// API Connection Status.
+			do_action(
+				'conecom_settings_connection_fields',
+				$this->connector,
+				get_option( 'connect_ecommerce', array() )[ $this->connector ] ?? array()
+			);
+
 			add_settings_field(
 				'wcpimh_api_status',
 				__( 'Connection Status', 'woocommerce-es' ),
