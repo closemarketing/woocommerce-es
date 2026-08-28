@@ -154,28 +154,29 @@ class MyAccount {
 		$api_doc_id   = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
 		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
 
-		$file_document = false;
+		$file_document_path = false;
 		if ( $api_doc_id && $this->connapi_erp ) {
-			$file_document = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
+			$file_document_path = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
 		}
 
-		if ( empty( $file_document ) ) {
+		if ( ! file_exists( $file_document_path ) ) {
 			wp_die();
 		}
 
-		$basename = sanitize_file_name( $api_doc_type . '-' . $api_doc_id . '.pdf' );
+		$basename = basename( $file_document_path );
+		$filesize = filesize( $file_document_path );
 
 		header( 'Content-Description: File Transfer' );
-		header( 'Content-Type: application/pdf' );
+		header( 'Content-Type: text/plain' );
 		header( 'Cache-Control: no-cache, must-revalidate' );
 		header( 'Expires: 0' );
 		header( 'Content-Disposition: attachment; filename=' . $basename );
-		header( 'Content-Length: ' . strlen( $file_document ) );
+		header( 'Content-Length: ' . $filesize );
 		header( 'Pragma: public' );
 
 		flush();
 
-		echo $file_document; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		readfile( $file_document_path );
 
 		wp_die();
 	}
