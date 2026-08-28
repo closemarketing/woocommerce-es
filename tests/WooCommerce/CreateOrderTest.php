@@ -275,10 +275,10 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $order_data );
 		$this->assertEquals( 110, $order_data['total'] );
 		$this->assertEquals( 10, $order_data['total_tax'] );
-		$this->assertEquals( 'Jose M', $order_data['contactFirstName'] );
-		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
-		$this->assertEquals( 'Sample City', $order_data['contactCity'] );
-		$this->assertEquals( 'California', $order_data['contactProvince'] );
+		$this->assertEquals( 'JOSE M', $order_data['contactFirstName'] );
+		$this->assertEquals( 'GARCIA-LOPEZ', $order_data['contactLastName'] );
+		$this->assertEquals( 'SAMPLE CITY', $order_data['contactCity'] );
+		$this->assertEquals( 'CALIFORNIA', $order_data['contactProvince'] );
 		$this->assertEquals( 'US', $order_data['contactCountryCode'] );
 		$this->assertEquals( '90001', $order_data['contactCp'] );
 		$this->assertEquals( 'bacs', $order_data['paymentMethod'] );
