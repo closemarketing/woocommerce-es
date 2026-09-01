@@ -135,22 +135,46 @@ class TAX {
 		foreach ( $product_cat_names as $product_cat_name ) {
 			$product_cat_name = is_array( $product_cat_name ) ? $product_cat_name['value'] : $product_cat_name;
 			$cat_slug         = sanitize_title( $product_cat_name );
-			$product_cat      = get_term_by( 'slug', $cat_slug, $taxonomy_name );
+			$parent_prod_id   = $level > 0 && isset( $cats_ids[ $level - 1 ] ) ? $cats_ids[ $level - 1 ] : 0;
 
-			if ( $product_cat ) {
+			/*
+			 * Look the term up within its parent only. The same name can legitimately
+			 * appear in several branches of the tree (e.g. "Plano" under many families),
+			 * so a global slug lookup would match an unrelated branch and both mis-parent
+			 * the new term and assign the wrong category to the product.
+			 */
+			$existing = get_terms(
+				array(
+					'taxonomy'   => $taxonomy_name,
+					'hide_empty' => false,
+					'parent'     => $parent_prod_id,
+					'name'       => $product_cat_name,
+					'number'     => 1,
+				)
+			);
+
+			if ( ! is_wp_error( $existing ) && ! empty( $existing ) ) {
 				// Finds the category.
-				$cats_ids[ $level ] = $product_cat->term_id;
+				$cats_ids[ $level ] = $existing[0]->term_id;
 			} else {
-				$parent_prod_id = 0;
-				if ( $level > 0 ) {
-					$parent_prod_id = $cats_ids[ $level - 1 ];
+				/*
+				 * WordPress requires slugs to be unique across the whole taxonomy, so a
+				 * child sharing a name with a term in another branch needs a scoped slug.
+				 */
+				$term_slug = $cat_slug;
+				if ( $parent_prod_id && get_term_by( 'slug', $term_slug, $taxonomy_name ) ) {
+					$parent_term = get_term( $parent_prod_id, $taxonomy_name );
+					if ( $parent_term && ! is_wp_error( $parent_term ) ) {
+						$term_slug = $parent_term->slug . '-' . $cat_slug;
+					}
 				}
+
 				// Creates the category.
 				$term = wp_insert_term(
 					$product_cat_name,
 					$taxonomy_name,
 					array(
-						'slug'   => $cat_slug,
+						'slug'   => $term_slug,
 						'parent' => $parent_prod_id,
 					)
 				);
