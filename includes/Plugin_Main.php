@@ -13,6 +13,7 @@ namespace CLOSE\ConnectEcommerce;
 defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Admin\Settings;
+use CLOSE\ConnectEcommerce\Admin\Settings_Payment_Methods;
 use CLOSE\ConnectEcommerce\Admin\Setup_Wizard;
 use CLOSE\ConnectEcommerce\Admin\Import_Products;
 use CLOSE\ConnectEcommerce\Admin\Widget_Order;
@@ -45,17 +46,20 @@ class Base {
 	 * @param array $options Options of plugin.
 	 */
 	public function __construct( $options = array() ) {
-		$this->options = $options;
-		$connector     = HELPER::get_connector( $options );
+		$this->options   = $options;
+		$connectors_data = HELPER::get_connectors( $options );
+		$connector       = HELPER::get_connector( $options );
 
 		add_action( 'update_option_woocommerce_prices_include_tax', array( HELPER::class, 'sync_tax_option_with_woocommerce' ) );
 
 		if ( is_admin() ) {
-			new Settings( $connector );
+			// Register the form handler on every admin request, including admin-post.php.
+			new Settings_Payment_Methods();
+			new Settings( $connectors_data );
 			new Setup_Wizard( $options );
 			new Import_Products( $connector );
-			new Widget_Product( $connector );
-			new Widget_Order( $connector );
+			new Widget_Product( $connector, $connectors_data );
+			new Widget_Order( $connector, $connectors_data );
 			new Notices();
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );

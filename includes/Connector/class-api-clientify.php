@@ -35,13 +35,28 @@ class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 	private $options;
 
 	/**
+	 * Connector instance identifier.
+	 *
+	 * @var string
+	 */
+	private $connector_id = 'clientify';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param array $options Options of plugin.
 	 */
-	public function __construct( $options ) {
-		$this->options  = $options['clientify'];
-		$this->settings = get_option( 'connect_ecommerce' )['clientify'] ?? array();
+	public function __construct( $options, $connector_id = null ) {
+		$this->options      = $options['clientify'];
+		$this->connector_id = $connector_id ?: 'clientify';
+
+		$settings_all   = get_option( 'connect_ecommerce' );
+		$connector_key  = $this->connector_id;
+		if ( isset( $settings_all[ $connector_key ] ) ) {
+			$this->settings = $settings_all[ $connector_key ];
+		} else {
+			$this->settings = $settings_all['clientify'] ?? array();
+		}
 
 		add_filter( 'woocommerce_checkout_fields', array( $this, 'clientify_cookie_checkout_field' ) );
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_scripts' ) );
@@ -214,6 +229,70 @@ class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 	 */
 	public function get_products_stock( $period = null ) {
 		return false;
+	}
+
+	/**
+	 * Gets all products SKUs from Clientify (paginated).
+	 *
+	 * @return array Array of products SKUs with last_updated, or error status.
+	 */
+	public function get_all_product_skus() {
+		$api_key = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
+		if ( ! $api_key ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'No API Key', 'woocommerce-es' ),
+			);
+		}
+
+		$args = array(
+			'method'  => 'GET',
+			'headers' => array(
+				'Content-Type'  => 'application/json',
+				'Authorization' => 'Token ' . $api_key,
+			),
+			'timeout' => 120,
+		);
+
+		$all_products = array();
+		$url          = 'https://api.clientify.net/v1/products/?page_size=' . $this->options['api_pagination'];
+
+		while ( $url ) {
+			$response = wp_remote_request( $url, $args );
+			if ( is_wp_error( $response ) ) {
+				return array(
+					'status'  => 'error',
+					'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
+				);
+			}
+
+			$body = json_decode( wp_remote_retrieve_body( $response ), true );
+			$code = (int) round( wp_remote_retrieve_response_code( $response ) / 100 );
+
+			if ( 2 !== $code || ! isset( $body['results'] ) ) {
+				return array(
+					'status'  => 'error',
+					'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
+				);
+			}
+
+			$all_products = array_merge( $all_products, $body['results'] );
+			$url          = ! empty( $body['next'] ) ? $body['next'] : '';
+		}
+
+		$products_skus = array();
+		foreach ( $all_products as $product ) {
+			if ( empty( $product['sku'] ) ) {
+				continue;
+			}
+			$products_skus[] = array(
+				'sku'          => $product['sku'],
+				'last_updated' => ! empty( $product['modified'] ) ? strtotime( $product['modified'] ) : 0,
+				'tags'         => array(),
+			);
+		}
+
+		return $products_skus;
 	}
 
 	/**

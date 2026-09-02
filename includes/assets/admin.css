@@ -17,6 +17,151 @@
 	width: 326px;
 }
 
+/* Connector settings form: box each settings section (Connection / Products sync / Orders sync) with a beveled edge */
+.connect-ecommerce-settings .connwoo-connector-settings h2 {
+	margin: 30px 0 0;
+	font-size: 16px;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings h2:first-of-type {
+	margin-top: 0;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings h2 {
+	border: 1px solid #dcdcde;
+	border-bottom: none;
+	border-radius: 4px 4px 0 0;
+	background: #f0f0f1;
+	padding: 12px 16px;
+	box-shadow: inset 0 1px 0 #fff;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings .connwoo-section-description {
+	border: 1px solid #dcdcde;
+	border-top: none;
+	border-bottom: none;
+	background: #fff;
+	margin: 0;
+	padding: 12px 16px 0;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table {
+	border: 1px solid #dcdcde;
+	border-top: 1px solid #fff;
+	border-radius: 0 0 4px 4px;
+	background: #fff;
+	margin-top: 0;
+	padding: 14px 16px;
+	box-shadow:
+		inset 0 1px 0 #fff,
+		0 1px 2px rgba( 0, 0, 0, 0.04 ),
+		0 2px 0 rgba( 0, 0, 0, 0.03 );
+}
+
+/* Two-column layout for short fields (single select/checkbox/small input) */
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table {
+	display: block;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table tbody {
+	display: flex;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table tr {
+	display: block;
+	width: 100%;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table tr.connwoo-field-short {
+	width: 50%;
+	box-sizing: border-box;
+	padding-right: 20px;
+}
+
+@media (max-width: 782px) {
+	.connect-ecommerce-settings .connwoo-connector-settings table.form-table tr.connwoo-field-short {
+		width: 100%;
+	}
+}
+
+/* Sync engine: flow header (origin → destination) */
+.connect-ecommerce-settings .connwoo-flow-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	background: #fff;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	padding: 20px 24px;
+	margin: 16px 0;
+	max-width: 680px;
+	margin: 1rem auto;
+}
+
+.connect-ecommerce-settings .connwoo-flow-origin,
+.connect-ecommerce-settings .connwoo-flow-destination {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.connwoo-sync-engine .sync-wrapper {
+	text-align: center;
+}
+
+.connect-ecommerce-settings .connwoo-flow-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #888;
+}
+
+.connect-ecommerce-settings .connwoo-flow-site {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 2px;
+	background: #f6f7f7;
+	border: 1px solid #e0e0e0;
+	border-radius: 4px;
+	padding: 10px 14px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-site strong {
+	font-size: 14px;
+	line-height: 1.3;
+}
+
+.connect-ecommerce-settings .connwoo-flow-site small {
+	font-size: 11px;
+	color: #888;
+}
+
+.connect-ecommerce-settings .connwoo-flow-selector select {
+	width: 100%;
+	font-size: 13px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-arrow {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	color: #aaa;
+	gap: 2px;
+	flex: 0 0 auto;
+	font-size: 22px;
+}
+
+.connect-ecommerce-settings .connwoo-flow-arrow small {
+	font-size: 10px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+/* Sync engine: log */
 .connect-ecommerce-settings .connwoo-sync-engine #logwrapper {
 	border: 1px solid #aaa;
 	margin: 10px auto;
@@ -172,4 +317,51 @@
 .wc_tax_rates td.erp_tax_type select {
 	width: 85%;
 	margin: 10px;
+}
+
+/* Connector Manager */
+.connect-ecommerce-settings .card.connector-manager {
+	max-width: 100%;
+}
+
+.connect-ecommerce-settings .connector-manager table.widefat {
+	width: 100%;
+}
+
+.connect-ecommerce-settings .add-connector-wrapper {
+	display: flex;
+	align-items: flex-end;
+	gap: 20px;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .add-connector-title {
+	margin: 0 0 8px 0;
+	flex-shrink: 0;
+	align-self: flex-start;
+	padding-top: 8px;
+}
+
+.connect-ecommerce-settings .add-connector-row {
+	display: flex;
+	gap: 20px;
+	align-items: flex-end;
+	flex-wrap: wrap;
+	flex: 1;
+}
+
+.connect-ecommerce-settings .add-connector-field {
+	flex: 1;
+	min-width: 200px;
+}
+
+.connect-ecommerce-settings .add-connector-field label {
+	display: block;
+	margin-bottom: 5px;
+	font-weight: 600;
+}
+
+.connect-ecommerce-settings .add-connector-field select,
+.connect-ecommerce-settings .add-connector-field input[type="text"] {
+	width: 100%;
 }
