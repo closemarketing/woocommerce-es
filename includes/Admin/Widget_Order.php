@@ -116,6 +116,15 @@ class Widget_Order {
 		$this->show_document_download_row( $order );
 
 		echo '</table>';
+
+		/**
+		 * Fires after the ERP sync controls in the order metabox, so a connector
+		 * can add its own connector-specific admin tools (e.g. a local-only
+		 * button to wipe the ERP-side sync data for this order).
+		 *
+		 * @param \WC_Order $order Order object.
+		 */
+		do_action( 'conecom_after_order_metabox', $order );
 	}
 
 	/**

@@ -59,6 +59,15 @@ class Base {
 			new Notices();
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );
+
+			/**
+			 * Fires once the built-in admin classes are wired up, so a
+			 * connector plugin can instantiate its own admin-only classes
+			 * (e.g. custom sync entities) for the active connector.
+			 *
+			 * @param array $connector Active connector config array.
+			 */
+			do_action( 'conecom_admin_init', $connector );
 		}
 
 		new Orders( $connector );
