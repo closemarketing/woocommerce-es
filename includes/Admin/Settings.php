@@ -957,6 +957,16 @@ class Settings {
 						'connect_woocommerce_setting_section_products',
 						$short_field
 					);
+					if ( taxonomy_exists( 'product_brand' ) ) {
+						add_settings_field(
+							'wcpimh_catattr_brand',
+							__( 'Attribute to use as brand', 'woocommerce-es' ),
+							array( $this, 'catattr_brand_callback' ),
+							'connect_ecommerce_admin',
+							'connect_woocommerce_setting_section_products',
+							$short_field
+						);
+					}
 				}
 
 				add_settings_field(
@@ -1722,45 +1732,6 @@ class Settings {
 	}
 
 	/**
-	 * Info for holded section.
-	 *
-	 * @return void
-	 */
-	public function section_automate() {
-		?>
-		<input type="hidden" name="connect_ecommerce[connector]" value="<?php echo esc_attr( $this->connector ); ?>" />
-		<?php
-		if ( empty( $this->options['table_sync'] ) ) {
-			return;
-		}
-		global $wpdb;
-		$table_sync = $this->options['table_sync'];
-		HELPER::check_table_sync( $table_sync );
-		$count        = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync WHERE synced = 1" );
-		$total_count  = $wpdb->get_var( "SELECT COUNT(*) FROM $table_sync" );
-		$count_return = $count . ' / ' . $total_count;
-
-		$total_api_products = (int) get_option( 'connect_ecommerce_total_api_products' );
-		if ( $total_api_products || $total_count !== $total_api_products ) {
-			$count_return .= ' ' . esc_html__( 'filtered', 'woocommerce-es' );
-			$count_return .= ' ( ' . $total_api_products . ' ' . esc_html__( 'total', 'woocommerce-es' ) . ' )';
-		}
-		$percentage = 0 < $total_count ? intval( $count / $total_count * 100 ) : 0;
-		esc_html_e( 'Make your settings to automate the sync.', 'woocommerce-es' );
-		echo '<div class="sync-status" style="text-align:right;">';
-		echo '<strong>';
-		esc_html_e( 'Actual Automate status:', 'woocommerce-es' );
-		echo '</strong> ' . esc_html( $count_return ) . ' ';
-		esc_html_e( 'products synced with ', 'woocommerce-es' );
-		echo esc_html( $this->options['name'] );
-		echo '</div>';
-		echo '<div class="progress-bar blue">
-		<span style="width:' . esc_html( $percentage ) . '%"></span>
-		<div class="progress-text">' . esc_html( $percentage ) . '%</div>
-		</div>';
-	}
-
-	/**
 	 * Info for holded automate section.
 	 *
 	 * @return void
@@ -2082,6 +2053,35 @@ class Settings {
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catattr]" id="wcpimh_catattr">
 			<?php
 			foreach ( $catattr_options as $value => $label ) {
+				echo '<option value="' . esc_html( $value ) . '" ';
+				selected( $value, $saved_attr );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			?>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Get the ERP attribute to use as product brand.
+	 *
+	 * @return void
+	 */
+	public function catattr_brand_callback() {
+		if ( ! is_object( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_attributes' ) ) {
+			return;
+		}
+
+		$brand_options = $this->connapi_erp->get_attributes();
+		if ( ! is_array( $brand_options ) || empty( $brand_options ) ) {
+			return;
+		}
+		$saved_attr = isset( $this->settings['catattr_brand'] ) ? $this->settings['catattr_brand'] : '';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catattr_brand]" id="wcpimh_catattr_brand">
+			<option value=""><?php esc_html_e( 'Do not import brands', 'woocommerce-es' ); ?></option>
+			<?php
+			foreach ( $brand_options as $value => $label ) {
 				echo '<option value="' . esc_html( $value ) . '" ';
 				selected( $value, $saved_attr );
 				echo '>' . esc_html( $label ) . '</option>';

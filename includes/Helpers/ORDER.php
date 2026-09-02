@@ -157,6 +157,9 @@ class ORDER {
 		$order_description = get_bloginfo( 'name', 'display' ) . ' WooCommerce ' . $order_label_id;
 		$woo_states        = WC()->countries->get_states( $billing_country_code );
 		$billing_state     = ! empty( $billing_state_code ) && ! empty( $billing_country_code ) && ! empty( $woo_states[ $billing_state_code ] ) ? $woo_states[ $billing_state_code ] : '';
+		if ( isset( $settings['cleanchars'] ) && 'on' === $settings['cleanchars'] ) {
+			$billing_state = self::clean_special_chars( $billing_state );
+		}
 
 		$contact_code = self::get_billing_vat( $order );
 
@@ -502,9 +505,10 @@ class ORDER {
 			'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'ñ', 'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ñ'=>'Ñ', 'à'=>'a', 'è'=>'e', 'ì'=>'i', 'ò'=>'o', 'ù'=>'u', 'À'=>'A', 'È'=>'E', 'Ì'=>'I', 'Ò'=>'O', 'Ù'=>'U', 'â'=>'a', 'ê'=>'e', 'î'=>'i', 'ô'=>'o', 'û'=>'u', 'Â'=>'A', 'Ê'=>'E', 'Î'=>'I', 'Ô'=>'O', 'Û'=>'U', 'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u', 'Ä'=>'A', 'Ë'=>'E', 'Ï'=>'I', 'Ö'=>'O', 'Ü'=>'U', 'ã'=>'a', 'õ'=>'o', 'Ã'=>'A', 'Õ'=>'O', 'å'=>'a', 'Å'=>'A', 'š'=>'s', 'Š'=>'S', 'ž'=>'z', 'Ž'=>'Z', 'ý'=>'y', 'Ý'=>'Y', 'ÿ'=>'y', 'Ÿ'=>'Y', 'ø'=>'o', 'Ø'=>'O', 'æ'=>'ae', 'Æ'=>'AE', 'œ'=>'oe', 'Œ'=>'OE', 'ß'=>'ss', 'ł'=>'l', 'Ł'=>'L', '@'=>' ', '#'=>' ', '&' => 'Y', 'ğ'=>'g', 'Ğ'=>'G', 'ő'=>'o', 'Ő'=>'O', 'Ė' => 'E', 'ė' => 'e', 'į' => 'i', 'Į' => 'I',
 		];
 		$ascii = strtr( $value, $map );
+		$ascii = strtr( strtoupper( $ascii ), array( 'ñ' => 'Ñ', 'ç' => 'Ç' ) );
 
 		// Replace non-whitelisted characters with spaces.
-		$ascii = preg_replace( '/[^' . $whitelist . ']/', ' ', $ascii );
+		$ascii = preg_replace( '/[^' . $whitelist . ']/u', ' ', $ascii );
 
 		// Collapse multiple spaces and clean up
 		$ascii = preg_replace('/\s+/', ' ', $ascii);

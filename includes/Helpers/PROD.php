@@ -528,6 +528,8 @@ class PROD {
 		$product->set_props( $product_props );
 		$product->save();
 
+		TAX::assign_product_brands( $attributes, $settings, $product->get_id() );
+
 		if ( 'pack' === $type ) {
 			// Only call taxonomy functions if taxonomy exists
 			if ( taxonomy_exists( 'product_type' ) ) {
