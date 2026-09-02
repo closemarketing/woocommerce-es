@@ -271,9 +271,7 @@ class TAX {
 			}
 		}
 
-		if ( ! empty( $brands ) ) {
-			wp_set_object_terms( $product_id, array_unique( $brands ), 'product_brand' );
-		}
+		wp_set_object_terms( $product_id, array_unique( $brands ), 'product_brand' );
 	}
 
 	/**

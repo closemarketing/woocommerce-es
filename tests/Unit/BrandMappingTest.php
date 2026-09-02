@@ -40,6 +40,11 @@ class BrandMappingTest extends WP_UnitTestCase {
 		$brands = wp_get_object_terms( $product_id, 'product_brand', array( 'fields' => 'names' ) );
 		$this->assertSame( array( 'Runize' ), $brands );
 
+		TAX::assign_product_brands( array(), array( 'catattr_brand' => 'brand' ), $product_id );
+
+		$brands = wp_get_object_terms( $product_id, 'product_brand', array( 'fields' => 'names' ) );
+		$this->assertSame( array(), $brands );
+
 		wp_delete_post( $product_id, true );
 	}
 }
