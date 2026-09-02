@@ -129,22 +129,33 @@ class TAX {
 	 * @param string     $taxonomy Taxonomy name.
 	 * @param array<int> $terms_ids Term IDs from the ERP.
 	 * @param int        $post_id Post ID.
-	 * @return array<int>
+	 * @return array<int>|\WP_Error
 	 */
 	public static function sync_terms_taxonomy( $settings, $taxonomy, $terms_ids, $post_id ) {
 		$erp_term_ids  = array_unique( array_map( 'intval', $terms_ids ) );
 		$terms_ids     = $erp_term_ids;
-		$category_mode = isset( $settings['catmode'] ) ? $settings['catmode'] : 'merge';
+		$category_mode = isset( $settings['catmode'] ) ? $settings['catmode'] : 'replace';
 		$sync_meta     = get_post_meta( $post_id, '_connect_ecommerce_synced_term_ids', true );
 		$sync_meta     = is_array( $sync_meta ) ? $sync_meta : array();
 
-		if ( 'merge' === $category_mode ) {
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			return new \WP_Error( 'invalid_taxonomy', __( 'The taxonomy is not registered.', 'woocommerce-es' ) );
+		}
+
+		$has_sync_meta = isset( $sync_meta[ $taxonomy ] ) && is_array( $sync_meta[ $taxonomy ] );
+		if ( 'merge' === $category_mode && $has_sync_meta ) {
 			$existing_ids = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'ids' ) );
+			if ( is_wp_error( $existing_ids ) ) {
+				return $existing_ids;
+			}
 			$previous_ids = isset( $sync_meta[ $taxonomy ] ) ? $sync_meta[ $taxonomy ] : array();
 			$terms_ids    = array_unique( array_merge( array_diff( $existing_ids, $previous_ids ), $terms_ids ) );
 		}
 
-		wp_set_object_terms( $post_id, $terms_ids, $taxonomy );
+		$result = wp_set_object_terms( $post_id, $terms_ids, $taxonomy );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
 		$sync_meta[ $taxonomy ] = $erp_term_ids;
 		update_post_meta( $post_id, '_connect_ecommerce_synced_term_ids', $sync_meta );
 

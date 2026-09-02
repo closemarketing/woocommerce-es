@@ -458,8 +458,11 @@ class PROD {
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
 		$categories_ids = TAX::assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product );
 		$category_newp  = isset( $settings['catnp'] ) ? $settings['catnp'] : 'yes';
-		if ( ! empty( $settings['catattr'] ) && ( ( 'yes' === $category_newp && $is_new_product ) || 'no' === $category_newp ) ) {
-			$product_props['category_ids'] = TAX::sync_terms_taxonomy( $settings, 'product_cat', $categories_ids, $product_id );
+		if ( ! empty( $categories_ids ) && ! empty( $settings['catattr'] ) && ( ( 'yes' === $category_newp && $is_new_product ) || 'no' === $category_newp ) ) {
+			$synced_category_ids = TAX::sync_terms_taxonomy( $settings, 'product_cat', $categories_ids, $product_id );
+			if ( ! is_wp_error( $synced_category_ids ) ) {
+				$product_props['category_ids'] = $synced_category_ids;
+			}
 		}
 
 		// Imports image.

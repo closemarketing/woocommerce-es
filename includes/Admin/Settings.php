@@ -1636,7 +1636,7 @@ class Settings {
 				'filter_sku'           => '',
 				'rates'                => 'default',
 				'catnp'                => 'yes',
-				'catmode'              => 'merge',
+				'catmode'              => 'replace',
 				'doctype'              => 'invoice',
 				'cleanchars'           => '',
 				'approve_document'     => 'no',
@@ -2147,7 +2147,7 @@ class Settings {
 	 * @return void
 	 */
 	public function catmode_callback() {
-		$category_mode = isset( $this->settings['catmode'] ) ? $this->settings['catmode'] : 'merge';
+		$category_mode = isset( $this->settings['catmode'] ) ? $this->settings['catmode'] : 'replace';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catmode]" id="wcpimh_catmode">
 			<option value="merge" <?php selected( $category_mode, 'merge' ); ?>><?php esc_html_e( 'Merge ERP categories with manually assigned categories', 'woocommerce-es' ); ?></option>

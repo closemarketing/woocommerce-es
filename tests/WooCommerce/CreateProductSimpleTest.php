@@ -56,7 +56,7 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 			'tax_option'     => 'no',
 			'rates'          => 'default',
 			'catnp'          => 'yes',
-			'catmode'        => 'merge',
+			'catmode'        => 'replace',
 			'doctype'        => 'invoice',
 			'series'         => '',
 			'freeorder'      => 'no',
@@ -264,10 +264,9 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		}
 
 		$product_id  = self::factory()->post->create( array( 'post_type' => 'product' ) );
-		$manual_term = wp_insert_term( 'Manual term', $taxonomy );
-		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy );
-
 		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP old', $product_id );
+		$manual_term = wp_insert_term( 'Manual term', $taxonomy );
+		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy, true );
 		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP new', $product_id );
 
 		$terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'names' ) );
@@ -275,6 +274,17 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertContains( 'ERP new', $terms );
 		$this->assertNotContains( 'ERP old', $terms );
 
+		wp_delete_post( $product_id, true );
+	}
+
+	/**
+	 * An unregistered taxonomy must not abort a product synchronization.
+	 */
+	public function test_sync_terms_taxonomy_returns_error_for_unregistered_taxonomy() {
+		$product_id = self::factory()->post->create( array( 'post_type' => 'product' ) );
+		$result     = TAX::sync_terms_taxonomy( array( 'catmode' => 'merge' ), 'conecom_missing_taxonomy', array( 1 ), $product_id );
+
+		$this->assertWPError( $result );
 		wp_delete_post( $product_id, true );
 	}
 
@@ -288,10 +298,9 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		}
 
 		$product_id  = self::factory()->post->create( array( 'post_type' => 'product' ) );
-		$manual_term = wp_insert_term( 'Manual direct term', $taxonomy );
-		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy );
-
 		TAX::assign_product_term( $product_id, $taxonomy, 'ERP direct old', array( 'catmode' => 'merge' ) );
+		$manual_term = wp_insert_term( 'Manual direct term', $taxonomy );
+		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy, true );
 		TAX::assign_product_term( $product_id, $taxonomy, 'ERP direct new', array( 'catmode' => 'merge' ) );
 
 		$terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'names' ) );
