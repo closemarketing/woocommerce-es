@@ -446,6 +446,66 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Test that completing an order reduces the stock of the purchased variation
+	 * and never creates or reduces stock on its variable parent.
+	 */
+	public function test_variable_order_reduces_only_the_purchased_variation_stock() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-variable.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$this->settings['stock']   = 'yes';
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'yes';
+		$item['variants'][0]['stock'] = 10;
+		$item['variants'][1]['stock'] = 5;
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		$this->assertEquals( 'ok', $result_sync['status'] );
+
+		$parent         = wc_get_product( $result_prod_id );
+		$this->assertInstanceOf( 'WC_Product_Variable', $parent );
+
+		$variation_ids  = $parent->get_children();
+		$this->assertCount( 2, $variation_ids, 'The variable product must have two variations.' );
+
+		$variation         = wc_get_product( $variation_ids[0] );
+		$sibling_variation = wc_get_product( $variation_ids[1] );
+		$order             = null;
+
+		$this->assertFalse( $parent->get_manage_stock(), 'Variable parents must not manage stock.' );
+		$this->assertSame( 10, $variation->get_stock_quantity() );
+		$this->assertSame( 5, $sibling_variation->get_stock_quantity() );
+
+		$previous_manage_stock = get_option( 'woocommerce_manage_stock' );
+		update_option( 'woocommerce_manage_stock', 'yes' );
+
+		try {
+			$order = wc_create_order();
+			$order->add_product( $variation, 1 );
+			$order->calculate_totals();
+			$order->save();
+			$order->update_status( 'completed' );
+
+			$variation_after = wc_get_product( $variation->get_id() );
+			$sibling_after   = wc_get_product( $sibling_variation->get_id() );
+			$parent_after    = wc_get_product( $parent->get_id() );
+			$this->assertSame( 9, $variation_after->get_stock_quantity(), 'The purchased variation stock must be reduced.' );
+			$this->assertSame( 5, $sibling_after->get_stock_quantity(), 'An unpurchased variation stock must not be reduced.' );
+			$this->assertFalse( $parent_after->get_manage_stock(), 'The parent must not start managing stock after a variation sale.' );
+			$this->assertNull( $parent_after->get_stock_quantity(), 'The parent must not receive a stock quantity after a variation sale.' );
+			$this->assertSame( 'instock', $parent_after->get_stock_status(), 'The parent must remain in stock when variations have stock.' );
+		} finally {
+			update_option( 'woocommerce_manage_stock', $previous_manage_stock );
+			if ( $order ) {
+				wp_delete_post( $order->get_id(), true );
+			}
+			wp_delete_post( $result_prod_id, true );
+		}
+	}
+
+	/**
 	 * Test that resyncing a variable product created before the fix (parent still
 	 * has manage_stock enabled from an old import) corrects the parent on the next
 	 * sync, instead of only preventing the issue on brand-new products.

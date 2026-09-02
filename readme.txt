@@ -226,6 +226,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 
+* Added: Regression coverage confirming that sales reduce stock on the purchased variation only, never on its variable parent.
 * Fixed: Order data cleaning now normalizes country and state codes before resolving the state name, preserves custom whitelists, and consistently uppercases retained Spanish characters.
 * Fixed: Customers can download an available ERP document PDF from My Account regardless of the WooCommerce order status, while the endpoint continues to derive document details from the authorized order.
 * Added: A documented connector API contract with safe defaults for optional ERP and CRM capabilities.
