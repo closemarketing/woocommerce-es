@@ -770,6 +770,15 @@ class Settings {
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section'
 					);
+					if ( taxonomy_exists( 'product_brand' ) ) {
+						add_settings_field(
+							'wcpimh_catattr_brand',
+							__( 'Attribute to use as brand', 'woocommerce-es' ),
+							array( $this, 'catattr_brand_callback' ),
+							'connect_ecommerce_admin',
+							'connect_woocommerce_setting_section'
+						);
+					}
 				}
 
 				add_settings_field(
@@ -1613,6 +1622,7 @@ class Settings {
 				'backorders'           => 'no',
 				'catsep'               => '',
 				'catattr'              => '',
+				'catattr_brand'        => '',
 				'filter'               => '',
 				'pricesale_discount'   => '',
 				'filter_sku'           => '',
@@ -1950,6 +1960,35 @@ class Settings {
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catattr]" id="wcpimh_catattr">
 			<?php
 			foreach ( $catattr_options as $value => $label ) {
+				echo '<option value="' . esc_html( $value ) . '" ';
+				selected( $value, $saved_attr );
+				echo '>' . esc_html( $label ) . '</option>';
+			}
+			?>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Get the ERP attribute to use as product brand.
+	 *
+	 * @return void
+	 */
+	public function catattr_brand_callback() {
+		if ( ! is_object( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_attributes' ) ) {
+			return;
+		}
+
+		$brand_options = $this->connapi_erp->get_attributes();
+		if ( ! is_array( $brand_options ) || empty( $brand_options ) ) {
+			return;
+		}
+		$saved_attr = isset( $this->settings['catattr_brand'] ) ? $this->settings['catattr_brand'] : '';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catattr_brand]" id="wcpimh_catattr_brand">
+			<option value=""><?php esc_html_e( 'Do not import brands', 'woocommerce-es' ); ?></option>
+			<?php
+			foreach ( $brand_options as $value => $label ) {
 				echo '<option value="' . esc_html( $value ) . '" ';
 				selected( $value, $saved_attr );
 				echo '>' . esc_html( $label ) . '</option>';

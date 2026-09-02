@@ -248,6 +248,35 @@ class TAX {
 	}
 
 	/**
+	 * Assign the selected ERP attribute group to WooCommerce product brands.
+	 *
+	 * @param array  $attributes Product attributes from the ERP.
+	 * @param array  $settings Connector settings.
+	 * @param int    $product_id WooCommerce product ID.
+	 * @return void
+	 */
+	public static function assign_product_brands( $attributes, $settings, $product_id ) {
+		$brand_attribute_id = ! empty( $settings['catattr_brand'] ) ? $settings['catattr_brand'] : '';
+		if ( empty( $brand_attribute_id ) || ! taxonomy_exists( 'product_brand' ) ) {
+			return;
+		}
+
+		$brands = array();
+		foreach ( $attributes as $attribute ) {
+			if ( $attribute['name'] === $brand_attribute_id || $attribute['id'] === $brand_attribute_id ) {
+				$brand = self::sanitize_text( $attribute['value'] );
+				if ( '' !== $brand ) {
+					$brands[] = $brand;
+				}
+			}
+		}
+
+		if ( ! empty( $brands ) ) {
+			wp_set_object_terms( $product_id, array_unique( $brands ), 'product_brand' );
+		}
+	}
+
+	/**
 	 * Split categories name
 	 *
 	 * @param array  $settings   Settings of the plugin.
