@@ -227,7 +227,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 = next =
 
 * Added: Import a selected ERP attribute group as WooCommerce product brands when the product_brand taxonomy is available.
-* Added: Category synchronization mode that merges ERP categories with manually assigned taxonomy terms by default, with an option to replace them.
+* Added: Category synchronization mode that replaces categories with ERP terms by default, with an option to merge manually assigned taxonomy terms.
 * Added: Regression coverage confirming that sales reduce stock on the purchased variation only, never on its variable parent.
 * Fixed: Order data cleaning now normalizes country and state codes before resolving the state name, preserves custom whitelists, and consistently uppercases retained Spanish characters.
 * Fixed: Customers can download an available ERP document PDF from My Account regardless of the WooCommerce order status, while the endpoint continues to derive document details from the authorized order.

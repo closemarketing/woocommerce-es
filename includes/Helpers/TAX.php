@@ -149,7 +149,9 @@ class TAX {
 				return $existing_ids;
 			}
 			$previous_ids = isset( $sync_meta[ $taxonomy ] ) ? $sync_meta[ $taxonomy ] : array();
-			$terms_ids    = array_unique( array_merge( array_diff( $existing_ids, $previous_ids ), $terms_ids ) );
+			$manual_ids   = array_diff( $existing_ids, $previous_ids );
+			$terms_ids    = array_unique( array_merge( $manual_ids, $terms_ids ) );
+			$erp_term_ids = array_diff( $erp_term_ids, $manual_ids );
 		}
 
 		$result = wp_set_object_terms( $post_id, $terms_ids, $taxonomy );

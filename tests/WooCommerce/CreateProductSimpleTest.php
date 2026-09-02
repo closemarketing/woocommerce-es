@@ -278,6 +278,30 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A manual term remains manual when a later ERP payload also contains it.
+	 */
+	public function test_category_sync_merge_mode_preserves_overlapping_manual_terms() {
+		$taxonomy = 'conecom_overlap_sync_test';
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			register_taxonomy( $taxonomy, 'product' );
+		}
+
+		$product_id  = self::factory()->post->create( array( 'post_type' => 'product' ) );
+		$manual_term = wp_insert_term( 'Manual term', $taxonomy );
+
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP term', $product_id );
+		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy, true );
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, array( 'ERP term', 'Manual term' ), $product_id );
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP term', $product_id );
+
+		$terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'names' ) );
+		$this->assertContains( 'ERP term', $terms );
+		$this->assertContains( 'Manual term', $terms );
+
+		wp_delete_post( $product_id, true );
+	}
+
+	/**
 	 * An unregistered taxonomy must not abort a product synchronization.
 	 */
 	public function test_sync_terms_taxonomy_returns_error_for_unregistered_taxonomy() {
