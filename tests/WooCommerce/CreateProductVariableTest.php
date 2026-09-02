@@ -468,13 +468,15 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 		$this->assertInstanceOf( 'WC_Product_Variable', $parent );
 
 		$variation_ids  = $parent->get_children();
-		$this->assertNotEmpty( $variation_ids, 'The variable product must have variations.' );
+		$this->assertCount( 2, $variation_ids, 'The variable product must have two variations.' );
 
-		$variation      = wc_get_product( $variation_ids[0] );
-		$order          = null;
+		$variation         = wc_get_product( $variation_ids[0] );
+		$sibling_variation = wc_get_product( $variation_ids[1] );
+		$order             = null;
 
 		$this->assertFalse( $parent->get_manage_stock(), 'Variable parents must not manage stock.' );
 		$this->assertSame( 10, $variation->get_stock_quantity() );
+		$this->assertSame( 5, $sibling_variation->get_stock_quantity() );
 
 		$previous_manage_stock = get_option( 'woocommerce_manage_stock' );
 		update_option( 'woocommerce_manage_stock', 'yes' );
@@ -484,13 +486,16 @@ class CreateProductVariableTest extends WP_UnitTestCase {
 			$order->add_product( $variation, 1 );
 			$order->calculate_totals();
 			$order->save();
-			wc_maybe_reduce_stock_levels( $order->get_id() );
+			$order->update_status( 'completed' );
 
 			$variation_after = wc_get_product( $variation->get_id() );
+			$sibling_after   = wc_get_product( $sibling_variation->get_id() );
 			$parent_after    = wc_get_product( $parent->get_id() );
 			$this->assertSame( 9, $variation_after->get_stock_quantity(), 'The purchased variation stock must be reduced.' );
+			$this->assertSame( 5, $sibling_after->get_stock_quantity(), 'An unpurchased variation stock must not be reduced.' );
 			$this->assertFalse( $parent_after->get_manage_stock(), 'The parent must not start managing stock after a variation sale.' );
 			$this->assertNull( $parent_after->get_stock_quantity(), 'The parent must not receive a stock quantity after a variation sale.' );
+			$this->assertSame( 'instock', $parent_after->get_stock_status(), 'The parent must remain in stock when variations have stock.' );
 		} finally {
 			update_option( 'woocommerce_manage_stock', $previous_manage_stock );
 			if ( $order ) {
