@@ -1057,7 +1057,7 @@ class Settings {
 				);
 			}
 
-			if ( ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] || in_array( 'doctype', $settings_fields, true ) ) {
+			if ( ( ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] ) || in_array( 'doctype', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
 					__( 'Document to create after order completed?', 'woocommerce-es' ),
@@ -1335,7 +1335,8 @@ class Settings {
 	/**
 	 * Page get Merge Product variables
 	 *
-	 * @param string $type Type of page.
+	 * @param string $type         Type of page.
+	 * @param string $connector_id Connector identifier.
 	 * @return void
 	 */
 	public function page_get_sync( $type = 'sync_products', $connector_id = '' ) {
@@ -3191,14 +3192,14 @@ class Settings {
 			$custom_id = sanitize_key( $input['new_connector']['id'] ?? '' );
 
 			if ( $type && isset( $this->connector_definitions[ $type ] ) ) {
-				$new_id = $custom_id ?: $type;
+				$new_id = ! empty( $custom_id ) ? $custom_id : $type;
 				if ( isset( $meta[ $new_id ] ) ) {
 					$new_id = sanitize_key( $type . '-' . uniqid() );
 				}
 
 				$meta[ $new_id ] = array(
 					'type'      => $type,
-					'label'     => $label ?: ( $this->connector_definitions[ $type ]['name'] ?? ucfirst( $type ) ),
+					'label'     => ! empty( $label ) ? $label : ( $this->connector_definitions[ $type ]['name'] ?? ucfirst( $type ) ),
 					'status'    => 'active',
 					'workflows' => array(),
 				);

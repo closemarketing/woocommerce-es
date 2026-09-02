@@ -313,7 +313,9 @@ class Orders {
 			}
 			$_SESSION['conecom_sync_orders'] = HELPER::sanitize_array_recursive( $sync_orders );
 		} else {
-			$sync_orders = HELPER::sanitize_array_recursive( $_SESSION['conecom_sync_orders'] );
+			$sync_orders = isset( $_SESSION['conecom_sync_orders'] ) && is_array( $_SESSION['conecom_sync_orders'] )
+				? HELPER::sanitize_array_recursive( $_SESSION['conecom_sync_orders'] )
+				: array();
 		}
 
 		if ( false === $sync_orders ) {
