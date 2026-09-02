@@ -267,16 +267,22 @@ class Settings {
 				$active_tab = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : ( $this->is_connector_active() ? 'synchronization' : 'settings' );
 
 				// Subtabs.
-				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
-				$sync_custom_subtabs = array();
+				$active_subtab       = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
+				$sync_custom_subtabs = apply_filters( 'conecom_sync_subtabs', array(), $this->connector );
+				$sync_custom_subtabs = is_array( $sync_custom_subtabs ) ? $sync_custom_subtabs : array();
+				$default_sync_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+
+				if ( $this->is_disabled_products && $this->is_disabled_orders && ! empty( $sync_custom_subtabs ) ) {
+					$default_sync_subtab = array_key_first( $sync_custom_subtabs );
+				}
 
 				// Set default subtabs.
 				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
-					$active_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+					$active_subtab = $default_sync_subtab;
 				}
 				// Connectors without a product catalog only expose the Orders subtab.
 				if ( 'synchronization' === $active_tab && 'sync_products' === $active_subtab && $this->is_disabled_products ) {
-					$active_subtab = 'sync_orders';
+					$active_subtab = $default_sync_subtab;
 				}
 				if ( 'settings' === $active_tab && empty( $active_subtab ) ) {
 					$active_subtab = 'connection';
@@ -285,7 +291,7 @@ class Settings {
 				<h2 class="nav-tab-wrapper">
 					<?php
 					if ( $this->is_connector_active() ) {
-						$sync_tab_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+						$sync_tab_subtab = $default_sync_subtab;
 						?>
 						<a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $sync_tab_subtab ); ?>" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
 						<?php
@@ -332,11 +338,12 @@ class Settings {
 							<?php
 						}
 
-						$sync_custom_subtabs = apply_filters( 'conecom_sync_subtabs', array(), $this->connector );
+						$has_default_subtab = ! $this->is_disabled_products || ! $this->is_disabled_orders;
 						foreach ( $sync_custom_subtabs as $subtab_slug => $subtab_label ) {
 							?>
-							<li> | <a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $subtab_slug ); ?>" class="<?php echo esc_attr( $subtab_slug ) === $active_subtab ? 'current' : ''; ?>"><?php echo esc_html( $subtab_label ); ?></a></li>
+							<li><?php echo $has_default_subtab ? ' | ' : ''; ?><a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $subtab_slug ); ?>" class="<?php echo esc_attr( $subtab_slug ) === $active_subtab ? 'current' : ''; ?>"><?php echo esc_html( $subtab_label ); ?></a></li>
 							<?php
+							$has_default_subtab = true;
 						}
 						?>
 					</ul>
@@ -1670,6 +1677,25 @@ class Settings {
 		}
 		$sanitary_values[ $connector ]['tax_option_pref'] = $tax_option_pref;
 		$sanitary_values[ $connector ]['tax_option']      = HELPER::resolve_tax_option( $tax_option_pref );
+
+		/**
+		 * Filters sanitized connector-specific connection settings.
+		 *
+		 * Connector plugins must sanitize every custom value they add before
+		 * returning it, so the core settings allowlist remains protected.
+		 *
+		 * @param array  $sanitary_values Sanitized built-in and connector values.
+		 * @param array  $input_values    Raw submitted values for the active connector.
+		 * @param array  $saved_values    Previously saved values for the active connector.
+		 * @param string $connector       Active connector slug.
+		 */
+		$sanitary_values[ $connector ] = apply_filters(
+			'conecom_sanitize_connection_settings',
+			$sanitary_values[ $connector ],
+			isset( $input[ $connector ] ) && is_array( $input[ $connector ] ) ? $input[ $connector ] : array(),
+			isset( $imh_settings[ $connector ] ) && is_array( $imh_settings[ $connector ] ) ? $imh_settings[ $connector ] : array(),
+			$connector
+		);
 
 		$sanitary_values['connector'] = $connector;
 

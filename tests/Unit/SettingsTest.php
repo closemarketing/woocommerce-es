@@ -158,4 +158,37 @@ class SettingsTest extends WP_UnitTestCase {
 
 		$this->assertFalse( $property->getValue( $settings ) );
 	}
+
+	/**
+	 * Connector-specific connection fields can sanitize and persist their own values.
+	 */
+	public function test_connector_connection_settings_filter_preserves_sanitized_custom_fields() {
+		$settings = new Settings(
+			array(
+				'settings_all' => array(),
+				'connector'    => 'custom',
+				'settings'     => array(),
+				'all_options'  => array(),
+				'options'      => array(),
+				'connapi_erp'  => null,
+			)
+		);
+		$filter = static function ( $sanitary_values, $input_values ) {
+			$sanitary_values['custom_key'] = isset( $input_values['custom_key'] ) ? sanitize_text_field( $input_values['custom_key'] ) : '';
+			return $sanitary_values;
+		};
+
+		add_filter( 'conecom_sanitize_connection_settings', $filter, 10, 2 );
+		$sanitary_values = $settings->sanitize_fields_settings(
+			array(
+				'connector' => 'custom',
+				'custom'    => array(
+					'custom_key' => '<strong>Saved connector value</strong>',
+				),
+			)
+		);
+		remove_filter( 'conecom_sanitize_connection_settings', $filter, 10 );
+
+		$this->assertSame( 'Saved connector value', $sanitary_values['custom']['custom_key'] );
+	}
 }
