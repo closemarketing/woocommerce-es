@@ -109,6 +109,7 @@ class TAX {
 	/**
 	 * Set Terms Taxonomy
 	 *
+	 * @param array        $settings Connector settings.
 	 * @param string       $taxonomy Taxonomy name.
 	 * @param array|string $terms Terms to set.
 	 * @param int          $post_id Post id.
@@ -118,7 +119,36 @@ class TAX {
 	public static function set_terms_taxonomy( $settings, $taxonomy, $terms, $post_id ) {
 		$categories_name = self::split_categories_name( $settings, $terms );
 		$terms_ids       = self::find_categories_ids( $categories_name, $taxonomy );
+		self::sync_terms_taxonomy( $settings, $taxonomy, $terms_ids, $post_id );
+	}
+
+	/**
+	 * Synchronize taxonomy terms while preserving terms managed manually.
+	 *
+	 * @param array      $settings Connector settings.
+	 * @param string     $taxonomy Taxonomy name.
+	 * @param array<int> $terms_ids Term IDs from the ERP.
+	 * @param int        $post_id Post ID.
+	 * @return array<int>
+	 */
+	public static function sync_terms_taxonomy( $settings, $taxonomy, $terms_ids, $post_id ) {
+		$erp_term_ids  = array_unique( array_map( 'intval', $terms_ids ) );
+		$terms_ids     = $erp_term_ids;
+		$category_mode = isset( $settings['catmode'] ) ? $settings['catmode'] : 'merge';
+		$sync_meta     = get_post_meta( $post_id, '_connect_ecommerce_synced_term_ids', true );
+		$sync_meta     = is_array( $sync_meta ) ? $sync_meta : array();
+
+		if ( 'merge' === $category_mode ) {
+			$existing_ids = wp_get_object_terms( $post_id, $taxonomy, array( 'fields' => 'ids' ) );
+			$previous_ids = isset( $sync_meta[ $taxonomy ] ) ? $sync_meta[ $taxonomy ] : array();
+			$terms_ids    = array_unique( array_merge( array_diff( $existing_ids, $previous_ids ), $terms_ids ) );
+		}
+
 		wp_set_object_terms( $post_id, $terms_ids, $taxonomy );
+		$sync_meta[ $taxonomy ] = $erp_term_ids;
+		update_post_meta( $post_id, '_connect_ecommerce_synced_term_ids', $sync_meta );
+
+		return $terms_ids;
 	}
 
 	/**
@@ -339,12 +369,13 @@ class TAX {
 	/**
 	 * Assigns the array to a taxonomy, and creates missing term
 	 *
-	 * @param string $post_id Post id of actual post id.
-	 * @param array  $taxonomy_slug Slug of taxonomy.
-	 * @param array|string  $terms Array of terms.
+	 * @param int          $post_id Post ID.
+	 * @param string       $taxonomy_slug Taxonomy slug.
+	 * @param array|string $terms Array of terms.
+	 * @param array        $settings Connector settings.
 	 * @return void
 	 */
-	public static function assign_product_term( $post_id, $taxonomy_slug, $terms ) {
+	public static function assign_product_term( $post_id, $taxonomy_slug, $terms, $settings = array() ) {
 		$parent_term      = '';
 		$terms						= is_array( $terms ) ? $terms : array( $terms );
 		$term_levels      = count( $terms );
@@ -372,7 +403,7 @@ class TAX {
 			// Check if term was found or created successfully
 			if ( ! is_wp_error( $search_term ) && $term_level_index === $term_levels ) {
 				$term_id = isset( $search_term['term_id'] ) ? (int) $search_term['term_id'] : (int) $search_term;
-				wp_set_object_terms( $post_id, $term_id, $taxonomy_slug );
+				self::sync_terms_taxonomy( $settings, $taxonomy_slug, array( $term_id ), $post_id );
 			}
 
 			// Next iteration for child.
