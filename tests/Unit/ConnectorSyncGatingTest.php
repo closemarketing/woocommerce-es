@@ -63,7 +63,10 @@ class ConnectorSyncGatingTest extends WP_UnitTestCase {
 	 * @return array
 	 */
 	private function connector_type_definitions( $options = array() ) {
-		$options['clientify'] = array( 'name' => 'Clientify' );
+		$options['clientify'] = array(
+			'name' => 'Clientify',
+			'slug' => 'clientify',
+		);
 		return $options;
 	}
 
