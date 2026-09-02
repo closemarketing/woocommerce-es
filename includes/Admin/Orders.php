@@ -135,7 +135,7 @@ class Orders {
 		$current_subtab            = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : 'sync_products';
 
 		$is_sync_page = $is_connect_ecommerce_page
-			&& str_starts_with( $current_tab, 'connector_' )
+			&& 0 === strpos( $current_tab, 'connector_' )
 			&& in_array( $current_subtab, array( 'sync_products', 'sync_orders' ), true );
 
 		if ( $is_sync_page ) {

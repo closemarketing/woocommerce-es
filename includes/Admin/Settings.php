@@ -305,7 +305,7 @@ class Settings {
 
 				// Detect if active tab is a connector tab (prefix 'connector_').
 				$active_connector_tab = '';
-				if ( str_starts_with( $active_tab, 'connector_' ) ) {
+				if ( 0 === strpos( $active_tab, 'connector_' ) ) {
 					$active_connector_tab = substr( $active_tab, strlen( 'connector_' ) );
 				}
 

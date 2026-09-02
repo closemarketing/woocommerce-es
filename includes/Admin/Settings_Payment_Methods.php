@@ -65,8 +65,6 @@ class Settings_Payment_Methods {
 		$this->connector_slug    = $connector_slug;
 		$this->connector_options = $connector_options;
 		$this->connector_type    = $connector_type;
-
-		add_action( 'admin_post_connect_ecommerce_save_payment_methods', array( $this, 'handle_form_submission' ) );
 	}
 
 	/**
@@ -506,4 +504,3 @@ class Settings_Payment_Methods {
 		return $prepared;
 	}
 }
-
