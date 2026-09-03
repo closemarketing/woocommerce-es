@@ -291,6 +291,30 @@ class TAX {
 	}
 
 	/**
+	 * Check whether the configured category attribute is explicitly empty.
+	 *
+	 * @param array $attributes Product attributes from the ERP.
+	 * @param array $settings Connector settings.
+	 * @return bool
+	 */
+	public static function has_empty_category_attribute( $attributes, $settings ) {
+		$attribute_cat_id = ! empty( $settings['catattr'] ) ? $settings['catattr'] : '';
+		if ( empty( $attribute_cat_id ) || empty( $attributes ) ) {
+			return false;
+		}
+
+		foreach ( $attributes as $attribute ) {
+			$attribute_name = isset( $attribute['name'] ) ? $attribute['name'] : '';
+			$attribute_id   = isset( $attribute['id'] ) ? $attribute['id'] : '';
+			if ( $attribute_name === $attribute_cat_id || $attribute_id === $attribute_cat_id ) {
+				return empty( $attribute['value'] );
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Assign the selected ERP attribute group to WooCommerce product brands.
 	 *
 	 * @param array  $attributes Product attributes from the ERP.

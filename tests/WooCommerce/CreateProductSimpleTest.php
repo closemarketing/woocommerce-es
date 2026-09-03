@@ -255,6 +255,40 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An explicit empty ERP category value removes only the tracked ERP terms.
+	 */
+	public function test_category_sync_merge_mode_removes_empty_erp_categories() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
+		$item      = json_decode( file_get_contents( $item_path ), true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'no';
+		$this->settings['catmode'] = 'merge';
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		$manual_term    = wp_insert_term( 'Manual category', 'product_cat' );
+		wp_set_object_terms( $result_prod_id, array( $manual_term['term_id'] ), 'product_cat', true );
+
+		$item['attributes'] = array(
+			array(
+				'id'    => '64be2e55727b35ad0b0d2c42',
+				'name'  => 'sandalias',
+				'value' => '',
+			),
+		);
+
+		PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+		$product_cats = wp_get_post_terms( $result_prod_id, 'product_cat', array( 'fields' => 'names' ) );
+
+		$this->assertContains( 'Manual category', $product_cats );
+		$this->assertNotContains( 'Calzado', $product_cats );
+		$this->assertNotContains( 'Zapatillas', $product_cats );
+
+		wp_delete_post( $result_prod_id, true );
+	}
+
+	/**
 	 * Merge mode preserves manual terms in custom taxonomies as well.
 	 */
 	public function test_custom_taxonomy_sync_merge_mode_preserves_manual_terms() {
