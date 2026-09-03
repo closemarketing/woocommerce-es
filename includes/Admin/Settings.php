@@ -790,6 +790,14 @@ class Settings {
 				);
 
 				add_settings_field(
+				'wcpimh_catmode',
+				__( 'Category synchronization mode', 'woocommerce-es' ),
+				array( $this, 'catmode_callback' ),
+				'connect_ecommerce_admin',
+				'connect_woocommerce_setting_section'
+				);
+
+				add_settings_field(
 				'wcpimh_filter',
 				__( 'Filter products by tags? Only import this tags (separated by comma and no space)', 'woocommerce-es' ),
 				array( $this, 'filter_callback' ),
@@ -1628,6 +1636,7 @@ class Settings {
 				'filter_sku'           => '',
 				'rates'                => 'default',
 				'catnp'                => 'yes',
+				'catmode'              => 'replace',
 				'doctype'              => 'invoice',
 				'cleanchars'           => '',
 				'approve_document'     => 'no',
@@ -2128,6 +2137,21 @@ class Settings {
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catnp]" id="wcpimh_catnp">
 			<option value="yes" <?php selected( $categorynp, 'yes' ); ?>><?php esc_html_e( 'Yes, it will import ONLY on new products', 'woocommerce-es' ); ?></option>		<option value="no" <?php selected( $categorynp, 'no' ); ?>><?php esc_html_e( 'No, it will import in ALL products', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Category synchronization mode.
+	 *
+	 * @return void
+	 */
+	public function catmode_callback() {
+		$category_mode = isset( $this->settings['catmode'] ) ? $this->settings['catmode'] : 'replace';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][catmode]" id="wcpimh_catmode">
+			<option value="merge" <?php selected( $category_mode, 'merge' ); ?>><?php esc_html_e( 'Merge ERP categories with manually assigned categories', 'woocommerce-es' ); ?></option>
+			<option value="replace" <?php selected( $category_mode, 'replace' ); ?>><?php esc_html_e( 'Replace all categories with ERP categories', 'woocommerce-es' ); ?></option>
 		</select>
 		<?php
 	}

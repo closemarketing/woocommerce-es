@@ -8,6 +8,7 @@
  */
 
 use CLOSE\ConnectEcommerce\Helpers\PROD;
+use CLOSE\ConnectEcommerce\Helpers\TAX;
 
 /**
  * Create Product Simple without Errors.
@@ -55,6 +56,7 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 			'tax_option'     => 'no',
 			'rates'          => 'default',
 			'catnp'          => 'yes',
+			'catmode'        => 'replace',
 			'doctype'        => 'invoice',
 			'series'         => '',
 			'freeorder'      => 'no',
@@ -187,6 +189,7 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 
 		$this->settings['catattr'] = 'sandalias';
 		$this->settings['catnp']   = 'no'; // yes means only on new products.
+		$this->settings['catmode'] = 'replace';
 		
 		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
 		$result_prod_id = $result_sync['post_id'];
@@ -214,6 +217,156 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 		$this->assertEquals( 1, $product_count_cats_upd );
 
 		wp_delete_post( $result_sync_upd['post_id'], true ); // Clean up after test
+	}
+
+	/**
+	 * Merge mode retains manually added categories while replacing ERP-managed ones.
+	 */
+	public function test_category_sync_merge_mode_preserves_manual_categories() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
+		$item      = json_decode( file_get_contents( $item_path ), true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'no';
+		$this->settings['catmode'] = 'merge';
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		$manual_term    = wp_insert_term( 'Manual category', 'product_cat' );
+		wp_set_object_terms( $result_prod_id, array( $manual_term['term_id'] ), 'product_cat', true );
+
+		$item['attributes'] = array(
+			array(
+				'id'    => '64be2e55727b35ad0b0d2c42',
+				'name'  => 'sandalias',
+				'value' => 'Chanclas',
+			),
+		);
+
+		PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+		$product_cats = wp_get_post_terms( $result_prod_id, 'product_cat', array( 'fields' => 'names' ) );
+
+		$this->assertContains( 'Manual category', $product_cats );
+		$this->assertContains( 'Chanclas', $product_cats );
+		$this->assertNotContains( 'Calzado', $product_cats );
+		$this->assertNotContains( 'Zapatillas', $product_cats );
+
+		wp_delete_post( $result_prod_id, true );
+	}
+
+	/**
+	 * An explicit empty ERP category value removes only the tracked ERP terms.
+	 */
+	public function test_category_sync_merge_mode_removes_empty_erp_categories() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple-cats.json';
+		$item      = json_decode( file_get_contents( $item_path ), true )[0];
+
+		$this->settings['catattr'] = 'sandalias';
+		$this->settings['catnp']   = 'no';
+		$this->settings['catmode'] = 'merge';
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+		$manual_term    = wp_insert_term( 'Manual category', 'product_cat' );
+		wp_set_object_terms( $result_prod_id, array( $manual_term['term_id'] ), 'product_cat', true );
+
+		$item['attributes'] = array(
+			array(
+				'id'    => '64be2e55727b35ad0b0d2c42',
+				'name'  => 'sandalias',
+				'value' => '',
+			),
+		);
+
+		PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+		$product_cats = wp_get_post_terms( $result_prod_id, 'product_cat', array( 'fields' => 'names' ) );
+
+		$this->assertContains( 'Manual category', $product_cats );
+		$this->assertNotContains( 'Calzado', $product_cats );
+		$this->assertNotContains( 'Zapatillas', $product_cats );
+
+		wp_delete_post( $result_prod_id, true );
+	}
+
+	/**
+	 * Merge mode preserves manual terms in custom taxonomies as well.
+	 */
+	public function test_custom_taxonomy_sync_merge_mode_preserves_manual_terms() {
+		$taxonomy = 'conecom_sync_test';
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			register_taxonomy( $taxonomy, 'product' );
+		}
+
+		$product_id  = self::factory()->post->create( array( 'post_type' => 'product' ) );
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP old', $product_id );
+		$manual_term = wp_insert_term( 'Manual term', $taxonomy );
+		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy, true );
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP new', $product_id );
+
+		$terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'names' ) );
+		$this->assertContains( 'Manual term', $terms );
+		$this->assertContains( 'ERP new', $terms );
+		$this->assertNotContains( 'ERP old', $terms );
+
+		wp_delete_post( $product_id, true );
+	}
+
+	/**
+	 * A manual term remains manual when a later ERP payload also contains it.
+	 */
+	public function test_category_sync_merge_mode_preserves_overlapping_manual_terms() {
+		$taxonomy = 'conecom_overlap_sync_test';
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			register_taxonomy( $taxonomy, 'product' );
+		}
+
+		$product_id  = self::factory()->post->create( array( 'post_type' => 'product' ) );
+		$manual_term = wp_insert_term( 'Manual term', $taxonomy );
+
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP term', $product_id );
+		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy, true );
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, array( 'ERP term', 'Manual term' ), $product_id );
+		TAX::set_terms_taxonomy( array( 'catmode' => 'merge' ), $taxonomy, 'ERP term', $product_id );
+
+		$terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'names' ) );
+		$this->assertContains( 'ERP term', $terms );
+		$this->assertContains( 'Manual term', $terms );
+
+		wp_delete_post( $product_id, true );
+	}
+
+	/**
+	 * An unregistered taxonomy must not abort a product synchronization.
+	 */
+	public function test_sync_terms_taxonomy_returns_error_for_unregistered_taxonomy() {
+		$product_id = self::factory()->post->create( array( 'post_type' => 'product' ) );
+		$result     = TAX::sync_terms_taxonomy( array( 'catmode' => 'merge' ), 'conecom_missing_taxonomy', array( 1 ), $product_id );
+
+		$this->assertWPError( $result );
+		wp_delete_post( $product_id, true );
+	}
+
+	/**
+	 * Direct taxonomy mappings also retain manual terms in merge mode.
+	 */
+	public function test_direct_custom_taxonomy_sync_merge_mode_preserves_manual_terms() {
+		$taxonomy = 'conecom_direct_sync_test';
+		if ( ! taxonomy_exists( $taxonomy ) ) {
+			register_taxonomy( $taxonomy, 'product' );
+		}
+
+		$product_id  = self::factory()->post->create( array( 'post_type' => 'product' ) );
+		TAX::assign_product_term( $product_id, $taxonomy, 'ERP direct old', array( 'catmode' => 'merge' ) );
+		$manual_term = wp_insert_term( 'Manual direct term', $taxonomy );
+		wp_set_object_terms( $product_id, array( $manual_term['term_id'] ), $taxonomy, true );
+		TAX::assign_product_term( $product_id, $taxonomy, 'ERP direct new', array( 'catmode' => 'merge' ) );
+
+		$terms = wp_get_object_terms( $product_id, $taxonomy, array( 'fields' => 'names' ) );
+		$this->assertContains( 'Manual direct term', $terms );
+		$this->assertContains( 'ERP direct new', $terms );
+		$this->assertNotContains( 'ERP direct old', $terms );
+
+		wp_delete_post( $product_id, true );
 	}
 
 	public function test_category_sync_products_mergevars_without_errors() {
