@@ -164,7 +164,8 @@ class ORDER {
 		$contact_code = self::get_billing_vat( $order );
 
 		// Order Reference.
-		$base_domain = basename( sanitize_text_field( $_SERVER['HTTP_HOST'] ) );
+		$http_host   = isset( $_SERVER['HTTP_HOST'] ) ? wp_unslash( $_SERVER['HTTP_HOST'] ) : wp_parse_url( home_url(), PHP_URL_HOST );
+		$base_domain = basename( sanitize_text_field( (string) $http_host ) );
 		$base_domain = str_replace( 'www.', '', $base_domain );
 		$prefix      = $base_domain . '_';
 
@@ -324,7 +325,7 @@ class ORDER {
 					$fields_items[ $index ]['sku'] = $product->get_sku();
 				}
 				$index_bund = $index;
-				$index++;
+				++$index;
 
 				if ( $subproducts > 0 ) {
 					$subproducts = --$subproducts;
@@ -436,25 +437,25 @@ class ORDER {
 		if ( empty( $tax ) ) {
 			$tax = new \WC_Tax();
 		}
-		
+
 		// Get the taxes applied to the line of the order
 		$item_tax_data = $item->get_taxes();
-		
+
 		if ( ! empty( $item_tax_data['total'] ) && is_array( $item_tax_data['total'] ) ) {
 			$tax_rate_ids = array_keys( $item_tax_data['total'] );
 
 			$tax_rate_id_from_item = $tax_rate_ids[0];
-			
+
 			// Get the KEY of text configured in the plugin (Database)
 			$tax_key = '';
 			if ( class_exists( __NAMESPACE__ . '\\TAXES' ) ) {
 				$tax_key = TAXES::get_tax_types_map( $tax_rate_id_from_item );
 			}
-				
+
 			if ( ! empty( $tax_key ) ) {
 				$item_taxes['taxes'] = array( trim( $tax_key ) );
 			} else {
-				$item_taxes['tax']     = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? (float) number_format( (float) $item_tax_data['total'][ $tax_rate_id_from_item ], 2, '.', '' ) : 0;
+				$item_taxes['tax'] = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? (float) number_format( (float) $item_tax_data['total'][ $tax_rate_id_from_item ], 2, '.', '' ) : 0;
 			}
 		}
 
@@ -472,7 +473,7 @@ class ORDER {
 		$contact_code = '';
 		foreach ( CONECOM_VAT_FIELD_SLUGS as $code_label ) {
 			// Add underscore prefix for meta fields.
-			$meta_key = 'VAT Number' === $code_label ? $code_label : '_' . $code_label;
+			$meta_key     = 'VAT Number' === $code_label ? $code_label : '_' . $code_label;
 			$contact_code = $order->get_meta( $meta_key );
 			if ( ! empty( $contact_code ) ) {
 				break;
@@ -501,26 +502,107 @@ class ORDER {
 			return $fallback ?? '';
 		}
 
-		$map = [
-			'á'=>'a', 'é'=>'e', 'í'=>'i', 'ó'=>'o', 'ú'=>'u', 'ñ'=>'ñ', 'Á'=>'A', 'É'=>'E', 'Í'=>'I', 'Ó'=>'O', 'Ú'=>'U', 'Ñ'=>'Ñ', 'à'=>'a', 'è'=>'e', 'ì'=>'i', 'ò'=>'o', 'ù'=>'u', 'À'=>'A', 'È'=>'E', 'Ì'=>'I', 'Ò'=>'O', 'Ù'=>'U', 'â'=>'a', 'ê'=>'e', 'î'=>'i', 'ô'=>'o', 'û'=>'u', 'Â'=>'A', 'Ê'=>'E', 'Î'=>'I', 'Ô'=>'O', 'Û'=>'U', 'ä'=>'a', 'ë'=>'e', 'ï'=>'i', 'ö'=>'o', 'ü'=>'u', 'Ä'=>'A', 'Ë'=>'E', 'Ï'=>'I', 'Ö'=>'O', 'Ü'=>'U', 'ã'=>'a', 'õ'=>'o', 'Ã'=>'A', 'Õ'=>'O', 'å'=>'a', 'Å'=>'A', 'š'=>'s', 'Š'=>'S', 'ž'=>'z', 'Ž'=>'Z', 'ý'=>'y', 'Ý'=>'Y', 'ÿ'=>'y', 'Ÿ'=>'Y', 'ø'=>'o', 'Ø'=>'O', 'æ'=>'ae', 'Æ'=>'AE', 'œ'=>'oe', 'Œ'=>'OE', 'ß'=>'ss', 'ł'=>'l', 'Ł'=>'L', '@'=>' ', '#'=>' ', '&' => 'Y', 'ğ'=>'g', 'Ğ'=>'G', 'ő'=>'o', 'Ő'=>'O', 'Ė' => 'E', 'ė' => 'e', 'į' => 'i', 'Į' => 'I',
-		];
+		$map   = array(
+			'á' => 'a',
+			'é' => 'e',
+			'í' => 'i',
+			'ó' => 'o',
+			'ú' => 'u',
+			'ñ' => 'ñ',
+			'Á' => 'A',
+			'É' => 'E',
+			'Í' => 'I',
+			'Ó' => 'O',
+			'Ú' => 'U',
+			'Ñ' => 'Ñ',
+			'à' => 'a',
+			'è' => 'e',
+			'ì' => 'i',
+			'ò' => 'o',
+			'ù' => 'u',
+			'À' => 'A',
+			'È' => 'E',
+			'Ì' => 'I',
+			'Ò' => 'O',
+			'Ù' => 'U',
+			'â' => 'a',
+			'ê' => 'e',
+			'î' => 'i',
+			'ô' => 'o',
+			'û' => 'u',
+			'Â' => 'A',
+			'Ê' => 'E',
+			'Î' => 'I',
+			'Ô' => 'O',
+			'Û' => 'U',
+			'ä' => 'a',
+			'ë' => 'e',
+			'ï' => 'i',
+			'ö' => 'o',
+			'ü' => 'u',
+			'Ä' => 'A',
+			'Ë' => 'E',
+			'Ï' => 'I',
+			'Ö' => 'O',
+			'Ü' => 'U',
+			'ã' => 'a',
+			'õ' => 'o',
+			'Ã' => 'A',
+			'Õ' => 'O',
+			'å' => 'a',
+			'Å' => 'A',
+			'š' => 's',
+			'Š' => 'S',
+			'ž' => 'z',
+			'Ž' => 'Z',
+			'ý' => 'y',
+			'Ý' => 'Y',
+			'ÿ' => 'y',
+			'Ÿ' => 'Y',
+			'ø' => 'o',
+			'Ø' => 'O',
+			'æ' => 'ae',
+			'Æ' => 'AE',
+			'œ' => 'oe',
+			'Œ' => 'OE',
+			'ß' => 'ss',
+			'ł' => 'l',
+			'Ł' => 'L',
+			'@' => ' ',
+			'#' => ' ',
+			'&' => 'Y',
+			'ğ' => 'g',
+			'Ğ' => 'G',
+			'ő' => 'o',
+			'Ő' => 'O',
+			'Ė' => 'E',
+			'ė' => 'e',
+			'į' => 'i',
+			'Į' => 'I',
+		);
 		$ascii = strtr( $value, $map );
-		$ascii = strtr( strtoupper( $ascii ), array( 'ñ' => 'Ñ', 'ç' => 'Ç' ) );
+		$ascii = strtr(
+			strtoupper( $ascii ),
+			array(
+				'ñ' => 'Ñ',
+				'ç' => 'Ç',
+			)
+		);
 
 		// Replace non-whitelisted characters with spaces.
 		$ascii = preg_replace( '/[^' . $whitelist . ']/u', ' ', $ascii );
 
 		// Collapse multiple spaces and clean up
-		$ascii = preg_replace('/\s+/', ' ', $ascii);
-		$ascii = preg_replace('/-{2,}/', '-', $ascii);
-		$ascii = trim($ascii, " \t\n\r\0\x0B-");
+		$ascii = preg_replace( '/\s+/', ' ', $ascii );
+		$ascii = preg_replace( '/-{2,}/', '-', $ascii );
+		$ascii = trim( $ascii, " \t\n\r\0\x0B-" );
 
-		if ($maxLen > 0 && strlen($ascii) > $maxLen) {
-				$ascii = substr($ascii, 0, $maxLen);
-				$ascii = rtrim($ascii);
+		if ( $maxLen > 0 && strlen( $ascii ) > $maxLen ) {
+				$ascii = substr( $ascii, 0, $maxLen );
+				$ascii = rtrim( $ascii );
 		}
 
-		if ($ascii === '' && $fallback !== null) {
+		if ( $ascii === '' && $fallback !== null ) {
 				return $fallback;
 		}
 
