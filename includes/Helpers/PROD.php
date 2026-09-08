@@ -138,16 +138,31 @@ class PROD {
 			}
 			if ( $post_id && $item_sku && 'pack' === $item['kind'] ) {
 				// Create subproducts before.
-				$pack_items = '';
+				$pack_items      = '';
+				$pack_items_sum  = 0;
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
 					foreach ( $item['packItems'] as $pack_item ) {
-						$item_simple     = $api_erp->get_products( $pack_item['pid'] );
-						$product_pack_id = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
-						$pack_items     .= $product_pack_id . '/' . $pack_item['u'] . ',';
-						$message        .= ' x ' . $pack_item['u'];
+						$item_simple      = $api_erp->get_products( $pack_item['pid'] );
+						$result_pack_item = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
+						$product_pack_id  = $result_pack_item['post_id'] ?? 0;
+						$pack_items      .= $product_pack_id . '/' . $pack_item['u'] . ',';
+						$message         .= ' x ' . $pack_item['u'];
+
+						$item_pack_product = $product_pack_id ? wc_get_product( $product_pack_id ) : null;
+						if ( $item_pack_product ) {
+							$pack_items_sum += (float) $item_pack_product->get_regular_price() * (float) $pack_item['u'];
+						}
 					}
 					$message   .= ' ';
 					$pack_items = substr( $pack_items, 0, -1 );
+				}
+
+				// WPC Product Bundles only auto-calculates its displayed price when the
+				// underlying `_price` postmeta is non-zero (its own fixed-price guard
+				// otherwise forces the shown price to 0). The ERP has no pack price
+				// concept, so fall back to the sum of the bundled items when empty.
+				if ( empty( $item['price'] ) ) {
+					$item['price'] = $pack_items_sum;
 				}
 
 				// Update meta for product.
@@ -330,7 +345,14 @@ class PROD {
 		}
 
 		if ( 'variable' !== $type ) {
-			$product_props['regular_price'] = self::get_rate_price( $item, $rate_id );
+			$rate_price = self::get_rate_price( $item, $rate_id );
+			// A pack's price defaults to WPC Product Bundles' own auto-calculation from
+			// its items (woosb_disable_auto_price = 'off'); only override it here when the
+			// ERP explicitly provides a non-zero pack price, otherwise leave it untouched
+			// instead of forcing it to 0 and overwriting the plugin's computed price.
+			if ( 'pack' !== $type || ! empty( $rate_price ) ) {
+				$product_props['regular_price'] = $rate_price;
+			}
 		}
 
 		$price_sale = self::get_sale_price( $item, $settings );
@@ -457,8 +479,15 @@ class PROD {
 		// Set attributes.
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
 		$categories_ids = TAX::assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product );
-		if ( ! empty( $categories_ids ) ) {
-			$product_props['category_ids'] = $categories_ids;
+		$category_newp  = isset( $settings['catnp'] ) ? $settings['catnp'] : 'yes';
+		$has_empty_category_attribute = TAX::has_empty_category_attribute( $attributes, $settings );
+		$should_sync_categories       = ! empty( $categories_ids ) || $has_empty_category_attribute;
+		$should_update_categories     = ( 'yes' === $category_newp && $is_new_product ) || 'no' === $category_newp;
+		if ( $should_sync_categories && ! empty( $settings['catattr'] ) && $should_update_categories ) {
+			$synced_category_ids = TAX::sync_terms_taxonomy( $settings, 'product_cat', $categories_ids, $product_id );
+			if ( ! is_wp_error( $synced_category_ids ) ) {
+				$product_props['category_ids'] = $synced_category_ids;
+			}
 		}
 
 		// Imports image.
@@ -578,7 +607,7 @@ class PROD {
 		$post_id     = $result_prod['prod_id'] ?? 0;
 
 		// Add custom taxonomies.
-		self::add_custom_taxonomies( $post_id, $item );
+		self::add_custom_taxonomies( $post_id, $item, $settings );
 
 		if ( $from_pack ) {
 			$message .= '<br/>';
@@ -640,7 +669,7 @@ class PROD {
 		}
 
 		// Add custom taxonomies.
-		self::add_custom_taxonomies( $product_id, $item );
+		self::add_custom_taxonomies( $product_id, $item, $settings );
 
 		// Remove variations without SKU blank.
 		if ( ! empty( $variations_item ) ) {
@@ -1401,14 +1430,14 @@ class PROD {
 	 *
 	 * @return void
 	 */
-	private static function add_custom_taxonomies( $product_id, $item ) {
+	private static function add_custom_taxonomies( $product_id, $item, $settings ) {
 		// Set taxonomies.
 		if ( ! empty( $item['taxonomies'] ) && is_array( $item['taxonomies'] ) ) {
 			foreach ( $item['taxonomies'] as $taxonomy ) {
 				if ( empty( $taxonomy['id'] ) || empty( $taxonomy['value'] ) ) {
 					continue;
 				}
-				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'] );
+				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'], $settings );
 			}
 		}
 	}

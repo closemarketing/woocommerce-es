@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 3.4.0
-Version: 3.4.0
+Stable tag: 3.4.1-beta.1
+Version: 3.4.1-beta.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -227,12 +227,14 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 = next =
 
 * Added: Import a selected ERP attribute group as WooCommerce product brands when the product_brand taxonomy is available.
+* Added: Category synchronization mode that replaces categories with ERP terms by default, with an option to merge manually assigned taxonomy terms.
 * Added: Regression coverage confirming that sales reduce stock on the purchased variation only, never on its variable parent.
 * Fixed: Order data cleaning now normalizes country and state codes before resolving the state name, preserves custom whitelists, and consistently uppercases retained Spanish characters.
 * Fixed: Customers can download an available ERP document PDF from My Account regardless of the WooCommerce order status, while the endpoint continues to derive document details from the authorized order.
 * Added: A documented connector API contract with safe defaults for optional ERP and CRM capabilities.
 * Fixed: Product imports from non-paginated APIs now finish at the catalogue end.
 * Fixed: Order-only connectors can now disable product, subscription, AI and payment-mapping settings without causing errors or exporting previously saved payment and treasury mappings. Settings submenus now preserve their separators when optional sections are hidden.
+* Fixed: Pack/bundle products synced from the ERP with WPC Product Bundles for WooCommerce active now correctly reference their bundled sub-products (previously stored as a literal "Array/qty" string) and get a non-zero price, falling back to the sum of the bundled items when the ERP reports no pack price.
 
 = 3.4.0 =
 * Fixed: Products imported from the ERP always got WooCommerce's standard tax class, ignoring the actual tax configured in the ERP. Products now read the ERP's tax key (e.g. Holded's `s_iva_21`) and resolve it to a WooCommerce tax class via the existing "ERP Tax Type" mapping (WooCommerce > Settings > Tax) — the same mapping already used for the order sync direction.
