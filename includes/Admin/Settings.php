@@ -723,6 +723,28 @@ class Settings {
 	 * @return void
 	 */
 	public function page_init() {
+		// admin_init runs before create_admin_page(), so $this->options still reflects
+		// the globally active connector rather than the one whose "Connection and
+		// Options" tab is actually being viewed. Re-resolve it from the requested tab
+		// here so per-connector capability checks below (e.g. product_option_stock)
+		// use the right connector instead of always the active one.
+		if ( isset( $_GET['tab'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$requested_tab = sanitize_text_field( wp_unslash( $_GET['tab'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			if ( 0 === strpos( $requested_tab, 'connector_' ) ) {
+				$requested_connector_id = substr( $requested_tab, strlen( 'connector_' ) );
+				if ( isset( $this->connectors[ $requested_connector_id ] ) ) {
+					$tab_connector              = $this->connectors[ $requested_connector_id ];
+					$this->connector            = $tab_connector['id'] ?? $requested_connector_id;
+					$this->settings             = $tab_connector['settings'] ?? array();
+					$this->options              = $tab_connector['options'] ?? array();
+					$this->is_mergevars         = $tab_connector['is_mergevars'] ?? false;
+					$this->is_disabled_orders   = $tab_connector['is_disabled_orders'] ?? false;
+					$this->is_disabled_ai       = $tab_connector['is_disabled_ai'] ?? false;
+					$this->is_disabled_products = in_array( 'product', $this->options['disable_modules'] ?? array(), true );
+				}
+			}
+		}
+
 		$settings_fields = ! empty( $this->options['settings_fields'] ) ? $this->options['settings_fields'] : array();
 
 		register_setting(
@@ -908,7 +930,8 @@ class Settings {
 						__( 'Hide out-of-stock products?', 'woocommerce-es' ),
 						array( $this, 'stock_visibility_callback' ),
 						'connect_ecommerce_admin',
-						'connect_woocommerce_setting_section'
+						'connect_woocommerce_setting_section_products',
+						$short_field
 					);
 				}
 
@@ -1112,7 +1135,8 @@ class Settings {
 					__( 'Sync orders from this date?', 'woocommerce-es' ),
 					array( $this, 'order_sync_from_date_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section'
+					'connect_woocommerce_setting_section_orders',
+					$short_field
 				);
 			}
 
@@ -3081,7 +3105,11 @@ class Settings {
 										<?php
 										$workflow_module    = 'products' === $workflow ? 'product' : 'order';
 										$workflow_supported = ! in_array( $workflow_module, $disabled_modules, true );
-										$enabled            = $workflow_supported && ( isset( $meta['workflows'][ $workflow ] ) ? $meta['workflows'][ $workflow ] : 'yes' );
+										$workflow_value     = isset( $meta['workflows'][ $workflow ] ) ? $meta['workflows'][ $workflow ] : 'yes';
+										// checked() does a strict string comparison — combining $workflow_supported (bool)
+										// with $workflow_value (string) via && coerces the result to a bool, so 'yes' would
+										// stringify to '1' and never match. Keep $enabled a 'yes'/'no' string throughout.
+										$enabled = $workflow_supported ? $workflow_value : 'no';
 										?>
 										<label style="display:block;" <?php echo $workflow_supported ? '' : 'title="' . esc_attr__( 'Not supported by this connector', 'woocommerce-es' ) . '"'; ?>>
 											<input type="hidden" name="connect_ecommerce[connectors_meta][<?php echo esc_attr( $connector_id ); ?>][workflows][<?php echo esc_attr( $workflow ); ?>]" value="no"/>
