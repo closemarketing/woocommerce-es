@@ -753,18 +753,22 @@ class Settings {
 			array( $this, 'sanitize_fields_settings' )
 		);
 
+		// Repeats the form's own submit_button() after each section so long
+		// connector settings pages don't force a full scroll back down just to save.
 		add_settings_section(
 			'connect_woocommerce_setting_section',
 			__( 'Connection', 'woocommerce-es' ),
 			array( $this, 'connect_woocommerce_section_info' ),
-			'connect_ecommerce_admin'
+			'connect_ecommerce_admin',
+			array( 'after_section' => $this->get_inline_save_button_html() )
 		);
 
 		add_settings_section(
 			'connect_woocommerce_setting_section_products',
 			__( 'Products synchronization options', 'woocommerce-es' ),
 			'__return_false',
-			'connect_ecommerce_admin'
+			'connect_ecommerce_admin',
+			array( 'after_section' => $this->get_inline_save_button_html() )
 		);
 
 		add_settings_section(
@@ -1363,6 +1367,24 @@ class Settings {
 			'connect_ecommerce_alerts',
 			'connect_ecommerce_alerts_section'
 		);
+	}
+
+	/**
+	 * Renders a "Save settings" button, for repeating after each settings
+	 * section so long connector pages don't force a full scroll back down.
+	 *
+	 * Do_settings_sections() runs after_section through wp_kses_post(), which
+	 * strips <input> (it only allows form-only tags when the context also
+	 * allows <form>) — so this uses a <button type="submit"> instead of
+	 * get_submit_button()'s <input>, which would otherwise be silently dropped.
+	 *
+	 * @return string
+	 */
+	private function get_inline_save_button_html() {
+		static $count = 0;
+		++$count;
+
+		return '<p class="submit"><button type="submit" name="submit_settings" id="submit_settings_' . esc_attr( $count ) . '" class="button button-secondary">' . esc_html__( 'Save settings', 'woocommerce-es' ) . '</button></p>';
 	}
 
 	/**
