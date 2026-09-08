@@ -1468,12 +1468,27 @@ class Settings {
 
 			<div class="sync-wrapper">
 				<?php if ( ! $can_sync ) : ?>
-					<p class="error">
-						<?php esc_html_e( 'You need to set the API settings before importing products.', 'woocommerce-es' ); ?>
+					<?php
+					$connection_url = add_query_arg(
+						array(
+							'page'   => 'connect_ecommerce',
+							'tab'    => 'connector_' . $selected_id,
+							'subtab' => 'connection',
+						),
+						admin_url( 'admin.php' )
+					);
+					?>
+					<div class="connwoo-notice connwoo-notice-error">
+						<p><?php esc_html_e( 'You need to set the API settings before importing products.', 'woocommerce-es' ); ?></p>
 						<?php if ( ! empty( $message ) ) : ?>
-							<br/><?php echo esc_html( $message ); ?>
+							<p class="connwoo-notice-detail"><?php echo esc_html( $message ); ?></p>
 						<?php endif; ?>
-					</p>
+						<p>
+							<a href="<?php echo esc_url( $connection_url ); ?>" class="button button-primary">
+								<?php esc_html_e( 'Go to connection settings', 'woocommerce-es' ); ?>
+							</a>
+						</p>
+					</div>
 				<?php else : ?>
 					<?php if ( ! $is_orders && ! $selected_no_ai ) : ?>
 						<p>

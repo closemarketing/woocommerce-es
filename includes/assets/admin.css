@@ -199,6 +199,31 @@
 	color: orange;
 }
 
+.connect-ecommerce-settings .connwoo-notice {
+	max-width: 420px;
+	margin: 20px 0;
+	padding: 16px 20px;
+	text-align: left;
+	background: #fff;
+	border: 1px solid #e0e0e0;
+	border-left: 4px solid #d63638;
+	border-radius: 4px;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .connwoo-notice p {
+	margin: 0 0 10px;
+}
+
+.connect-ecommerce-settings .connwoo-notice p:last-child {
+	margin-bottom: 0;
+}
+
+.connect-ecommerce-settings .connwoo-notice-detail {
+	color: #666;
+	font-size: 13px;
+}
+
 .connect-ecommerce-settings .connwoo-header {
 	background: #010101 url('background.jpg');
 	margin-left: -20px;
