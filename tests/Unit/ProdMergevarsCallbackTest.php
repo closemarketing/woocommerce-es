@@ -30,11 +30,17 @@ class ProdMergevarsCallbackTest extends WP_UnitTestCase {
 		$settings = new Settings(
 			array(
 				'settings_all' => array(),
-				'connector'    => 'mock',
-				'settings'     => array(),
-				'all_options'  => array(),
-				'options'      => array( 'slug' => 'mock', 'name' => 'Mock ERP' ),
-				'connapi_erp'  => $connapi_erp,
+				'active'       => 'mock',
+				'items'        => array(
+					'mock' => array(
+						'id'          => 'mock',
+						'connector'   => 'mock',
+						'settings'    => array(),
+						'all_options' => array(),
+						'options'     => array( 'slug' => 'mock', 'name' => 'Mock ERP' ),
+						'connapi_erp' => $connapi_erp,
+					),
+				),
 			)
 		);
 

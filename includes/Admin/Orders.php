@@ -70,21 +70,30 @@ class Orders {
 	private $ecstatus;
 
 	/**
+	 * All configured connectors (id => connector data), for the order list columns.
+	 *
+	 * @var array
+	 */
+	private $connectors;
+
+	/**
 	 * Init and hook in the integration.
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connector       Active connector.
+	 * @param array $connectors_data Connectors payload from HELPER::get_connectors() (optional).
 	 */
-	public function __construct( $connector ) {
+	public function __construct( $connector, $connectors_data = array() ) {
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) || empty( $connector['connapi_erp'] ) ) {
 			return;
 		}
-		$this->options                    = $connector['options'];
-		$this->settings                   = $connector['settings'] ?? array();
-		$this->connapi_erp                = $connector['connapi_erp'];
-		$ecstatus                         = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
-		$this->ecstatus                   = $ecstatus;
-		$this->meta_key_order             = '_' . $this->options['slug'] . '_invoice_id';
-		$this->default_freeorder          = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$this->options           = $connector['options'];
+		$this->settings          = $connector['settings'] ?? array();
+		$this->connapi_erp       = $connector['connapi_erp'];
+		$ecstatus                = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$this->ecstatus          = $ecstatus;
+		$this->meta_key_order    = '_' . $this->options['slug'] . '_invoice_id';
+		$this->default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$this->connectors        = $connectors_data['items'] ?? array();
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
@@ -131,14 +140,14 @@ class Orders {
 	 */
 	public function admin_enqueues() {
 		$is_connect_ecommerce_page = isset( $_GET['page'] ) && 'connect_ecommerce' === $_GET['page'];
-		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
+		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : '';
 		$current_subtab            = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : 'sync_products';
 
-		$is_sync_orders_page = $is_connect_ecommerce_page
-			&& 'synchronization' === $current_tab
-			&& 'sync_orders' === $current_subtab;
+		$is_sync_page = $is_connect_ecommerce_page
+			&& 0 === strpos( $current_tab, 'connector_' )
+			&& in_array( $current_subtab, array( 'sync_products', 'sync_orders' ), true );
 
-		if ( $is_sync_orders_page ) {
+		if ( $is_sync_page ) {
 			wp_enqueue_style(
 				'conecom-admin-import',
 				CONECOM_PLUGIN_URL . 'includes/assets/admin-import.css',
@@ -157,16 +166,19 @@ class Orders {
 	 */
 	public function send_order_erp( $order_id ) {
 		if ( function_exists( 'as_schedule_single_action' ) ) {
-			$pending = as_get_scheduled_actions( array(
-				'hook'   => 'conecom_async_send_order_erp',
-				'args'   => array( $order_id ),
-				'status' => \ActionScheduler_Store::STATUS_PENDING,
-			), 'ids' );
+			$pending = as_get_scheduled_actions(
+				array(
+					'hook'   => 'conecom_async_send_order_erp',
+					'args'   => array( $order_id ),
+					'status' => \ActionScheduler_Store::STATUS_PENDING,
+				),
+				'ids'
+			);
 			if ( empty( $pending ) ) {
 				as_schedule_single_action( time() + 30, 'conecom_async_send_order_erp', array( $order_id ), 'connect-ecommerce' );
 			}
 		} else {
-			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
 		}
 	}
 
@@ -184,7 +196,7 @@ class Orders {
 		if ( 'manual' === $this->ecstatus ) {
 			return;
 		}
-		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
+		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
 	}
 
 	/**
@@ -218,6 +230,31 @@ class Orders {
 	}
 
 	/**
+	 * Resolves the connapi_erp/settings/options/meta_key_order quadruplet for a connector ID.
+	 *
+	 * Falls back to this instance's connector when no connector_id is given. When an explicit
+	 * connector_id is requested but that connector is inactive, or has the 'orders' workflow
+	 * disabled, connapi_erp is returned as null: callers must not sync orders in that case.
+	 *
+	 * @param string $connector_id Connector ID from request, or empty for the default connector.
+	 * @return array List of ( $connapi_erp, $settings, $options, $meta_key_order ).
+	 */
+	private function resolve_connector( $connector_id ) {
+		if ( ! empty( $connector_id ) ) {
+			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
+			if ( ! $connector_data || ! HELPER::is_workflow_enabled_for_connector( $connector_data['meta'] ?? array(), 'orders' ) ) {
+				return array( null, array(), array(), '' );
+			}
+			if ( isset( $connector_data['connapi_erp'] ) ) {
+				$options = $connector_data['options'];
+				return array( $connector_data['connapi_erp'], $connector_data['settings'], $options, '_' . $options['slug'] . '_invoice_id' );
+			}
+		}
+		return array( $this->connapi_erp, $this->settings, $this->options, $this->meta_key_order );
+	}
+
+	/**
 	 * Import products from API
 	 *
 	 * @return void
@@ -231,6 +268,14 @@ class Orders {
 		$doing_ajax   = wp_doing_ajax();
 		$sync_loop    = isset( $_POST['loop'] ) ? (int) $_POST['loop'] : 0;
 		$message      = '';
+
+		// Get connector from request or use default.
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+		list( $connapi_erp, $settings, $options, $meta_key_order ) = $this->resolve_connector( $connector_id );
+		if ( empty( $connapi_erp ) ) {
+			wp_send_json_error( array( 'msg' => __( 'Connector not available for orders sync', 'woocommerce-es' ) ) );
+			return;
+		}
 
 		// Start.
 		if ( ! session_id() ) {
@@ -277,7 +322,9 @@ class Orders {
 			}
 			$_SESSION['conecom_sync_orders'] = HELPER::sanitize_array_recursive( $sync_orders );
 		} else {
-			$sync_orders = HELPER::sanitize_array_recursive( $_SESSION['conecom_sync_orders'] );
+			$sync_orders = isset( $_SESSION['conecom_sync_orders'] ) && is_array( $_SESSION['conecom_sync_orders'] )
+				? HELPER::sanitize_array_recursive( $_SESSION['conecom_sync_orders'] )
+				: array();
 		}
 
 		if ( false === $sync_orders ) {
@@ -304,16 +351,17 @@ class Orders {
 						die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
 					}
 				} else {
-					$ec_invoice_id = $order->get_meta( $this->meta_key_order );
+					$ec_invoice_id = $order->get_meta( $meta_key_order );
 
 					if ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
 						$message .= __( 'Order already exported to API ID:', 'woocommerce-es' ) . $ec_invoice_id;
-					} elseif ( ! empty( $ec_invoice_id ) && 'nocreate' !== $ec_invoice_id ) {
+					} elseif ( 'nocreate' === $ec_invoice_id ) {
 						$message .= __( 'Free order not exported', 'woocommerce-es' );
 					} else {
 						// Manual has no completion hook to retry a postponed order later, so this
 						// batch export is treated the same as an explicit per-order manual request.
-						$result = ORDER::create_invoice( $this->settings, $item['id'], $this->meta_key_order, $this->options['slug'], $this->connapi_erp, 'manual' === $this->ecstatus, $this->default_freeorder );
+						$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
+						$result            = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp, 'manual' === $this->ecstatus, $default_freeorder, $options['name'] );
 
 						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
 						$message .= ' ' . $result['message'];
@@ -352,12 +400,10 @@ class Orders {
 						}
 					}
 				}
+			} elseif ( $doing_ajax ) {
+				wp_send_json_error( array( 'msg' => __( 'No orders to import', 'woocommerce-es' ) ) );
 			} else {
-				if ( $doing_ajax ) {
-					wp_send_json_error( array( 'msg' => __( 'No orders to import', 'woocommerce-es' ) ) );
-				} else {
-					die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
-				}
+				die( esc_html( __( 'No orders to import', 'woocommerce-es' ) ) );
 			}
 		}
 		if ( $doing_ajax ) {
@@ -394,19 +440,56 @@ class Orders {
 	}
 
 	/**
-	 * Add columns to order list
+	 * Connectors with the orders workflow enabled, one order-list column per connector.
+	 *
+	 * Falls back to this instance's own connector when no multi-connector payload was
+	 * supplied, so single-connector sites keep a single column as before.
+	 *
+	 * @return array Id => connector data ( 'options', 'connapi_erp', 'meta_key_order' ).
+	 */
+	private function get_syncable_connectors() {
+		if ( empty( $this->connectors ) ) {
+			return array(
+				$this->options['slug'] => array(
+					'options'        => $this->options,
+					'connapi_erp'    => $this->connapi_erp,
+					'meta_key_order' => $this->meta_key_order,
+				),
+			);
+		}
+
+		$syncable = array();
+		foreach ( $this->connectors as $conn_id => $conn_data ) {
+			$conn_meta = $conn_data['meta'] ?? array();
+			if ( ! HELPER::is_workflow_enabled_for_connector( $conn_meta, 'orders' ) || empty( $conn_data['connapi_erp'] ) || empty( $conn_data['options'] ) ) {
+				continue;
+			}
+			$syncable[ $conn_id ] = array(
+				'options'        => $conn_data['options'],
+				'connapi_erp'    => $conn_data['connapi_erp'],
+				'meta_key_order' => '_' . $conn_data['options']['slug'] . '_invoice_id',
+			);
+		}
+		return $syncable;
+	}
+
+	/**
+	 * Add columns to order list, one per connector with the "orders" workflow enabled.
 	 *
 	 * @param array $columns Columns for order.
 	 * @return array
 	 */
 	public function custom_shop_order_column( $columns ) {
 		$reordered_columns = array();
+		$syncable          = $this->get_syncable_connectors();
 		// Inserting columns to a specific location.
 		foreach ( $columns as $key => $column ) {
 			$reordered_columns[ $key ] = $column;
 			if ( 'order_status' === $key ) {
 				// Inserting after "Status" column.
-				$reordered_columns[ $this->options['slug'] ] = $this->options['name'];
+				foreach ( $syncable as $conn_id => $conn_data ) {
+					$reordered_columns[ 'conecom-' . $conn_id ] = $conn_data['options']['name'];
+				}
 			}
 		}
 		return $reordered_columns;
@@ -420,27 +503,31 @@ class Orders {
 	 * @return void
 	 */
 	public function custom_orders_list_column_content( $column, $order_id ) {
-		switch ( $column ) {
-			case $this->options['slug']:
-				// Get custom order meta data.
-				$order      = wc_get_order( $order_id );
-				if ( ! $order ) {
-					break;
-				}
-				$invoice_id = $order->get_meta( $this->meta_key_order );
-				if ( 'nocreate' === $invoice_id ) {
-					break;
-				}
-				$edit_url   = $this->connapi_erp->get_url_link_api( $order );
-				if ( $edit_url ) {
-					echo '<a href="' . esc_url( $edit_url ) . '" target="_blank">';
-				}
-				echo esc_html( $invoice_id );
-				if ( $edit_url ) {
-					echo '</a>';
-				}
-				unset( $order );
-				break;
+		if ( 0 !== strpos( $column, 'conecom-' ) ) {
+			return;
+		}
+		$conn_id  = substr( $column, strlen( 'conecom-' ) );
+		$syncable = $this->get_syncable_connectors();
+		if ( ! isset( $syncable[ $conn_id ] ) ) {
+			return;
+		}
+		$conn_data = $syncable[ $conn_id ];
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+		$invoice_id = $order->get_meta( $conn_data['meta_key_order'] );
+		if ( empty( $invoice_id ) || 'nocreate' === $invoice_id ) {
+			return;
+		}
+		$edit_url = $conn_data['connapi_erp']->get_url_link_api( $order );
+		if ( $edit_url ) {
+			echo '<a href="' . esc_url( $edit_url ) . '" target="_blank">';
+		}
+		echo esc_html( $invoice_id );
+		if ( $edit_url ) {
+			echo '</a>';
 		}
 	}
 
@@ -453,16 +540,20 @@ class Orders {
 		if ( ! check_ajax_referer( 'sync_erp_order_nonce', 'nonce' ) ) {
 			wp_send_json_error( array( 'error' => 'Error' ) );
 		}
-		$order_id = isset( $_POST['order_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['order_id'] ) ) : 0;
-		$type     = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
+		$order_id     = isset( $_POST['order_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['order_id'] ) ) : 0;
+		$type         = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
 
-		$result = array(
-			'status'  => 'error',
-			'message' => __( 'Invalid request type', 'woocommerce-es' ),
-		);
+		list( $connapi_erp, $settings, $options, $meta_key_order ) = $this->resolve_connector( $connector_id );
+		if ( empty( $connapi_erp ) ) {
+			wp_send_json_error( array( 'message' => __( 'Connector not available for orders sync', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
 
 		if ( 'erp-post' === $type ) {
-			$result = ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, true, $this->default_freeorder );
+			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder, $options['name'] );
 		}
 
 		// Check result status and respond accordingly.

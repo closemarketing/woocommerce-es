@@ -28,8 +28,12 @@ class ConnectorApiContractTest extends WP_UnitTestCase {
 			$this->assertSame( '', $connector->get_attributes() );
 			$this->assertSame( '', $connector->get_image_product( array(), 'remote-product', 123 ) );
 			$this->assertSame( '', $connector->get_url_link_api() );
-			$this->assertFalse( $connector->supports_capability( 'get_all_product_skus' ) );
 		}
+
+		// Clientify overrides get_all_product_skus() to support the import statistics dashboard.
+		$this->assertTrue( $clientify->supports_capability( 'get_all_product_skus' ) );
+		// Brevo has no product catalog, so it keeps the safe default.
+		$this->assertFalse( $brevo->supports_capability( 'get_all_product_skus' ) );
 	}
 
 	/**

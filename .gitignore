@@ -1,6 +1,10 @@
 #Wordpress
 vendor/
 node_modules/
+
+# AI
+.claude/
+
 # Numerous always-ignore extensions
 *.log
 *.zip

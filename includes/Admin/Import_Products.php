@@ -100,8 +100,8 @@ class Import_Products {
 	/**
 	 * Determines if product import should finish based on pagination status.
 	 *
-	 * @param int      $sync_loop       Current loop iteration (0-indexed).
-	 * @param int      $products_count  Number of products in current batch/page.
+	 * @param int       $sync_loop       Current loop iteration (0-indexed).
+	 * @param int       $products_count  Number of products in current batch/page.
 	 * @param int|bool  $api_pagination     Products per page, or false for non-paginated.
 	 * @param bool|null $api_is_paginated   Whether the remote API paginates products.
 	 * @return bool True if import should finish, false otherwise.
@@ -140,31 +140,12 @@ class Import_Products {
 	 * @return void
 	 */
 	public function admin_enqueues() {
-		// Check if we're on connect_ecommerce page.
-		$is_connect_ecommerce_page = isset( $_GET['page'] ) && 'connect_ecommerce' === $_GET['page'];
-		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : 'synchronization';
-		$current_subtab            = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : 'sync_products';
-
-		$is_sync_products_page = $is_connect_ecommerce_page
-			&& 'synchronization' === $current_tab
-			&& 'sync_products' === $current_subtab;
-
 		wp_enqueue_style(
 			'woocommerce-es',
 			CONECOM_PLUGIN_URL . 'includes/assets/admin.css',
 			array(),
 			CONECOM_VERSION
 		);
-
-		// Import page layout (tabs, two columns) is always used on sync products; stats are optional.
-		if ( $is_sync_products_page ) {
-			wp_enqueue_style(
-				'conecom-admin-import',
-				CONECOM_PLUGIN_URL . 'includes/assets/admin-import.css',
-				array(),
-				CONECOM_VERSION
-			);
-		}
 
 		wp_enqueue_script(
 			'connect-ecommerce-repeat',
@@ -196,6 +177,22 @@ class Import_Products {
 				'has_get_all_product_skus' => $has_get_all_product_skus,
 				'stats_nonce'              => wp_create_nonce( 'conecom_import_stats_nonce' ),
 				'as_logs_nonce'            => wp_create_nonce( 'conecom_as_logs_nonce' ),
+				'i18n'                     => array(
+					'loading'            => __( 'Loading…', 'woocommerce-es' ),
+					'error_loading_logs' => __( 'Error loading logs.', 'woocommerce-es' ),
+					'no_sync_runs'       => __( 'No sync runs recorded yet.', 'woocommerce-es' ),
+					'col_date'           => __( 'Date', 'woocommerce-es' ),
+					'col_status'         => __( 'Status', 'woocommerce-es' ),
+					'col_frequency'      => __( 'Frequency', 'woocommerce-es' ),
+					'col_last_log'       => __( 'Last log', 'woocommerce-es' ),
+					'status_complete'    => __( 'Complete', 'woocommerce-es' ),
+					'status_failed'      => __( 'Failed', 'woocommerce-es' ),
+					'status_pending'     => __( 'Pending', 'woocommerce-es' ),
+					'status_in_progress' => __( 'Running', 'woocommerce-es' ),
+					'status_canceled'    => __( 'Canceled', 'woocommerce-es' ),
+					'tag_label'          => __( 'Tag:', 'woocommerce-es' ),
+					'total_label'        => __( 'Total:', 'woocommerce-es' ),
+				),
 			)
 		);
 
@@ -226,18 +223,24 @@ class Import_Products {
 	 * @return void
 	 */
 	public function sync_products() {
-
 		if ( ! check_ajax_referer( 'conecom_manual_import_nonce', 'nonce', false ) ) {
 			wp_send_json_error( array( 'error' => 'Invalid nonce' ) );
 			return;
 		}
-
 		if ( empty( $this->connapi_erp ) ) {
 			wp_send_json_error( array( 'message' => __( 'No connector configured', 'woocommerce-es' ) ) );
 			return;
 		}
 
-		if ( in_array( 'product', $this->options['disable_modules'] ?? array(), true ) ) {
+		// Get connector from request or use default.
+		$connector_id                             = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+		list( $connapi_erp, $settings, $options ) = $this->resolve_connector( $connector_id );
+		if ( empty( $connapi_erp ) ) {
+			wp_send_json_error( array( 'message' => __( 'Connector not available for products sync', 'woocommerce-es' ) ) );
+			return;
+		}
+
+		if ( in_array( 'product', $options['disable_modules'] ?? array(), true ) ) {
 			wp_send_json_success(
 				array(
 					'finish'  => true,
@@ -256,14 +259,14 @@ class Import_Products {
 		$generate_ai    = ! empty( $_POST['product_ai'] ) ? sanitize_key( $_POST['product_ai'] ) : 'none';
 		$mode           = isset( $_POST['mode'] ) ? sanitize_text_field( wp_unslash( $_POST['mode'] ) ) : 'all';
 		// Mode (updated|all) can be used in future to filter products to sync when get_all_product_skus exists.
-		$mode = in_array( $mode, array( 'updated', 'all' ), true ) ? $mode : 'all';
-		$generate_ai    = 'true' === $generate_ai ? 'all' : $generate_ai;
-		$api_pagination = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
-		$api_is_paginated = ! array_key_exists( 'product_api_pagination', $this->options ) || ! empty( $this->options['product_api_pagination'] );
+		$mode             = in_array( $mode, array( 'updated', 'all' ), true ) ? $mode : 'all';
+		$generate_ai      = 'true' === $generate_ai ? 'all' : $generate_ai;
+		$api_pagination   = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
+		$api_is_paginated = ! array_key_exists( 'product_api_pagination', $options ) || ! empty( $options['product_api_pagination'] );
 
 		// Action for one product.
 		if ( ! empty( $product_erp_id ) ) {
-			$result_api = $this->connapi_erp->get_products( $product_erp_id );
+			$result_api = $connapi_erp->get_products( $product_erp_id );
 			if ( isset( $result_api['status'] ) && 'error' === $result_api['status'] ) {
 				wp_send_json_error( array( 'message' => __( 'Error getting product', 'woocommerce-es' ) . ': ' . $result_api['message'] ) );
 			}
@@ -271,8 +274,8 @@ class Import_Products {
 				wp_send_json_error( array( 'message' => 'No products' ) );
 			}
 			$api_products = array( -1 => $result_api );
-		} elseif ( ! empty( $product_sku ) && HELPER::connector_supports( $this->connapi_erp, 'get_product_by_sku' ) ) {
-			$result_api = $this->connapi_erp->get_product_by_sku( $product_sku );
+		} elseif ( ! empty( $product_sku ) && HELPER::connector_supports( $connapi_erp, 'get_product_by_sku' ) ) {
+			$result_api = $connapi_erp->get_product_by_sku( $product_sku );
 			if ( isset( $result_api['status'] ) && 'error' === $result_api['status'] ) {
 				wp_send_json_error( array( 'message' => __( 'Error getting product', 'woocommerce-es' ) . ': ' . $result_api['message'] ) );
 			}
@@ -293,20 +296,22 @@ class Import_Products {
 		}
 
 		if ( 0 === $sync_loop || ( $api_is_paginated && $api_pagination && $api_pagination > 0 && 0 === $loop_page ) ) {
-			$api_products = $this->connapi_erp->get_products( null, $api_is_paginated ? $sync_loop : null );
+			$api_products = $connapi_erp->get_products( null, $api_is_paginated ? $sync_loop : null );
 			if ( ! isset( $api_products['status'] ) || 'error' !== $api_products['status'] ) {
 				$api_products                     = array_values( HELPER::sanitize_array_recursive( $api_products ) );
 				$_SESSION['conecom_api_products'] = $api_products;
 			}
-			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
+			$res_message .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
 
 			if ( $sync_loop > 0 && empty( $api_products ) ) {
-				wp_send_json_success( array(
-					'loop'          => $sync_loop,
-					'message'       => '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>',
-					'finish'        => true,
-					'product_count' => 0,
-				) );
+				wp_send_json_success(
+					array(
+						'loop'          => $sync_loop,
+						'message'       => '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>',
+						'finish'        => true,
+						'product_count' => 0,
+					)
+				);
 				return;
 			}
 		} elseif ( 0 < $sync_loop ) {
@@ -321,7 +326,7 @@ class Import_Products {
 			wp_send_json_error( array( 'message' => 'No products' ) );
 		}
 
-		$products_count           = count( $api_products );
+		$products_count = count( $api_products );
 		if ( ! $api_is_paginated && 0 <= $sync_loop && $sync_loop >= $products_count ) {
 			wp_send_json_success(
 				array(
@@ -337,7 +342,7 @@ class Import_Products {
 		$item                     = $api_products[ $item_index ];
 		$this->msg_error_products = array();
 
-		$result_sync = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, $generate_ai, $product_id );
+		$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $generate_ai, $product_id );
 		$post_id     = $result_sync['post_id'] ?? 0;
 		if ( 'error' === $result_sync['status'] ) {
 			$this->error_product_import[] = array(
@@ -383,9 +388,33 @@ class Import_Products {
 		);
 		if ( $finish && 0 < $sync_loop ) {
 			// Email errors.
-			HELPER::send_product_errors( $this->error_product_import, $this->options['slug'] );
+			HELPER::send_product_errors( $this->error_product_import, $options['slug'] );
 		}
 		wp_send_json_success( $args );
+	}
+
+	/**
+	 * Resolves the connapi_erp/settings/options triplet for a connector ID, falling back to this instance's connector.
+	 *
+	 * When an explicit connector_id is requested but that connector is inactive, or has the
+	 * 'products' workflow disabled, null is returned instead of silently falling back to the
+	 * default connector: the caller must not sync products for a connector that disabled it.
+	 *
+	 * @param string $connector_id Connector ID from request, or empty for the default connector.
+	 * @return array List of ( $connapi_erp, $settings, $options ). $connapi_erp is null when disallowed.
+	 */
+	private function resolve_connector( $connector_id ) {
+		if ( ! empty( $connector_id ) ) {
+			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
+			if ( ! $connector_data || ! HELPER::is_workflow_enabled_for_connector( $connector_data['meta'] ?? array(), 'products' ) ) {
+				return array( null, array(), array() );
+			}
+			if ( isset( $connector_data['connapi_erp'] ) ) {
+				return array( $connector_data['connapi_erp'], $connector_data['settings'], $connector_data['options'] );
+			}
+		}
+		return array( $this->connapi_erp, $this->settings, $this->options );
 	}
 
 	/**
@@ -399,7 +428,10 @@ class Import_Products {
 			return;
 		}
 
-		$result = PROD::get_import_stats( $this->connapi_erp, $this->options, $this->settings );
+		$connector_id                             = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
+		list( $connapi_erp, $settings, $options ) = $this->resolve_connector( $connector_id );
+
+		$result = PROD::get_import_stats( $connapi_erp, $options, $settings );
 
 		if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
 			wp_send_json_error( array( 'message' => $result['message'] ) );

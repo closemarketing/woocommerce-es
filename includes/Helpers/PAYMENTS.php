@@ -28,10 +28,11 @@ class PAYMENTS {
 	/**
 	 * Get payment method mappings for a connector.
 	 *
-	 * @param string $connector_slug Connector slug.
+	 * @param string $connector_slug Connector identifier.
+	 * @param string $fallback_slug  Optional fallback slug (legacy).
 	 * @return array Array with 'payment_methods' and 'treasury_accounts' keys.
 	 */
-	public static function get_payment_method_mappings( $connector_slug ) {
+	public static function get_payment_method_mappings( $connector_slug, $fallback_slug = '' ) {
 		if ( '' === $connector_slug ) {
 			return array(
 				'payment_methods'   => array(),
@@ -48,7 +49,12 @@ class PAYMENTS {
 			);
 		}
 
-		if ( ! isset( $stored[ $connector_slug ] ) || ! is_array( $stored[ $connector_slug ] ) ) {
+		$lookup_slug = $connector_slug;
+		if ( ! isset( $stored[ $lookup_slug ] ) && $fallback_slug && isset( $stored[ $fallback_slug ] ) ) {
+			$lookup_slug = $fallback_slug;
+		}
+
+		if ( ! isset( $stored[ $lookup_slug ] ) || ! is_array( $stored[ $lookup_slug ] ) ) {
 			return array(
 				'payment_methods'   => array(),
 				'treasury_accounts' => array(),
@@ -58,7 +64,7 @@ class PAYMENTS {
 		$payment_methods    = array();
 		$treasury_accounts  = array();
 
-		foreach ( $stored[ $connector_slug ] as $gateway_id => $mapping ) {
+		foreach ( $stored[ $lookup_slug ] as $gateway_id => $mapping ) {
 			if ( ! is_scalar( $gateway_id ) ) {
 				continue;
 			}
@@ -103,12 +109,12 @@ class PAYMENTS {
 	 * @param string $connector_slug Connector slug.
 	 * @return string Payment method ID or empty string.
 	 */
-	public static function get_payment_method_id( $gateway_id, $connector_slug ) {
+	public static function get_payment_method_id( $gateway_id, $connector_slug, $fallback_slug = '' ) {
 		if ( '' === $gateway_id || '' === $connector_slug ) {
 			return '';
 		}
 
-		$mappings = self::get_payment_method_mappings( $connector_slug );
+		$mappings = self::get_payment_method_mappings( $connector_slug, $fallback_slug );
 		return isset( $mappings['payment_methods'][ $gateway_id ] )
 			? $mappings['payment_methods'][ $gateway_id ]
 			: '';
@@ -121,12 +127,12 @@ class PAYMENTS {
 	 * @param string $connector_slug Connector slug.
 	 * @return string Treasury account ID or empty string.
 	 */
-	public static function get_treasury_account_id( $gateway_id, $connector_slug ) {
+	public static function get_treasury_account_id( $gateway_id, $connector_slug, $fallback_slug = '' ) {
 		if ( '' === $gateway_id || '' === $connector_slug ) {
 			return '';
 		}
 
-		$mappings = self::get_payment_method_mappings( $connector_slug );
+		$mappings = self::get_payment_method_mappings( $connector_slug, $fallback_slug );
 		return isset( $mappings['treasury_accounts'][ $gateway_id ] )
 			? $mappings['treasury_accounts'][ $gateway_id ]
 			: '';

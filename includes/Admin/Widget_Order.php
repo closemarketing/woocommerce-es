@@ -44,19 +44,53 @@ class Widget_Order {
 	private $connapi_erp;
 
 	/**
+	 * Active connector id (default selection).
+	 *
+	 * @var string
+	 */
+	private $connector_id;
+
+	/**
+	 * All configured connectors (id => connector data).
+	 *
+	 * @var array
+	 */
+	private $connectors;
+
+	/**
 	 * Construct of Class
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connector       Active connector.
+	 * @param array $connectors_data Connectors payload from HELPER::get_connectors() (optional).
 	 */
-	public function __construct( $connector ) {
+	public function __construct( $connector, $connectors_data = array() ) {
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) || empty( $connector['connapi_erp'] ) ) {
 			return;
 		}
-		$this->options     = $connector['options'];
-		$this->settings    = $connector['settings'] ?? array();
-		$this->connapi_erp = $connector['connapi_erp'];
+		$this->options      = $connector['options'];
+		$this->settings     = $connector['settings'] ?? array();
+		$this->connapi_erp  = $connector['connapi_erp'];
+		$this->connector_id = $connectors_data['active'] ?? '';
+		$this->connectors   = $connectors_data['items'] ?? array();
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_orders' ) );
+	}
+
+	/**
+	 * Connectors with the orders workflow enabled, one widget block per connector.
+	 *
+	 * @return array Id => label.
+	 */
+	private function get_syncable_connectors() {
+		$syncable = array();
+		foreach ( $this->connectors as $conn_id => $conn_data ) {
+			$conn_meta = $conn_data['meta'] ?? array();
+			if ( ! HELPER::is_workflow_enabled_for_connector( $conn_meta, 'orders' ) ) {
+				continue;
+			}
+			$syncable[ $conn_id ] = $conn_meta['label'] ?? $conn_id;
+		}
+		return $syncable;
 	}
 	/**
 	 * Adds metabox
@@ -68,7 +102,7 @@ class Widget_Order {
 
 		add_meta_box(
 			'cw-order-checker',
-			__( 'Connect with ', 'woocommerce-es' ) . $this->options['name'],
+			__( 'Connect', 'woocommerce-es' ),
 			array( $this, 'metabox_show_order' ),
 			$screen,
 			'side',
@@ -88,16 +122,51 @@ class Widget_Order {
 	public function metabox_show_order( $post ) {
 		$order_id = $post->ID;
 		$order    = wc_get_order( $post->ID );
+		$syncable = $this->get_syncable_connectors();
+
+		if ( empty( $syncable ) ) {
+			$fallback_id = ! empty( $this->connector_id ) ? $this->connector_id : $this->options['slug'];
+			$syncable    = array( $fallback_id => $this->options['name'] );
+		}
+
+		// One widget block per connector with the "orders" workflow enabled, instead of a
+		// single block behind a connector picker, so each connector's own order number and
+		// send/update state are visible and actionable at the same time.
+		$is_first = true;
+		foreach ( $syncable as $conn_id => $conn_label ) {
+			if ( ! $is_first ) {
+				echo '<hr style="margin:10px 0;border:none;border-top:1px solid #dcdcde;" />';
+			}
+			$is_first = false;
+			$this->show_connector_order_block( $order, $order_id, $conn_id, $conn_label );
+		}
+	}
+
+	/**
+	 * Renders one connector's order sync row: web/ERP order numbers and send/update button.
+	 *
+	 * @param \WC_Order $order      Order object.
+	 * @param int       $order_id   Order id.
+	 * @param string    $conn_id    Connector id.
+	 * @param string    $conn_label Connector label.
+	 * @return void
+	 */
+	private function show_connector_order_block( $order, $order_id, $conn_id, $conn_label ) {
+		$conn_data   = $this->connectors[ $conn_id ] ?? array();
+		$options     = $conn_data['options'] ?? $this->options;
+		$connapi_erp = $conn_data['connapi_erp'] ?? $this->connapi_erp;
+		$select_id   = 'connwoo-widget-connector-order-' . $order_id . '-' . $conn_id;
 
 		echo '<table>';
-		// Send Order.
+		echo '<tr><td colspan="2"><strong>' . esc_html( $conn_label ) . '</strong></td></tr>';
 		echo '<tr><td><strong>' . esc_html__( 'Order', 'woocommerce-es' ) . '</strong></td>';
-		$order_key  = '_' . $this->options['slug'] . '_invoice_id';
+
+		$order_key  = '_' . $options['slug'] . '_invoice_id';
 		$invoice_id = $order->get_meta( $order_key, true );
 		echo '<td>Web: #' . esc_html( $order_id ) . '<br/>';
 		echo 'ERP: ';
 
-		$edit_url = $this->connapi_erp->get_url_link_api( $order );
+		$edit_url = ! empty( $connapi_erp ) ? $connapi_erp->get_url_link_api( $order ) : '';
 		if ( $edit_url ) {
 			echo '<a href="' . esc_url( $edit_url ) . '" target="_blank">';
 		}
@@ -108,12 +177,20 @@ class Widget_Order {
 
 		$label = $invoice_id ? __( 'Update to ERP', 'woocommerce-es' ) : __( 'Send to ERP', 'woocommerce-es' );
 
-		echo '<br/><br/><div name="sync-erp-orders" id="sync-erp-orders-' . esc_html( $order_id ) . '" ';
+		// A hidden select carrying the connector id keeps syncOrderERP()'s existing
+		// (order_id, element_id, type, connector_select_id) JS signature unchanged.
+		echo '<select id="' . esc_attr( $select_id ) . '" style="display:none;">';
+		echo '<option value="' . esc_attr( $conn_id ) . '" selected>' . esc_html( $conn_label ) . '</option>';
+		echo '</select>';
+
+		echo '<br/><br/><div name="sync-erp-orders" id="sync-erp-orders-' . esc_html( $order_id ) . '-' . esc_attr( $conn_id ) . '" ';
 		echo 'class="button button-primary" onclick="syncOrderERP(' . esc_html( $order_id );
-		echo ',this.id,\'erp-post\')">' . esc_html( $label ) . '</div>';
+		echo ',this.id,\'erp-post\',\'' . esc_js( $select_id ) . '\')">' . esc_html( $label ) . '</div>';
 		echo '</td></tr>';
 
-		$this->show_document_download_row( $order );
+		if ( ! empty( $connapi_erp ) ) {
+			$this->show_document_download_row( $order, $options, $connapi_erp );
+		}
 
 		echo '</table>';
 	}
@@ -121,13 +198,17 @@ class Widget_Order {
 	/**
 	 * Shows the document download link row, when a PDF document is available for the order.
 	 *
-	 * @param \WC_Order $order Order object.
+	 * @param \WC_Order $order       Order object.
+	 * @param array     $options     Connector options (falls back to the active connector's).
+	 * @param object    $connapi_erp Connector API object (falls back to the active connector's).
 	 * @return void
 	 */
-	private function show_document_download_row( $order ) {
-		$api_doc_id = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
+	private function show_document_download_row( $order, $options = null, $connapi_erp = null ) {
+		$options     = $options ?? $this->options;
+		$connapi_erp = $connapi_erp ?? $this->connapi_erp;
+		$api_doc_id  = $order->get_meta( '_' . $options['slug'] . '_doc_id' );
 
-		if ( empty( $api_doc_id ) || empty( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
+		if ( empty( $api_doc_id ) || ! HELPER::connector_supports( $connapi_erp, 'get_order_pdf' ) ) {
 			return;
 		}
 
