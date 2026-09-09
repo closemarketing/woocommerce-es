@@ -437,8 +437,15 @@ class TAX {
 				);
 			}
 			
-			// Check if term was found or created successfully
-			if ( ! is_wp_error( $search_term ) && $term_level_index === $term_levels ) {
+			// A WP_Error (e.g. term_exists() name/taxonomy clash on wp_insert_term()) has no
+			// term_id to read: skip this term rather than fatal on the array access below.
+			if ( is_wp_error( $search_term ) ) {
+				++$term_level_index;
+				continue;
+			}
+
+			// Check if term was found or created successfully.
+			if ( $term_level_index === $term_levels ) {
 				$term_id = isset( $search_term['term_id'] ) ? (int) $search_term['term_id'] : (int) $search_term;
 				self::sync_terms_taxonomy( $settings, $taxonomy_slug, array( $term_id ), $post_id );
 			}
