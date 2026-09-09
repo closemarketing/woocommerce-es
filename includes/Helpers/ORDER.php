@@ -477,8 +477,13 @@ class ORDER {
 	public static function get_billing_vat( $order ) {
 		$contact_code = '';
 		foreach ( CONECOM_VAT_FIELD_SLUGS as $code_label ) {
-			// Add underscore prefix for meta fields.
-			$meta_key     = 'VAT Number' === $code_label ? $code_label : '_' . $code_label;
+			// Slugs already starting with an underscore (or the literal "VAT Number" label)
+			// are meta keys as-is; other slugs need the underscore prefix added.
+			if ( 'VAT Number' === $code_label || '_' === $code_label[0] ) {
+				$meta_key = $code_label;
+			} else {
+				$meta_key = '_' . $code_label;
+			}
 			$contact_code = $order->get_meta( $meta_key );
 			if ( ! empty( $contact_code ) ) {
 				break;
