@@ -33,7 +33,8 @@ define(
 		'_billing_vat_number',
 		'billing_vat',
 		'billing_cif',
-		'_wc_shipping/connect_ecommerce/billing_vat', // Gutenberg compatibility.
+		'_wc_billing/connect_ecommerce/billing_vat',  // Blocks checkout billing field.
+		'_wc_shipping/connect_ecommerce/billing_vat', // Blocks checkout shipping field.
 		'VAT Number',
 	)
 );
