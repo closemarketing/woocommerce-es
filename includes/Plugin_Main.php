@@ -65,7 +65,7 @@ class Base {
 			new Taxes_Types_ERP( $connector );
 		}
 
-		new Orders( $connector );
+		new Orders( $connector, $connectors_data );
 		new Checkout( $connector );
 		new MyAccount( $connector );
 	}

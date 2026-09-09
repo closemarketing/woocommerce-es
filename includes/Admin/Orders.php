@@ -70,11 +70,19 @@ class Orders {
 	private $ecstatus;
 
 	/**
+	 * All configured connectors (id => connector data), for the order list columns.
+	 *
+	 * @var array
+	 */
+	private $connectors;
+
+	/**
 	 * Init and hook in the integration.
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connector       Active connector.
+	 * @param array $connectors_data Connectors payload from HELPER::get_connectors() (optional).
 	 */
-	public function __construct( $connector ) {
+	public function __construct( $connector, $connectors_data = array() ) {
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) || empty( $connector['connapi_erp'] ) ) {
 			return;
 		}
@@ -85,6 +93,7 @@ class Orders {
 		$this->ecstatus          = $ecstatus;
 		$this->meta_key_order    = '_' . $this->options['slug'] . '_invoice_id';
 		$this->default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
+		$this->connectors        = $connectors_data['items'] ?? array();
 
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		add_action( 'wp_ajax_connect_ecommerce_sync_orders', array( $this, 'sync_orders' ) );
@@ -169,7 +178,7 @@ class Orders {
 				as_schedule_single_action( time() + 30, 'conecom_async_send_order_erp', array( $order_id ), 'connect-ecommerce' );
 			}
 		} else {
-			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
 		}
 	}
 
@@ -187,7 +196,7 @@ class Orders {
 		if ( 'manual' === $this->ecstatus ) {
 			return;
 		}
-		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder );
+		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
 	}
 
 	/**
@@ -352,7 +361,7 @@ class Orders {
 						// Manual has no completion hook to retry a postponed order later, so this
 						// batch export is treated the same as an explicit per-order manual request.
 						$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
-						$result            = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp, 'manual' === $this->ecstatus, $default_freeorder );
+						$result            = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp, 'manual' === $this->ecstatus, $default_freeorder, $options['name'] );
 
 						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
 						$message .= ' ' . $result['message'];
@@ -431,19 +440,56 @@ class Orders {
 	}
 
 	/**
-	 * Add columns to order list
+	 * Connectors with the orders workflow enabled, one order-list column per connector.
+	 *
+	 * Falls back to this instance's own connector when no multi-connector payload was
+	 * supplied, so single-connector sites keep a single column as before.
+	 *
+	 * @return array Id => connector data ( 'options', 'connapi_erp', 'meta_key_order' ).
+	 */
+	private function get_syncable_connectors() {
+		if ( empty( $this->connectors ) ) {
+			return array(
+				$this->options['slug'] => array(
+					'options'        => $this->options,
+					'connapi_erp'    => $this->connapi_erp,
+					'meta_key_order' => $this->meta_key_order,
+				),
+			);
+		}
+
+		$syncable = array();
+		foreach ( $this->connectors as $conn_id => $conn_data ) {
+			$conn_meta = $conn_data['meta'] ?? array();
+			if ( ! HELPER::is_workflow_enabled_for_connector( $conn_meta, 'orders' ) || empty( $conn_data['connapi_erp'] ) || empty( $conn_data['options'] ) ) {
+				continue;
+			}
+			$syncable[ $conn_id ] = array(
+				'options'        => $conn_data['options'],
+				'connapi_erp'    => $conn_data['connapi_erp'],
+				'meta_key_order' => '_' . $conn_data['options']['slug'] . '_invoice_id',
+			);
+		}
+		return $syncable;
+	}
+
+	/**
+	 * Add columns to order list, one per connector with the "orders" workflow enabled.
 	 *
 	 * @param array $columns Columns for order.
 	 * @return array
 	 */
 	public function custom_shop_order_column( $columns ) {
 		$reordered_columns = array();
+		$syncable          = $this->get_syncable_connectors();
 		// Inserting columns to a specific location.
 		foreach ( $columns as $key => $column ) {
 			$reordered_columns[ $key ] = $column;
 			if ( 'order_status' === $key ) {
 				// Inserting after "Status" column.
-				$reordered_columns[ $this->options['slug'] ] = $this->options['name'];
+				foreach ( $syncable as $conn_id => $conn_data ) {
+					$reordered_columns[ 'conecom-' . $conn_id ] = $conn_data['options']['name'];
+				}
 			}
 		}
 		return $reordered_columns;
@@ -457,27 +503,31 @@ class Orders {
 	 * @return void
 	 */
 	public function custom_orders_list_column_content( $column, $order_id ) {
-		switch ( $column ) {
-			case $this->options['slug']:
-				// Get custom order meta data.
-				$order = wc_get_order( $order_id );
-				if ( ! $order ) {
-					break;
-				}
-				$invoice_id = $order->get_meta( $this->meta_key_order );
-				if ( 'nocreate' === $invoice_id ) {
-					break;
-				}
-				$edit_url = $this->connapi_erp->get_url_link_api( $order );
-				if ( $edit_url ) {
-					echo '<a href="' . esc_url( $edit_url ) . '" target="_blank">';
-				}
-				echo esc_html( $invoice_id );
-				if ( $edit_url ) {
-					echo '</a>';
-				}
-				unset( $order );
-				break;
+		if ( 0 !== strpos( $column, 'conecom-' ) ) {
+			return;
+		}
+		$conn_id  = substr( $column, strlen( 'conecom-' ) );
+		$syncable = $this->get_syncable_connectors();
+		if ( ! isset( $syncable[ $conn_id ] ) ) {
+			return;
+		}
+		$conn_data = $syncable[ $conn_id ];
+
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+		$invoice_id = $order->get_meta( $conn_data['meta_key_order'] );
+		if ( empty( $invoice_id ) || 'nocreate' === $invoice_id ) {
+			return;
+		}
+		$edit_url = $conn_data['connapi_erp']->get_url_link_api( $order );
+		if ( $edit_url ) {
+			echo '<a href="' . esc_url( $edit_url ) . '" target="_blank">';
+		}
+		echo esc_html( $invoice_id );
+		if ( $edit_url ) {
+			echo '</a>';
 		}
 	}
 
@@ -503,7 +553,7 @@ class Orders {
 		$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
 
 		if ( 'erp-post' === $type ) {
-			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder );
+			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder, $options['name'] );
 		}
 
 		// Check result status and respond accordingly.

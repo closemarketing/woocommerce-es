@@ -31,10 +31,14 @@ class ORDER {
 	 *                                  setting when the merchant never saved it, lets a
 	 *                                  connector (e.g. one with no document to skip) opt in
 	 *                                  to processing free orders by default.
+	 * @param string $connector_name Connector display name, shown in the order note so it's
+	 *                               clear which ERP a multi-connector site synced to. Falls
+	 *                               back to $option_prefix when not given.
 	 *
 	 * @return array
 	 */
-	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false, $default_freeorder = 'no' ) {
+	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false, $default_freeorder = 'no', $connector_name = '' ) {
+		$connector_name = ! empty( $connector_name ) ? $connector_name : $option_prefix;
 		$order          = wc_get_order( $order_id );
 		$order_total    = (float) $order->get_total();
 		$ec_invoice_id  = $order->get_meta( $meta_key_order );
@@ -87,7 +91,8 @@ class ORDER {
 				}
 				$order->save();
 
-				$order_msg = __( 'Order synced correctly with ERP, ID: ', 'woocommerce-es' ) . $invoice_id;
+				/* translators: %1$s: connector display name (e.g. Odoo, Holded). %2$s: ERP order/invoice ID. */
+				$order_msg = sprintf( __( 'Order synced correctly with %1$s, ID: %2$s', 'woocommerce-es' ), $connector_name, $invoice_id );
 
 				$order->add_order_note( $order_msg );
 			} catch ( \Exception $e ) {
