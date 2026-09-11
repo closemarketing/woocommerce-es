@@ -235,6 +235,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Fixed: Product imports from non-paginated APIs now finish at the catalogue end.
 * Fixed: Order-only connectors can now disable product, subscription, AI and payment-mapping settings without causing errors or exporting previously saved payment and treasury mappings. Settings submenus now preserve their separators when optional sections are hidden.
 * Fixed: Pack/bundle products synced from the ERP with WPC Product Bundles for WooCommerce active now correctly reference their bundled sub-products (previously stored as a literal "Array/qty" string) and get a non-zero price, falling back to the sum of the bundled items when the ERP reports no pack price.
+* Fixed: Re-importing a pack now reuses its existing bundled products by SKU instead of creating duplicate products on every sync.
 * Fixed: A term name/taxonomy clash while assigning ERP category terms to a product (term_exists()/wp_insert_term() returning a WP_Error) no longer causes a fatal error; that term is now skipped and the rest of the hierarchy is still processed.
 * Fixed: VAT number entered in the WooCommerce Blocks checkout is now correctly detected and sent to the ERP/CRM, fixing a lookup that added a duplicate underscore to already-prefixed meta keys and was missing the billing-address meta key WooCommerce Blocks actually saves the field under.
 

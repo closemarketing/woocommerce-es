@@ -600,7 +600,7 @@ class PROD {
 	 */
 	private static function sync_product_simple( $settings, $item, $api_erp, $from_pack = false, $post_id = 0 ) {
 		$message = '';
-		$post_id = empty( $post_id ) ? $post_id : self::find_product( $item['sku'] );
+		$post_id = empty( $post_id ) ? self::find_product( $item['sku'] ) : $post_id;
 
 		// Update meta for product.
 		$result_prod = self::sync_product( $settings, $item, $api_erp, $post_id, 'simple', null );
