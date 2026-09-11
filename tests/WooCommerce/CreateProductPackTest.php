@@ -145,6 +145,40 @@ class CreateProductPackTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Re-importing a pack must reuse each bundled product by SKU instead of
+	 * creating duplicate products and leaving the old bundle references behind.
+	 *
+	 * @return void
+	 */
+	public function test_pack_reimport_reuses_existing_bundled_products() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-pack.json';
+		$item      = json_decode( file_get_contents( $item_path ), true )[0];
+
+		$first_sync       = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$first_bundle_ids = get_post_meta( $first_sync['post_id'], 'woosb_ids', true );
+		list( $first_item_id ) = explode( '/', $first_bundle_ids );
+
+		$second_sync       = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$second_bundle_ids = get_post_meta( $second_sync['post_id'], 'woosb_ids', true );
+		list( $second_item_id ) = explode( '/', $second_bundle_ids );
+
+		$this->assertSame( $first_sync['post_id'], $second_sync['post_id'] );
+		$this->assertSame( $first_item_id, $second_item_id );
+
+		global $wpdb;
+		$bundled_product_count = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT COUNT(*) FROM {$wpdb->postmeta} WHERE meta_key = '_sku' AND meta_value = %s",
+				'PACK-ITEM-001'
+			)
+		);
+		$this->assertSame( 1, (int) $bundled_product_count );
+
+		wp_delete_post( $second_sync['post_id'], true );
+		wp_delete_post( (int) $second_item_id, true );
+	}
+
+	/**
 	 * Holded packs always report price 0 (the ERP has no pack price concept),
 	 * so the synced product must fall back to the sum of its bundled items'
 	 * prices instead of being left at 0 (which WPC Product Bundles treats as
