@@ -194,9 +194,9 @@ class Widget_Order {
 			$this->show_document_download_row( $order, $options, $connapi_erp );
 		}
 
-		// Show refunds if exist.
+		// Show refunds if exist and the connector supports sending them to the ERP.
 		$refunds = $order->get_refunds();
-		if ( ! empty( $refunds ) ) {
+		if ( ! empty( $refunds ) && HELPER::connector_supports( $connapi_erp, 'create_refund' ) ) {
 			echo '<tr><td colspan="2"><hr/></td></tr>';
 			echo '<tr><td colspan="2"><strong>' . esc_html__( 'Refunds', 'woocommerce-es' ) . '</strong></td></tr>';
 
