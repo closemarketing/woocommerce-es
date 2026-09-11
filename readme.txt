@@ -1,12 +1,12 @@
-=== Connect Ecommerce - Connect WooCommerce Shop to ERP/CRM and EU/VAT Compliance ===
+=== Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance ===
 Contributors: closetechnology, closemarketing, davidperez, sacrajaimez
 Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 6.8
-Stable tag: 3.2.0.2
-Version: 3.2.0.2
+Tested up to: 7.1
+Stable tag: 3.5.0-beta.2
+Version: 3.5.0-beta.2
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,14 +14,53 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 
 == Description ==
 
+**Streamline Your E-commerce Operations with Professional ERP/CRM Integration and Complete EU VAT Compliance**
+
+Connect WooCommerce Shop to ERP/CRM, Verifactu and EU/VAT Compliance is the ultimate solution for WooCommerce store owners who need seamless integration with their business management systems while ensuring full compliance with European tax regulations.
+
+Whether you're managing a small online store or a large e-commerce operation, this powerful plugin eliminates manual data entry, reduces errors, and saves countless hours of administrative work. Automatically synchronize your products, customers, and orders between WooCommerce and your ERP or CRM system, ensuring your inventory, customer database, and sales data are always up-to-date across all platforms.
+
+**Available Connectors**
+
+Free connectors included:
+- [Clientify](https://close.marketing/likes/clientify/)
+- [Brevo](https://www.brevo.com/)
+
+Premium connectors:
+- [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
+- [FactuSol](https://close.technology/en/wordpress-plugins/connect-woocommerce-factusol/)
+- [FacturaDirecta](https://close.technology/en/wordpress-plugins/connect-woocommerce-facturadirecta/)
+- [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
+- [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
+- [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
+
+Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
+
+**Complete EU VAT Compliance Made Simple**
+
+Stay compliant with European tax regulations effortlessly. The plugin includes comprehensive VAT number validation using the official VIES service, with optional VATSense integration for enhanced reliability. Real-time validation during checkout ensures accurate B2B transactions, automatically applying zero VAT rates for valid intra-community transactions while maintaining full compliance with EU directives.
+
+**Key Benefits:**
+
+* **Save Time & Reduce Errors**: Automate product, customer, and order synchronization between WooCommerce and your ERP/CRM
+* **EU VAT Compliance**: Full compliance with European tax regulations, including real-time VAT validation and automatic tax rate application
+* **Verifactu Ready**: Built-in support for Verifactu regulations, ensuring your invoices meet Spanish legal requirements
+* **GDPR Compliant**: Direct connection architecture ensures customer data never passes through third-party servers
+* **AI-Powered**: Generate compelling product descriptions automatically using AI technology
+* **Professional Integration**: Connect with leading ERP and CRM systems through our premium connector plugins
+
+Perfect for businesses selling across Europe, B2B e-commerce operations, and any WooCommerce store that needs professional-grade integration and tax compliance capabilities.
+
 **Functionalities**
 
 - Add VAT info in forms fields, Orders, and email notification (Gutenberg compatible).
+- Supports WooCommerce PDF Invoices & Packing Slips for VAT info in invoices.
 - EU/VAT Compliance: Import European Taxes and check VAT compliance.
+- **NEW: Real-time VAT validation** with dual API system (VIES + VATSense) - Live validation as customer types with automatic B2B intra-community zero-rate application for different EU countries.
 - (optional) Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
 - Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
 - You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
-- There’s no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
+- There's no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
 - This plugin is fully GDPR compliant. The synchronization between WooCommerce and your ERP/CRM is established through a direct connection, without intermediaries or third-party storage of personal data. This ensures maximum security and transparency, keeping customer information under your full control.
 - This plugin also includes specific adjustments to comply with Verifactu regulations. Order and invoice data are processed and structured to meet the official requirements, ensuring your business adheres to current legal standards.
 
@@ -29,6 +68,38 @@ Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooComme
 **EU/VAT Compliance: Import European Taxes and check VAT compliance.**
 
 You can use this feature alone if you need it. You can import European Taxes and check VAT compliance.
+
+**VAT Number Validation via VIES & VATSense**
+
+The plugin includes advanced real-time VAT validation during checkout with the following features:
+
+**Real-time Validation:**
+- Live validation as customer types (800ms debounce)
+- Modern Vanilla JavaScript (no jQuery dependency)
+- Visual feedback with status icons (checking, valid, invalid)
+- Works with both classic shortcode and Gutenberg blocks checkout
+- Automatic checkout recalculation when VAT status changes
+
+**Dual API System:**
+- Primary: VIES (official EU service, free)
+- Fallback: VATSense (commercial service, optional, higher reliability)
+- Automatic failover if primary service is down
+- Supports EU countries + Norway & Switzerland (via VATSense)
+- Results cached for 24 hours to optimize performance
+
+**B2B Intra-community Zero-Rate:**
+- Automatic 0% VAT rate for valid B2B transactions between different EU countries
+- Uses WooCommerce tax class system (not simple exemption)
+- Fiscally correct: shows "Zero Rate [Country]" on invoices
+- Complies with EU VAT Directive 2006/112/EC
+- Automatic restoration of standard VAT when validation fails
+
+**Additional Features:**
+- Validates format and minimum length per country before API call
+- Can be configured as mandatory (blocks checkout) or optional (warnings only)
+- Stores validation results and exemption data in order metadata
+- Detailed logging for debugging and audit compliance
+- Graceful handling of service unavailability
 
 **Connect your WooCommerce store to your ERP or CRM software.**
 Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
@@ -63,37 +134,62 @@ This plugin also includes specific adjustments to comply with Verifactu regulati
 - Complies with Verifactu and GDPR.
 - For ERPs that support it, you can send the payment method.
 
-This plugin serves as the foundation for various connectors. The free version supports:
-- [Clientify](https://close.marketing/likes/clientify/)
-
 **Merge variables**
 You can use this section to merge variables from ERP to WooCommerce. That means that you can merge categories, attributes, products, custom fields, taxonomies, etc.
 
 You will need to add Payment methods to merge variables to send the payment method to the ERP.
 
-Premium connectors include:
-- [Holded](https://close.technology/en/wordpress-plugins/connect-woocommerce-holded/)
-- [Odoo](https://close.technology/en/wordpress-plugins/connect-woocommerce-odoo/)
-- [NEO POS](https://close.technology/en/wordpress-plugins/connect-woocommerce-neo/)
-- [Datisa](https://close.technology/en/wordpress-plugins/connect-woocommerce-datisa/)
-
-Need another connector? We offer custom integration services. [Contact us](https://close.technology/en/contact/)
-
 == Frequently Asked Questions ==
 
 = What does this plugin do? =
-Connect Ecommerce allows you to import products from an ERP/CRM to your WooCommerce store via API. It also sends orders from the store to your ERP/CRM and creates associated customers. It also allows you to import European Taxes and check VAT compliance.
+Connect Ecommerce allows you to import products from an ERP/CRM to your WooCommerce store via API. It also sends orders from the store to your ERP/CRM and creates associated customers. It also allows you to import European Taxes, validate VAT numbers via VIES, and check VAT compliance.
 
 = How are products and orders synced? =
 Products are synced from the ERP/CRM to WooCommerce because the ERP should always contain the most up-to-date business information. This ensures accurate management of products, prices, and other business data.
 
 Orders are synced from WooCommerce to the ERP/CRM so that every time a customer places an order, it is sent to your ERP for proper order and invoice management.
 
+= What happens when a product already exists in WooCommerce? =
+If the product already exists in WooCommerce, it will be updated with the new data from the ERP/CRM. It does not update marketing information like description, title, url, slug, etc. but it will update the product data like price, stock, etc.
+
+Products are matched by SKU. If the SKU is the same, the product will be updated. If the SKU is not the same, the product will be created as a new product.
+
 = What happens when a product is out of stock? =
 By default, the product disappears from the store catalog but remains visible to search engines. This is intentional and matches the expected store behavior.
 
 = Does it comply with Verifactu? =
 Yes, it does. It makes the order data more readable for Verifactu.
+
+= How does the VAT validation work? =
+The plugin includes advanced real-time VAT validation with a dual API system:
+- **Primary service**: VIES (official EU service, free) validates VAT numbers against the European Commission database
+- **Fallback service**: VATSense (optional commercial service) provides enhanced reliability when VIES is unavailable
+- **Real-time feedback**: Validation happens as the customer types (800ms debounce) with visual status indicators
+- **Smart caching**: Results cached for 24 hours (valid) or 1 hour (invalid) to optimize performance
+- **Compliance tracking**: All validation results stored in order metadata for audit purposes
+
+You can configure validation as mandatory (blocking invalid VAT) or optional (showing warnings only).
+
+= What happens if VIES service is unavailable? =
+The plugin uses an intelligent fallback system:
+1. If VIES fails and VATSense is configured, it automatically uses VATSense as fallback
+2. If both services are unavailable, the VAT number is accepted with a warning and standard VAT applies
+3. All service failures are logged for monitoring and debugging
+This multi-service approach ensures that temporary service issues don't block legitimate orders.
+
+= How does B2B intra-community zero-rate work? =
+When a valid VAT number is provided for a B2B transaction between different EU countries:
+- The system automatically applies a "zero-rate" tax class (0% VAT)
+- This is fiscally correct: invoices show "Zero Rate [Country]: €0.00"
+- The exemption only applies when: both countries are in EU, countries are different, and VAT is successfully validated
+- For same-country (domestic) transactions, standard VAT applies even with valid VAT number
+- If validation fails or field is emptied, standard VAT is automatically restored
+
+= Does it work with WooCommerce Gutenberg Blocks checkout? =
+Yes, fully supported. The real-time VAT validation works seamlessly with both:
+- Classic shortcode-based checkout
+- Modern Gutenberg blocks checkout
+The same validation logic, visual feedback, and tax exemption rules apply to both checkout types.
 
 == Installation ==
 
@@ -118,13 +214,140 @@ Supported Services:
 - OpenAI: [Terms of use](https://openai.com/policies/row-terms-of-use/) and [Privact policy](https://openai.com/policies/row-privacy-policy/)
 - DeepSeek: [Terms of use](https://cdn.deepseek.com/policies/en-US/deepseek-terms-of-use.html) and [Privacy policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html)
 
-The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad). 
+The core connector integrates with Clientify, a CRM and marketing automation tool. [Terms of use](https://clientify.com/aviso-legal/) and [privacy policy](https://clientify.com/politicas-de-privacidad).
+
+The core connector also integrates with Brevo, an email marketing and marketing automation tool. When an order is placed, the customer contact and order data are sent to Brevo. [Terms of use](https://www.brevo.com/legal/termsofuse/) and [privacy policy](https://www.brevo.com/legal/privacypolicy/).
+
+**VAT Number Validation Service**
+
+This plugin uses the VIES (VAT Information Exchange System) service provided by the European Commission to validate EU VAT numbers. The VIES service is accessed through the dragonbe/vies PHP library. When a customer enters a VAT number during checkout, the plugin communicates with the VIES web service to verify the number's validity. This is an official EU service and does not store personal data. [VIES Information](https://ec.europa.eu/taxation_customs/vies/)
 
 == Changelog ==
+
+= next =
+
+* Added: Import a selected ERP attribute group as WooCommerce product brands when the product_brand taxonomy is available.
+* Added: Category synchronization mode that replaces categories with ERP terms by default, with an option to merge manually assigned taxonomy terms.
+* Added: Regression coverage confirming that sales reduce stock on the purchased variation only, never on its variable parent.
+* Fixed: Order data cleaning now normalizes country and state codes before resolving the state name, preserves custom whitelists, and consistently uppercases retained Spanish characters.
+* Fixed: Customers can download an available ERP document PDF from My Account regardless of the WooCommerce order status, while the endpoint continues to derive document details from the authorized order.
+* Added: A documented connector API contract with safe defaults for optional ERP and CRM capabilities.
+* Fixed: Product imports from non-paginated APIs now finish at the catalogue end.
+* Fixed: Order-only connectors can now disable product, subscription, AI and payment-mapping settings without causing errors or exporting previously saved payment and treasury mappings. Settings submenus now preserve their separators when optional sections are hidden.
+* Fixed: Pack/bundle products synced from the ERP with WPC Product Bundles for WooCommerce active now correctly reference their bundled sub-products (previously stored as a literal "Array/qty" string) and get a non-zero price, falling back to the sum of the bundled items when the ERP reports no pack price.
+* Fixed: A term name/taxonomy clash while assigning ERP category terms to a product (term_exists()/wp_insert_term() returning a WP_Error) no longer causes a fatal error; that term is now skipped and the rest of the hierarchy is still processed.
+* Fixed: VAT number entered in the WooCommerce Blocks checkout is now correctly detected and sent to the ERP/CRM, fixing a lookup that added a duplicate underscore to already-prefixed meta keys and was missing the billing-address meta key WooCommerce Blocks actually saves the field under.
+
+= 3.4.0 =
+* Fixed: Products imported from the ERP always got WooCommerce's standard tax class, ignoring the actual tax configured in the ERP. Products now read the ERP's tax key (e.g. Holded's `s_iva_21`) and resolve it to a WooCommerce tax class via the existing "ERP Tax Type" mapping (WooCommerce > Settings > Tax) — the same mapping already used for the order sync direction.
+* Added: First-install setup wizard guides new users through connecting WooCommerce to their ERP/CRM, configuring EU VAT compliance, setting up AI-assisted product descriptions, and running an initial product sync. Runs automatically on first activation; can be re-run from the "Reset wizard" link on the settings page.
+* Added: New "Manual" option for the order status sync setting. When selected, no document is created automatically on order status changes (including "Completed"); use the "Send to ERP" button on the order, or the manual order sync, to create it on request.
+* Added: Manual order sync now lets you filter by a From/To date range instead of syncing all history every time. The "Sync Orders" screen title now reads "Export Orders to {Connector}", and the Automatic Sync (cron) column/log tab — not applicable to order sync — has been removed from that screen; a notice shows which order statuses will sync based on your configured setting (All / Paid / Only Completed / Manual).
+* Added: The order admin widget now shows a "Download" link for the ERP document PDF (invoice), matching the one already available in My Account.
+* Fixed: The document download endpoint required the `manage_options` capability, so Shop Managers and customers downloading their own invoice from My Account were rejected. It now allows the `manage_woocommerce` capability or the order's own customer.
+* Fixed: The document download always failed with a blank page because it fetched connector settings from the legacy `get_option( $slug )` location instead of the resolved settings already available on the class, which are empty on sites that migrated to the nested `connect_ecommerce` option (e.g. after the Holded connector's settings migration). The order email PDF attachment (`attach_file_woocommerce_email()`) had the same issue and is fixed the same way.
+* Fixed: Manual order sync (`sync_orders()`) was returning zero orders on stores with HPOS (High-Performance Order Storage) enabled, because `wc_get_orders()` does not treat `'limit' => -1` as "no limit" under HPOS. It also ignored the connector's order status sync setting, always querying only `completed` orders regardless of the "All status orders" / "Paid orders" / "Only Completed" setting.
+* Fixed: When the ERP renamed a variant's SKU on resync, WooCommerce's store-wide GTIN/barcode uniqueness check silently rejected assigning the barcode to the new variation because the now-orphaned old variation still held it — leaving the new variation without its barcode. The barcode is now freed from the confirmed stale sibling variation before being reassigned.
+* Added: New Brevo connector for order sync with the Brevo email marketing platform. Brevo has no product catalog, so only customer contacts and order data are synced (products, stock, and tax import are not applicable).
+* Fixed: Reverted the "Get prices with Tax?" setting key from `tax_price` back to `tax_option`. Connector addons still read/write `tax_option`, so the 3.3.4 rename caused the setting to appear to reset to "No" after saving.
+* Enhancement: Added a "Default" option to "Get prices with Tax?" that follows WooCommerce's own "Prices entered with tax" setting (WooCommerce &gt; Settings &gt; Tax), so both settings stay in sync instead of having to be configured twice. It is now the default value for new/unset installs. Explicitly choosing "Yes" or "No" still overrides the WooCommerce setting as before. The resolved `yes`/`no` value (not the literal "default") is what gets saved and kept in sync, so connector add-ons reading `tax_option` directly always get a value they understand.
+* Added: New `TAXES::get_tax_class_by_erp_id()` helper method that resolves a WooCommerce tax class from an ERP/CRM tax id, using the "ERP Tax Type" mapping configured in WooCommerce > Settings > Tax. This lets connectors (e.g. Odoo) map an ERP tax id to the correct WooCommerce tax class when syncing products, reusing the same mapping already used for orders.
+* Fixed: Importing a variable product no longer enables "Stock management" on the parent product. Stock is tracked on the variations only; enabling it on the parent as well made the parent show as "out of stock" even when its variations had stock available. The parent's stock status is now correctly recalculated from its variations after each sync.
+* Added: WooCommerce Subscriptions support — product sync from ERP no longer overwrites the product type when it already exists in the store as a subscription or variable-subscription.
+* Fixed: Merge vars for product custom fields was not getting properly the values from the API.
+* Added: Option to hide products out-of-stock or not change the visibility.
+
+= 3.3.4 =
+* Added: Log payload metabox (Connect Log Payload) is now saved and shown only when Debug Mode is active in the plugin settings.
+* Enhancement: Added `billing_cif` to the VAT field slug list so orders whose billing tax ID is stored in the `_billing_cif` meta key (e.g. from the WC-APG NIF/CIF/NIE plugin) are correctly synced to the ERP.
+* Enhancement: AI product description generation now uses the WordPress 7.0 core AI API (`wp_ai_client_prompt`) instead of direct provider API calls — no separate plugin or stored API key required.
+* Enhancement: AI model selector is now dynamic — models are loaded live from the active WordPress AI connectors (grouped by provider) and filtered to text-generation capable models only.
+* Enhancement: Model preference is forwarded to the core AI client via `usingModelPreference()`, supporting the `provider::model` format used by the WP core registry.
+* Enhancement: An "Auto" option in the model selector lets WordPress pick the best available model when no preference is set.
+* Enhancement: AI settings page shows an error notice when WordPress AI is unavailable, prompting an upgrade to WordPress 7.0+.
+* Enhancement: Added billing VAT number field to the WordPress user profile page (/wp-admin/profile.php and /wp-admin/user-edit.php). Admins can now view and edit the VAT number directly on a customer's profile. The value is stored as `billing_vat` user meta, so WooCommerce pre-populates the field automatically on the public checkout and on admin order creation for logged-in customers.
+* Fixed: Order item `tax` and `discount` values no longer expose IEEE 754 floating-point noise (e.g. `2.1000000000000001` or `33.329999999999998`) in the JSON payload sent to the ERP. All values are now serialized with at most 2 decimal digits.
+* Fixed: Fixed-cart coupon discount is now correctly distributed as a percentage across all order lines.
+* Fixed: Tax prices setting key corrected from `tax_option` to `tax_price` — prices with tax included were not being imported correctly.
+* Fixed: Tax class from ERP tax type is now correctly applied on both product create and update (NEO connector).
+
+= 3.3.3 =
+* Enhancement: Improved order sync scheduling — prevents duplicate async jobs by checking for pending Action Scheduler actions before scheduling a new one.
+* Fixed: Admin CSS and WooCommerce schedule action on purchase.
+* Enhancement: My Account orders column — refactored and now shows an empty-state message when no orders are found.
+* Enhancement: Product import progress bar is always visible during import.
+* Enhancement: Added `is_connector_active()` check to prevent settings errors when the configured connector class is not loaded.
+* Fixed: Send to ERP button label updated.
+* Fixed: Error decimals in tax rates.
+* Added: Support to Factusol connector.
+* **Sync settings refactor:** Removed Synchronization > Automate tab; sync frequency ("When do you want to sync?") is now set on Synchronization > Products in the Automatic Sync section.
+* **Sync batch size:** Removed "How many products do you want to sync each time?"; batch size is now a fixed constant (50 products per run).
+* **Alerts:** "Email when all products are synced" moved to Settings > Alerts as "Enable Alerts Product synced" (global option).
+* **Product sync stats:** First stat label changed to "Available in [ERP name]" (e.g. Holded); when a tag filter is active, shows filtered count plus "Total" (unfiltered) in sublabel.
+* **Product sync stats:** Stats now respect the tag filter (filter products by tags) so counts match what is actually synced.
+* **Automatic Sync tab:** Replaced static message with Action Scheduler log table showing recent conecom_sync_* runs (date, status, frequency, logs).
+* Enhancement: Improved import products from API. Stats now shows the number of products fetched from the API.
+* Enhancement: Added payment method status to payment method mapping.
+* Fixed: Variations now inherit parent tax class correctly by setting tax_class to "parent" on creation.
+* Fixed: Tax class "parent" is preserved when products are re-synced/updated, preventing tax calculation inconsistencies.
+* Fixed: Alert notifications (Slack, email) no longer fire with "Order Submission Error" title when an order was already synced to the ERP or submitted successfully. Previously the already-synced branch incorrectly returned `status: error`, triggering a false alert.
+* Fixed: Duplicate alert on order submission exception — alert was sent twice (once in catch block, once in post-try check); now sent only once.
+* Enhancement: Alert notifications now reflect actual severity — errors use 🚨 emoji and red border, informational/success notifications use ✅ and green border.
+* Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
+* Enhancement: Improved order sync UI feedback - success messages are shown in green and auto-hide after 5 seconds, errors show alerts.
+* Fixed: Product importer now correctly detects end of paginated product list, preventing unnecessary API calls beyond last product.
+* Enhancement: Added comprehensive test coverage for variation tax class inheritance and persistence on updates.
+* Enhancement: Added pagination end detection tests for product import with various edge cases (102/100, exact pages, multiple pages).
+* Enhancement: Added support to import custom fields from API to WooCommerce.
+* Fixed: Error checking if API is connected.
+* Fixed: Error filtering products by tags.
+
+= 3.3.2 =
+* Added: Support to FacturaDirecta connector.
+* Fixed: General setting not import Inventory was not working in variable products.
+* Fixed: Error cleaning special chars in order data.
+* Enhancement: Added VAT number validation via VIES (VAT Information Exchange System).
+* Enhancement: Integrated dragonbe/vies library for EU VAT number validation.
+* Enhancement: VIES validation enabled by default with configurable mandatory/optional modes.
+* Enhancement: Added caching mechanism for VIES responses to improve performance.
+* Enhancement: VAT validation results stored in order metadata for compliance tracking.
+* Enhancement: Graceful handling of VIES service unavailability.
+
+= 3.3.1 =
+* Fixed: Error getting companies from API.
+* Added: Show API connection status in settings.
+* Added: Support to custom tabs in settings.
+
+= 3.3.0 =
+* Enhancement: Added support to ERP Tax Types.
+* Enhancement: Added support to payment methods from API.
+* **MAJOR: Real-time VAT validation** - Live validation as customer types with 800ms debounce, visual feedback, and automatic checkout updates.
+* **MAJOR: Dual API system** - VIES (primary, official EU, free) + VATSense (fallback, commercial, higher reliability).
+* **MAJOR: B2B intra-community zero-rate** - Automatic 0% VAT for valid B2B transactions between different EU countries using tax class system.
+* Enhancement: Modern Vanilla JavaScript implementation (no jQuery dependency) with Fetch API and AbortController.
+* Enhancement: WooCommerce Gutenberg Blocks full support with MutationObserver for React field detection.
+* Enhancement: VATSense integration for enhanced reliability (optional, free tier: 500 validations/month).
+* Enhancement: Tax class "zero-rate" automatically created with 0% rates for all EU countries.
+* Enhancement: VAT exemption properly applied using WooCommerce tax class system (fiscally correct).
+* Enhancement: Automatic restoration of standard VAT when validation fails or field is emptied.
+* Enhancement: Detailed logging system for debugging and compliance auditing.
+* Enhancement: Country-specific minimum VAT length validation before API calls.
+* Enhancement: Visual feedback system with status icons (checking, valid, invalid, warning).
+* Enhancement: Clean minimal CSS design without backgrounds.
+* Enhancement: Duplicate feedback container cleanup to prevent UI issues.
+* Enhancement: Cache system: 24h for valid results, 1h for invalid results.
+* Enhancement: Session management for VAT exemption persistence across checkout updates.
+* Enhancement: Order metadata includes validation results, exemption status, and service used.
+* Enhancement: Comprehensive English documentation for all VAT features.
+* Fixed: VAT exemption incorrectly applied for same-country (domestic) transactions.
+* Fixed: Tax not restored when VAT field is emptied or validation fails.
+* Fixed: Multiple feedback messages not properly cleared.
 
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
 * Enhancement: Add support to send refund to ERP when an order is refunded.
+* Fixed: Terms and conditions validation user registration not applies in Admin.
+* Fixed: Error in VAT info in WooCommerce PDF Invoices & Packing Slips.
 
 = 3.2.0.2 =
 * Fixed: Error updating tax rates.
@@ -150,7 +373,7 @@ The core connector integrates with Clientify, a CRM and marketing automation too
 * Enhancement: Added support to Odoo company field.
 * Enhancement: Added support to clean special chars in order data (Verifactu).
 * Enhancement: Added support to approve document for Verifactu in some ERPs. First version for Holded.
-* Enhancement: Added support to VAT Number SIMBA Hosting plugin.
+* Enhancement: Added support to VAT Number plugin.
 * Enhancement: added support to importing images in variations.
 * Enhancement: Don't add image if already exists in WooCommerce.
 * Enhancement: Added support to more SEO plugins.

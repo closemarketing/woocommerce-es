@@ -1,6 +1,6 @@
 <?php
 /**
- * Sync Products
+ * AI Helper
  *
  * @package    WordPress
  * @author     David Perez <david@close.technology>
@@ -12,179 +12,160 @@ namespace CLOSE\ConnectEcommerce\Helpers;
 
 defined( 'ABSPATH' ) || exit;
 
+use WordPress\AiClient\AiClient;
+
 /**
- * Sync Products.
+ * AI helper — delegates to the WordPress 7.0 core AI API.
  *
  * @since 1.0.0
  */
 class AI {
 	/**
-	 * Get models from provider
+	 * Whether the WordPress core AI API is available.
 	 *
-	 * @param string $provider Provider.
-	 * @param string $token Token.
-	 * @return array
+	 * @return bool
 	 */
-	public static function get_models( $provider = 'chatgpt', $token = '' ) {
-		$models = array();
-		switch ( $provider ) {
-			case 'chatgpt':
-				$models = self::get_models_chatgpt( $token );
-				break;
-			case 'deepseek':
-				$models = array(
-					'deepseek-chat' => 'DeepSeek Chat',
-				);
-				break;
-		}
-		return $models;
+	public static function has_wp_ai() {
+		return function_exists( 'wp_supports_ai' ) && wp_supports_ai();
 	}
 
 	/**
-	 * Get models from ChatGPT
+	 * Get available AI models from the core registry, grouped by provider.
 	 *
-	 * @param string $api_key API Key.
-	 * @return array
+	 * Returns an array of optgroups: label => [ ['value' => 'provider::model', 'label' => '...'], ... ]
+	 *
+	 * @return array<string, array<int, array<string, string>>>
 	 */
-	private static function get_models_chatgpt( $api_key = '' ) {
-		$models = get_transient( 'connwoo_query_chatgpt_models' );
-		if ( ! $models ) {
-			// Generate value for chatgpt_models.
-			$args       = array(
-				'headers' => array(
-					'Content-Type'  => 'application/json',
-					'Authorization' => 'Bearer ' . $api_key,
-				),
-			);
-			$models_api = wp_remote_get( 'https://api.openai.com/v1/models', $args );
-			$code       = (int) round( wp_remote_retrieve_response_code( $models_api ) / 100, 0 );
-			$models     = array();
+	public static function get_available_models() {
+		if ( ! class_exists( AiClient::class ) ) {
+			return array();
+		}
 
-			if ( 2 === $code ) {
-				$response = json_decode( wp_remote_retrieve_body( $models_api ), true );
+		$grouped = array();
 
-				foreach ( $response['data'] as $model ) {
-					if ( 'model' === $model['object'] && ( strpos( $model['id'], 'gpt' ) !== false || strpos( $model['id'], 'davinci' ) !== false ) ) {
-						$models[ $model['id'] ] = $model['id'];
+		try {
+			$registry = AiClient::defaultRegistry();
+
+			foreach ( $registry->getRegisteredProviderIds() as $provider_id ) {
+				if ( ! $registry->isProviderConfigured( $provider_id ) ) {
+					continue;
+				}
+
+				$class_name    = $registry->getProviderClassName( $provider_id );
+				$provider_meta = $class_name::metadata();
+				$provider_label = (string) $provider_meta->getName();
+
+				foreach ( $class_name::modelMetadataDirectory()->listModelMetadata() as $model_meta ) {
+					if ( ! self::supports_text_generation( $model_meta ) ) {
+						continue;
 					}
+
+					if ( ! isset( $grouped[ $provider_label ] ) ) {
+						$grouped[ $provider_label ] = array();
+					}
+					$grouped[ $provider_label ][] = array(
+						'value' => $provider_id . '::' . (string) $model_meta->getId(),
+						'label' => (string) $model_meta->getName(),
+					);
 				}
 			}
-			set_transient( 'connwoo_query_chatgpt_models', $models, DAY_IN_SECONDS );
+		} catch ( \Throwable $e ) {
+			return array();
 		}
 
-		return $models;
+		return $grouped;
 	}
 
 	/**
-	 * Generate SEO post
+	 * Generate SEO product description via the WordPress core AI API.
 	 *
-	 * @param array $settings Settings.
-	 * @param array $item Item.
-	 * @return array
+	 * @param array $settings Plugin AI settings ('model' and 'prompt').
+	 * @param array $item     Product data.
+	 * @return array{status: string, message: string, data?: array<mixed>}
 	 */
 	public static function generate_description( $settings, $item ) {
-		$provider     = isset( $settings['provider'] ) ? $settings['provider'] : 'chatgpt';
+		if ( ! self::has_wp_ai() ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'WordPress AI is not available. Please upgrade to WordPress 7.0 or later and ensure AI support is enabled.', 'woocommerce-es' ),
+			);
+		}
+
 		$prompt       = isset( $settings['prompt'] ) ? $settings['prompt'] : '';
 		$product_info = isset( $item['full_info'] ) ? $item['full_info'] : $item;
-		$model        = isset( $settings['model'] ) ? $settings['model'] : '';
-		$message      = '';
-		$api_url      = '';
+		$language     = get_locale();
 
 		$content  = $prompt . PHP_EOL . __( 'I have a product with the following information in JSON:', 'woocommerce-es' ) . wp_json_encode( $product_info );
-		$language = get_locale();
 		$content .= PHP_EOL . sprintf(
-			/* translators: %s: language */
+			/* translators: %s: language locale */
 			__( 'Please respond in %s language.', 'woocommerce-es' ),
 			$language
 		);
 		$content .= PHP_EOL . __( 'Generate a Title, Content, Title SEO, SEO description and SEO Focus keyword and export it in format JSON, with elements: title, body, seo_title, seo_description, seo_keyword', 'woocommerce-es' );
 		$content .= PHP_EOL . __( 'Return only a valid and complete JSON object. If the content is too long, split it into multiple parts and clearly indicate when to continue. Do not include any text outside of the JSON.', 'woocommerce-es' );
 
-		$token = isset( $settings['token'] ) ? $settings['token'] : '';
-
-		if ( empty( $token ) ) {
-			return array(
-				'status'  => 'error',
-				'message' => __( 'Error no credentials', 'woocommerce-es' ),
-			);
-		}
-
-		switch ( $provider ) {
-			case 'chatgpt':
-				$model   = ! empty( $model ) ? $model : 'gpt-3.5-turbo';
-				$api_url = 'https://api.openai.com/v1/chat/completions';
-				break;
-			case 'deepseek':
-				$model   = ! empty( $model ) ? $model : 'deepseek-chat';
-				$api_url = 'https://api.deepseek.com/v1/chat/completions';
-				break;
-		}
-
-		$args = array(
-			'headers' => array(
-				'Content-Type'  => 'application/json',
-				'Authorization' => 'Bearer ' . $token,
-			),
-			'timeout' => 90,
-			'body'    => wp_json_encode(
-				array(
-					'model'             => $model,
-					'messages'          => array(
-						array(
-							'role'    => 'user',
-							'content' => $content,
-						),
-					),
-					'temperature'       => 1,
-					'top_p'             => 1,
-					'n'                 => 1,
-					'stream'            => false,
-					'max_tokens'        => 1024,
-					'presence_penalty'  => 0,
-					'frequency_penalty' => 0,
-				)
-			),
-		);
-
-		$response      = wp_remote_post( $api_url, $args );
-		$response_code = wp_remote_retrieve_response_code( $response );
-		$body          = json_decode( wp_remote_retrieve_body( $response ), true );
-
-		if ( 200 !== $response_code ) {
-			$message .= sanitize_text_field( $body['error']['message'] ) ?? '';
-			$message .= sanitize_text_field( $body['errors']['http_request_failed'] ) ?? '';
-
-			if ( empty( $message ) ) {
-				$message = __( 'Unknown error', 'woocommerce-es' );
+		try {
+			$builder  = wp_ai_client_prompt( $content );
+			$model    = isset( $settings['model'] ) ? trim( $settings['model'] ) : '';
+			if ( $model ) {
+				$preference = self::normalize_model_preference( $model );
+				$builder    = $builder->usingModelPreference( $preference );
 			}
 
-			return array(
-				'status'  => 'error',
-				'message' => $message,
-			);
-		}
-		$content = array();
-		if ( isset( $body['choices'][0]['message']['content'] ) ) {
-			$content = str_replace( '```json', '', $body['choices'][0]['message']['content'] );
-			$content = preg_replace( '/```[\w]*\s*/', '', $content );
-			$content = trim( $content );
-			$content = json_decode( $content, true );
+			$raw_text = $builder->generateText();
+
+			$raw_text = str_replace( '```json', '', $raw_text );
+			$raw_text = preg_replace( '/```[\w]*\s*/', '', $raw_text );
+			$raw_text = trim( $raw_text );
+			$decoded  = json_decode( $raw_text, true );
+
 			if ( json_last_error() !== JSON_ERROR_NONE ) {
 				return array(
 					'status'  => 'error',
 					'message' => __( 'Error decoding JSON', 'woocommerce-es' ) . ': ' . json_last_error_msg(),
 				);
 			}
-			if ( ! is_array( $content ) ) {
-				$content = array();
-			}
-			$message = __( 'Spent tokens: ', 'woocommerce-es' ) . ( isset( $body['usage']['total_tokens'] ) ? $body['usage']['total_tokens'] : 0 );
-		}
 
-		return array(
-			'data'    => $content,
-			'status'  => 'ok',
-			'message' => $message,
-		);
+			return array(
+				'data'    => is_array( $decoded ) ? $decoded : array(),
+				'status'  => 'ok',
+				'message' => '',
+			);
+		} catch ( \Exception $e ) {
+			return array(
+				'status'  => 'error',
+				'message' => $e->getMessage(),
+			);
+		}
+	}
+
+	/**
+	 * Normalise a model preference string coming from settings or POST.
+	 *
+	 * Accepts "provider::model", "provider|model", "provider:model".
+	 *
+	 * @param string $preference Raw preference value.
+	 * @return string
+	 */
+	private static function normalize_model_preference( $preference ) {
+		return str_replace( array( '::', '|', ':' ), '::', $preference );
+	}
+
+	/**
+	 * Check whether a model's metadata indicates text input + output support.
+	 *
+	 * Excludes audio/transcription/speech/realtime-only models.
+	 *
+	 * @param mixed $model_meta Model metadata object.
+	 * @return bool
+	 */
+	private static function supports_text_generation( $model_meta ) {
+		$id = strtolower( (string) $model_meta->getId() );
+		foreach ( array( 'transcri', 'tts', 'whisper', 'realtime', 'speech' ) as $exclude ) {
+			if ( false !== strpos( $id, $exclude ) ) {
+				return false;
+			}
+		}
+		return true;
 	}
 }

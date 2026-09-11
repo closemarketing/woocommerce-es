@@ -1,0 +1,33 @@
+{
+	"id": "6a5e043477d18209880f6100",
+	"kind": "simple",
+	"name": "Example Pack Bundled Item",
+	"desc": "Item bundled inside the example pack.",
+	"typeId": "",
+	"contactId": "",
+	"contactName": "",
+	"price": 5,
+	"taxes": [
+		"s_iva_21"
+	],
+	"total": 6.05,
+	"hasStock": true,
+	"stock": 300,
+	"barcode": "0000000000001",
+	"sku": "PACK-ITEM-001",
+	"cost": 1,
+	"purchasePrice": "",
+	"weight": 0,
+	"tags": [
+		"example",
+		"web"
+	],
+	"categoryId": "",
+	"factoryCode": "",
+	"forSale": 1,
+	"forPurchase": 1,
+	"salesChannelId": null,
+	"expAccountId": null,
+	"warehouseId": null,
+	"attributes": []
+}

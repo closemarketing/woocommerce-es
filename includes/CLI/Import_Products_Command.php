@@ -37,26 +37,31 @@ class Import_Products_Command {
 				'ai'     => 'none',
 			)
 		);
-		$settings_all = get_option( 'connect_ecommerce' );
-		$connector    = isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
-		$settings     = $settings_all[ $connector ] ?? array();
-		$time_start   = microtime( true );
+		$conecom_options = conecom_get_options();
+		$connector_data  = HELPER::get_connector( $conecom_options );
+		$connector       = $connector_data['connector'] ?? '';
+		$settings        = $connector_data['settings'] ?? array();
+		$time_start      = microtime( true );
 
 		if ( empty( $connector ) ) {
 			WP_CLI::line( $this->cli_header_line() . __( 'There is no connector actived' ) );
 			return;
 		}
+		if ( empty( $connector_data['options'] ) || empty( $connector_data['connapi_erp'] ) ) {
+			WP_CLI::line( $this->cli_header_line() . __( 'Connector configuration is not complete', 'woocommerce-es' ) );
+			return;
+		}
 		$subject = sprintf(
-			__( 'Connect Ecommerce: Importing products from %s' ),
+			/* translators: %s connector name. */
+			__( 'Connect Ecommerce: Importing products from %s', 'woocommerce-es' ),
 			$connector
 		);
 		WP_CLI::line( $this->cli_header_line() . $subject );
 
-		$conecom_options = conecom_get_options();
-		$options         = $conecom_options[ $connector ];
-		$apiname         = 'Connect_Ecommerce_' . $options['name'];
-		$connapi_erp     = new $apiname( $options );
-		$api_pagination  = ! empty( $options['api_pagination'] ) ? $options['api_pagination'] : false;
+		$options        = $connector_data['options'];
+		$connapi_erp    = $connector_data['connapi_erp'];
+		$api_pagination  = defined( 'CONECOM_SYNC_PRODUCTS_PER_BATCH' ) ? CONECOM_SYNC_PRODUCTS_PER_BATCH : 50;
+		$api_is_paginated = ! array_key_exists( 'product_api_pagination', $options ) || ! empty( $options['product_api_pagination'] );
 		$generate_ai     = $assoc_args['ai'] ?? 'none';
 
 		// Loop Products.
@@ -64,6 +69,7 @@ class Import_Products_Command {
 		$continue        = false;
 		$page            = 0;
 		$synced_products = 0;
+		$processed_products = 0;
 		do {
 			$message = sprintf(
 				__( 'Fetching %s products from %s', 'woocommerce-es' ),
@@ -73,7 +79,7 @@ class Import_Products_Command {
 			WP_CLI::line( $this->cli_header_line() . $message );
 
 			// Get products from API.
-			$api_products = $connapi_erp->get_products( null, $sync_loop );
+			$api_products = $connapi_erp->get_products( null, $api_is_paginated ? $sync_loop : null );
 			$res_status   = $api_products['status'] ?? 'ok';
 
 			if ( 'error' === $res_status ) {
@@ -85,10 +91,10 @@ class Import_Products_Command {
 			$products_count = count( $api_products );
 			foreach ( $api_products as $key => $item ) {
 				$item        = HELPER::sanitize_array_recursive( $item );
-				$page        = intval( $sync_loop / $api_pagination, 0 );
+				$page        = $api_is_paginated ? intval( $sync_loop / $api_pagination, 0 ) : 0;
 				$result_sync = PROD::sync_product_item( $settings, $item, $connapi_erp, $generate_ai );
 
-				$sync_loop   = $page * $api_pagination + $key;
+				$sync_loop   = $api_is_paginated ? $page * $api_pagination + $key : $processed_products;
 				$message = '[' . $sync_loop + 1 . '/' . $page . '] ';
 				$message .= $result_sync['status'] . ' ';
 				$message .= wp_strip_all_tags($result_sync['message']);
@@ -99,10 +105,11 @@ class Import_Products_Command {
 					$synced_products++;
 				}
 
+				$processed_products++;
 				++$sync_loop;
 			}
 
-			$continue = $products_count < $api_pagination ? false : true;
+			$continue = $api_is_paginated && $products_count >= $api_pagination;
 
 		} while ( $continue );
 

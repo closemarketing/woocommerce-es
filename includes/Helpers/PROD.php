@@ -138,16 +138,31 @@ class PROD {
 			}
 			if ( $post_id && $item_sku && 'pack' === $item['kind'] ) {
 				// Create subproducts before.
-				$pack_items = '';
+				$pack_items      = '';
+				$pack_items_sum  = 0;
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
 					foreach ( $item['packItems'] as $pack_item ) {
-						$item_simple     = $api_erp->get_products( $pack_item['pid'] );
-						$product_pack_id = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
-						$pack_items     .= $product_pack_id . '/' . $pack_item['u'] . ',';
-						$message        .= ' x ' . $pack_item['u'];
+						$item_simple      = $api_erp->get_products( $pack_item['pid'] );
+						$result_pack_item = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
+						$product_pack_id  = $result_pack_item['post_id'] ?? 0;
+						$pack_items      .= $product_pack_id . '/' . $pack_item['u'] . ',';
+						$message         .= ' x ' . $pack_item['u'];
+
+						$item_pack_product = $product_pack_id ? wc_get_product( $product_pack_id ) : null;
+						if ( $item_pack_product ) {
+							$pack_items_sum += (float) $item_pack_product->get_regular_price() * (float) $pack_item['u'];
+						}
 					}
 					$message   .= ' ';
 					$pack_items = substr( $pack_items, 0, -1 );
+				}
+
+				// WPC Product Bundles only auto-calculates its displayed price when the
+				// underlying `_price` postmeta is non-zero (its own fixed-price guard
+				// otherwise forces the shown price to 0). The ERP has no pack price
+				// concept, so fall back to the sum of the bundled items when empty.
+				if ( empty( $item['price'] ) ) {
+					$item['price'] = $pack_items_sum;
 				}
 
 				// Update meta for product.
@@ -189,9 +204,9 @@ class PROD {
 		if ( ( 'all' === $generate_ai && $post_id ) || ( 'new' === $generate_ai && $is_new_product && $post_id ) ) {
 			// Generate description with AI for product.
 			$settings_ai = get_option( 'connect_ecommerce_ai' );
-			if ( ! empty( $settings_ai['provider'] ) ) {
-				$result_ai = AI::generate_description( $settings_ai, $item );
-				if ( ! empty( $result_ai ) && 'ok' === $result_ai['status'] ) {
+			if ( AI::has_wp_ai() ) {
+				$result_ai = AI::generate_description( $settings_ai ? $settings_ai : array(), $item );
+				if ( 'ok' === $result_ai['status'] ) {
 					$message      = '';
 					$product_info = array(
 						'ID' => $post_id,
@@ -256,6 +271,7 @@ class PROD {
 	 */
 	public static function sync_product( $settings, $item, $api_erp, $product_id = 0, $type = 'simple', $pack_items = null ) {
 		$import_stock       = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
+		$stock_visibility   = ! empty( $settings['stock_visibility'] ) ? $settings['stock_visibility'] : 'hide';
 		$is_virtual         = ! empty( $settings['virtual'] ) && 'yes' === $settings['virtual'] ? true : false;
 		$allow_backorders   = ! empty( $settings['backorders'] ) ? $settings['backorders'] : 'yes';
 		$rate_id            = ! empty( $settings['rates'] ) ? $settings['rates'] : 'default';
@@ -265,15 +281,41 @@ class PROD {
 		$message            = '';
 		$product            = null;
 		$item_sku           = ! empty( $item['sku'] ) ? $item['sku'] : '';
+		$tax_slug           = ! empty( $item['taxes'] ) ? ( is_array( $item['taxes'] ) ? reset( $item['taxes'] ) : $item['taxes'] ) : '';
+		$tax_class          = TAXES::get_tax_class_by_erp_id( $tax_slug );
+		$tax_class          = null === $tax_class ? '' : $tax_class;
+
+		// Preserve subscription product types — ERP has no subscription concept.
+		// Read the type directly from the taxonomy (not via wc_get_product, which may be cached),
+		// then restore it with wp_set_object_terms after every save so WooCommerce internals
+		// cannot overwrite it. Any ERP shape (simple or variable) preserves the subscription
+		// type because the ERP may legitimately change shape while the subscription remains.
+		$preserved_sub_type = null;
+		if ( ! $is_new_product ) {
+			$existing_terms = get_the_terms( $product_id, 'product_type' );
+			$existing_type  = ( ! empty( $existing_terms ) && ! is_wp_error( $existing_terms ) )
+				? sanitize_title( current( $existing_terms )->name )
+				: '';
+			if ( in_array( $existing_type, array( 'subscription', 'variable-subscription' ), true ) ) {
+				$preserved_sub_type = $existing_type;
+			}
+			unset( $existing_terms, $existing_type );
+		}
 
 		// Start.
 		try {
-			if ( 'simple' === $type ) {
-				$product = new \WC_Product( $product_id );
-			} elseif ( 'variable' === $type ) {
-				$product = new \WC_Product_Variable( $product_id );
-			} elseif ( 'pack' === $type ) {
-				$product = new \WC_Product( $product_id );
+			if ( null !== $preserved_sub_type ) {
+				// Load via wc_get_product so the correct WC class is used for the sync.
+				$product = wc_get_product( $product_id ) ?: null;
+			}
+			if ( null === $product ) {
+				if ( 'simple' === $type ) {
+					$product = new \WC_Product( $product_id );
+				} elseif ( 'variable' === $type ) {
+					$product = new \WC_Product_Variable( $product_id );
+				} elseif ( 'pack' === $type ) {
+					$product = new \WC_Product( $product_id );
+				}
 			}
 		} catch ( \Exception $e ) {
 			return array(
@@ -287,15 +329,37 @@ class PROD {
 		$product_props     = array(
 			'stock_status'     => 'instock',
 			'backorders'       => $allow_backorders,
-			'regular_price'    => self::get_rate_price( $item, $rate_id ),
 			'length'           => isset( $item['lenght'] ) ? $item['lenght'] : '',
 			'width'            => isset( $item['width'] ) ? $item['width'] : '',
 			'height'           => isset( $item['height'] ) ? $item['height'] : '',
+			'tax_class'        => $tax_class,
 		);
+
+		// Stock is managed on the variations, not the parent — WooCommerce itself
+		// never sets _manage_stock on a variable product's parent. Force this on
+		// every sync (not just at creation) so products that already had it
+		// enabled before this fix get corrected on their next sync too.
+		if ( 'variable' === $type ) {
+			$product_props['manage_stock']   = false;
+			$product_props['stock_quantity'] = null;
+		}
+
+		if ( 'variable' !== $type ) {
+			$rate_price = self::get_rate_price( $item, $rate_id );
+			// A pack's price defaults to WPC Product Bundles' own auto-calculation from
+			// its items (woosb_disable_auto_price = 'off'); only override it here when the
+			// ERP explicitly provides a non-zero pack price, otherwise leave it untouched
+			// instead of forcing it to 0 and overwriting the plugin's computed price.
+			if ( 'pack' !== $type || ! empty( $rate_price ) ) {
+				$product_props['regular_price'] = $rate_price;
+			}
+		}
+
 		$price_sale = self::get_sale_price( $item, $settings );
-		if ( ! empty( $price_sale ) ) {
+		if ( ! empty( $price_sale ) && 'variable' !== $type ) {
 			$product_props['sale_price'] = $price_sale;
 		}
+
 		$product_props_new = array();
 		if ( $is_new_product ) {
 			$product_props_new = array(
@@ -310,9 +374,6 @@ class PROD {
 				'date_on_sale_to'    => '',
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
-				'tax_class'          => '',
-				'manage_stock'       => 'yes' === $import_stock ? true : false,
-				'stock_quantity'     => null,
 				'sold_individually'  => false,
 				'weight'             => $is_virtual ? '' : $item['weight'],
 				'upsell_ids'         => '',
@@ -327,6 +388,11 @@ class PROD {
 				'gallery_image_ids'  => '',
 				'status'             => $post_status,
 			);
+
+			if ( 'variable' !== $type ) {
+				$product_props_new['manage_stock']   = 'yes' === $import_stock ? true : false;
+				$product_props_new['stock_quantity'] = null;
+			}
 		}
 
 		if ( ! empty( $item['barcode'] ) ) {
@@ -352,41 +418,52 @@ class PROD {
 				// Values for simple products.
 				// Check if the product can be sold.
 				if ( 'no' === $import_stock && $item['price'] > 0 ) {
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['stock_status'] = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && $item_stock > 0 ) {
-					$product_props['manage_stock']       = true;
-					$product_props['stock_quantity']     = $item_stock;
-					$product_props['stock_status']       = 'instock';
-					$product_props['catalog_visibility'] = 'visible';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
-						wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item_stock;
+					$product_props['stock_status']   = 'instock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'visible';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_remove_object_terms( $product_id, 'exclude-from-catalog', 'product_visibility' );
+							wp_remove_object_terms( $product_id, 'exclude-from-search', 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} elseif ( 'yes' === $import_stock && 0 === $item_stock ) {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = 0;
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = 0;
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				} else {
-					$product_props['manage_stock']       = true;
-					$product_props['catalog_visibility'] = 'hidden';
-					$product_props['stock_quantity']     = $item['stock'];
-					$product_props['stock_status']       = 'outofstock';
-					// Only call taxonomy functions if taxonomy exists
-					try {
-						wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
-					} catch ( \Exception $e ) {}
+					$product_props['manage_stock']   = true;
+					$product_props['stock_quantity'] = $item['stock'];
+					$product_props['stock_status']   = 'outofstock';
+
+					if ( 'hide' === $stock_visibility ) {
+						$product_props['catalog_visibility'] = 'hidden';
+						// Only call taxonomy functions if taxonomy exists
+						try {
+							wp_set_object_terms( $product_id, array( 'exclude-from-catalog', 'exclude-from-search' ), 'product_visibility' );
+						} catch ( \Exception $e ) {}
+					}
 				}
 				break;
 			case 'variable':
@@ -402,8 +479,15 @@ class PROD {
 		// Set attributes.
 		$attributes = ! empty( $item['attributes'] ) && is_array( $item['attributes'] ) ? $item['attributes'] : array();
 		$categories_ids = TAX::assign_product_categories( $attributes, $settings, $settings_mergevars, $is_new_product );
-		if ( ! empty( $categories_ids ) ) {
-			$product_props['category_ids'] = $categories_ids;
+		$category_newp  = isset( $settings['catnp'] ) ? $settings['catnp'] : 'yes';
+		$has_empty_category_attribute = TAX::has_empty_category_attribute( $attributes, $settings );
+		$should_sync_categories       = ! empty( $categories_ids ) || $has_empty_category_attribute;
+		$should_update_categories     = ( 'yes' === $category_newp && $is_new_product ) || 'no' === $category_newp;
+		if ( $should_sync_categories && ! empty( $settings['catattr'] ) && $should_update_categories ) {
+			$synced_category_ids = TAX::sync_terms_taxonomy( $settings, 'product_cat', $categories_ids, $product_id );
+			if ( ! is_wp_error( $synced_category_ids ) ) {
+				$product_props['category_ids'] = $synced_category_ids;
+			}
 		}
 
 		// Imports image.
@@ -418,6 +502,8 @@ class PROD {
 				$field_slug = isset( $field_key[1] ) ? $field_key[1] : $field_key;
 				if ( isset( $item[ $custom_field ] ) && 'cf' === $field_type ) {
 					$product->update_meta_data( $field_slug, $item[ $custom_field ] );
+				} elseif ( isset( $item[ $source_key ] ) && 'cf' === $field_type ) {
+					$product->update_meta_data( $field_slug, $item[ $source_key ] );
 				} elseif ( isset( $item[ $custom_field ] ) && 'tax' === $field_type ) {
 					TAX::set_terms_taxonomy( $settings, $field_slug, $item[ $custom_field ], $product_id );
 				} elseif ( isset( $item[ $custom_field ] ) && 'prod' === $field_type ) {
@@ -449,14 +535,49 @@ class PROD {
 		// Save ERP ID.
 		$product->update_meta_data( 'connect_ecommerce_id', $item['id'] );
 
+		// Save last updated date from API (timestamp) for import stats; fallback to current time.
+		$updated_ts = null;
+		if ( ! empty( $item['last_updated'] ) ) {
+			$updated_ts = is_numeric( $item['last_updated'] ) ? (int) $item['last_updated'] : strtotime( $item['last_updated'] );
+		}
+		if ( empty( $updated_ts ) || $updated_ts <= 0 ) {
+			$updated_ts = current_time( 'timestamp' );
+		}
+		$product->update_meta_data( 'conecom_updated', $updated_ts );
+
+		// For simple subscription products, keep _subscription_price in sync.
+		// Use sale price as the recurring amount when active (WC Subscriptions behaviour).
+		if ( 'subscription' === $preserved_sub_type ) {
+			$price_sale_sub     = self::get_sale_price( $item, $settings );
+			$subscription_price = ! empty( $price_sale_sub ) ? $price_sale_sub : self::get_rate_price( $item, $rate_id );
+			$product->update_meta_data( '_subscription_price', $subscription_price );
+		}
+
 		// Set properties and save.
 		$product->set_props( $product_props );
 		$product->save();
+
+		TAX::assign_product_brands( $attributes, $settings, $product->get_id() );
+
 		if ( 'pack' === $type ) {
 			// Only call taxonomy functions if taxonomy exists
 			if ( taxonomy_exists( 'product_type' ) ) {
 				wp_set_object_terms( $product_id, 'woosb', 'product_type' );
 			}
+		}
+
+		// Restore subscription type after all saves — WooCommerce may reset the taxonomy
+		// term during save when the WC class does not match the registered subscription type.
+		if ( null !== $preserved_sub_type && taxonomy_exists( 'product_type' ) ) {
+			wp_set_object_terms( $product_id, $preserved_sub_type, 'product_type' );
+		}
+
+		if ( 'variable' === $type ) {
+			// Recalculate the parent's price range and stock status from its
+			// variations now that they're all saved. The parent itself never
+			// manages its own stock (see above), so WooCommerce must derive
+			// its stock status from the variations instead.
+			\WC_Product_Variable::sync( $product_id );
 		}
 
 		return array(
@@ -486,7 +607,7 @@ class PROD {
 		$post_id     = $result_prod['prod_id'] ?? 0;
 
 		// Add custom taxonomies.
-		self::add_custom_taxonomies( $post_id, $item );
+		self::add_custom_taxonomies( $post_id, $item, $settings );
 
 		if ( $from_pack ) {
 			$message .= '<br/>';
@@ -527,8 +648,14 @@ class PROD {
 		$parent_sku      = $product->get_sku();
 		$product_id      = $product->get_id();
 		$is_virtual      = ( isset( $settings['virtual'] ) && 'yes' === $settings['virtual'] ) ? true : false;
+		$import_stock    = ! empty( $settings['stock'] ) ? $settings['stock'] : 'no';
 		$message         = '';
 
+		// Snapshot of variation IDs that existed before this sync — unlike
+		// $variations_item (consumed below as each variant is matched), this
+		// stays intact so newly added variants can still find a sibling to
+		// copy the subscription schedule from (see the variant loop below).
+		$existing_variation_ids = array();
 		if ( ! $is_new_product ) {
 			foreach ( $product->get_children() as $child_id ) {
 				// get an instance of the WC_Variation_product Object.
@@ -537,11 +664,12 @@ class PROD {
 					continue;
 				}
 				$variations_item[ $child_id ] = $variation_children->get_sku();
+				$existing_variation_ids[]     = $child_id;
 			}
 		}
 
 		// Add custom taxonomies.
-		self::add_custom_taxonomies( $product_id, $item );
+		self::add_custom_taxonomies( $product_id, $item, $settings );
 
 		// Remove variations without SKU blank.
 		if ( ! empty( $variations_item ) ) {
@@ -558,8 +686,19 @@ class PROD {
 		foreach ( $item['variants'] as $variant ) {
 			$variation_id = 0; // default value.
 			if ( ! $is_new_product && ! empty( $variations_item ) && is_array( $variations_item ) ) {
-				$variation_id = array_search( $variant['sku'], $variations_item );
-				unset( $variations_item[ $variation_id ] );
+				// array_search() returns false (not 0) when the SKU isn't found among
+				// existing variations — normalize back to 0 so "0 === $variation_id"
+				// checks below correctly treat it as a new variation instead of silently
+				// never matching (false !== 0 under strict comparison). Cast both sides
+				// to string first: ERPs that serialize numeric SKUs as JSON numbers give
+				// $variant['sku'] as an int, while get_sku() always returns a string.
+				$variant_sku_str        = (string) $variant['sku'];
+				$variations_item_lookup = array_map( 'strval', $variations_item );
+				$found_variation_id     = array_search( $variant_sku_str, $variations_item_lookup, true );
+				if ( false !== $found_variation_id ) {
+					$variation_id = $found_variation_id;
+					unset( $variations_item[ $variation_id ] );
+				}
 			}
 
 			if ( ! isset( $variant['categoryFields'] ) ) {
@@ -578,11 +717,12 @@ class PROD {
 				}
 			}
 			// Make Variations.
-			$variation_price   = self::get_rate_price( $variant, $rate_id );
+			$variation_price = self::get_rate_price( $variant, $rate_id );
 			$variation_props = array(
 				'parent_id'     => $product_id,
 				'attributes'    => $attributes_prod,
 				'regular_price' => $variation_price,
+				'tax_class'     => 'parent',
 			);
 
 			$price_sale = self::get_sale_price( $variant, $settings );
@@ -593,7 +733,6 @@ class PROD {
 				// New variation.
 				$variation_props_new = array(
 					'tax_status'   => 'taxable',
-					'tax_class'    => '',
 					'weight'       => '',
 					'length'       => '',
 					'width'        => '',
@@ -604,26 +743,63 @@ class PROD {
 				);
 				$variation_props     = array_merge( $variation_props, $variation_props_new );
 			}
-			$variation    = new \WC_Product_Variation( $variation_id );
-			if ( ! empty( $variant['barcode'] ) ) {
-				try {
-					$variation->set_global_unique_id( $variant['barcode'] );
-				} catch ( \Exception $e ) {
-					// Error.
+			$variation = new \WC_Product_Variation( $variation_id );
+			$variation->set_props( $variation_props );
+
+			// For variable-subscription products, sync subscription price and schedule.
+			if ( 'variable-subscription' === $product->get_type() ) {
+				// Use sale price as the recurring amount when active (WC Subscriptions behaviour).
+				$price_sale_var     = self::get_sale_price( $variant, $settings );
+				$subscription_price = ! empty( $price_sale_var ) ? $price_sale_var : $variation_price;
+				$variation->update_meta_data( '_subscription_price', $subscription_price );
+
+				// Copy the subscription schedule onto new variants so they inherit the
+				// merchant's billing cadence instead of WooCommerce defaults. WC Subscriptions
+				// stores the schedule per-variation, not on the parent, so prefer an existing
+				// sibling variation as the source and only fall back to the parent's own meta
+				// (e.g. set directly on the product before any variations existed).
+				if ( 0 === $variation_id ) {
+					$schedule_keys = array(
+						'_subscription_period',
+						'_subscription_period_interval',
+						'_subscription_length',
+						'_subscription_trial_length',
+						'_subscription_trial_period',
+						'_subscription_sign_up_fee',
+					);
+					$schedule_source = ! empty( $existing_variation_ids ) ? reset( $existing_variation_ids ) : $product_id;
+					foreach ( $schedule_keys as $meta_key ) {
+						$schedule_value = get_post_meta( $schedule_source, $meta_key, true );
+						if ( '' === $schedule_value ) {
+							$schedule_value = get_post_meta( $product_id, $meta_key, true );
+						}
+						if ( '' !== $schedule_value ) {
+							$variation->update_meta_data( $meta_key, $schedule_value );
+						}
+					}
 				}
 			}
-			$variation->set_props( $variation_props );
+
 			// Stock.
-			if ( isset( $variant['stock'] ) ) {
-				$stock_status = 0 === (int) $variant['stock'] ? 'outofstock' : 'instock';
-				$variation->set_stock_quantity( (int) $variant['stock'] );
+			if ( 'yes' === $import_stock && isset( $variant['stock'] ) ) {
+				$item_stock   = (int) $variant['stock'];
+				$stock_status = 0 === $item_stock ? 'outofstock' : 'instock';
+				$variation->set_stock_quantity( $item_stock );
 				$variation->set_manage_stock( true );
 				$variation->set_stock_status( $stock_status );
 			} else {
 				$variation->set_manage_stock( false );
+				$variation->set_stock_status( 'instock' );
 			}
-			$variation_prevent_id = self::find_product( $variant['sku'] );
-			if ( ! empty( $variation_prevent_id ) ) {
+			// Check for a SKU collision with another product AND with another
+			// variation (find_product() defaults to post_type='product', which
+			// misses existing product_variation rows — set_sku() below would
+			// then throw WooCommerce's duplicate-SKU exception and abort the
+			// whole sync instead of skipping just this variant).
+			$duplicate_product_id   = self::find_product( $variant['sku'] );
+			$duplicate_variation_id = self::find_product( $variant['sku'], 'product_variation' );
+			$variation_prevent_id   = ! empty( $duplicate_product_id ) ? $duplicate_product_id : $duplicate_variation_id;
+			if ( ! empty( $variation_prevent_id ) && (int) $variation_prevent_id !== (int) $variation_id ) {
 				$message .= sprintf(
 					/* translators: %s: SKU */
 					__( 'Duplicated SKU: %s (not imported) ', 'woocommerce-es' ),
@@ -631,8 +807,39 @@ class PROD {
 				);
 				continue;
 			}
-			if ( $is_new_product ) {
+			if ( empty( $variation->get_sku( 'edit' ) ) ) {
+				// 'edit' context reads the variation's own raw value — get_sku()'s
+				// default 'view' context falls back to the parent SKU when empty,
+				// which would make this check always look non-empty.
+				// Covers brand-new products and new variants added to an existing
+				// product — both cases need the SKU set once, on creation.
 				$variation->set_sku( $variant['sku'] );
+			}
+
+			if ( ! empty( $variant['barcode'] ) ) {
+				// WooCommerce validates global_unique_id uniqueness store-wide, so if the ERP
+				// renamed this variant's SKU on resync (new $variation_id, unmatched by SKU),
+				// its own barcode is still held by the now-orphaned sibling variation of this
+				// same parent — free it there first, but only when it's confirmed to be that
+				// stale sibling (same parent, same ERP variant id when available), never an
+				// unrelated product that merely happens to share the barcode.
+				$barcode_holder_id = wc_get_product_id_by_global_unique_id( $variant['barcode'] );
+				if ( $barcode_holder_id && (int) $barcode_holder_id !== (int) $variation_id ) {
+					$barcode_holder   = wc_get_product( $barcode_holder_id );
+					$is_stale_sibling = $barcode_holder
+						&& $barcode_holder->is_type( 'variation' )
+						&& (int) $barcode_holder->get_parent_id() === (int) $product_id
+						&& (string) $barcode_holder->get_meta( '_connect_ecommerce_productid' ) === (string) $variant['id'];
+					if ( $is_stale_sibling ) {
+						$barcode_holder->set_global_unique_id( '' );
+						$barcode_holder->save();
+					}
+				}
+				try {
+					$variation->set_global_unique_id( $variant['barcode'] );
+				} catch ( \Exception $e ) {
+					// Error.
+				}
 			}
 
 			// Custom fields for variations.
@@ -745,7 +952,7 @@ class PROD {
 		if ( ! empty( $settings_mergevars['prod_mergevars'] ) ) {
 			$key = array_search( 'prod|post_status', $settings_mergevars['prod_mergevars'] );
 			if ( false !== $key ) {
-				$publish_status = $item[ $settings_mergevars['prod_mergevars'][ $key ] ];
+				$publish_status = $item[ $key ] ?? '';
 				if ( empty( $publish_status ) ) {
 					return true;
 				}
@@ -761,16 +968,20 @@ class PROD {
 		}
 
 		// Filter by tags.
-		if ( empty( $settings['filter'] ) || empty( $item['tags'] ) ) {
+		if ( empty( $settings['filter'] ) ) {
 			return false;
 		}
+		if ( empty( $item['tags'] ) ) {
+			return false;
+		}
+
 		$tags_option = explode( ',', $settings['filter'] );
 		$tags_option = array_map( 'trim', $tags_option );
 		$tags_option = array_map( 'sanitize_text_field', $tags_option );
 
-		$tags_prod = array_map( 'trim', $item['tags'] );
-		$tags_prod = array_map( 'sanitize_text_field', $tags_prod );
-		$tags_prod = array_filter( $tags_prod );
+		$tags_prod   = array_map( 'trim', $item['tags'] );
+		$tags_prod   = array_map( 'sanitize_text_field', $tags_prod );
+		$tags_prod   = array_filter( $tags_prod );
 
 		return empty( array_intersect( $tags_option, $tags_prod ) ) ? true : false;
 	}
@@ -813,6 +1024,52 @@ class PROD {
 			}
 		}
 		return $custom_fields;
+	}
+
+	/**
+	 * Gets WooCommerce product SKUs and last modified for import stats.
+	 * Only products with connect_ecommerce_id (linked to connector) are returned.
+	 * Uses conecom_updated (timestamp) when set, else post_modified.
+	 *
+	 * @return array Associative array sku => [ 'post_id' => int, 'last_modified' => 'Y-m-d H:i:s' ].
+	 */
+	public static function get_woocommerce_product_data_for_import_stats() {
+		global $wpdb;
+		$meta_link    = 'connect_ecommerce_id';
+		$meta_sku     = '_sku';
+		$meta_updated = 'conecom_updated';
+		// Products with connect_ecommerce_id, SKU, and conecom_updated or post_modified for comparison.
+		$results = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT P.ID AS post_id, P.post_modified AS post_modified,
+				PM_sku.meta_value AS sku, PM_updated.meta_value AS conecom_updated
+				FROM {$wpdb->posts} AS P
+				INNER JOIN {$wpdb->postmeta} AS PM_link ON PM_link.post_id = P.ID AND PM_link.meta_key = %s
+				INNER JOIN {$wpdb->postmeta} AS PM_sku ON PM_sku.post_id = P.ID AND PM_sku.meta_key = %s
+				LEFT JOIN {$wpdb->postmeta} AS PM_updated ON PM_updated.post_id = P.ID AND PM_updated.meta_key = %s
+				WHERE P.post_type IN ( 'product', 'product_variation' )
+				AND P.post_status != 'trash'
+				AND PM_sku.meta_value != ''",
+				$meta_link,
+				$meta_sku,
+				$meta_updated
+			),
+			ARRAY_A
+		);
+		$data = array();
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				$sku = $row['sku'];
+				$ts  = ! empty( $row['conecom_updated'] ) && is_numeric( $row['conecom_updated'] )
+					? (int) $row['conecom_updated']
+					: null;
+				$data[ $sku ] = array(
+					'post_id'       => (int) $row['post_id'],
+					'last_modified' => $ts ? gmdate( 'Y-m-d H:i:s', $ts ) : $row['post_modified'],
+				);
+			}
+		}
+		return $data;
 	}
 
 	/**
@@ -868,6 +1125,10 @@ class PROD {
 		if ( ! empty( $item['images'] ) ) {
 			$images = $item['images'] ?? array();
 		} else {
+			if ( ! HELPER::connector_supports( $api_erp, 'get_image_product' ) ) {
+				return false;
+			}
+
 			// Ask API for image.
 			$result_api = $api_erp->get_image_product( $settings, $item['id'], $product_id );
 
@@ -876,12 +1137,12 @@ class PROD {
 				HELPER::save_log( 'sync_product_image', $result_api, $message );
 				return false;
 			}
-			if ( isset( $result_api['upload']['url'] ) ){
-				$images[] = [
+			if ( isset( $result_api['upload']['url'] ) ) {
+				$images[] = array(
 					'url'          => $result_api['upload']['url'],
-					'file'         => $result_api['upload']['file'],
-					'content_type' => $result_api['content_type'],
-				];
+					'file'         => $result_api['upload']['file'] ?? '',
+					'content_type' => $result_api['upload']['content_type'] ?? $result_api['content_type'] ?? '',
+				);
 			}
 		}
 
@@ -1137,8 +1398,6 @@ class PROD {
 		}
 	}
 
-
-
 	/**
 	 * Get attribute category ID
 	 *
@@ -1171,14 +1430,14 @@ class PROD {
 	 *
 	 * @return void
 	 */
-	private static function add_custom_taxonomies( $product_id, $item ) {
+	private static function add_custom_taxonomies( $product_id, $item, $settings ) {
 		// Set taxonomies.
 		if ( ! empty( $item['taxonomies'] ) && is_array( $item['taxonomies'] ) ) {
 			foreach ( $item['taxonomies'] as $taxonomy ) {
 				if ( empty( $taxonomy['id'] ) || empty( $taxonomy['value'] ) ) {
 					continue;
 				}
-				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'] );
+				TAX::assign_product_term( $product_id, $taxonomy['id'], $taxonomy['value'], $settings );
 			}
 		}
 	}
@@ -1203,5 +1462,137 @@ class PROD {
 			return false;
 		}
 		return true;
+	}
+
+	/**
+	 * Get import statistics (only when connector has get_all_product_skus).
+	 *
+	 * @param object $connapi_erp Connector API object.
+	 * @param array  $options Plugin options.
+	 * @return array Import statistics.
+	 */
+	public static function get_import_stats( $connapi_erp, $options, $settings = array() ) {
+		if ( ! $connapi_erp || ! HELPER::connector_supports( $connapi_erp, 'get_all_product_skus' ) ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'Connector does not support import statistics', 'woocommerce-es' ),
+			);
+		}
+
+		$transient_key = 'conecom_all_product_skus_' . sanitize_key( $options['slug'] );
+		$api_result    = get_transient( $transient_key );
+		if ( false === $api_result ) {
+			$api_result = $connapi_erp->get_all_product_skus();
+			if ( ! isset( $api_result['status'] ) || 'error' !== $api_result['status'] ) {
+				set_transient( $transient_key, $api_result, HOUR_IN_SECONDS );
+			}
+		}
+
+		// Accept 'error' as failure; 'ok' or 'success' (e.g. connect-woocommerce-neo) as success.
+		if ( isset( $api_result['status'] ) && 'error' === $api_result['status'] ) {
+			$message = isset( $api_result['message'] ) && ! empty( $api_result['message'] )
+				? $api_result['message']
+				: __( 'Error fetching product SKUs from API', 'woocommerce-es' );
+			return array(
+				'status'  => 'error',
+				'message' => $message,
+			);
+		}
+
+		// Normalize API result: array of SKUs or array of items with 'sku' (and optionally 'last_updated', 'tags').
+		$api_skus         = array();
+		$api_skus_updated = array();
+		$api_skus_tags    = array();
+		if ( isset( $api_result['data'] ) && is_array( $api_result['data'] ) ) {
+			$raw = $api_result['data'];
+		} elseif ( is_array( $api_result ) ) {
+			$raw = $api_result;
+		} else {
+			$raw = array();
+		}
+
+		foreach ( $raw as $item ) {
+			if ( is_string( $item ) ) {
+				$api_skus[ $item ] = true;
+			} elseif ( is_array( $item ) && ! empty( $item['sku'] ) ) {
+				$sku              = $item['sku'];
+				$api_skus[ $sku ] = true;
+				if ( ! empty( $item['last_updated'] ) ) {
+					$api_skus_updated[ $sku ] = $item['last_updated'];
+				}
+				if ( ! empty( $item['tags'] ) ) {
+					$api_skus_tags[ $sku ] = (array) $item['tags'];
+				}
+			}
+		}
+
+		$api_total_count = count( $api_skus );
+
+		// Apply tag filter if configured (mirrors PROD::filter_product() logic).
+		$filter_tag = ! empty( $settings['filter'] ) ? $settings['filter'] : '';
+		if ( ! empty( $filter_tag ) ) {
+			$tags_option           = array_map( 'sanitize_text_field', array_map( 'trim', explode( ',', $filter_tag ) ) );
+			$filtered_skus         = array();
+			$filtered_skus_updated = array();
+
+			foreach ( $api_skus as $sku => $dummy ) {
+				$product_tags = isset( $api_skus_tags[ $sku ] ) ? $api_skus_tags[ $sku ] : array();
+				$product_tags = array_map( 'sanitize_text_field', array_map( 'trim', (array) $product_tags ) );
+				if ( ! empty( array_intersect( $tags_option, $product_tags ) ) ) {
+					$filtered_skus[ $sku ] = true;
+					if ( isset( $api_skus_updated[ $sku ] ) ) {
+						$filtered_skus_updated[ $sku ] = $api_skus_updated[ $sku ];
+					}
+				}
+			}
+
+			$api_skus         = $filtered_skus;
+			$api_skus_updated = $filtered_skus_updated;
+		}
+
+		$api_count = count( $api_skus );
+		$api_ids   = array_keys( $api_skus );
+
+		$wp_products = self::get_woocommerce_product_data_for_import_stats();
+		$wp_count    = count( $wp_products );
+		$wp_skus     = array_keys( $wp_products );
+
+		$new_properties = array_diff( $api_ids, $wp_skus );
+		$new_count      = count( $new_properties );
+
+		$outdated_count = 0;
+		foreach ( $wp_products as $sku => $wp_data ) {
+			if ( ! isset( $api_skus[ $sku ] ) ) {
+				continue;
+			}
+			$api_date = isset( $api_skus_updated[ $sku ] ) ? $api_skus_updated[ $sku ] : null;
+			$wp_date  = isset( $wp_data['last_modified'] ) ? $wp_data['last_modified'] : null;
+			if ( empty( $api_date ) || empty( $wp_date ) ) {
+				continue;
+			}
+			$api_ts = is_numeric( $api_date ) ? (int) $api_date : strtotime( $api_date );
+			$wp_ts  = is_numeric( $wp_date ) ? (int) $wp_date : strtotime( $wp_date );
+			if ( $api_ts > 0 && $wp_ts > 0 && $api_ts > $wp_ts ) {
+				++$outdated_count;
+			}
+		}
+
+		$import_count = $new_count + $outdated_count;
+
+		$to_delete    = array_diff( $wp_skus, $api_ids );
+		$delete_count = count( $to_delete );
+
+		return array(
+			'status'          => 'success',
+			'api_count'       => $api_count,
+			'api_total_count' => $api_total_count,
+			'available_count' => $api_count,
+			'filter_tag'      => $filter_tag,
+			'wp_count'        => $wp_count,
+			'import_count'    => $import_count,
+			'new_count'       => $new_count,
+			'outdated_count'  => $outdated_count,
+			'delete_count'    => $delete_count,
+		);
 	}
 }

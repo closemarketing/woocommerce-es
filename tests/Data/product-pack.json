@@ -1,0 +1,43 @@
+[
+	{
+		"id": "6a5e043477d18209880f6099",
+		"kind": "pack",
+		"name": "Example Pack Product (3 units)",
+		"desc": "Example bundle description.",
+		"typeId": "",
+		"contactId": "",
+		"contactName": "",
+		"price": 0,
+		"taxes": [
+			"s_iva_21"
+		],
+		"total": 0,
+		"hasStock": true,
+		"stock": 100,
+		"barcode": "0000000000000",
+		"sku": "PACK-TEST-001",
+		"cost": 1.26,
+		"purchasePrice": "",
+		"weight": 0,
+		"tags": [
+			"example",
+			"pack",
+			"3",
+			"web"
+		],
+		"categoryId": "",
+		"factoryCode": "",
+		"forSale": 1,
+		"forPurchase": 1,
+		"salesChannelId": null,
+		"expAccountId": null,
+		"warehouseId": null,
+		"attributes": [],
+		"packItems": [
+			{
+				"pid": "PACK-ITEM-001",
+				"u": 3
+			}
+		]
+	}
+]

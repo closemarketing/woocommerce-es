@@ -27,7 +27,7 @@ class ALERT {
 	 *
 	 * @return bool Success status.
 	 */
-	public static function send_alert( $subject, $message, $context = array() ) {
+	public static function send_alert( $subject, $message, $context = array(), $is_error = true ) {
 		$settings      = get_option( 'connect_ecommerce_alerts' );
 		$alert_method  = isset( $settings['alert_method'] ) ? $settings['alert_method'] : 'email';
 		$alert_enabled = isset( $settings['alert_enabled'] ) ? $settings['alert_enabled'] : 'no';
@@ -38,20 +38,30 @@ class ALERT {
 
 		// Log to WooCommerce logger always.
 		$logger = wc_get_logger();
-		$logger->error(
-			$subject . ': ' . $message,
-			array(
-				'source'  => 'connect-ecommerce-alerts',
-				'context' => $context,
-			)
-		);
+		if ( $is_error ) {
+			$logger->error(
+				$subject . ': ' . $message,
+				array(
+					'source'  => 'connect-ecommerce-alerts',
+					'context' => $context,
+				)
+			);
+		} else {
+			$logger->info(
+				$subject . ': ' . $message,
+				array(
+					'source'  => 'connect-ecommerce-alerts',
+					'context' => $context,
+				)
+			);
+		}
 
 		$result = false;
 
 		if ( 'email' === $alert_method ) {
-			$result = self::send_email_alert( $subject, $message, $context );
+			$result = self::send_email_alert( $subject, $message, $context, $is_error );
 		} elseif ( 'slack' === $alert_method ) {
-			$result = self::send_slack_alert( $subject, $message, $context );
+			$result = self::send_slack_alert( $subject, $message, $context, $is_error );
 		}
 
 		return $result;
@@ -66,13 +76,15 @@ class ALERT {
 	 *
 	 * @return bool Success status.
 	 */
-	private static function send_email_alert( $subject, $message, $context = array() ) {
+	private static function send_email_alert( $subject, $message, $context = array(), $is_error = true ) {
 		$settings      = get_option( 'connect_ecommerce_alerts' );
 		$email_address = isset( $settings['alert_email'] ) ? $settings['alert_email'] : get_option( 'admin_email' );
 
+		$border_color = $is_error ? '#dc3232' : '#46b450';
+
 		$body  = '<html><body>';
 		$body .= '<h2>' . esc_html( $subject ) . '</h2>';
-		$body .= '<div style="background: #f8f8f8; padding: 15px; margin: 10px 0; border-left: 4px solid #dc3232;">';
+		$body .= '<div style="background: #f8f8f8; padding: 15px; margin: 10px 0; border-left: 4px solid ' . esc_attr( $border_color ) . ';">';
 		$body .= wp_kses_post( $message );
 		$body .= '</div>';
 
@@ -103,7 +115,7 @@ class ALERT {
 	 *
 	 * @return bool Success status.
 	 */
-	private static function send_slack_alert( $subject, $message, $context = array() ) {
+	private static function send_slack_alert( $subject, $message, $context = array(), $is_error = true ) {
 		$settings    = get_option( 'connect_ecommerce_alerts' );
 		$webhook_url = isset( $settings['slack_webhook'] ) ? $settings['slack_webhook'] : '';
 
@@ -111,13 +123,15 @@ class ALERT {
 			return false;
 		}
 
+		$header_emoji = $is_error ? '🚨' : '✅';
+
 		// Build Slack message blocks.
 		$blocks = array(
 			array(
 				'type' => 'header',
 				'text' => array(
 					'type' => 'plain_text',
-					'text' => '🚨 ' . $subject,
+					'text' => $header_emoji . ' ' . $subject,
 				),
 			),
 			array(

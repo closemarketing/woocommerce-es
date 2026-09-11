@@ -10,6 +10,9 @@
 
 namespace CLOSE\ConnectEcommerce\Helpers;
 
+use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
+
 defined( 'ABSPATH' ) || exit;
 
 /**
@@ -18,6 +21,13 @@ defined( 'ABSPATH' ) || exit;
  * @since 1.0.0
  */
 class HELPER {
+	/**
+	 * Default workflows supported by the plugin.
+	 *
+	 * @var array
+	 */
+	private static $default_workflows = array( 'products', 'orders' );
+
 	/**
 	 * Emails products with errors
 	 *
@@ -150,7 +160,6 @@ class HELPER {
 						UNIQUE KEY prod_id (prod_id)
 				) $charset_collate;";
 
-		// @phpstan-ignore-next-line
 		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 		dbDelta( $sql );
 	}
@@ -183,14 +192,14 @@ class HELPER {
 		$time_end = microtime( true );
 
 		$execution_time = round( $time_end - $time_start, 2 );
-		$end = "seg";
+		$end            = 'seg';
 
 		if ( $execution_time > 3600 ) {
 			$execution_time = round( $execution_time / 3600, 2 );
-			$end = "horas";
+			$end            = 'horas';
 		} elseif ( $execution_time > 60 ) {
 			$execution_time = round( $execution_time / 60, 2 );
-			$end = "min";
+			$end            = 'min';
 		}
 		return $execution_time . ' ' . $end;
 	}
@@ -212,5 +221,386 @@ class HELPER {
 		}
 		update_option( 'connect_ecommerce_public', $new_settings );
 		delete_option( 'wces_settings' );
+	}
+
+	/**
+	 * Retrieves the list of workflows supported by connectors.
+	 *
+	 * @return array
+	 */
+	public static function get_workflows() {
+		return self::$default_workflows;
+	}
+
+	/**
+	 * Whether a connector is active and has a given workflow enabled.
+	 *
+	 * Mirrors the filtering used by the connector selectors in the admin UI
+	 * (Widget_Product/Widget_Order/Settings::page_get_sync), so that sync
+	 * entry points (AJAX handlers, cron) enforce the same rule: a connector
+	 * that is inactive, or that has a workflow disabled, must not run that
+	 * workflow's sync even if a connector_id is passed explicitly.
+	 *
+	 * @param array  $connector_meta Connector meta (the 'meta' key of a get_connectors() item, or a connectors_meta entry).
+	 * @param string $workflow       Workflow to check: 'products' or 'orders'.
+	 * @return bool
+	 */
+	public static function is_workflow_enabled_for_connector( $connector_meta, $workflow ) {
+		if ( ! is_array( $connector_meta ) ) {
+			return false;
+		}
+		if ( 'active' !== ( $connector_meta['status'] ?? 'active' ) ) {
+			return false;
+		}
+		return 'yes' === ( $connector_meta['workflows'][ $workflow ] ?? 'yes' );
+	}
+
+	/**
+	 * Get connector of plugin (legacy helper).
+	 *
+	 * @param array $options Options of plugin.
+	 * @return array
+	 */
+	public static function get_connector( $options ) {
+		$connectors_data = self::get_connectors( $options );
+		$connectors      = $connectors_data['items'];
+
+		if ( empty( $connectors ) ) {
+			return array(
+				'id'           => '',
+				'connector'    => '',
+				'settings_all' => $connectors_data['settings_all'],
+				'settings'     => array(
+					'prod_mergevars'    => get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array(),
+					'payment_methods'   => array(),
+					'treasury_accounts' => array(),
+				),
+				'all_options'  => $options,
+			);
+		}
+
+		$active_id = $connectors_data['active'];
+		if ( empty( $active_id ) || ! isset( $connectors[ $active_id ] ) ) {
+			$active_id = array_key_first( $connectors );
+		}
+
+		return $connectors[ $active_id ];
+	}
+
+	/**
+	 * Returns a specific connector by ID.
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @param array  $options Connector definitions.
+	 * @return array|null Connector data or null if not found.
+	 */
+	public static function get_connector_by_id( $connector_id, $options ) {
+		$connectors_data = self::get_connectors( $options );
+		$connectors      = $connectors_data['items'];
+
+		if ( ! isset( $connectors[ $connector_id ] ) ) {
+			return null;
+		}
+
+		return $connectors[ $connector_id ];
+	}
+
+	/**
+	 * Returns every connector context configured in the site.
+	 *
+	 * @param array $options Connector definitions.
+	 * @return array
+	 */
+	public static function get_connectors( $options ) {
+		$settings_all = get_option( 'connect_ecommerce', array() );
+		$normalized   = self::normalize_connectors_structure( $settings_all, $options );
+
+		if ( $normalized['dirty'] ) {
+			update_option( 'connect_ecommerce', $normalized['settings_all'] );
+		}
+
+		$connectors    = array();
+		$meta          = $normalized['connectors_meta'];
+		$active        = $normalized['active_connector'];
+		$prod_mergevar = get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] ?? array();
+
+		foreach ( $meta as $connector_id => $connector_meta ) {
+			$connectors[ $connector_id ] = self::build_connector_context(
+				$connector_id,
+				$connector_meta,
+				$options,
+				$normalized['settings_all'],
+				$prod_mergevar
+			);
+		}
+
+		return array(
+			'items'        => $connectors,
+			'active'       => $active,
+			'settings_all' => $normalized['settings_all'],
+			'meta'         => $meta,
+		);
+	}
+
+	/**
+	 * Normalize connectors setup to the new structure.
+	 *
+	 * @param array $settings_all Raw option value.
+	 * @param array $options Connector definitions.
+	 * @return array
+	 */
+	private static function normalize_connectors_structure( $settings_all, $options ) {
+		$settings_all    = is_array( $settings_all ) ? $settings_all : array();
+		$connectors_meta = $settings_all['connectors_meta'] ?? array();
+		$dirty           = false;
+
+		if ( empty( $connectors_meta ) ) {
+			$legacy_connector = isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
+			if ( $legacy_connector && isset( $settings_all[ $legacy_connector ] ) ) {
+				$connectors_meta[ $legacy_connector ] = array(
+					'type'      => $legacy_connector,
+					'label'     => $options[ $legacy_connector ]['name'] ?? ucfirst( $legacy_connector ),
+					'workflows' => array(
+						'products' => 'yes',
+						'orders'   => 'yes',
+					),
+					'status'    => 'active',
+				);
+				$dirty                                = true;
+			}
+		}
+
+		// Ensure every connector meta entry has defaults.
+		foreach ( $connectors_meta as $connector_id => $meta ) {
+			$new_meta = array(
+				'type'      => $meta['type'] ?? $connector_id,
+				'label'     => $meta['label'] ?? ( $options[ $meta['type'] ?? $connector_id ]['name'] ?? $connector_id ),
+				'workflows' => $meta['workflows'] ?? array(),
+				'status'    => $meta['status'] ?? 'active',
+			);
+
+			foreach ( self::$default_workflows as $workflow ) {
+				if ( ! isset( $new_meta['workflows'][ $workflow ] ) ) {
+					$new_meta['workflows'][ $workflow ] = 'yes';
+				}
+			}
+
+			if ( $new_meta !== $meta ) {
+				$connectors_meta[ $connector_id ] = $new_meta;
+				$dirty                            = true;
+			}
+		}
+
+		$settings_all['connectors_meta'] = $connectors_meta;
+
+		if ( empty( $settings_all['connector'] ) && ! empty( $connectors_meta ) ) {
+			$settings_all['connector'] = array_key_first( $connectors_meta );
+			$dirty                     = true;
+		}
+
+		return array(
+			'settings_all'     => $settings_all,
+			'connectors_meta'  => $connectors_meta,
+			'active_connector' => $settings_all['connector'] ?? '',
+			'dirty'            => $dirty,
+		);
+	}
+
+	/**
+	 * Build connector context consumed across the plugin.
+	 *
+	 * @param string $connector_id Connector identifier.
+	 * @param array  $meta         Metadata for connector.
+	 * @param array  $options      Connector definitions.
+	 * @param array  $settings_all Raw settings option.
+	 * @param array  $prod_mergevar Merge vars settings.
+	 * @return array
+	 */
+	private static function build_connector_context( $connector_id, $meta, $options, $settings_all, $prod_mergevar ) {
+		$connector_type    = $meta['type'] ?? $connector_id;
+		$connector_options = $options[ $connector_type ] ?? array();
+		$connector         = array(
+			'id'           => $connector_id,
+			'connector'    => $connector_type,
+			'meta'         => $meta,
+			'settings_all' => $settings_all,
+			'settings'     => $settings_all[ $connector_id ] ?? array(),
+			'all_options'  => $options,
+		);
+
+		$connector['settings']['prod_mergevars']    = $prod_mergevar;
+		$connector['settings']['payment_methods']   = array();
+		$connector['settings']['treasury_accounts'] = array();
+		$connector['is_disabled_orders']            = false;
+		$connector['is_disabled_ai']                = false;
+		$connector['is_mergevars']                  = false;
+
+		$payment_methods_enabled = ! array_key_exists( 'payment_methods', $connector_options ) || ! empty( $connector_options['payment_methods'] );
+		if ( $payment_methods_enabled ) {
+			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector_id, $connector_type );
+			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+		}
+
+		// Defensive fallback for sites that haven't re-saved settings since upgrading.
+		// Connector add-ons (e.g. connect-woocommerce-neo) read `tax_option` straight
+		// from get_option( 'connect_ecommerce' ) in their own constructor rather than
+		// from this resolved array, so the fallback must be persisted back to the
+		// option itself — not just applied to this in-memory copy — or those add-ons
+		// keep seeing the raw/missing value.
+		$tax_option_pref = self::get_tax_option_pref( $connector['settings'] );
+		$tax_option      = self::resolve_tax_option( $tax_option_pref );
+		if ( ( $connector['settings']['tax_option_pref'] ?? null ) !== $tax_option_pref
+			|| ( $connector['settings']['tax_option'] ?? null ) !== $tax_option
+		) {
+			$connector['settings']['tax_option_pref']         = $tax_option_pref;
+			$connector['settings']['tax_option']              = $tax_option;
+			$settings_all[ $connector_id ]['tax_option_pref'] = $tax_option_pref;
+			$settings_all[ $connector_id ]['tax_option']      = $tax_option;
+			update_option( 'connect_ecommerce', $settings_all );
+		}
+
+		if ( empty( $connector_options ) || empty( $connector_options['name'] ) ) {
+			$connector['actions'] = array(
+				'sync_products' => self::get_connector_action_name( 'connect_ecommerce_sync_products', $connector_id ),
+				'sync_orders'   => self::get_connector_action_name( 'connect_ecommerce_sync_orders', $connector_id ),
+				'single_order'  => self::get_connector_action_name( 'sync_erp_order', $connector_id ),
+			);
+			return $connector;
+		}
+
+		$connector['options']            = $connector_options;
+		$apiname                         = 'Connect_Ecommerce_' . $connector_options['name'];
+		$connector['is_disabled_orders'] = isset( $connector_options['disable_modules'] ) && in_array( 'order', $connector_options['disable_modules'], true );
+		$connector['is_disabled_ai']     = isset( $connector_options['disable_modules'] ) && in_array( 'ai', $connector_options['disable_modules'], true );
+
+		if ( class_exists( $apiname ) ) {
+			$connector['connapi_erp']  = new $apiname( $options, $connector_id );
+			$connector['is_mergevars'] = self::connector_supports( $connector['connapi_erp'], 'get_product_attributes' );
+		}
+
+		$connector['actions'] = array(
+			'sync_products' => self::get_connector_action_name( 'connect_ecommerce_sync_products', $connector_id ),
+			'sync_orders'   => self::get_connector_action_name( 'connect_ecommerce_sync_orders', $connector_id ),
+			'single_order'  => self::get_connector_action_name( 'sync_erp_order', $connector_id ),
+		);
+
+		return $connector;
+	}
+
+	/**
+	 * Generates a sanitized action name for a connector.
+	 *
+	 * @param string $base_action Base action name.
+	 * @param string $connector_id Connector identifier.
+	 * @return string
+	 */
+	public static function get_connector_action_name( $base_action, $connector_id ) {
+		$connector_id = sanitize_key( $connector_id );
+		if ( empty( $connector_id ) ) {
+			return sanitize_key( $base_action );
+		}
+		return sanitize_key( $base_action . '_' . $connector_id );
+	}
+
+	/**
+	 * Checks whether a connector implements an optional capability.
+	 *
+	 * Legacy connectors keep their method-based capability detection. Connectors
+	 * using the shared contract must override an optional method to enable it.
+	 *
+	 * @param object $connector Connector API instance.
+	 * @param string $method Connector method name.
+	 * @return bool
+	 */
+	public static function connector_supports( $connector, $method ) {
+		if ( ! is_object( $connector ) || ! method_exists( $connector, $method ) ) {
+			return false;
+		}
+
+		if ( $connector instanceof CONECOM_Abstract_Connector_API ) {
+			return $connector->supports_capability( $method );
+		}
+
+		return true;
+	}
+
+	/**
+	 * Determine the "Get prices with Tax?" preference from a connector settings array,
+	 * migrating the pre-"Default" `tax_option` value and the short-lived 3.3.4 `tax_price` key.
+	 *
+	 * @param array $settings Connector settings array, as stored.
+	 * @return string 'default', 'yes' or 'no'.
+	 */
+	public static function get_tax_option_pref( $settings ) {
+		if ( isset( $settings['tax_option_pref'] ) ) {
+			return $settings['tax_option_pref'];
+		}
+		if ( isset( $settings['tax_option'] ) ) {
+			return $settings['tax_option'];
+		}
+		if ( isset( $settings['tax_price'] ) ) {
+			return $settings['tax_price'];
+		}
+		return 'default';
+	}
+
+	/**
+	 * Resolve a "Get prices with Tax?" preference to a concrete 'yes'/'no', following
+	 * WooCommerce's own "Prices entered with tax" setting when the preference is "default".
+	 *
+	 * @param string $preference 'default', 'yes' or 'no'.
+	 * @return string 'yes' or 'no'.
+	 */
+	public static function resolve_tax_option( $preference ) {
+		if ( 'yes' === $preference || 'no' === $preference ) {
+			return $preference;
+		}
+		return 'yes' === get_option( 'woocommerce_prices_include_tax' ) ? 'yes' : 'no';
+	}
+
+	/**
+	 * Keep the "Get prices with Tax?" setting in sync with WooCommerce's own tax setting
+	 * whenever a connector's preference is "Default". Hooked on
+	 * `update_option_woocommerce_prices_include_tax` so connector add-ons that read
+	 * `tax_option` straight from the `connect_ecommerce` option always get 'yes'/'no',
+	 * even without the plugin's settings form being re-saved.
+	 *
+	 * Iterates every configured connector (multi-connector aware), not just the active one.
+	 *
+	 * @return void
+	 */
+	public static function sync_tax_option_with_woocommerce() {
+		$settings_all    = get_option( 'connect_ecommerce' );
+		$connectors_meta = is_array( $settings_all ) ? ( $settings_all['connectors_meta'] ?? array() ) : array();
+
+		if ( empty( $connectors_meta ) ) {
+			// Not yet migrated to the multi-connector structure: fall back to the single active connector.
+			$connector = is_array( $settings_all ) && isset( $settings_all['connector'] ) ? $settings_all['connector'] : '';
+			if ( empty( $connector ) || empty( $settings_all[ $connector ] ) ) {
+				return;
+			}
+			$connectors_meta = array( $connector => array() );
+		}
+
+		$dirty = false;
+		foreach ( array_keys( $connectors_meta ) as $connector_id ) {
+			if ( empty( $settings_all[ $connector_id ] ) ) {
+				continue;
+			}
+
+			$tax_option_pref = self::get_tax_option_pref( $settings_all[ $connector_id ] );
+			if ( 'default' !== $tax_option_pref ) {
+				continue;
+			}
+
+			$settings_all[ $connector_id ]['tax_option_pref'] = $tax_option_pref;
+			$settings_all[ $connector_id ]['tax_option']      = self::resolve_tax_option( $tax_option_pref );
+			$dirty = true;
+		}
+
+		if ( $dirty ) {
+			update_option( 'connect_ecommerce', $settings_all );
+		}
 	}
 }

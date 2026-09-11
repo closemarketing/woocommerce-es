@@ -5,7 +5,7 @@
  * Description:       Connects Ecommerce WooCommerce to ERPs and CRMs. Syncs products, customers, orders and stock. Includes EU VAT Compliance. Import European Taxes and check VAT compliance.
  * Author:            Closetechnology
  * Author URI:        https://close.technology/
- * Version:           3.2.1-beta.1
+ * Version:           3.5.0-beta.2
  * Requires PHP:      7.4
  * Requires at least: 6.3
  * Text Domain:       woocommerce-es
@@ -20,13 +20,27 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'CONECOM_VERSION', '3.2.1-beta.1' );
+define( 'CONECOM_VERSION', '3.5.0-beta.2' );
 define( 'CONECOM_FILE', __FILE__ );
 define( 'CONECOM_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'CONECOM_PLUGIN_PATH', plugin_dir_path( __FILE__ ) );
-define( 'CONECOM_SHOP_URL', 'https://close.technology/' );
+define( 'CONECOM_SYNC_PRODUCTS_PER_BATCH', 50 );
+define(
+	'CONECOM_VAT_FIELD_SLUGS',
+	array(
+		'_billing_vat',
+		'_billing_nif',
+		'_billing_vat_number',
+		'billing_vat',
+		'billing_cif',
+		'_wc_billing/connect_ecommerce/billing_vat',  // Blocks checkout billing field.
+		'_wc_shipping/connect_ecommerce/billing_vat', // Blocks checkout shipping field.
+		'VAT Number',
+	)
+);
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
+require_once CONECOM_PLUGIN_PATH . 'includes/Connector/Abstract_Connector_API.php';
 
 /**
  * Gets the options for the plugin.
@@ -49,7 +63,6 @@ function conecom_get_options() {
 				'plugin_name'                => 'Connect WooCommerce Clientify',
 				'plugin_slug'                => 'connect-ecommerce-clientify',
 				'disable_modules'            => array( 'subscription' ),
-				'api_url'                    => CONECOM_SHOP_URL,
 				'api_pagination'             => 100,
 				'product_price_tax_option'   => true,
 				'product_price_rate_option'  => false,
@@ -69,6 +82,33 @@ function conecom_get_options() {
 				'table_sync'                 => $wpdb->prefix . 'sync_conecom-clientify',
 				'file'                       => __FILE__,
 			),
+			'brevo'     => array(
+				'name'                       => 'Brevo',
+				'slug'                       => 'conecom-brevo',
+				'version'                    => CONECOM_VERSION,
+				'plugin_name'                => 'Connect WooCommerce Brevo',
+				'plugin_slug'                => 'connect-ecommerce-brevo',
+				'disable_modules'            => array( 'subscription', 'product' ),
+				'api_pagination'             => 100,
+				'product_price_tax_option'   => false,
+				'product_price_rate_option'  => false,
+				'product_option_stock'       => false,
+				'order_send_attachments'     => false,
+				'order_sync_partial'         => true,
+				'order_import_free_order'    => true,
+				'order_only_order_completed' => 'completed',
+				'order_tags'                 => true,
+				'settings_logo'              => CONECOM_PLUGIN_URL . 'includes/Connector/assets/brevo-logo.svg',
+				'settings_admin_message'     => sprintf(
+					// translators: %s url of Brevo API keys page.
+					__( 'Put your Brevo API key in order to connect and sync orders. You can find it here <a href = "%s" target = "_blank">Brevo API Keys</a>.', 'woocommerce-es' ),
+					'https://app.brevo.com/settings/keys/api'
+				),
+				'settings_special_tabs'      => array(),
+				'settings_fields'            => array( 'apipassword' ),
+				'table_sync'                 => $wpdb->prefix . 'sync_conecom-brevo',
+				'file'                       => __FILE__,
+			),
 		)
 	);
 }
@@ -82,6 +122,7 @@ add_action( 'init', 'conecom_loads' );
 function conecom_loads() {
 	require_once CONECOM_PLUGIN_PATH . 'includes/Plugin_Main.php';
 	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-clientify.php';
+	require_once CONECOM_PLUGIN_PATH . 'includes/Connector/class-api-brevo.php';
 
 	$conecom_options = conecom_get_options();
 	new CLOSE\ConnectEcommerce\Base( $conecom_options );
@@ -103,12 +144,16 @@ if ( defined( 'WP_CLI' ) && WP_CLI ) {
 	add_action( 'cli_init', 'conecom_import_products_register_commands', 20 );
 }
 
-register_activation_hook( __FILE__, 'conecom_move_settings' );
+register_activation_hook( __FILE__, 'conecom_activation' );
 /**
- * Move settings from old plugin to new plugin
+ * Runs on plugin activation: migrates legacy settings and queues the setup wizard redirect.
  *
  * @return void
  */
-function conecom_move_settings() {
+function conecom_activation() {
 	CLOSE\ConnectEcommerce\Helpers\HELPER::move_settings();
+
+	if ( ! get_option( 'conecom_wizard_complete' ) ) {
+		set_transient( 'conecom_wizard_redirect', true, 30 );
+	}
 }

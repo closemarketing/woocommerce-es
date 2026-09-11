@@ -1,6 +1,10 @@
 #Wordpress
 vendor/
 node_modules/
+
+# AI
+.claude/
+
 # Numerous always-ignore extensions
 *.log
 *.zip
@@ -9,3 +13,6 @@ node_modules/
 # OS or Editor folders
 ._*.cache
 .phpunit.result.cache
+
+# Data
+tests/DataClients
