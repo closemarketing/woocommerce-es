@@ -143,8 +143,11 @@ class Orders {
 		$current_tab               = isset( $_GET['tab'] ) ? sanitize_text_field( wp_unslash( $_GET['tab'] ) ) : '';
 		$current_subtab            = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : 'sync_products';
 
+		// No 'tab' param means the page defaults to the active connector's tab (see Settings::create_admin_page).
+		$is_connector_tab = '' === $current_tab || 0 === strpos( $current_tab, 'connector_' );
+
 		$is_sync_page = $is_connect_ecommerce_page
-			&& 0 === strpos( $current_tab, 'connector_' )
+			&& $is_connector_tab
 			&& in_array( $current_subtab, array( 'sync_products', 'sync_orders' ), true );
 
 		if ( $is_sync_page ) {
