@@ -361,6 +361,13 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( 50, $refund->get_amount() );
 		$this->assertEquals( $order->get_id(), $refund->get_parent_id() );
 		$this->assertEquals( 'completed', $refund->get_status() );
+
+		// The ERP doc/invoice id must be tracked on the refund itself, not the
+		// parent order, so a second refund on the same order doesn't overwrite it.
+		$refund = wc_get_order( $refund->get_id() );
+		$this->assertNotEmpty( $refund->get_meta( '_conecom-test_refund_doc_id', true ) );
+		$order = wc_get_order( $order->get_id() );
+		$this->assertEmpty( $order->get_meta( '_conecom-test_refund_doc_id', true ) );
 	}
 
 	public function test_create_order_tax_types_without_errors() {

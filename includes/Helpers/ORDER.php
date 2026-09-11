@@ -149,14 +149,18 @@ class ORDER {
 
 		$result = $api_erp->create_refund( $settings, $refund_data['refund_data'] );
 		$order  = $refund_data['order'];
+		$refund = $refund_data['refund'];
 
 		if ( 'error' === $result['status'] ) {
 			$order_msg = __( 'Error syncing refund with ERP, ID: ', 'woocommerce-es' ) . $result['message'];
 		} else {
 			$order_msg = __( 'Refund synced correctly with ERP, ID: ', 'woocommerce-es' ) . $result['document_id'];
-			$order->update_meta_data( '_' . $option_prefix . '_refund_doc_id', $result['document_id'] );
-			$order->update_meta_data( '_' . $option_prefix . '_refund_invoice_id', $result['invoice_id'] );
-			$order->save();
+			// Stored on the refund itself (not the parent order) so each refund of a
+			// multi-refund order keeps its own ERP doc/invoice id instead of the
+			// last-synced refund overwriting the others.
+			$refund->update_meta_data( '_' . $option_prefix . '_refund_doc_id', $result['document_id'] );
+			$refund->update_meta_data( '_' . $option_prefix . '_refund_invoice_id', $result['invoice_id'] );
+			$refund->save();
 		}
 		$order->add_order_note( $order_msg );
 
@@ -552,10 +556,17 @@ class ORDER {
 			$order_label_id
 		);
 
+		// Holded reuses/overwrites the existing draft document for a repeated
+		// woocommerceOrderId instead of creating a new one. Since one order can
+		// have several partial refunds, each must get its own id here (the
+		// refund's, not the parent order's) or a second refund would silently
+		// clobber the first one's credit note in Holded.
+		$refund_label_id = self::generate_label_id( $refund->get_id() );
+
 		$refund_data = array(
 			'contactCode'          => $contact_vat,
-			'woocommerceOrderId'   => self::generate_label_id( $order->get_id() ),
-			'woocommerceReference' => $prefix . $order_label_id,
+			'woocommerceOrderId'   => $refund_label_id,
+			'woocommerceReference' => $prefix . $order_label_id . '-R' . $refund_label_id,
 			'date'                 => strtotime( $refund->get_date_created()->date( 'Y-m-d H:i:s' ) ),
 			'notes'                => $notes,
 			'approveDoc'           => false,
@@ -572,6 +583,7 @@ class ORDER {
 		return array(
 			'refund_data' => $refund_data,
 			'order'       => $order,
+			'refund'      => $refund,
 		);
 	}
 

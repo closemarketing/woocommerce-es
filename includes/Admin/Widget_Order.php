@@ -212,11 +212,9 @@ class Widget_Order {
 			}
 
 			foreach ( $refunds as $refund ) {
-				$refund_id  = $refund->get_id();
-				$refund_key = '_' . $options['slug'] . '_refund_doc_id';
-				// create_refund_invoice() stores the refund doc/invoice meta on the parent
-				// order (not on the refund object itself), so read it from $order.
-				$refund_doc_id = $order->get_meta( $refund_key, true );
+				$refund_id     = $refund->get_id();
+				$refund_key    = '_' . $options['slug'] . '_refund_doc_id';
+				$refund_doc_id = $refund->get_meta( $refund_key, true );
 
 				echo '<tr><td>';
 				echo esc_html__( 'Refund', 'woocommerce-es' ) . ' #' . esc_html( $refund_id );
