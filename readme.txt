@@ -237,6 +237,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 * Fixed: Pack/bundle products synced from the ERP with WPC Product Bundles for WooCommerce active now correctly reference their bundled sub-products (previously stored as a literal "Array/qty" string) and get a non-zero price, falling back to the sum of the bundled items when the ERP reports no pack price.
 * Fixed: A term name/taxonomy clash while assigning ERP category terms to a product (term_exists()/wp_insert_term() returning a WP_Error) no longer causes a fatal error; that term is now skipped and the rest of the hierarchy is still processed.
 * Fixed: VAT number entered in the WooCommerce Blocks checkout is now correctly detected and sent to the ERP/CRM, fixing a lookup that added a duplicate underscore to already-prefixed meta keys and was missing the billing-address meta key WooCommerce Blocks actually saves the field under.
+* Enhancement: Add support to send refund to ERP when an order is refunded.
 
 = 3.4.0 =
 * Fixed: Products imported from the ERP always got WooCommerce's standard tax class, ignoring the actual tax configured in the ERP. Products now read the ERP's tax key (e.g. Holded's `s_iva_21`) and resolve it to a WooCommerce tax class via the existing "ERP Tax Type" mapping (WooCommerce > Settings > Tax) — the same mapping already used for the order sync direction.
@@ -345,7 +346,6 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = 3.2.1 =
 * Enhancement: Added support to send alerts to admin when there are errors in the products sync, and orders sent to ERP.
-* Enhancement: Add support to send refund to ERP when an order is refunded.
 * Fixed: Terms and conditions validation user registration not applies in Admin.
 * Fixed: Error in VAT info in WooCommerce PDF Invoices & Packing Slips.
 
