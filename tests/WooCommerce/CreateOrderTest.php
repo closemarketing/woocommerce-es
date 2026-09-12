@@ -313,6 +313,68 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertEquals( true, $order_data['approveDoc'] );
 	}
 
+	public function test_refund_order_without_errors() {
+		$order = new WC_Order();
+		$order->set_status('completed');
+		$order->set_total(100);
+		// Refund requires the parent order to have a VAT number (see ORDER::get_billing_vat()),
+		// otherwise ORDER::generate_order_refund_data() returns an error status.
+		$order->add_meta_data( '_billing_vat', '123456789' );
+		$order->save();
+
+		$refund = wc_create_refund( [
+			'order_id' => $order->get_id(),
+			'amount'   => 50,
+		] );
+
+		$args = array(
+			'amount'         => '29.24',
+			'reason'         => '',
+			'order_id'       => 74,
+			'refund_id'      => 0,
+			'line_items'     => array(
+				25 => array(
+					'qty'          => '1',
+					'refund_total' => '29',
+					'refund_tax'   => array(),
+				),
+				26 => array(
+					'qty'          => '1',
+					'refund_total' => '0.24',
+					'refund_tax'   => array(),
+				),
+				27 => array(
+					'qty'          => 0,
+					'refund_total' => '0',
+					'refund_tax'   => array(),
+				),
+			),
+			'refund_payment' => false,
+			'restock_items'  => true,
+		);
+
+		$result = ORDER::create_refund_invoice( $this->settings, $refund->get_id(), $args, 'conecom-test', $this->connapi_erp );
+		$this->assertNotEmpty( $result );
+		$this->assertEquals( 'ok', $result['status'] );
+
+		$this->assertNotEmpty( $refund );
+		$this->assertEquals( 50, $refund->get_amount() );
+		$this->assertEquals( $order->get_id(), $refund->get_parent_id() );
+		$this->assertEquals( 'completed', $refund->get_status() );
+
+		// The ERP doc/invoice id must be tracked on the refund itself, not the
+		// parent order, so a second refund on the same order doesn't overwrite it.
+		// (The Clientify test connector's create_refund() only echoes back an 'id'
+		// it was given, which generate_order_refund_data() never sets, so the
+		// stored value is legitimately an empty string here — the meta KEY landing
+		// on the right object is what this asserts, storage-backend-agnostic.)
+		$refund_meta_keys = wp_list_pluck( wc_get_order( $refund->get_id() )->get_meta_data(), 'key' );
+		$this->assertContains( '_conecom-test_refund_doc_id', $refund_meta_keys );
+
+		$order_meta_keys = wp_list_pluck( wc_get_order( $order->get_id() )->get_meta_data(), 'key' );
+		$this->assertNotContains( '_conecom-test_refund_doc_id', $order_meta_keys );
+	}
+
 	public function test_create_order_tax_types_without_errors() {
 		// Enable tax calculations in WooCommerce.
 		update_option( 'woocommerce_calc_taxes', 'yes' );

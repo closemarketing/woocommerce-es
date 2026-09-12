@@ -118,6 +118,61 @@ class ORDER {
 	}
 
 	/**
+	 * Create refund invoice
+	 *
+	 * @param array  $settings Settings data.
+	 * @param int    $refund_id Refund id.
+	 * @param array  $args Arguments.
+	 * @param string $option_prefix Option prefix.
+	 * @param object $api_erp API ERP.
+	 *
+	 * @return array
+	 */
+	public static function create_refund_invoice( $settings, $refund_id, $args, $option_prefix, $api_erp ) {
+		if ( ! method_exists( $api_erp, 'create_refund' ) ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'API ERP does not support create refund', 'woocommerce-es' ),
+			);
+		}
+		$refund_data = self::generate_order_refund_data( $settings, $refund_id, $args );
+
+		// Check if there was an error generating refund data.
+		if ( isset( $refund_data['error'] ) && true === $refund_data['error'] ) {
+			return array(
+				'status'      => 'error',
+				'message'     => $refund_data['message'],
+				'document_id' => '',
+				'invoice_id'  => '',
+			);
+		}
+
+		$result = $api_erp->create_refund( $settings, $refund_data['refund_data'] );
+		$order  = $refund_data['order'];
+		$refund = $refund_data['refund'];
+
+		if ( 'error' === $result['status'] ) {
+			$order_msg = __( 'Error syncing refund with ERP, ID: ', 'woocommerce-es' ) . $result['message'];
+		} else {
+			$order_msg = __( 'Refund synced correctly with ERP, ID: ', 'woocommerce-es' ) . $result['document_id'];
+			// Stored on the refund itself (not the parent order) so each refund of a
+			// multi-refund order keeps its own ERP doc/invoice id instead of the
+			// last-synced refund overwriting the others.
+			$refund->update_meta_data( '_' . $option_prefix . '_refund_doc_id', $result['document_id'] );
+			$refund->update_meta_data( '_' . $option_prefix . '_refund_invoice_id', $result['invoice_id'] );
+			$refund->save();
+		}
+		$order->add_order_note( $order_msg );
+
+		return array(
+			'status'      => $result['status'],
+			'message'     => $order_msg,
+			'document_id' => $result['document_id'] ?? '',
+			'invoice_id'  => $result['invoice_id'] ?? '',
+		);
+	}
+
+	/**
 	 * Generate data for Order ERP
 	 *
 	 * @param object $settings Settings data.
@@ -127,7 +182,7 @@ class ORDER {
 	 * @return array
 	 */
 	public static function generate_order_data( $settings, $order, $option_prefix ) {
-		$order_label_id = is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order->get_id() : $order->get_id();
+		$order_label_id = self::generate_label_id( $order->get_id() );
 		$doclang        = $order->get_billing_country() !== 'ES' ? 'en' : 'es';
 		$shop_url       = wc_get_endpoint_url( 'shop' );
 
@@ -169,10 +224,7 @@ class ORDER {
 		$contact_code = self::get_billing_vat( $order );
 
 		// Order Reference.
-		$http_host   = isset( $_SERVER['HTTP_HOST'] ) ? wp_unslash( $_SERVER['HTTP_HOST'] ) : wp_parse_url( home_url(), PHP_URL_HOST );
-		$base_domain = basename( sanitize_text_field( (string) $http_host ) );
-		$base_domain = str_replace( 'www.', '', $base_domain );
-		$prefix      = $base_domain . '_';
+		$prefix = self::generate_prefix();
 
 		/**
 		 * ## Fields
@@ -424,7 +476,7 @@ class ORDER {
 	}
 
 	/**
-	 * Get tax rate
+	 * Get taxes for an order item.
 	 *
 	 * - Strategy: "Key Only".
 	 * - Gets the key configured in WooCommerce (e.g.: s_ivait22).
@@ -468,6 +520,116 @@ class ORDER {
 	}
 
 	/**
+	 * Generate order refund data
+	 *
+	 * @param array  $settings Settings plugin.
+	 * @param string $refund_id Refund id.
+	 * @param array  $args Args.
+	 *
+	 * @return array
+	 */
+	public static function generate_order_refund_data( $settings, $refund_id, $args ) {
+		$refund         = wc_get_order( $refund_id );
+		$order          = wc_get_order( $refund->get_parent_id() );
+		$order_label_id = self::generate_label_id( $order->get_id() );
+		$prefix         = self::generate_prefix();
+
+		// Check if contact has VAT number.
+		$contact_vat = self::get_billing_vat( $order );
+		if ( empty( $contact_vat ) ) {
+			return array(
+				'error'  => true,
+				'status' => 'error',
+				'message' => __( 'Cannot create refund: Contact does not have a VAT number', 'woocommerce-es' ),
+			);
+		}
+
+		$refunded_by_id   = $refund->get_refunded_by();
+		$refunded_by_user = ! empty( $refunded_by_id ) ? get_userdata( $refunded_by_id ) : null;
+		$refunded_by_name = $refunded_by_user ? $refunded_by_user->display_name : __( 'Unknown', 'woocommerce-es' );
+
+		$notes = sprintf(
+			/* translators: 1: Refunded by 2: Refund reason 3: Order label id */
+			__( 'Refunded by: %1$s - %2$s from order %3$s', 'woocommerce-es' ),
+			$refunded_by_name,
+			$refund->get_reason(),
+			$order_label_id
+		);
+
+		// Holded reuses/overwrites the existing draft document for a repeated
+		// woocommerceOrderId instead of creating a new one. Since one order can
+		// have several partial refunds, each must get its own id here (the
+		// refund's, not the parent order's) or a second refund would silently
+		// clobber the first one's credit note in Holded.
+		$refund_label_id = self::generate_label_id( $refund->get_id() );
+
+		$refund_data = array(
+			'contactCode'          => $contact_vat,
+			'woocommerceOrderId'   => $refund_label_id,
+			'woocommerceReference' => $prefix . $order_label_id . '-R' . $refund_label_id,
+			'date'                 => strtotime( $refund->get_date_created()->date( 'Y-m-d H:i:s' ) ),
+			'notes'                => $notes,
+			'approveDoc'           => false,
+		);
+
+		// Approve document.
+		$approve_document = isset( $settings['approve_document'] ) ? $settings['approve_document'] : 'no';
+		if ( 'yes' === $approve_document ) {
+			$refund_data['approveDoc'] = true;
+		}
+
+		$refund_data['items'] = self::generate_refund_items( $order, $refund, $args );
+
+		return array(
+			'refund_data' => $refund_data,
+			'order'       => $order,
+			'refund'      => $refund,
+		);
+	}
+
+	/**
+	 * Generate refund items
+	 *
+	 * @param object $order Order object.
+	 * @param object $refund Refund object.
+	 * @param array  $args Refund args.
+	 *
+	 * @return array
+	 */
+	public static function generate_refund_items( $order, $refund, $args ) {
+		$items = array();
+		foreach ( $args['line_items'] as $item_id => $item ) {
+			if ( 0 === (int) $item['qty'] ) {
+				continue;
+			}
+			$order_item = $order->get_item( $item_id );
+			if ( ! $order_item ) {
+				continue;
+			}
+
+			$product = $order_item->get_product();
+			if ( ! $product ) {
+				continue;
+			}
+
+			$item_data = array(
+				'name'     => $product->get_name(),
+				'sku'      => $product->get_sku(),
+				'units'    => $item['qty'],
+				'subtotal' => $item['refund_total'],
+			);
+
+			$item_data = array_merge(
+				$item_data,
+				self::get_taxes( $order_item )
+			);
+
+			$items[] = $item_data;
+		}
+		return $items;
+	}
+
+	/**
 	 * Gets Billing VAT info from order
 	 *
 	 * @param object $order Order object to get info.
@@ -490,6 +652,29 @@ class ORDER {
 			}
 		}
 		return sanitize_text_field( $contact_code );
+	}
+
+	/**
+	 * Generate reference
+	 *
+	 * @param int $order_id Order id.
+	 *
+	 * @return int
+	 */
+	private static function generate_label_id( $order_id ) {
+		return is_multisite() ? ( get_current_blog_id() * 100000000 ) + $order_id : $order_id;
+	}
+
+	/**
+	 * Generate prefix
+	 *
+	 * @return string
+	 */
+	private static function generate_prefix() {
+		$http_host   = isset( $_SERVER['HTTP_HOST'] ) ? wp_unslash( $_SERVER['HTTP_HOST'] ) : wp_parse_url( home_url(), PHP_URL_HOST );
+		$base_domain = basename( sanitize_text_field( (string) $http_host ) );
+		$base_domain = str_replace( 'www.', '', $base_domain );
+		return $base_domain . '_';
 	}
 
 	/**

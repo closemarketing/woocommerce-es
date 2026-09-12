@@ -105,10 +105,11 @@ class Orders {
 			add_action( 'woocommerce_order_status_processing', array( $this, 'send_order_erp' ) );
 			add_action( 'woocommerce_order_status_refunded', array( $this, 'send_order_erp' ) );
 			add_action( 'woocommerce_order_status_cancelled', array( $this, 'send_order_erp' ) );
-			add_action( 'woocommerce_refund_created', array( $this, 'refunded_created' ), 10, 2 );
 		} elseif ( 'paid' === $ecstatus ) {
 			add_action( 'woocommerce_payment_complete', array( $this, 'send_order_erp' ) );
 		}
+		add_action( 'woocommerce_refund_created', array( $this, 'refunded_created' ), 10, 2 );
+
 		// With "manual", the document is only created on request (order metabox button
 		// or manual sync), so none of the automatic status hooks are registered, including
 		// the "completed" one that otherwise always applies regardless of $ecstatus.
@@ -210,6 +211,7 @@ class Orders {
 	 * @return void
 	 */
 	public function refunded_created( $refund_id, $args ) {
+		ORDER::create_refund_invoice( $this->settings, $refund_id, $args, $this->options['slug'], $this->connapi_erp );
 	}
 
 	/**
@@ -557,6 +559,35 @@ class Orders {
 
 		if ( 'erp-post' === $type ) {
 			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder, $options['name'] );
+		} elseif ( 'erp-refund' === $type ) {
+			// Get refund object.
+			$refund = wc_get_order( $order_id );
+			if ( ! $refund || 'shop_order_refund' !== $refund->get_type() ) {
+				wp_send_json_error( array( 'message' => __( 'Invalid refund ID', 'woocommerce-es' ) ) );
+				return;
+			}
+
+			// Get refund args from refund object.
+			$args = array(
+				'amount'         => $refund->get_amount(),
+				'reason'         => $refund->get_reason(),
+				'order_id'       => $refund->get_parent_id(),
+				'refund_id'      => $order_id,
+				'line_items'     => array(),
+				'refund_payment' => false,
+				'restock_items'  => false,
+			);
+
+			// Get line items from refund.
+			foreach ( $refund->get_items() as $item_id => $item ) {
+				$args['line_items'][ $item_id ] = array(
+					'qty'          => abs( $item->get_quantity() ),
+					'refund_total' => abs( $item->get_total() ),
+					'refund_tax'   => array(),
+				);
+			}
+
+			$result = ORDER::create_refund_invoice( $settings, $order_id, $args, $options['slug'], $connapi_erp );
 		}
 
 		// Check result status and respond accordingly.
