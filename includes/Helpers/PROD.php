@@ -232,6 +232,19 @@ class PROD {
 		$tags     = array_filter( $tags );
 		$tags     = array_map( 'sanitize_text_field', $tags );
 		$message .= ! empty( $item['tags'] ) ? ' ' . __( 'Tags: ', 'woocommerce-es' ) . implode( ', ', $item['tags'] ) : '';
+
+		/**
+		 * Filters the per-product message shown during a sync.
+		 *
+		 * Lets a connector append its own detail, such as whether an image
+		 * specific to that ERP was found and imported.
+		 *
+		 * @param string $message Message built so far.
+		 * @param array  $item    Product data from the ERP.
+		 * @param int    $post_id WooCommerce product post ID.
+		 */
+		$message = apply_filters( 'conecom_product_sync_message', $message, $item, (int) $post_id );
+
 		return array(
 			'status'  => $status,
 			'post_id' => (int) $post_id,
