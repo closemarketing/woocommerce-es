@@ -1093,6 +1093,17 @@ class Settings {
 				);
 			}
 
+			if ( in_array( 'order_close_document', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_order_close_document',
+					__( 'Close document immediately (deduct stock)?', 'woocommerce-es' ),
+					array( $this, 'order_close_document_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section_orders',
+					$short_field
+				);
+			}
+
 			if ( ( ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] ) || in_array( 'doctype', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
@@ -2337,6 +2348,21 @@ class Settings {
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][approve_document]" id="wcpimh_approve_document">
 			<option value="no" <?php selected( $approve_document, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 			<option value="yes" <?php selected( $approve_document, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
+	 * Close document immediately on order creation.
+	 *
+	 * @return void
+	 */
+	public function order_close_document_callback() {
+		$order_close_document = isset( $this->settings['order_close_document'] ) ? $this->settings['order_close_document'] : 'no';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][order_close_document]" id="wcpimh_order_close_document">
+			<option value="no" <?php selected( $order_close_document, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<option value="yes" <?php selected( $order_close_document, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
 		<?php
 	}
