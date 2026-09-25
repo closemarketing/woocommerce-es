@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 3.5.0-beta.2
-Version: 3.5.0-beta.2
+Stable tag: 3.5.0-beta.4
+Version: 3.5.0-beta.4
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -226,6 +226,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 
+* Added: Connector integrations can declare custom product or order settings fields without requiring a core-plugin change.
 * Added: Import a selected ERP attribute group as WooCommerce product brands when the product_brand taxonomy is available.
 * Added: Category synchronization mode that replaces categories with ERP terms by default, with an option to merge manually assigned taxonomy terms.
 * Added: Regression coverage confirming that sales reduce stock on the purchased variation only, never on its variable parent.

@@ -1179,6 +1179,27 @@ class Settings {
 				'connect_woocommerce_setting_section_orders',
 				$short_field
 			);
+
+			// Connector-specific custom fields, declared by the connector itself instead
+			// of hardcoded here. See get_custom_settings_fields() for the filter contract.
+			foreach ( $this->get_custom_settings_fields() as $custom_field ) {
+				if ( empty( $custom_field['key'] ) || empty( $custom_field['label'] ) ) {
+					continue;
+				}
+
+				$section = isset( $custom_field['section'] ) && in_array( $custom_field['section'], array( 'products', 'orders' ), true )
+					? $custom_field['section']
+					: 'orders';
+
+				add_settings_field(
+					'wcpimh_' . $custom_field['key'],
+					$custom_field['label'],
+					array( $this, 'custom_field_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section_' . $section,
+					array_merge( $short_field, array( 'custom_field' => $custom_field ) )
+				);
+			}
 		}
 
 		/**
@@ -1786,7 +1807,7 @@ class Settings {
 
 		if ( ! empty( $connector_id ) && isset( $input[ $connector_id ] ) ) {
 			$current_settings         = $updated[ $connector_id ] ?? array();
-			$updated[ $connector_id ] = $this->sanitize_connector_settings_values( $input[ $connector_id ], $current_settings );
+			$updated[ $connector_id ] = $this->sanitize_connector_settings_values( $input[ $connector_id ], $current_settings, $connector_id );
 
 			// Get prices with Tax? Resolve "Default" now and store it as a plain 'yes'/'no',
 			// so connector add-ons reading `tax_option` directly always get a value they understand.
@@ -2481,6 +2502,79 @@ class Settings {
 		echo '<label for="connwoo_debug_log_checkbox" class="description">';
 		esc_html_e( 'Activates debug mode to save logs.', 'woocommerce-es' );
 		echo '</label>';
+	}
+
+	/**
+	 * Collects the connector-specific custom settings fields for the currently
+	 * loaded connector, via the `connect_ecommerce_connector_custom_settings_fields`
+	 * filter. Lets a connector add a field to its own settings screen without
+	 * modifying this core file.
+	 *
+	 * Each field definition is an array with:
+	 * - key      (string) Option key, stored under connect_ecommerce[<connector>][<key>].
+	 * - label    (string) Field label, already translated by the connector.
+	 * - type     (string) 'select' or 'checkbox'. Defaults to 'select'.
+	 * - options  (array)  For type 'select': value => translated label pairs.
+	 * - default  (string) Default/fallback value. Defaults to 'no'.
+	 * - section  (string) Settings section suffix: 'products' or 'orders'. Defaults to 'orders'.
+	 *
+	 * @return array List of field definitions.
+	 */
+	private function get_custom_settings_fields() {
+		$settings_fields = ! empty( $this->options['settings_fields'] ) ? $this->options['settings_fields'] : array();
+		$slug            = ! empty( $this->options['slug'] ) ? $this->options['slug'] : '';
+
+		/**
+		 * Filters the custom settings fields a connector wants rendered on its own settings screen.
+		 *
+		 * @param array  $fields          Field definitions, see get_custom_settings_fields() docblock.
+		 * @param string $slug            Connector slug (e.g. 'connwoo_neo').
+		 * @param array  $settings_fields Field keys the connector declared in its 'settings_fields' option.
+		 */
+		$fields = apply_filters( 'connect_ecommerce_connector_custom_settings_fields', array(), $slug, $settings_fields );
+
+		return is_array( $fields ) ? $fields : array();
+	}
+
+	/**
+	 * Generic callback rendering one connector-declared custom settings field.
+	 *
+	 * @param array $args Settings field args, including 'custom_field' (see get_custom_settings_fields()).
+	 * @return void
+	 */
+	public function custom_field_callback( $args ) {
+		$custom_field = isset( $args['custom_field'] ) ? $args['custom_field'] : null;
+		if ( empty( $custom_field['key'] ) ) {
+			return;
+		}
+
+		$key     = $custom_field['key'];
+		$default = isset( $custom_field['default'] ) ? $custom_field['default'] : 'no';
+		$value   = isset( $this->settings[ $key ] ) ? $this->settings[ $key ] : $default;
+		$name    = 'connect_ecommerce[' . esc_attr( $this->connector ) . '][' . esc_attr( $key ) . ']';
+		$type    = isset( $custom_field['type'] ) ? $custom_field['type'] : 'select';
+
+		if ( 'checkbox' === $type ) {
+			echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="no" />';
+			echo '<input type="checkbox" id="wcpimh_' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '" value="yes"';
+			echo checked( $value, 'yes' );
+			echo '/>';
+			return;
+		}
+
+		$options = ! empty( $custom_field['options'] ) && is_array( $custom_field['options'] )
+			? $custom_field['options']
+			: array(
+				'no'  => __( 'No', 'woocommerce-es' ),
+				'yes' => __( 'Yes', 'woocommerce-es' ),
+			);
+		?>
+		<select name="<?php echo esc_attr( $name ); ?>" id="wcpimh_<?php echo esc_attr( $key ); ?>">
+			<?php foreach ( $options as $option_value => $option_label ) : ?>
+				<option value="<?php echo esc_attr( $option_value ); ?>" <?php selected( $value, $option_value ); ?>><?php echo esc_html( $option_label ); ?></option>
+			<?php endforeach; ?>
+		</select>
+		<?php
 	}
 
 	/**
@@ -3319,12 +3413,21 @@ class Settings {
 	/**
 	 * Sanitize connector-specific settings.
 	 *
-	 * @param array $input    Connector input.
-	 * @param array $existing Existing values.
+	 * @param array  $input        Connector input.
+	 * @param array  $existing     Existing values.
+	 * @param string $connector_id Connector instance id (key in connectors_meta), used to
+	 *                             resolve its slug for connector-declared custom fields.
 	 * @return array
 	 */
-	private function sanitize_connector_settings_values( array $input, array $existing ) {
-		$defaults  = $this->get_connector_default_settings();
+	private function sanitize_connector_settings_values( array $input, array $existing, $connector_id = '' ) {
+		$defaults = $this->get_connector_default_settings();
+
+		foreach ( $this->get_custom_field_defaults_for_connector( $connector_id ) as $key => $default_value ) {
+			if ( ! array_key_exists( $key, $defaults ) ) {
+				$defaults[ $key ] = $default_value;
+			}
+		}
+
 		$sanitized = $existing;
 
 		foreach ( $defaults as $key => $default_value ) {
@@ -3336,6 +3439,34 @@ class Settings {
 		}
 
 		return $sanitized;
+	}
+
+	/**
+	 * Resolves { key => default } for the custom fields a connector declared via the
+	 * `connect_ecommerce_connector_custom_settings_fields` filter, so they're included in
+	 * the sanitize whitelist even though this core file doesn't know about them upfront.
+	 *
+	 * @param string $connector_id Connector instance id (key in connectors_meta).
+	 * @return array
+	 */
+	private function get_custom_field_defaults_for_connector( $connector_id ) {
+		if ( empty( $connector_id ) ) {
+			return array();
+		}
+
+		$stored = get_option( 'connect_ecommerce' );
+		$type   = is_array( $stored ) ? ( $stored['connectors_meta'][ $connector_id ]['type'] ?? $connector_id ) : $connector_id;
+		$slug   = $this->connector_definitions[ $type ]['slug'] ?? '';
+		$fields = apply_filters( 'connect_ecommerce_connector_custom_settings_fields', array(), $slug, $this->connector_definitions[ $type ]['settings_fields'] ?? array() );
+
+		$defaults = array();
+		foreach ( (array) $fields as $field ) {
+			if ( ! empty( $field['key'] ) ) {
+				$defaults[ $field['key'] ] = isset( $field['default'] ) ? $field['default'] : 'no';
+			}
+		}
+
+		return $defaults;
 	}
 
 	/**
