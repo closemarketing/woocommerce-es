@@ -199,6 +199,44 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A connector can support product sync without implementing optional product attributes.
+	 */
+	public function test_product_weight_equivalence_requires_product_attributes_capability() {
+		$GLOBALS['wp_settings_fields']['connect_ecommerce_admin']['connect_woocommerce_setting_section_orders'] = array();
+
+		$settings = new Settings(
+			array(
+				'active'       => 'neo',
+				'settings_all' => array(),
+				'items'        => array(
+					'neo' => array(
+						'id'          => 'neo',
+						'connector'   => 'neo',
+						'settings'    => array(),
+						'all_options' => array(),
+						'options'     => array(
+							'name'                       => 'NEO',
+							'slug'                       => 'connwoo_neo',
+							'disable_modules'            => array(),
+							'product_weight_equivalence' => true,
+						),
+						'connapi_erp' => new stdClass(),
+					),
+				),
+			)
+		);
+		$settings->page_init();
+
+		$fields = $GLOBALS['wp_settings_fields']['connect_ecommerce_admin']['connect_woocommerce_setting_section_orders'];
+		$this->assertArrayNotHasKey( 'wcpimh_product_weight_equivalence', $fields );
+
+		ob_start();
+		$settings->product_weight_equivalence_callback();
+		$output = ob_get_clean();
+		$this->assertSame( '', $output );
+	}
+
+	/**
 	 * Connectors can explicitly opt out of payment-method mappings.
 	 */
 	public function test_connector_can_disable_payment_method_mapping() {

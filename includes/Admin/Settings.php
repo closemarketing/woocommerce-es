@@ -1154,7 +1154,7 @@ class Settings {
 				);
 			}
 
-			if ( ! $this->is_disabled_products && ! empty( $this->options['product_weight_equivalence'] ) ) {
+			if ( ! $this->is_disabled_products && ! empty( $this->options['product_weight_equivalence'] ) && HELPER::connector_supports( $this->connapi_erp, 'get_product_attributes' ) ) {
 				$attributes = get_transient( 'conecom_query_attributes' );
 				if ( false === $attributes ) { // Query attributes.
 					$attributes = $this->connapi_erp->get_product_attributes();
@@ -2471,6 +2471,10 @@ class Settings {
 	 * @return void
 	 */
 	public function product_weight_equivalence_callback() {
+		if ( ! HELPER::connector_supports( $this->connapi_erp, 'get_product_attributes' ) ) {
+			return;
+		}
+
 		$attribute_fields = $this->connapi_erp->get_product_attributes();
 		if ( empty( $attribute_fields ) ) {
 			return;
