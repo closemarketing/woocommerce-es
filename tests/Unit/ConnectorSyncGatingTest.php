@@ -477,4 +477,103 @@ class ConnectorSyncGatingTest extends WP_UnitTestCase {
 		$this->assertNull( $products_connapi );
 		$this->assertNull( $orders_connapi );
 	}
+
+	// -------------------------------------------------------------------------
+	// Bulk sync action on the product list.
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The bulk actions dropdown must offer one "Sync product with X" entry per
+	 * syncable connector, labeled with that connector's own name.
+	 *
+	 * @return void
+	 */
+	public function test_register_bulk_actions_adds_one_entry_per_syncable_connector(): void {
+		update_option( $this->option_name, array(
+			'connectors_meta' => array(
+				'store_a'    => array(
+					'type'      => 'clientify',
+					'label'     => 'Store A',
+					'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+					'status'    => 'active',
+				),
+				'orders_only' => array(
+					'type'      => 'clientify',
+					'label'     => 'Orders Only',
+					'workflows' => array( 'products' => 'no', 'orders' => 'yes' ),
+					'status'    => 'active',
+				),
+			),
+			'connector' => 'store_a',
+		) );
+
+		$connectors_data = HELPER::get_connectors( $this->connector_type_definitions() );
+		$connector       = $connectors_data['items']['store_a'];
+		$widget_product  = new Widget_Product( $connector, $connectors_data );
+
+		$bulk_actions = $widget_product->register_bulk_actions( array() );
+
+		$this->assertArrayHasKey( 'conecom_sync_product_store_a', $bulk_actions );
+		$this->assertSame( 'Sync product with Store A', $bulk_actions['conecom_sync_product_store_a'] );
+		$this->assertArrayNotHasKey( 'conecom_sync_product_orders_only', $bulk_actions, 'A connector without the products workflow must not get a bulk sync entry.' );
+	}
+
+	/**
+	 * A bulk action that doesn't target this handler must be left untouched, so
+	 * other plugins'/WordPress' own bulk actions keep working.
+	 *
+	 * @return void
+	 */
+	public function test_handle_bulk_actions_ignores_unrelated_action(): void {
+		update_option( $this->option_name, array(
+			'connectors_meta' => array(
+				'store_a' => array(
+					'type'      => 'clientify',
+					'label'     => 'Store A',
+					'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+					'status'    => 'active',
+				),
+			),
+			'connector' => 'store_a',
+		) );
+
+		$connectors_data = HELPER::get_connectors( $this->connector_type_definitions() );
+		$connector       = $connectors_data['items']['store_a'];
+		$widget_product  = new Widget_Product( $connector, $connectors_data );
+
+		$redirect_to = 'https://example.test/wp-admin/edit.php?post_type=product';
+		$result      = $widget_product->handle_bulk_actions( $redirect_to, 'trash', array( 1, 2, 3 ) );
+
+		$this->assertSame( $redirect_to, $result );
+	}
+
+	/**
+	 * A "Sync product with X" action for a connector that is not syncable (unknown,
+	 * inactive, or without the products workflow) must not sync anything and must
+	 * leave the redirect URL unchanged.
+	 *
+	 * @return void
+	 */
+	public function test_handle_bulk_actions_rejects_unsyncable_connector(): void {
+		update_option( $this->option_name, array(
+			'connectors_meta' => array(
+				'store_a' => array(
+					'type'      => 'clientify',
+					'label'     => 'Store A',
+					'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+					'status'    => 'active',
+				),
+			),
+			'connector' => 'store_a',
+		) );
+
+		$connectors_data = HELPER::get_connectors( $this->connector_type_definitions() );
+		$connector       = $connectors_data['items']['store_a'];
+		$widget_product  = new Widget_Product( $connector, $connectors_data );
+
+		$redirect_to = 'https://example.test/wp-admin/edit.php?post_type=product';
+		$result      = $widget_product->handle_bulk_actions( $redirect_to, 'conecom_sync_product_does_not_exist', array( 1, 2, 3 ) );
+
+		$this->assertSame( $redirect_to, $result );
+	}
 }

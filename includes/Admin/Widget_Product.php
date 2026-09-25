@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Base;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\PROD;
 /**
  * Mejoras productos.
  *
@@ -73,6 +74,11 @@ class Widget_Product {
 
 		// Register Meta box for post type product.
 		add_action( 'add_meta_boxes', array( $this, 'metabox_products' ) );
+
+		// Bulk sync action on the product list.
+		add_filter( 'bulk_actions-edit-product', array( $this, 'register_bulk_actions' ) );
+		add_filter( 'handle_bulk_actions-edit-product', array( $this, 'handle_bulk_actions' ), 10, 3 );
+		add_action( 'admin_notices', array( $this, 'bulk_action_admin_notice' ) );
 	}
 
 	/**
@@ -152,5 +158,120 @@ class Widget_Product {
 			echo ' /><label for="connect_ecommerce_ai">';
 			echo esc_html__( 'Use AI to regenerate title, description and seo.', 'woocommerce-es' ) . '</label>';
 		}
+	}
+
+	/**
+	 * Adds a "Sync product with X" bulk action per syncable connector.
+	 *
+	 * @param array $bulk_actions Existing bulk actions.
+	 * @return array
+	 */
+	public function register_bulk_actions( $bulk_actions ) {
+		foreach ( $this->get_syncable_connectors() as $conn_id => $conn_label ) {
+			$bulk_actions[ 'conecom_sync_product_' . $conn_id ] = sprintf(
+				/* translators: %s: connector name. */
+				__( 'Sync product with %s', 'woocommerce-es' ),
+				$conn_label
+			);
+		}
+		return $bulk_actions;
+	}
+
+	/**
+	 * Syncs the selected products when a "Sync product with X" bulk action is triggered.
+	 *
+	 * @param string $redirect_to Redirect URL after the bulk action.
+	 * @param string $doaction    Bulk action requested.
+	 * @param array  $post_ids    Selected product post IDs.
+	 * @return string
+	 */
+	public function handle_bulk_actions( $redirect_to, $doaction, $post_ids ) {
+		if ( 0 !== strpos( $doaction, 'conecom_sync_product_' ) ) {
+			return $redirect_to;
+		}
+
+		$connector_id = substr( $doaction, strlen( 'conecom_sync_product_' ) );
+		$syncable     = $this->get_syncable_connectors();
+		if ( ! isset( $syncable[ $connector_id ], $this->connectors[ $connector_id ] ) ) {
+			return $redirect_to;
+		}
+
+		$connector   = $this->connectors[ $connector_id ];
+		$connapi_erp = $connector['connapi_erp'] ?? null;
+		$settings    = $connector['settings'] ?? array();
+		if ( empty( $connapi_erp ) ) {
+			return $redirect_to;
+		}
+
+		$synced = 0;
+		$failed = 0;
+
+		foreach ( $post_ids as $post_id ) {
+			if ( ! current_user_can( 'edit_product', $post_id ) ) {
+				continue;
+			}
+
+			$product = wc_get_product( $post_id );
+			if ( ! $product ) {
+				++$failed;
+				continue;
+			}
+
+			$product_erp_id = $product->get_meta( 'connect_ecommerce_id' );
+			$item           = array();
+
+			if ( ! empty( $product_erp_id ) ) {
+				$item = $connapi_erp->get_products( $product_erp_id );
+			} elseif ( HELPER::connector_supports( $connapi_erp, 'get_product_by_sku' ) && $product->get_sku() ) {
+				$item = $connapi_erp->get_product_by_sku( $product->get_sku() );
+			}
+
+			if ( empty( $item ) || ( isset( $item['status'] ) && 'error' === $item['status'] ) ) {
+				++$failed;
+				continue;
+			}
+
+			$result = PROD::sync_product_item( $settings, $item, $connapi_erp, false, $post_id );
+			if ( isset( $result['status'] ) && 'error' === $result['status'] ) {
+				++$failed;
+			} else {
+				++$synced;
+			}
+		}
+
+		return add_query_arg(
+			array(
+				'conecom_bulk_synced' => $synced,
+				'conecom_bulk_failed' => $failed,
+			),
+			$redirect_to
+		);
+	}
+
+	/**
+	 * Shows the result notice after a bulk product sync.
+	 *
+	 * @return void
+	 */
+	public function bulk_action_admin_notice() {
+		if ( ! isset( $_REQUEST['conecom_bulk_synced'] ) && ! isset( $_REQUEST['conecom_bulk_failed'] ) ) {
+			return;
+		}
+
+		$synced = isset( $_REQUEST['conecom_bulk_synced'] ) ? (int) $_REQUEST['conecom_bulk_synced'] : 0;
+		$failed = isset( $_REQUEST['conecom_bulk_failed'] ) ? (int) $_REQUEST['conecom_bulk_failed'] : 0;
+
+		printf(
+			'<div class="notice notice-%1$s is-dismissible"><p>%2$s</p></div>',
+			$failed ? 'warning' : 'success',
+			esc_html(
+				sprintf(
+					/* translators: 1: number of products synced, 2: number of products that failed. */
+					__( '%1$d product(s) synced. %2$d failed.', 'woocommerce-es' ),
+					$synced,
+					$failed
+				)
+			)
+		);
 	}
 }
