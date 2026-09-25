@@ -226,6 +226,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 
+* Added: Connector integrations can declare custom product or order settings fields without requiring a core-plugin change.
 * Added: Import a selected ERP attribute group as WooCommerce product brands when the product_brand taxonomy is available.
 * Added: Category synchronization mode that replaces categories with ERP terms by default, with an option to merge manually assigned taxonomy terms.
 * Added: Regression coverage confirming that sales reduce stock on the purchased variation only, never on its variable parent.

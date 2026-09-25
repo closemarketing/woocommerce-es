@@ -1183,12 +1183,20 @@ class Settings {
 			// Connector-specific custom fields, declared by the connector itself instead
 			// of hardcoded here. See get_custom_settings_fields() for the filter contract.
 			foreach ( $this->get_custom_settings_fields() as $custom_field ) {
+				if ( empty( $custom_field['key'] ) || empty( $custom_field['label'] ) ) {
+					continue;
+				}
+
+				$section = isset( $custom_field['section'] ) && in_array( $custom_field['section'], array( 'products', 'orders' ), true )
+					? $custom_field['section']
+					: 'orders';
+
 				add_settings_field(
 					'wcpimh_' . $custom_field['key'],
 					$custom_field['label'],
 					array( $this, 'custom_field_callback' ),
 					'connect_ecommerce_admin',
-					'connect_woocommerce_setting_section_' . $custom_field['section'],
+					'connect_woocommerce_setting_section_' . $section,
 					array_merge( $short_field, array( 'custom_field' => $custom_field ) )
 				);
 			}
@@ -2355,11 +2363,6 @@ class Settings {
 	}
 
 	/**
-	 * Close document immediately on order creation.
-	 *
-	 * @return void
-	 */
-	/**
 	 * Document type
 	 *
 	 * @return void
@@ -2552,6 +2555,7 @@ class Settings {
 		$type    = isset( $custom_field['type'] ) ? $custom_field['type'] : 'select';
 
 		if ( 'checkbox' === $type ) {
+			echo '<input type="hidden" name="' . esc_attr( $name ) . '" value="no" />';
 			echo '<input type="checkbox" id="wcpimh_' . esc_attr( $key ) . '" name="' . esc_attr( $name ) . '" value="yes"';
 			echo checked( $value, 'yes' );
 			echo '/>';
