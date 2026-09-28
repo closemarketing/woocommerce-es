@@ -77,6 +77,18 @@ class Orders {
 	private $connectors;
 
 	/**
+	 * True while a held "Order completed" email is being released, so it is not held again.
+	 *
+	 * @var bool
+	 */
+	private static $releasing = false;
+
+	/**
+	 * Seconds after which a held email is sent anyway, if the ERP sync never releases it.
+	 */
+	const EMAIL_HOLD_TIMEOUT = 600;
+
+	/**
 	 * Init and hook in the integration.
 	 *
 	 * @param array $connector       Active connector.
@@ -120,6 +132,8 @@ class Orders {
 		// Email attachments.
 		if ( $this->options['order_send_attachments'] ) {
 			add_filter( 'woocommerce_email_attachments', array( $this, 'attach_file_woocommerce_email' ), 10, 3 );
+			add_filter( 'woocommerce_email_enabled_customer_completed_order', array( $this, 'maybe_hold_completed_email' ), 10, 3 );
+			add_action( 'conecom_release_held_email', array( $this, 'release_held_email' ) );
 		}
 
 		// Order Columns HPOS.
@@ -197,10 +211,92 @@ class Orders {
 	 * @return void
 	 */
 	public function async_send_order_erp( $order_id ) {
-		if ( 'manual' === $this->ecstatus ) {
+		if ( 'manual' !== $this->ecstatus ) {
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
+		}
+		// Always release a held email, with or without document, so the customer never loses it.
+		$this->release_held_email( $order_id );
+	}
+
+	/**
+	 * Order meta flag set, per connector, while its "Order completed" email is held until the ERP document exists.
+	 *
+	 * @param string $slug Connector slug.
+	 * @return string
+	 */
+	public static function get_email_held_meta_key( $slug ) {
+		return '_' . $slug . '_email_held';
+	}
+
+	/**
+	 * Holds the "Order completed" email while the ERP document is still pending, so the
+	 * PDF can be attached once it exists. Only holds when a document is actually on its way.
+	 *
+	 * @param bool           $enabled Whether the email is enabled.
+	 * @param \WC_Order|null $order   Order object.
+	 * @param object|null    $email   Email object.
+	 * @return bool
+	 */
+	public function maybe_hold_completed_email( $enabled, $order = null, $email = null ) {
+		if ( ! $enabled || self::$releasing || ! $order instanceof \WC_Order || 'shop_order' !== $order->get_type() ) {
+			return $enabled;
+		}
+		if ( 'manual' === $this->ecstatus || ! function_exists( 'as_schedule_single_action' ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
+			return $enabled;
+		}
+		if ( $order->get_meta( '_' . $this->options['slug'] . '_doc_id' ) || 'nocreate' === $order->get_meta( $this->meta_key_order ) ) {
+			return $enabled;
+		}
+
+		$order_id = $order->get_id();
+		// WooCommerce may fire the email before our status hook, so make sure the sync is queued.
+		$this->send_order_erp( $order_id );
+		$pending = as_get_scheduled_actions(
+			array(
+				'hook'   => 'conecom_async_send_order_erp',
+				'args'   => array( $order_id ),
+				'status' => \ActionScheduler_Store::STATUS_PENDING,
+			),
+			'ids'
+		);
+		if ( empty( $pending ) ) {
+			return $enabled;
+		}
+
+		$order->update_meta_data( self::get_email_held_meta_key( $this->options['slug'] ), 1 );
+		$order->save();
+		as_schedule_single_action( time() + self::EMAIL_HOLD_TIMEOUT, 'conecom_release_held_email', array( $order_id ), 'connect-ecommerce' );
+
+		return false;
+	}
+
+	/**
+	 * Sends the "Order completed" email held by maybe_hold_completed_email(), once.
+	 *
+	 * @param int $order_id Order id.
+	 * @return void
+	 */
+	public function release_held_email( $order_id ) {
+		$order = wc_get_order( $order_id );
+		if ( ! $order || ! $order->get_meta( self::get_email_held_meta_key( $this->options['slug'] ) ) ) {
 			return;
 		}
-		ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
+		$order->delete_meta_data( self::get_email_held_meta_key( $this->options['slug'] ) );
+		$order->save();
+		if ( function_exists( 'as_unschedule_all_actions' ) ) {
+			as_unschedule_all_actions( 'conecom_release_held_email', array( $order_id ), 'connect-ecommerce' );
+		}
+
+		$emails = WC()->mailer()->get_emails();
+		if ( empty( $emails['WC_Email_Customer_Completed_Order'] ) ) {
+			return;
+		}
+		self::$releasing = true;
+		try {
+			$emails['WC_Email_Customer_Completed_Order']->trigger( $order_id, $order );
+		} finally {
+			self::$releasing = false;
+		}
 	}
 
 	/**
@@ -559,6 +655,10 @@ class Orders {
 
 		if ( 'erp-post' === $type ) {
 			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder, $options['name'] );
+			// Only this instance's connector holds the email, and its document is the one attached.
+			if ( $options['slug'] === $this->options['slug'] ) {
+				$this->release_held_email( $order_id );
+			}
 		} elseif ( 'erp-refund' === $type ) {
 			// Get refund object.
 			$refund = wc_get_order( $order_id );
