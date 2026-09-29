@@ -11,6 +11,7 @@
 namespace CLOSE\ConnectEcommerce\Helpers;
 
 use CLOSE\ConnectEcommerce\Helpers\PAYMENTS;
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -255,16 +256,18 @@ class HELPER {
 		$connector['settings']['treasury_accounts'] = array();
 
 		if ( ! empty( $connector['connector'] ) ) {
-			// Get payment method mappings.
-			$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
-			$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
-			$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
-
 			if ( ! isset( $options[ $connector['connector'] ] ) ) {
 				return $connector;
 			}
 
-			$connector['options'] = $options[ $connector['connector'] ];
+			$connector['options']    = $options[ $connector['connector'] ];
+			$payment_methods_enabled = ! array_key_exists( 'payment_methods', $connector['options'] ) || ! empty( $connector['options']['payment_methods'] );
+			if ( $payment_methods_enabled ) {
+				$payment_mappings                           = PAYMENTS::get_payment_method_mappings( $connector['connector'] );
+				$connector['settings']['payment_methods']   = $payment_mappings['payment_methods'];
+				$connector['settings']['treasury_accounts'] = $payment_mappings['treasury_accounts'];
+			}
+
 			if ( empty( $connector['options']['name'] ) ) {
 				$connector['settings_all']['connector'] = '';
 				update_option( 'connect_ecommerce', $connector['settings_all'] );
@@ -276,12 +279,34 @@ class HELPER {
 				return $connector;
 			}
 			$connector['connapi_erp']        = new $apiname( $options );
-			$connector['is_mergevars']       = method_exists( $connector['connapi_erp'], 'get_product_attributes' ) ? true : false;
+			$connector['is_mergevars']       = self::connector_supports( $connector['connapi_erp'], 'get_product_attributes' );
 			$connector['is_disabled_orders'] = isset( $connector['options']['disable_modules'] ) && in_array( 'order', $connector['options']['disable_modules'], true ) ? true : false;
 			$connector['is_disabled_ai']     = isset( $connector['options']['disable_modules'] ) && in_array( 'ai', $connector['options']['disable_modules'], true ) ? true : false;
 		}
 
 		return $connector;
+	}
+
+	/**
+	 * Checks whether a connector implements an optional capability.
+	 *
+	 * Legacy connectors keep their method-based capability detection. Connectors
+	 * using the shared contract must override an optional method to enable it.
+	 *
+	 * @param object $connector Connector API instance.
+	 * @param string $method Connector method name.
+	 * @return bool
+	 */
+	public static function connector_supports( $connector, $method ) {
+		if ( ! is_object( $connector ) || ! method_exists( $connector, $method ) ) {
+			return false;
+		}
+
+		if ( $connector instanceof CONECOM_Abstract_Connector_API ) {
+			return $connector->supports_capability( $method );
+		}
+
+		return true;
 	}
 
 	/**

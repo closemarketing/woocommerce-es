@@ -248,6 +248,17 @@ class ImportProductsPaginationTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A non-paginated API can return more products than the importer batch size.
+	 */
+	public function test_non_paginated_catalogue_finishes_at_its_actual_size() {
+		$api_pagination = 50;
+		$products_count = 142;
+
+		$this->assertFalse( Import_Products::should_finish_import( 140, $products_count, $api_pagination, false ) );
+		$this->assertTrue( Import_Products::should_finish_import( 141, $products_count, $api_pagination, false ) );
+	}
+
+	/**
 	 * Test special case with sync_loop = -1 (single product import).
 	 *
 	 * When importing a single specific product, sync_loop is set to -1.
@@ -265,4 +276,3 @@ class ImportProductsPaginationTest extends WP_UnitTestCase {
 		);
 	}
 }
-

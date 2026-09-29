@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "947ecda9d777749fa2faee9f5bd3c632",
+    "content-hash": "310fe2e64405ee3706f95c0ee84989b1",
     "packages": [
         {
             "name": "dragonbe/vies",
@@ -476,20 +476,20 @@
         },
         {
             "name": "php-stubs/woocommerce-stubs",
-            "version": "v10.9.2",
+            "version": "v11.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/php-stubs/woocommerce-stubs.git",
-                "reference": "8e52e5bfbcd0f5cb65a8bec696761867e3096ab7"
+                "reference": "923dd29055713886efd7f85ea2510b9c6955a714"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/php-stubs/woocommerce-stubs/zipball/8e52e5bfbcd0f5cb65a8bec696761867e3096ab7",
-                "reference": "8e52e5bfbcd0f5cb65a8bec696761867e3096ab7",
+                "url": "https://api.github.com/repos/php-stubs/woocommerce-stubs/zipball/923dd29055713886efd7f85ea2510b9c6955a714",
+                "reference": "923dd29055713886efd7f85ea2510b9c6955a714",
                 "shasum": ""
             },
             "require": {
-                "php-stubs/wordpress-stubs": "^5.3 || ^6.0"
+                "php-stubs/wordpress-stubs": "^5.3 || ^6.0 || ^7.0"
             },
             "require-dev": {
                 "php": "~7.1 || ~8.0",
@@ -514,9 +514,9 @@
             ],
             "support": {
                 "issues": "https://github.com/php-stubs/woocommerce-stubs/issues",
-                "source": "https://github.com/php-stubs/woocommerce-stubs/tree/v10.9.2"
+                "source": "https://github.com/php-stubs/woocommerce-stubs/tree/v11.0.0"
             },
-            "time": "2026-07-02T23:18:25+00:00"
+            "time": "2026-08-04T19:31:58+00:00"
         },
         {
             "name": "php-stubs/wordpress-stubs",
@@ -785,21 +785,21 @@
         },
         {
             "name": "phpcsstandards/phpcsextra",
-            "version": "1.5.0",
+            "version": "1.5.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHPCSExtra.git",
-                "reference": "b598aa890815b8df16363271b659d73280129101"
+                "reference": "39467533fdb742446d68c1d10ac33d625ee0311c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSExtra/zipball/b598aa890815b8df16363271b659d73280129101",
-                "reference": "b598aa890815b8df16363271b659d73280129101",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSExtra/zipball/39467533fdb742446d68c1d10ac33d625ee0311c",
+                "reference": "39467533fdb742446d68c1d10ac33d625ee0311c",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.4",
-                "phpcsstandards/phpcsutils": "^1.2.0",
+                "phpcsstandards/phpcsutils": "^1.2.3",
                 "squizlabs/php_codesniffer": "^3.13.5 || ^4.0.1"
             },
             "require-dev": {
@@ -863,7 +863,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2025-11-12T23:06:57+00:00"
+            "time": "2026-07-27T11:13:17+00:00"
         },
         {
             "name": "phpcsstandards/phpcsutils",
@@ -871,12 +871,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHPCSUtils.git",
-                "reference": "3382ced401a027c91452256033cf1b82982c8a1d"
+                "reference": "170d55931d3190a1feb35b7985a4b725094908c7"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSUtils/zipball/3382ced401a027c91452256033cf1b82982c8a1d",
-                "reference": "3382ced401a027c91452256033cf1b82982c8a1d",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHPCSUtils/zipball/170d55931d3190a1feb35b7985a4b725094908c7",
+                "reference": "170d55931d3190a1feb35b7985a4b725094908c7",
                 "shasum": ""
             },
             "require": {
@@ -957,7 +957,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2026-02-05T23:44:14+00:00"
+            "time": "2026-07-27T15:58:30+00:00"
         },
         {
             "name": "phpstan/extension-installer",
@@ -1009,11 +1009,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.2.5",
+            "version": "2.2.9",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/909c1e5fef7989ac0d0c1c5c42e32a5c4f6198a0",
-                "reference": "909c1e5fef7989ac0d0c1c5c42e32a5c4f6198a0",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/13d6b4f347bad222da436580c8304fa6f83e6bd0",
+                "reference": "13d6b4f347bad222da436580c8304fa6f83e6bd0",
                 "shasum": ""
             },
             "require": {
@@ -1069,7 +1069,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-07-05T06:31:06+00:00"
+            "time": "2026-08-22T07:38:16+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -2514,21 +2514,22 @@
         },
         {
             "name": "sirbrillig/phpcs-variable-analysis",
-            "version": "v2.13.0",
+            "version": "v3.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sirbrillig/phpcs-variable-analysis.git",
-                "reference": "a15e970b8a0bf64cfa5e86d941f5e6b08855f369"
+                "reference": "282f8a46b8fb86731de8c1570fc91367f2884a8f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sirbrillig/phpcs-variable-analysis/zipball/a15e970b8a0bf64cfa5e86d941f5e6b08855f369",
-                "reference": "a15e970b8a0bf64cfa5e86d941f5e6b08855f369",
+                "url": "https://api.github.com/repos/sirbrillig/phpcs-variable-analysis/zipball/282f8a46b8fb86731de8c1570fc91367f2884a8f",
+                "reference": "282f8a46b8fb86731de8c1570fc91367f2884a8f",
                 "shasum": ""
             },
             "require": {
                 "php": ">=5.4.0",
-                "squizlabs/php_codesniffer": "^3.5.7 || ^4.0.0"
+                "phpcsstandards/phpcsutils": "^1.0",
+                "squizlabs/php_codesniffer": "^3.13.5 || ^4.0.0"
             },
             "require-dev": {
                 "dealerdirect/phpcodesniffer-composer-installer": "^0.7 || ^1.0",
@@ -2566,20 +2567,20 @@
                 "source": "https://github.com/sirbrillig/phpcs-variable-analysis",
                 "wiki": "https://github.com/sirbrillig/phpcs-variable-analysis/wiki"
             },
-            "time": "2025-09-30T22:22:48+00:00"
+            "time": "2026-07-27T18:26:36+00:00"
         },
         {
             "name": "squizlabs/php_codesniffer",
-            "version": "3.13.5",
+            "version": "3.13.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/PHPCSStandards/PHP_CodeSniffer.git",
-                "reference": "0ca86845ce43291e8f5692c7356fccf3bcf02bf4"
+                "reference": "4c378e1a528ea066890fc2397cbdd2f94eb2fc91"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/0ca86845ce43291e8f5692c7356fccf3bcf02bf4",
-                "reference": "0ca86845ce43291e8f5692c7356fccf3bcf02bf4",
+                "url": "https://api.github.com/repos/PHPCSStandards/PHP_CodeSniffer/zipball/4c378e1a528ea066890fc2397cbdd2f94eb2fc91",
+                "reference": "4c378e1a528ea066890fc2397cbdd2f94eb2fc91",
                 "shasum": ""
             },
             "require": {
@@ -2645,7 +2646,7 @@
                     "type": "thanks_dev"
                 }
             ],
-            "time": "2025-11-04T16:30:35+00:00"
+            "time": "2026-08-06T00:17:32+00:00"
         },
         {
             "name": "szepeviktor/phpstan-wordpress",
@@ -2762,16 +2763,16 @@
         },
         {
             "name": "wp-coding-standards/wpcs",
-            "version": "3.3.0",
+            "version": "3.4.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/WordPress/WordPress-Coding-Standards.git",
-                "reference": "7795ec6fa05663d716a549d0b44e47ffc8b0d4a6"
+                "reference": "ec2ff942335f33683a5957a85d138753876a05cf"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/WordPress/WordPress-Coding-Standards/zipball/7795ec6fa05663d716a549d0b44e47ffc8b0d4a6",
-                "reference": "7795ec6fa05663d716a549d0b44e47ffc8b0d4a6",
+                "url": "https://api.github.com/repos/WordPress/WordPress-Coding-Standards/zipball/ec2ff942335f33683a5957a85d138753876a05cf",
+                "reference": "ec2ff942335f33683a5957a85d138753876a05cf",
                 "shasum": ""
             },
             "require": {
@@ -2780,9 +2781,9 @@
                 "ext-tokenizer": "*",
                 "ext-xmlreader": "*",
                 "php": ">=7.2",
-                "phpcsstandards/phpcsextra": "^1.5.0",
-                "phpcsstandards/phpcsutils": "^1.1.0",
-                "squizlabs/php_codesniffer": "^3.13.4"
+                "phpcsstandards/phpcsextra": "^1.5.1",
+                "phpcsstandards/phpcsutils": "^1.2.3",
+                "squizlabs/php_codesniffer": "^3.13.5"
             },
             "require-dev": {
                 "php-parallel-lint/php-console-highlighter": "^1.0.0",
@@ -2824,20 +2825,20 @@
                     "type": "custom"
                 }
             ],
-            "time": "2025-11-25T12:08:04+00:00"
+            "time": "2026-07-27T11:53:23+00:00"
         },
         {
             "name": "wp-phpunit/wp-phpunit",
-            "version": "7.0.0",
+            "version": "7.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/wp-phpunit/wp-phpunit.git",
-                "reference": "06828a65f8276e31368fbe4c5f3d445332abc4c5"
+                "reference": "797edc710afc958854852d859c93d9aa1de6447d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/wp-phpunit/wp-phpunit/zipball/06828a65f8276e31368fbe4c5f3d445332abc4c5",
-                "reference": "06828a65f8276e31368fbe4c5f3d445332abc4c5",
+                "url": "https://api.github.com/repos/wp-phpunit/wp-phpunit/zipball/797edc710afc958854852d859c93d9aa1de6447d",
+                "reference": "797edc710afc958854852d859c93d9aa1de6447d",
                 "shasum": ""
             },
             "type": "library",
@@ -2872,7 +2873,7 @@
                 "issues": "https://github.com/wp-phpunit/issues",
                 "source": "https://github.com/wp-phpunit/wp-phpunit"
             },
-            "time": "2026-05-21T02:56:35+00:00"
+            "time": "2026-08-20T00:59:59+00:00"
         },
         {
             "name": "yoast/phpunit-polyfills",

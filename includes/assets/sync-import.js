@@ -56,6 +56,8 @@ function syncManualItems( element, action, loop = 0 ) {
 function syncManualItemsWithMode( element, action, loop, pagination ) {
 	var importMode = document.getElementById('import-mode');
 	var mode = importMode ? importMode.value : 'all';
+	var dateFrom = document.getElementById('orders-date-from');
+	var dateTo = document.getElementById('orders-date-to');
 	var refreshButton = document.getElementById('refresh_stats');
 	var spinner = element.parentElement ? element.parentElement.querySelector('.spinner') : null;
 
@@ -73,6 +75,8 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 	element.disabled = true;
 	element.textContent = ConEcom_ajaxAction.label_syncing;
 	if ( importMode ) { importMode.disabled = true; }
+	if ( dateFrom ) { dateFrom.disabled = true; }
+	if ( dateTo ) { dateTo.disabled = true; }
 	if ( refreshButton ) { refreshButton.disabled = true; }
 	if ( spinner ) { spinner.classList.add('is-active'); }
 
@@ -81,6 +85,12 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 	var class_task = isOdd(loop) ? 'odd' : 'even';
 
 	var body = 'action=' + action + '&nonce=' + ConEcom_ajaxAction.nonce + '&loop=' + loop + '&product_ai=' + productAI + '&mode=' + encodeURIComponent(mode) + '&pagination=' + (pagination || 100);
+	if ( dateFrom && dateFrom.value ) {
+		body += '&date_from=' + encodeURIComponent(dateFrom.value);
+	}
+	if ( dateTo && dateTo.value ) {
+		body += '&date_to=' + encodeURIComponent(dateTo.value);
+	}
 
 	fetch( ConEcom_ajaxAction.url, {
 		method: 'POST',
@@ -109,6 +119,8 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 				element.disabled = false;
 				element.textContent = ConEcom_ajaxAction.label_sync;
 				if ( importMode ) { importMode.disabled = false; }
+				if ( dateFrom ) { dateFrom.disabled = false; }
+				if ( dateTo ) { dateTo.disabled = false; }
 				if ( refreshButton ) { refreshButton.disabled = false; }
 				if ( spinner ) { spinner.classList.remove('is-active'); }
 				if ( typeof loadImportStats === 'function' ) {
@@ -119,6 +131,8 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 			element.disabled = false;
 			element.textContent = ConEcom_ajaxAction.label_sync;
 			if ( importMode ) { importMode.disabled = false; }
+			if ( dateFrom ) { dateFrom.disabled = false; }
+			if ( dateTo ) { dateTo.disabled = false; }
 			if ( refreshButton ) { refreshButton.disabled = false; }
 			if ( spinner ) { spinner.classList.remove('is-active'); }
 			if ( results.data && results.data.message ) {

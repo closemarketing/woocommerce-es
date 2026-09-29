@@ -76,28 +76,31 @@ class CreateOrderTest extends WP_UnitTestCase {
 
 	public function test_clean_special_chars() {
 		$test_cases = [
-			'José M. García-López'	=> 'Jose M Garcia-Lopez',
+			'José M. García-López'	=> 'JOSE M GARCIA-LOPEZ',
 			'COMIDAS & BEBIDAS S.L.'	=> 'COMIDAS Y BEBIDAS S L',
-			'Peña "El @Rincón" / Granada'	=> 'Peña El Rincon Granada',
-			'Weiß y Aßmann/Waßmann'	=> 'Weiss y Assmann Wassmann',
-			'Bürgerstraße 123'	=> 'Burgerstrasse 123',
-			'#John Doe'	=> 'John Doe',
-			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'aeiouuñçgAEIOUUÑÇG',
-			'John@Doe' => 'John Doe',
-			'John@  Doe' => 'John Doe', // double space
-			'º[]John Doe' => 'John Doe',
-			'Maçanet Çağla' => 'Maçanet Çagla',
-			'Francisco Araújo da Conceição' => 'Francisco Araujo da Conceiçao',
-			'áéíóúüñçğÁÉÍÓÚÜÑÇĞåÅäÄæÆøØöÖèêëÈÊËïîÏÎôöÔÖùûÙÛßłŁ' => 'aeiouuñçgAEIOUUÑÇGaAaAaeAEoOoOeeeEEEiiIIooOOuuUUsslL',
-			'Gödöllő' => 'Godollo',
-			'Augustina Lubė' => 'Augustina Lube',
-			'Ėrika' => 'Erika',
-			'įĮ' => 'iI',
+			'Peña "El @Rincón" / Granada'	=> 'PEÑA EL RINCON GRANADA',
+			'Weiß y Aßmann/Waßmann'	=> 'WEISS Y ASSMANN WASSMANN',
+			'Bürgerstraße 123'	=> 'BURGERSTRASSE 123',
+			'#John Doe'	=> 'JOHN DOE',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞ' => 'AEIOUUÑÇGAEIOUUÑÇG',
+			'John@Doe' => 'JOHN DOE',
+			'John@  Doe' => 'JOHN DOE', // double space
+			'º[]John Doe' => 'JOHN DOE',
+			'Maçanet Çağla' => 'MAÇANET ÇAGLA',
+			'Francisco Araújo da Conceição' => 'FRANCISCO ARAUJO DA CONCEIÇAO',
+			'áéíóúüñçğÁÉÍÓÚÜÑÇĞåÅäÄæÆøØöÖèêëÈÊËïîÏÎôöÔÖùûÙÛßłŁ' => 'AEIOUUÑÇGAEIOUUÑÇGAAAAAEAEOOOOEEEEEEIIIIOOOOUUUUSSLL',
+			'Gödöllő' => 'GODOLLO',
+			'Augustina Lubė' => 'AUGUSTINA LUBE',
+			'Ėrika' => 'ERIKA',
+			'įĮ' => 'II',
 		];
 
 		foreach ( $test_cases as $input => $expected ) {
 			$this->assertEquals( ORDER::clean_special_chars( $input ), $expected );
 		}
+
+		$this->assertSame( '', ORDER::clean_special_chars( 'abc', 120, 'a-z' ) );
+		$this->assertSame( '', ORDER::clean_special_chars( 'Массачусетс' ) );
 	}
 
 	public function test_create_order_company_without_errors() {
@@ -275,10 +278,10 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertNotEmpty( $order_data );
 		$this->assertEquals( 110, $order_data['total'] );
 		$this->assertEquals( 10, $order_data['total_tax'] );
-		$this->assertEquals( 'Jose M', $order_data['contactFirstName'] );
-		$this->assertEquals( 'Garcia-Lopez', $order_data['contactLastName'] );
-		$this->assertEquals( 'Sample City', $order_data['contactCity'] );
-		$this->assertEquals( 'California', $order_data['contactProvince'] );
+		$this->assertEquals( 'JOSE M', $order_data['contactFirstName'] );
+		$this->assertEquals( 'GARCIA-LOPEZ', $order_data['contactLastName'] );
+		$this->assertEquals( 'SAMPLE CITY', $order_data['contactCity'] );
+		$this->assertEquals( 'CALIFORNIA', $order_data['contactProvince'] );
 		$this->assertEquals( 'US', $order_data['contactCountryCode'] );
 		$this->assertEquals( '90001', $order_data['contactCp'] );
 		$this->assertEquals( 'bacs', $order_data['paymentMethod'] );

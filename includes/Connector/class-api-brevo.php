@@ -10,6 +10,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
+
 /**
  * LoadsAPI.
  *
@@ -17,7 +19,7 @@ defined( 'ABSPATH' ) || exit;
  *
  * @since 3.3.5
  */
-class Connect_Ecommerce_Brevo {
+class Connect_Ecommerce_Brevo extends CONECOM_Abstract_Connector_API {
 	/**
 	 * Options of plugin.
 	 *
@@ -47,7 +49,8 @@ class Connect_Ecommerce_Brevo {
 	 *
 	 * @return boolean
 	 */
-	public function check_can_sync() {
+	public function check_can_sync( $settings = array() ) {
+		unset( $settings );
 		if ( ! isset( $this->settings['api'] ) ) {
 			return false;
 		}
@@ -56,33 +59,6 @@ class Connect_Ecommerce_Brevo {
 			return false;
 		}
 		return true;
-	}
-
-	/**
-	 * Compatibility for Library
-	 *
-	 * @return string
-	 */
-	public function get_attributes() {
-		return '';
-	}
-
-	/**
-	 * Compatibility for Library
-	 *
-	 * @return string
-	 */
-	public function get_image_product() {
-		return '';
-	}
-
-	/**
-	 * URL for orders.
-	 *
-	 * @return string
-	 */
-	public function get_url_link_api() {
-		return '';
 	}
 
 	/**
@@ -284,7 +260,7 @@ class Connect_Ecommerce_Brevo {
 	 *
 	 * @return array
 	 */
-	public function create_order( $order, $doc_id, $invoice_id, $force ) {
+	public function create_order( $order, $doc_id = '', $invoice_id = '', $force = false ) {
 		$api_key = ! empty( $this->settings['api'] ) ? $this->settings['api'] : '';
 
 		if ( empty( $order ) ) {
@@ -306,9 +282,11 @@ class Connect_Ecommerce_Brevo {
 		// this method also runs on pending/processing/failed/refunded/cancelled transitions,
 		// and the first call always gets its returned id persisted as "synced" - reporting
 		// order_completed there would mark the order as done before it truly is and the
-		// real completion would never be sent.
+		// real completion would never be sent. $force is true only for an explicit manual
+		// export request (e.g. the "Send to ERP" button), which is always reported regardless
+		// of status - otherwise "Manual" mode could never export a non-completed order.
 		$ecstatus = ! empty( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : ( $this->options['order_only_order_completed'] ?? 'completed' );
-		$is_final = 'completed' === ( $order['woocommerceOrderStatus'] ?? '' ) || ( 'paid' === $ecstatus && ! empty( $order['is_paid'] ) );
+		$is_final = $force || 'completed' === ( $order['woocommerceOrderStatus'] ?? '' ) || ( 'paid' === $ecstatus && ! empty( $order['is_paid'] ) );
 
 		if ( ! $is_final ) {
 			return array(

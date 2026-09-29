@@ -12,6 +12,8 @@ namespace CLOSE\ConnectEcommerce\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use CLOSE\ConnectEcommerce\Helpers\HELPER;
+
 /**
  * Widget in Orders
  *
@@ -111,6 +113,8 @@ class Widget_Order {
 		echo ',this.id,\'erp-post\')">' . esc_html( $label ) . '</div>';
 		echo '</td></tr>';
 
+		$this->show_document_download_row( $order );
+
 		echo '</table>';
 
 		/**
@@ -121,6 +125,27 @@ class Widget_Order {
 		 * @param \WC_Order $order Order object.
 		 */
 		do_action( 'conecom_after_order_metabox', $order );
+	}
+
+	/**
+	 * Shows the document download link row, when a PDF document is available for the order.
+	 *
+	 * @param \WC_Order $order Order object.
+	 * @return void
+	 */
+	private function show_document_download_row( $order ) {
+		$api_doc_id = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
+
+		if ( empty( $api_doc_id ) || empty( $this->connapi_erp ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
+			return;
+		}
+
+		$nonce        = wp_create_nonce( 'cwc-document-nonce' );
+		$download_url = admin_url( 'admin-ajax.php?action=cwc_document_download&order_id=' . $order->get_id() . '&nonce=' . $nonce );
+
+		echo '<tr><td><strong>' . esc_html__( 'Document', 'woocommerce-es' ) . '</strong></td>';
+		echo '<td><a href="' . esc_url( $download_url ) . '" class="button button-primary" target="_blank">';
+		echo esc_html__( 'Download', 'woocommerce-es' ) . '</a></td></tr>';
 	}
 
 	/**
