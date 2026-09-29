@@ -289,6 +289,8 @@ class Import_Products {
 			$res_message             .= __( 'Connecting with API...', 'woocommerce-es' ) . '<br/>';
 
 			if ( $sync_loop > 0 && empty( $api_products ) ) {
+				/** This action is documented in includes/Admin/Import_Products.php */
+				do_action( 'conecom_products_sync_finished', $this->options['slug'] ?? '', $this->connapi_erp );
 				wp_send_json_success( array(
 					'loop'          => $sync_loop,
 					'message'       => '<p class="finish">' . __( 'All caught up!', 'woocommerce-es' ) . '</p>',
@@ -360,6 +362,14 @@ class Import_Products {
 		if ( $finish && 0 < $sync_loop ) {
 			// Email errors.
 			HELPER::send_product_errors( $this->error_product_import, $this->options['slug'] );
+
+			/**
+			 * Fires once a full product sync has gone through every ERP product.
+			 *
+			 * @param string $slug        Connector slug.
+			 * @param object $connapi_erp Connector API.
+			 */
+			do_action( 'conecom_products_sync_finished', $this->options['slug'] ?? '', $this->connapi_erp );
 		}
 		wp_send_json_success( $args );
 	}
@@ -462,6 +472,8 @@ class Import_Products {
 		$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
 		if ( empty( $products_sync ) && $is_table_sync ) {
 			CRON::send_sync_ended_products( $this->settings, $this->options['table_sync'], $this->options['name'], $this->options['slug'] );
+			/** This action is documented in includes/Admin/Import_Products.php */
+			do_action( 'conecom_products_sync_finished', $this->options['slug'] ?? '', $this->connapi_erp );
 			CRON::fill_table_sync( $this->settings, $this->options, $this->connapi_erp );
 			$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
 		}

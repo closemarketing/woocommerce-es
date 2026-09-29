@@ -262,13 +262,20 @@ class Settings {
 				// Subtabs.
 				$active_subtab = isset( $_GET['subtab'] ) ? sanitize_text_field( wp_unslash( $_GET['subtab'] ) ) : '';
 
+				$sync_subtabs    = $this->get_sync_subtabs();
+				$sync_default    = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+				$sync_first      = array_key_first( $sync_subtabs );
+				$sync_tab_subtab = null !== $sync_first ? (string) $sync_first : $sync_default;
+
 				// Set default subtabs.
 				if ( 'synchronization' === $active_tab && empty( $active_subtab ) ) {
-					$active_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
+					$active_subtab = $sync_tab_subtab;
 				}
-				// Connectors without a product catalog only expose the Orders subtab.
-				if ( 'synchronization' === $active_tab && 'sync_products' === $active_subtab && $this->is_disabled_products ) {
-					$active_subtab = 'sync_orders';
+				// A core subtab that is disabled or was removed by the connector falls
+				// back to the first available one. Other slugs are left untouched so
+				// connector subtabs keep rendering through their action as before.
+				if ( 'synchronization' === $active_tab && in_array( $active_subtab, array( 'sync_products', 'sync_orders' ), true ) && ! isset( $sync_subtabs[ $active_subtab ] ) ) {
+					$active_subtab = $sync_tab_subtab;
 				}
 				if ( 'settings' === $active_tab && empty( $active_subtab ) ) {
 					$active_subtab = 'connection';
@@ -277,7 +284,6 @@ class Settings {
 				<h2 class="nav-tab-wrapper">
 					<?php
 					if ( $this->is_connector_active() ) {
-						$sync_tab_subtab = $this->is_disabled_products ? 'sync_orders' : 'sync_products';
 						?>
 						<a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $sync_tab_subtab ); ?>" class="nav-tab <?php echo 'synchronization' === $active_tab ? 'nav-tab-active' : ''; ?>"><?php esc_html_e( 'Synchronization', 'woocommerce-es' ); ?></a>
 						<?php
@@ -314,26 +320,13 @@ class Settings {
 				if ( 'synchronization' === $active_tab && $this->is_connector_active() ) {
 					?>
 					<ul class="subsubsub">
-						<?php if ( ! $this->is_disabled_products ) : ?>
-						<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_products" class="<?php echo 'sync_products' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Products', 'woocommerce-es' ); ?></a><?php echo ( ! $this->is_disabled_orders ) ? ' | ' : ''; ?></li>
-						<?php endif; ?>
 						<?php
-						if ( ! $this->is_disabled_orders ) {
+						$subtab_separator = '';
+						foreach ( $sync_subtabs as $subtab_slug => $subtab_label ) {
 							?>
-							<li><a href="?page=connect_ecommerce&tab=synchronization&subtab=sync_orders" class="<?php echo 'sync_orders' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Orders', 'woocommerce-es' ); ?></a></li>
+							<li><?php echo esc_html( $subtab_separator ); ?><a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $subtab_slug ); ?>" class="<?php echo esc_attr( $subtab_slug ) === $active_subtab ? 'current' : ''; ?>"><?php echo esc_html( $subtab_label ); ?></a></li>
 							<?php
-						}
-
-						/**
-						 * Allows connector plugins (e.g. connect-woocommerce-sage) to register
-						 * extra subtabs on the Synchronization tab for custom (non-WooCommerce)
-						 * entities. Shape: [ slug => label ].
-						 */
-						$sync_custom_subtabs = apply_filters( 'conecom_sync_subtabs', array(), $this->connector );
-						foreach ( $sync_custom_subtabs as $subtab_slug => $subtab_label ) {
-							?>
-							<li> | <a href="?page=connect_ecommerce&tab=synchronization&subtab=<?php echo esc_attr( $subtab_slug ); ?>" class="<?php echo esc_attr( $subtab_slug ) === $active_subtab ? 'current' : ''; ?>"><?php echo esc_html( $subtab_label ); ?></a></li>
-							<?php
+							$subtab_separator = ' | ';
 						}
 						?>
 					</ul>
@@ -1128,6 +1121,42 @@ class Settings {
 			'connect_ecommerce_alerts',
 			'connect_ecommerce_alerts_section'
 		);
+	}
+
+	/**
+	 * Subtabs of the Synchronization tab, in display order: core subtabs first,
+	 * then the ones connectors add.
+	 *
+	 * @return array Shape: [ slug => label ].
+	 */
+	private function get_sync_subtabs() {
+		$core = array();
+		if ( ! $this->is_disabled_products ) {
+			$core['sync_products'] = __( 'Products', 'woocommerce-es' );
+		}
+		if ( ! $this->is_disabled_orders ) {
+			$core['sync_orders'] = __( 'Orders', 'woocommerce-es' );
+		}
+
+		/**
+		 * Filters the core Synchronization subtabs (Products, Orders). A connector
+		 * can remove one, or replace it with its own slug in the same position:
+		 * a slug also registered through conecom_sync_subtabs keeps the position
+		 * given here. Shape: [ slug => label ].
+		 *
+		 * @param array  $core      Core subtabs.
+		 * @param string $connector Active connector slug.
+		 */
+		$core = apply_filters( 'conecom_sync_core_subtabs', $core, $this->connector );
+
+		/**
+		 * Allows connector plugins (e.g. connect-woocommerce-sage) to register
+		 * extra subtabs on the Synchronization tab for custom (non-WooCommerce)
+		 * entities. Shape: [ slug => label ].
+		 */
+		$custom = apply_filters( 'conecom_sync_subtabs', array(), $this->connector );
+
+		return ( is_array( $core ) ? $core : array() ) + ( is_array( $custom ) ? $custom : array() );
 	}
 
 	/**

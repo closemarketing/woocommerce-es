@@ -122,6 +122,18 @@ class TAX {
 	}
 
 	/**
+	 * Finds or creates the terms of a category path without assigning them to a post.
+	 *
+	 * @param array        $settings Settings, for the category separator (catsep).
+	 * @param string       $taxonomy Taxonomy name.
+	 * @param array|string $terms    Terms to find or create.
+	 * @return array Term IDs, from the top level down.
+	 */
+	public static function get_terms_ids( $settings, $taxonomy, $terms ) {
+		return self::find_categories_ids( self::split_categories_name( $settings, $terms ), $taxonomy );
+	}
+
+	/**
 	 * Finds product categories ids from array of names given
 	 *
 	 * @param array  $product_cat_names Array of names.
