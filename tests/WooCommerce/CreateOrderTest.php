@@ -149,8 +149,8 @@ class CreateOrderTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertCount( 1, $notes );
-		$this->assertStringContainsString( 'Error syncing order with Test connector: Remote contact search failed', $notes[0]->comment_content );
-		$this->assertStringNotContainsString( 'Order synced correctly', $notes[0]->comment_content );
+		$this->assertStringContainsString( 'Error syncing order with Test connector: Remote contact search failed', $notes[0]->content );
+		$this->assertStringNotContainsString( 'Order synced correctly', $notes[0]->content );
 	}
 
 	public function test_create_order_company_without_errors() {
