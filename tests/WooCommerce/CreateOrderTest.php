@@ -143,10 +143,9 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertSame( 'error', $result['status'] );
 		$this->assertSame( '{"contactEmail":"customer@example.com"}', $order->get_meta( '_test_connector_log_payload', true ) );
 
-		$notes = get_comments(
+		$notes = wc_get_order_notes(
 			array(
-				'post_id' => $order->get_id(),
-				'type'    => 'order_note',
+				'order_id' => $order->get_id(),
 			)
 		);
 		$this->assertCount( 1, $notes );

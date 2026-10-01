@@ -126,7 +126,7 @@ class Orders {
 		}
 
 		// Email attachments.
-		if ( $this->options['order_send_attachments'] ) {
+		if ( ! empty( $this->options['order_send_attachments'] ) ) {
 			add_filter( 'woocommerce_email_attachments', array( $this, 'attach_file_woocommerce_email' ), 10, 3 );
 		}
 
