@@ -448,6 +448,77 @@ class ConnectorSyncGatingTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * An order can hold diagnostic payloads for several connectors. The widget
+	 * must expose each of them, rather than only the currently active one.
+	 *
+	 * @return void
+	 */
+	public function test_widget_order_collects_payloads_for_each_connector(): void {
+		$mock_api = $this->createMock( stdClass::class );
+		$connector = $this->make_default_connector( $mock_api );
+		$connectors_data = array(
+			'active' => 'connector_a',
+			'items'  => array(
+				'connector_a' => array(
+					'options' => array( 'slug' => 'connector_a', 'name' => 'Connector A' ),
+					'meta'    => array( 'label' => 'ERP A' ),
+				),
+				'connector_b' => array(
+					'options' => array( 'slug' => 'connector_b', 'name' => 'Connector B' ),
+					'meta'    => array( 'label' => 'ERP B' ),
+				),
+			),
+		);
+		$widget = new Widget_Order( $connector, $connectors_data );
+		$order  = wc_create_order();
+		$order->update_meta_data( '_connector_a_log_payload', '{"source":"a"}' );
+		$order->update_meta_data( '_connector_b_log_payload', '{"source":"b"}' );
+		$order->save();
+
+		$payloads = $this->invoke_private( $widget, 'get_log_payload_connectors', array( $order ) );
+
+		$this->assertSame( 'ERP A', $payloads['connector_a']['label'] );
+		$this->assertSame( '{"source":"a"}', $payloads['connector_a']['payload'] );
+		$this->assertSame( 'ERP B', $payloads['connector_b']['label'] );
+		$this->assertSame( '{"source":"b"}', $payloads['connector_b']['payload'] );
+	}
+
+	/**
+	 * Two configured instances of the same connector type must use distinct
+	 * order metadata and clearly labelled list-table columns.
+	 *
+	 * @return void
+	 */
+	public function test_order_columns_use_each_connector_instance_metadata(): void {
+		update_option( $this->option_name, array(
+			'connectors_meta' => array(
+				'odoo_retail' => array(
+					'type'      => 'clientify',
+					'label'     => 'Retail ERP',
+					'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+					'status'    => 'active',
+				),
+				'odoo_b2b'    => array(
+					'type'      => 'clientify',
+					'label'     => 'B2B ERP',
+					'workflows' => array( 'products' => 'yes', 'orders' => 'yes' ),
+					'status'    => 'active',
+				),
+			),
+			'connector' => 'odoo_retail',
+		) );
+
+		$connectors_data = HELPER::get_connectors( $this->connector_type_definitions() );
+		$orders          = new Orders( $connectors_data['items']['odoo_retail'], $connectors_data );
+		$syncable        = $this->invoke_private( $orders, 'get_syncable_connectors' );
+
+		$this->assertSame( '_odoo_retail_invoice_id', $syncable['odoo_retail']['meta_key_order'] );
+		$this->assertSame( '_odoo_b2b_invoice_id', $syncable['odoo_b2b']['meta_key_order'] );
+		$this->assertSame( 'Retail ERP', $syncable['odoo_retail']['column_label'] );
+		$this->assertSame( 'B2B ERP', $syncable['odoo_b2b']['column_label'] );
+	}
+
+	/**
 	 * An unknown connector_id must not silently fall back to the default
 	 * connector: it must be rejected, since routing to the wrong connector
 	 * would violate "sync always uses the [requested] active connector".

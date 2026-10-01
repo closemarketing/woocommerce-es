@@ -103,6 +103,57 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$this->assertSame( '', ORDER::clean_special_chars( 'Массачусетс' ) );
 	}
 
+	/**
+	 * A connector error must never leave a misleading success note behind. Its
+	 * payload is retained for an administrator even when debug mode is disabled.
+	 *
+	 * @return void
+	 */
+	public function test_create_invoice_records_error_note_and_payload_without_debug_mode() {
+		$order = wc_create_order();
+		$order->set_billing_email( 'customer@example.com' );
+		$order->save();
+
+		$api = $this->getMockBuilder( stdClass::class )
+			->setMethods( array( 'create_order' ) )
+			->getMock();
+		$api->expects( $this->once() )
+			->method( 'create_order' )
+			->willReturn(
+				array(
+					'status'      => 'error',
+					'message'     => 'Remote contact search failed',
+					'document_id' => '',
+					'invoice_id'  => '',
+					'log_payload' => '{"contactEmail":"customer@example.com"}',
+				)
+			);
+
+		$result = ORDER::create_invoice(
+			$this->settings,
+			$order->get_id(),
+			'_test_connector_invoice_id',
+			'test_connector',
+			$api,
+			true,
+			'no',
+			'Test connector'
+		);
+
+		$this->assertSame( 'error', $result['status'] );
+		$this->assertSame( '{"contactEmail":"customer@example.com"}', $order->get_meta( '_test_connector_log_payload', true ) );
+
+		$notes = get_comments(
+			array(
+				'post_id' => $order->get_id(),
+				'type'    => 'order_note',
+			)
+		);
+		$this->assertCount( 1, $notes );
+		$this->assertStringContainsString( 'Error syncing order with Test connector: Remote contact search failed', $notes[0]->comment_content );
+		$this->assertStringNotContainsString( 'Order synced correctly', $notes[0]->comment_content );
+	}
+
 	public function test_create_order_company_without_errors() {
 		$order = new WC_Order();
 		$client_data = [
