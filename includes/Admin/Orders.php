@@ -96,7 +96,7 @@ class Orders {
 		$this->options           = $connector['options'];
 		$this->settings          = $connector['settings'] ?? array();
 		$this->connapi_erp       = $connector['connapi_erp'];
-		$ecstatus                = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$ecstatus                = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : ( $this->options['order_only_order_completed'] ?? 'completed' );
 		$this->ecstatus          = $ecstatus;
 		$this->order_meta_prefix = $connector['order_meta_prefix'] ?? $this->options['slug'];
 		$this->meta_key_order    = '_' . $this->order_meta_prefix . '_invoice_id';

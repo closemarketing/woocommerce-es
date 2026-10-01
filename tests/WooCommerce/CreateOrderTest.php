@@ -130,7 +130,7 @@ class CreateOrderTest extends WP_UnitTestCase {
 			);
 
 		$result = ORDER::create_invoice(
-			$this->settings,
+			array_merge( $this->settings, array( 'freeorder' => 'yes' ) ),
 			$order->get_id(),
 			'_test_connector_invoice_id',
 			'test_connector',
