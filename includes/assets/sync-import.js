@@ -184,10 +184,15 @@ function loadImportStats() {
 
 			const sublabel = document.getElementById('stat-available-sublabel');
 			if ( sublabel ) {
-				if ( d.filter_tag && d.api_total_count !== undefined && d.api_total_count !== d.available_count ) {
+				if ( d.products_without_sku_count !== null && d.products_without_sku_count !== undefined ) {
 					const i18n = ConEcom_ajaxAction.i18n || {};
 					sublabel.style.display = '';
-					sublabel.innerHTML = (i18n.tag_label || 'Tag:') + ' <strong>' + d.filter_tag + '</strong><br><small>' + (i18n.total_label || 'Total:') + ' ' + Number(d.api_total_count).toLocaleString() + '</small>';
+					sublabel.textContent = (i18n.products_without_sku_label || 'Productos sin SKU:') + ' ' + Number(d.products_without_sku_count).toLocaleString();
+				} else if ( d.filter_tag && d.api_total_count !== undefined && d.api_total_count !== d.available_count ) {
+					const i18n = ConEcom_ajaxAction.i18n || {};
+					sublabel.style.display = '';
+					const total = (i18n.total_label || 'Total:') + ' ' + Number(d.api_total_count).toLocaleString();
+					sublabel.textContent = (i18n.tag_label || 'Tag:') + ' ' + d.filter_tag + ' · ' + total;
 				} else {
 					sublabel.style.display = 'none';
 					sublabel.innerHTML = '';

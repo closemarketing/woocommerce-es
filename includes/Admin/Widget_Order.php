@@ -100,7 +100,7 @@ class Widget_Order {
 	 * @return void
 	 */
 	public function metabox_orders() {
-		$screen = get_current_screen()->id == 'woocommerce_page_wc-orders' ? wc_get_page_screen_id( 'shop-order' ) : 'shop_order';
+		$screen = get_current_screen()->id === 'woocommerce_page_wc-orders' ? wc_get_page_screen_id( 'shop-order' ) : 'shop_order';
 
 		add_meta_box(
 			'cw-order-checker',
@@ -111,7 +111,7 @@ class Widget_Order {
 			'core'
 		);
 
-		// Register log payload metabox only when the meta is not empty.
+		// Register log payload metaboxes only when an individual connector saved one.
 		add_action( 'add_meta_boxes_' . $screen, array( $this, 'maybe_add_log_payload_metabox' ) );
 	}
 
@@ -157,13 +157,14 @@ class Widget_Order {
 		$conn_data   = $this->connectors[ $conn_id ] ?? array();
 		$options     = $conn_data['options'] ?? $this->options;
 		$connapi_erp = $conn_data['connapi_erp'] ?? $this->connapi_erp;
+		$meta_prefix = $conn_data['order_meta_prefix'] ?? $options['slug'];
 		$select_id   = 'connwoo-widget-connector-order-' . $order_id . '-' . $conn_id;
 
 		echo '<table>';
 		echo '<tr><td colspan="2"><strong>' . esc_html( $conn_label ) . '</strong></td></tr>';
 		echo '<tr><td><strong>' . esc_html__( 'Order', 'woocommerce-es' ) . '</strong></td>';
 
-		$order_key  = '_' . $options['slug'] . '_invoice_id';
+		$order_key  = '_' . $meta_prefix . '_invoice_id';
 		$invoice_id = $order->get_meta( $order_key, true );
 		echo '<td>Web: #' . esc_html( $order_id ) . '<br/>';
 		echo 'ERP: ';
@@ -191,7 +192,7 @@ class Widget_Order {
 		echo '</td></tr>';
 
 		if ( ! empty( $connapi_erp ) ) {
-			$this->show_document_download_row( $order, $options, $connapi_erp );
+			$this->show_document_download_row( $order, $options, $connapi_erp, $meta_prefix );
 		}
 
 		// Show refunds if exist and the connector supports sending them to the ERP.
@@ -213,7 +214,7 @@ class Widget_Order {
 
 			foreach ( $refunds as $refund ) {
 				$refund_id     = $refund->get_id();
-				$refund_key    = '_' . $options['slug'] . '_refund_doc_id';
+				$refund_key    = '_' . $meta_prefix . '_refund_doc_id';
 				$refund_doc_id = $refund->get_meta( $refund_key, true );
 
 				echo '<tr><td>';
@@ -255,12 +256,14 @@ class Widget_Order {
 	 * @param \WC_Order $order       Order object.
 	 * @param array     $options     Connector options (falls back to the active connector's).
 	 * @param object    $connapi_erp Connector API object (falls back to the active connector's).
+	 * @param string    $meta_prefix Connector-specific metadata prefix.
 	 * @return void
 	 */
-	private function show_document_download_row( $order, $options = null, $connapi_erp = null ) {
+	private function show_document_download_row( $order, $options = null, $connapi_erp = null, $meta_prefix = '' ) {
 		$options     = $options ?? $this->options;
 		$connapi_erp = $connapi_erp ?? $this->connapi_erp;
-		$api_doc_id  = $order->get_meta( '_' . $options['slug'] . '_doc_id' );
+		$meta_prefix = ! empty( $meta_prefix ) ? $meta_prefix : $options['slug'];
+		$api_doc_id  = $order->get_meta( '_' . $meta_prefix . '_doc_id' );
 
 		if ( empty( $api_doc_id ) || ! HELPER::connector_supports( $connapi_erp, 'get_order_pdf' ) ) {
 			return;
@@ -281,41 +284,82 @@ class Widget_Order {
 	 * @return void
 	 */
 	public function maybe_add_log_payload_metabox( $post ) {
-		$is_debug = isset( $this->settings['debug_log'] ) && 'on' === $this->settings['debug_log'];
-
-		if ( ! $is_debug ) {
+		$order = wc_get_order( $post->ID );
+		if ( empty( $order ) ) {
 			return;
 		}
 
-		$order       = wc_get_order( $post->ID );
-		$payload_key = '_' . $this->options['slug'] . '_log_payload';
+		$screen = get_current_screen()->id === 'woocommerce_page_wc-orders' ? wc_get_page_screen_id( 'shop-order' ) : 'shop_order';
 
-		if ( empty( $order ) || empty( $order->get_meta( $payload_key, true ) ) ) {
-			return;
+		foreach ( $this->get_log_payload_connectors( $order ) as $connector_id => $payload_data ) {
+			add_meta_box(
+				'cw-order-log-payload-' . sanitize_html_class( $connector_id ),
+				sprintf(
+					/* translators: %s: connector label. */
+					__( 'Connect Log Payload — %s', 'woocommerce-es' ),
+					$payload_data['label']
+				),
+				array( $this, 'metabox_show_log_payload' ),
+				$screen,
+				'normal',
+				'low',
+				$payload_data
+			);
+		}
+	}
+
+	/**
+	 * Gets every connector payload stored on an order.
+	 *
+	 * Error payloads are saved even when debug mode is disabled, so the order
+	 * screen must not depend on the currently selected connector or its current
+	 * debug setting to make that diagnostic data available.
+	 *
+	 * @param \WC_Order $order Order instance.
+	 * @return array<string, array{label: string, payload: string}>
+	 */
+	private function get_log_payload_connectors( $order ) {
+		$payloads = array();
+		foreach ( $this->connectors as $connector_id => $connector_data ) {
+			$options     = $connector_data['options'] ?? array();
+			$meta_prefix = $connector_data['order_meta_prefix'] ?? $options['slug'] ?? '';
+			$log_payload = $meta_prefix ? $order->get_meta( '_' . $meta_prefix . '_log_payload', true ) : '';
+			if ( empty( $log_payload ) ) {
+				continue;
+			}
+
+			$payloads[ $connector_id ] = array(
+				'label'   => $connector_data['meta']['label'] ?? $options['name'] ?? $connector_id,
+				'payload' => $log_payload,
+			);
 		}
 
-		$screen = get_current_screen()->id == 'woocommerce_page_wc-orders' ? wc_get_page_screen_id( 'shop-order' ) : 'shop_order';
+		if ( ! empty( $payloads ) ) {
+			return $payloads;
+		}
 
-		add_meta_box(
-			'cw-order-log-payload',
-			__( 'Connect Log Payload', 'woocommerce-es' ),
-			array( $this, 'metabox_show_log_payload' ),
-			$screen,
-			'normal',
-			'low'
-		);
+		$slug        = $this->options['slug'] ?? '';
+		$log_payload = ! empty( $slug ) ? $order->get_meta( '_' . $slug . '_log_payload', true ) : '';
+		if ( ! empty( $log_payload ) ) {
+			$connector_id              = ! empty( $this->connector_id ) ? $this->connector_id : $slug;
+			$payloads[ $connector_id ] = array(
+				'label'   => $this->options['name'] ?? $slug,
+				'payload' => $log_payload,
+			);
+		}
+
+		return $payloads;
 	}
 
 	/**
 	 * Metabox showing the log payload JSON for the order.
 	 *
-	 * @param object $post Post object.
+	 * @param object $post    Post object.
+	 * @param array  $metabox Metabox configuration and payload data.
 	 * @return void
 	 */
-	public function metabox_show_log_payload( $post ) {
-		$order       = wc_get_order( $post->ID );
-		$payload_key = '_' . $this->options['slug'] . '_log_payload';
-		$log_payload = $order->get_meta( $payload_key, true );
+	public function metabox_show_log_payload( $post, $metabox = array() ) {
+		$log_payload = $metabox['args']['payload'] ?? '';
 
 		if ( empty( $log_payload ) ) {
 			return;

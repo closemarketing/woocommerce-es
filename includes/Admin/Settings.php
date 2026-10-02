@@ -1533,16 +1533,6 @@ class Settings {
 						</p>
 					</div>
 				<?php else : ?>
-					<?php if ( ! $is_orders && ! $selected_no_ai ) : ?>
-						<p>
-							<label for="connect_ecommerce_ai"><?php esc_html_e( 'AI generation SEO options for products:', 'woocommerce-es' ); ?></label>
-							<select name="connwoo-sync-product-ai" id="connect_ecommerce_ai">
-								<option value="none"><?php esc_html_e( 'None', 'woocommerce-es' ); ?></option>
-								<option value="new"><?php esc_html_e( 'NEW Products', 'woocommerce-es' ); ?></option>
-								<option value="all"><?php esc_html_e( 'ALL Products', 'woocommerce-es' ); ?></option>
-							</select>
-						</p>
-					<?php endif; ?>
 					<?php
 					$has_get_all_product_skus = ! $is_orders && ! empty( $selected_connapi ) && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );
 					if ( $has_get_all_product_skus ) {

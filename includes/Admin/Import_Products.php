@@ -189,9 +189,10 @@ class Import_Products {
 					'status_failed'      => __( 'Failed', 'woocommerce-es' ),
 					'status_pending'     => __( 'Pending', 'woocommerce-es' ),
 					'status_in_progress' => __( 'Running', 'woocommerce-es' ),
-					'status_canceled'    => __( 'Canceled', 'woocommerce-es' ),
-					'tag_label'          => __( 'Tag:', 'woocommerce-es' ),
-					'total_label'        => __( 'Total:', 'woocommerce-es' ),
+					'status_canceled'            => __( 'Canceled', 'woocommerce-es' ),
+					'tag_label'                  => __( 'Tag:', 'woocommerce-es' ),
+					'total_label'                => __( 'Total:', 'woocommerce-es' ),
+					'products_without_sku_label' => __( 'Products without SKU:', 'woocommerce-es' ),
 				),
 			)
 		);
@@ -440,11 +441,12 @@ class Import_Products {
 
 		wp_send_json_success(
 			array(
-				'api_count'       => $result['api_count'],
-				'api_total_count' => $result['api_total_count'],
-				'available_count' => $result['available_count'],
-				'filter_tag'      => $result['filter_tag'],
-				'wp_count'        => $result['wp_count'],
+				'api_count'                  => $result['api_count'],
+				'api_total_count'            => $result['api_total_count'],
+				'products_without_sku_count' => $result['products_without_sku_count'],
+				'available_count'            => $result['available_count'],
+				'filter_tag'                 => $result['filter_tag'],
+				'wp_count'                   => $result['wp_count'],
 				'import_count'    => $result['import_count'],
 				'new_count'       => $result['new_count'],
 				'outdated_count'  => $result['outdated_count'],

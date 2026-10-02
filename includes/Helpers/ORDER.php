@@ -34,11 +34,13 @@ class ORDER {
 	 * @param string $connector_name Connector display name, shown in the order note so it's
 	 *                               clear which ERP a multi-connector site synced to. Falls
 	 *                               back to $option_prefix when not given.
+	 * @param string $meta_prefix    Per-connector prefix for order metadata.
 	 *
 	 * @return array
 	 */
-	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false, $default_freeorder = 'no', $connector_name = '' ) {
+	public static function create_invoice( $settings, $order_id, $meta_key_order, $option_prefix, $api_erp, $force = false, $default_freeorder = 'no', $connector_name = '', $meta_prefix = '' ) {
 		$connector_name = ! empty( $connector_name ) ? $connector_name : $option_prefix;
+		$meta_prefix    = ! empty( $meta_prefix ) ? $meta_prefix : $option_prefix;
 		$order          = wc_get_order( $order_id );
 		$order_total    = (float) $order->get_total();
 		$ec_invoice_id  = $order->get_meta( $meta_key_order );
@@ -77,22 +79,28 @@ class ORDER {
 		$order_data = self::generate_order_data( $settings, $order, $option_prefix );
 		if ( empty( $ec_invoice_id ) || $force ) {
 			try {
-				$doc_id     = $order->get_meta( '_' . $option_prefix . '_doc_id' );
+				$doc_id     = $order->get_meta( '_' . $meta_prefix . '_doc_id' );
 				$invoice_id = $order->get_meta( $meta_key_order );
 				$result     = $api_erp->create_order( $order_data, $doc_id, $invoice_id, $force );
 
-				$doc_id     = 'error' === $result['status'] ? '' : ( $result['document_id'] ?? '' );
+				$is_error   = 'error' === ( $result['status'] ?? 'error' );
+				$doc_id     = $is_error ? '' : ( $result['document_id'] ?? '' );
 				$invoice_id = isset( $result['invoice_id'] ) ? $result['invoice_id'] : $invoice_id;
 				$order->update_meta_data( $meta_key_order, $invoice_id );
-				$order->update_meta_data( '_' . $option_prefix . '_doc_id', $doc_id );
-				$order->update_meta_data( '_' . $option_prefix . '_doc_type', $doctype );
-				if ( $is_debug_log && isset( $result['log_payload'] ) ) {
-					$order->update_meta_data( '_' . $option_prefix . '_log_payload', $result['log_payload'] );
+				$order->update_meta_data( '_' . $meta_prefix . '_doc_id', $doc_id );
+				$order->update_meta_data( '_' . $meta_prefix . '_doc_type', $doctype );
+				if ( ( $is_debug_log || $is_error ) && isset( $result['log_payload'] ) ) {
+					$order->update_meta_data( '_' . $meta_prefix . '_log_payload', $result['log_payload'] );
 				}
 				$order->save();
 
-				/* translators: %1$s: connector display name (e.g. Odoo, Holded). %2$s: ERP order/invoice ID. */
-				$order_msg = sprintf( __( 'Order synced correctly with %1$s, ID: %2$s', 'woocommerce-es' ), $connector_name, $invoice_id );
+				if ( $is_error ) {
+					/* translators: %1$s: connector display name (e.g. Odoo, Holded). %2$s: error message returned by the connector. */
+					$order_msg = sprintf( __( 'Error syncing order with %1$s: %2$s', 'woocommerce-es' ), $connector_name, $result['message'] ?? __( 'Unknown error occurred', 'woocommerce-es' ) );
+				} else {
+					/* translators: %1$s: connector display name (e.g. Odoo, Holded). %2$s: ERP order/invoice ID. */
+					$order_msg = sprintf( __( 'Order synced correctly with %1$s, ID: %2$s', 'woocommerce-es' ), $connector_name, $invoice_id );
+				}
 
 				$order->add_order_note( $order_msg );
 			} catch ( \Exception $e ) {
@@ -125,10 +133,12 @@ class ORDER {
 	 * @param array  $args Arguments.
 	 * @param string $option_prefix Option prefix.
 	 * @param object $api_erp API ERP.
+	 * @param string $meta_prefix Per-connector prefix for refund metadata.
 	 *
 	 * @return array
 	 */
-	public static function create_refund_invoice( $settings, $refund_id, $args, $option_prefix, $api_erp ) {
+	public static function create_refund_invoice( $settings, $refund_id, $args, $option_prefix, $api_erp, $meta_prefix = '' ) {
+		$meta_prefix = ! empty( $meta_prefix ) ? $meta_prefix : $option_prefix;
 		if ( ! method_exists( $api_erp, 'create_refund' ) ) {
 			return array(
 				'status'  => 'error',
@@ -158,8 +168,8 @@ class ORDER {
 			// Stored on the refund itself (not the parent order) so each refund of a
 			// multi-refund order keeps its own ERP doc/invoice id instead of the
 			// last-synced refund overwriting the others.
-			$refund->update_meta_data( '_' . $option_prefix . '_refund_doc_id', $result['document_id'] );
-			$refund->update_meta_data( '_' . $option_prefix . '_refund_invoice_id', $result['invoice_id'] );
+			$refund->update_meta_data( '_' . $meta_prefix . '_refund_doc_id', $result['document_id'] );
+			$refund->update_meta_data( '_' . $meta_prefix . '_refund_invoice_id', $result['invoice_id'] );
 			$refund->save();
 		}
 		$order->add_order_note( $order_msg );

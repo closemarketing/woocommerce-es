@@ -34,6 +34,13 @@ class Orders {
 	private $meta_key_order;
 
 	/**
+	 * Per-connector prefix used for document and diagnostic metadata.
+	 *
+	 * @var string
+	 */
+	private $order_meta_prefix;
+
+	/**
 	 * API Object
 	 *
 	 * @var object
@@ -101,9 +108,10 @@ class Orders {
 		$this->options           = $connector['options'];
 		$this->settings          = $connector['settings'] ?? array();
 		$this->connapi_erp       = $connector['connapi_erp'];
-		$ecstatus                = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : $this->options['order_only_order_completed'];
+		$ecstatus                = isset( $this->settings['ecstatus'] ) ? $this->settings['ecstatus'] : ( $this->options['order_only_order_completed'] ?? 'completed' );
 		$this->ecstatus          = $ecstatus;
-		$this->meta_key_order    = '_' . $this->options['slug'] . '_invoice_id';
+		$this->order_meta_prefix = $connector['order_meta_prefix'] ?? $this->options['slug'];
+		$this->meta_key_order    = '_' . $this->order_meta_prefix . '_invoice_id';
 		$this->default_freeorder = ! empty( $this->options['order_import_free_order'] ) ? 'yes' : 'no';
 		$this->connectors        = $connectors_data['items'] ?? array();
 
@@ -130,7 +138,7 @@ class Orders {
 		}
 
 		// Email attachments.
-		if ( $this->options['order_send_attachments'] ) {
+		if ( ! empty( $this->options['order_send_attachments'] ) ) {
 			add_filter( 'woocommerce_email_attachments', array( $this, 'attach_file_woocommerce_email' ), 10, 3 );
 			add_filter( 'woocommerce_email_enabled_customer_completed_order', array( $this, 'maybe_hold_completed_email' ), 10, 3 );
 			add_action( 'conecom_release_held_email', array( $this, 'release_held_email' ), 10, 2 );
@@ -196,7 +204,7 @@ class Orders {
 				as_schedule_single_action( time() + 30, 'conecom_async_send_order_erp', array( $order_id ), 'connect-ecommerce' );
 			}
 		} else {
-			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'], $this->order_meta_prefix );
 		}
 	}
 
@@ -212,7 +220,7 @@ class Orders {
 	 */
 	public function async_send_order_erp( $order_id ) {
 		if ( 'manual' !== $this->ecstatus ) {
-			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'] );
+			ORDER::create_invoice( $this->settings, $order_id, $this->meta_key_order, $this->options['slug'], $this->connapi_erp, false, $this->default_freeorder, $this->options['name'], $this->order_meta_prefix );
 		}
 		// Always release a held email, with or without document, so the customer never loses it.
 		$this->release_held_email( $order_id );
@@ -244,7 +252,7 @@ class Orders {
 		if ( 'manual' === $this->ecstatus || ! function_exists( 'as_schedule_single_action' ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
 			return $enabled;
 		}
-		if ( $order->get_meta( '_' . $this->options['slug'] . '_doc_id' ) || 'nocreate' === $order->get_meta( $this->meta_key_order ) ) {
+		if ( $order->get_meta( '_' . $this->order_meta_prefix . '_doc_id' ) || 'nocreate' === $order->get_meta( $this->meta_key_order ) ) {
 			return $enabled;
 		}
 
@@ -261,7 +269,7 @@ class Orders {
 			return $enabled;
 		}
 
-		$slug = $this->options['slug'];
+		$slug = $this->order_meta_prefix;
 		$order->update_meta_data( self::get_email_held_meta_key( $slug ), 1 );
 		$order->save();
 		// The holding connector is part of the arguments: the active connector may change before this runs.
@@ -304,7 +312,7 @@ class Orders {
 	 * @return void
 	 */
 	public function release_held_email( $order_id, $slug = '' ) {
-		$slug  = ! empty( $slug ) ? $slug : $this->options['slug'];
+		$slug  = ! empty( $slug ) ? $slug : $this->order_meta_prefix;
 		$order = wc_get_order( $order_id );
 		if ( ! $order || ! $order->get_meta( self::get_email_held_meta_key( $slug ) ) ) {
 			return;
@@ -346,7 +354,7 @@ class Orders {
 	 * @return void
 	 */
 	public function refunded_created( $refund_id, $args ) {
-		ORDER::create_refund_invoice( $this->settings, $refund_id, $args, $this->options['slug'], $this->connapi_erp );
+		ORDER::create_refund_invoice( $this->settings, $refund_id, $args, $this->options['slug'], $this->connapi_erp, $this->order_meta_prefix );
 	}
 
 	/**
@@ -377,21 +385,22 @@ class Orders {
 	 * disabled, connapi_erp is returned as null: callers must not sync orders in that case.
 	 *
 	 * @param string $connector_id Connector ID from request, or empty for the default connector.
-	 * @return array List of ( $connapi_erp, $settings, $options, $meta_key_order ).
+	 * @return array List of ( $connapi_erp, $settings, $options, $meta_key_order, $meta_prefix ).
 	 */
 	private function resolve_connector( $connector_id ) {
 		if ( ! empty( $connector_id ) ) {
 			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
 			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
 			if ( ! $connector_data || ! HELPER::is_workflow_enabled_for_connector( $connector_data['meta'] ?? array(), 'orders' ) ) {
-				return array( null, array(), array(), '' );
+				return array( null, array(), array(), '', '' );
 			}
 			if ( isset( $connector_data['connapi_erp'] ) ) {
 				$options = $connector_data['options'];
-				return array( $connector_data['connapi_erp'], $connector_data['settings'], $options, '_' . $options['slug'] . '_invoice_id' );
+				$meta_prefix = $connector_data['order_meta_prefix'] ?? $options['slug'];
+				return array( $connector_data['connapi_erp'], $connector_data['settings'], $options, '_' . $meta_prefix . '_invoice_id', $meta_prefix );
 			}
 		}
-		return array( $this->connapi_erp, $this->settings, $this->options, $this->meta_key_order );
+		return array( $this->connapi_erp, $this->settings, $this->options, $this->meta_key_order, $this->order_meta_prefix );
 	}
 
 	/**
@@ -411,7 +420,7 @@ class Orders {
 
 		// Get connector from request or use default.
 		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
-		list( $connapi_erp, $settings, $options, $meta_key_order ) = $this->resolve_connector( $connector_id );
+		list( $connapi_erp, $settings, $options, $meta_key_order, $meta_prefix ) = $this->resolve_connector( $connector_id );
 		if ( empty( $connapi_erp ) ) {
 			wp_send_json_error( array( 'msg' => __( 'Connector not available for orders sync', 'woocommerce-es' ) ) );
 			return;
@@ -501,7 +510,7 @@ class Orders {
 						// Manual has no completion hook to retry a postponed order later, so this
 						// batch export is treated the same as an explicit per-order manual request.
 						$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
-						$result            = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp, 'manual' === $this->ecstatus, $default_freeorder, $options['name'] );
+						$result            = ORDER::create_invoice( $settings, $item['id'], $meta_key_order, $options['slug'], $connapi_erp, 'manual' === $this->ecstatus, $default_freeorder, $options['name'], $meta_prefix );
 
 						$message .= 'ok' === $result['status'] ? __( 'Order Created.', 'woocommerce-es' ) : __( 'Order not created.', 'woocommerce-es' );
 						$message .= ' ' . $result['message'];
@@ -564,8 +573,8 @@ class Orders {
 		if ( ! $order ) {
 			return $attachments;
 		}
-		$api_doc_id   = $order->get_meta( '_' . $this->options['slug'] . '_doc_id' );
-		$api_doc_type = $order->get_meta( '_' . $this->options['slug'] . '_doc_type' );
+		$api_doc_id   = $order->get_meta( '_' . $this->order_meta_prefix . '_doc_id' );
+		$api_doc_type = $order->get_meta( '_' . $this->order_meta_prefix . '_doc_type' );
 
 		if ( $api_doc_id && ! empty( $this->connapi_erp ) && HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
 			$file_document_path = $this->connapi_erp->get_order_pdf( $this->settings, $api_doc_type, $api_doc_id );
@@ -594,6 +603,7 @@ class Orders {
 					'options'        => $this->options,
 					'connapi_erp'    => $this->connapi_erp,
 					'meta_key_order' => $this->meta_key_order,
+					'column_label'   => $this->options['name'],
 				),
 			);
 		}
@@ -607,7 +617,8 @@ class Orders {
 			$syncable[ $conn_id ] = array(
 				'options'        => $conn_data['options'],
 				'connapi_erp'    => $conn_data['connapi_erp'],
-				'meta_key_order' => '_' . $conn_data['options']['slug'] . '_invoice_id',
+				'meta_key_order' => '_' . ( $conn_data['order_meta_prefix'] ?? $conn_data['options']['slug'] ) . '_invoice_id',
+				'column_label'   => $conn_meta['label'] ?? $conn_data['options']['name'],
 			);
 		}
 		return $syncable;
@@ -628,7 +639,7 @@ class Orders {
 			if ( 'order_status' === $key ) {
 				// Inserting after "Status" column.
 				foreach ( $syncable as $conn_id => $conn_data ) {
-					$reordered_columns[ 'conecom-' . $conn_id ] = $conn_data['options']['name'];
+					$reordered_columns[ 'conecom-' . $conn_id ] = $conn_data['column_label'];
 				}
 			}
 		}
@@ -684,7 +695,7 @@ class Orders {
 		$type         = isset( $_POST['type'] ) ? sanitize_text_field( wp_unslash( $_POST['type'] ) ) : '';
 		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_text_field( wp_unslash( $_POST['connector_id'] ) ) : '';
 
-		list( $connapi_erp, $settings, $options, $meta_key_order ) = $this->resolve_connector( $connector_id );
+		list( $connapi_erp, $settings, $options, $meta_key_order, $meta_prefix ) = $this->resolve_connector( $connector_id );
 		if ( empty( $connapi_erp ) ) {
 			wp_send_json_error( array( 'message' => __( 'Connector not available for orders sync', 'woocommerce-es' ) ) );
 			return;
@@ -693,9 +704,9 @@ class Orders {
 		$default_freeorder = ! empty( $options['order_import_free_order'] ) ? 'yes' : 'no';
 
 		if ( 'erp-post' === $type ) {
-			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder, $options['name'] );
+			$result = ORDER::create_invoice( $settings, $order_id, $meta_key_order, $options['slug'], $connapi_erp, true, $default_freeorder, $options['name'], $meta_prefix );
 			// Only this instance's connector holds the email, and its document is the one attached.
-			if ( $options['slug'] === $this->options['slug'] ) {
+			if ( $meta_prefix === $this->order_meta_prefix ) {
 				$this->release_held_email( $order_id );
 			}
 		} elseif ( 'erp-refund' === $type ) {
@@ -726,7 +737,7 @@ class Orders {
 				);
 			}
 
-			$result = ORDER::create_refund_invoice( $settings, $order_id, $args, $options['slug'], $connapi_erp );
+			$result = ORDER::create_refund_invoice( $settings, $order_id, $args, $options['slug'], $connapi_erp, $meta_prefix );
 		}
 
 		// Check result status and respond accordingly.

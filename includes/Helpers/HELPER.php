@@ -470,6 +470,7 @@ class HELPER {
 		}
 
 		$connector['options']            = $connector_options;
+		$connector['order_meta_prefix']  = self::get_order_meta_prefix( $connector_id, $connector_type, $connector_options );
 		$apiname                         = 'Connect_Ecommerce_' . $connector_options['name'];
 		$connector['is_disabled_orders'] = isset( $connector_options['disable_modules'] ) && in_array( 'order', $connector_options['disable_modules'], true );
 		$connector['is_disabled_ai']     = isset( $connector_options['disable_modules'] ) && in_array( 'ai', $connector_options['disable_modules'], true );
@@ -501,6 +502,26 @@ class HELPER {
 			return sanitize_key( $base_action );
 		}
 		return sanitize_key( $base_action . '_' . $connector_id );
+	}
+
+	/**
+	 * Gets the order metadata prefix for a connector instance.
+	 *
+	 * Legacy single-connector installations keep their connector-declared slug.
+	 * Additional instances use their own ID so order documents, payloads, and
+	 * refunds cannot overwrite data belonging to another instance of the same ERP.
+	 *
+	 * @param string $connector_id      Configured connector instance ID.
+	 * @param string $connector_type    Registered connector type.
+	 * @param array  $connector_options Registered connector options.
+	 * @return string
+	 */
+	public static function get_order_meta_prefix( $connector_id, $connector_type, $connector_options ) {
+		$legacy_slug = $connector_options['slug'] ?? '';
+		if ( $connector_id === $connector_type && ! empty( $legacy_slug ) ) {
+			return $legacy_slug;
+		}
+		return sanitize_key( $connector_id );
 	}
 
 	/**
