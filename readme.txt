@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 3.5.0-beta.4
-Version: 3.5.0-beta.4
+Stable tag: 3.5.1-beta.1
+Version: 3.5.1-beta.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -226,6 +226,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 
+* Fixed: The "Order completed" email is held until the ERP document exists, so the PDF is attached to it; free orders without a document and orders already syncing are handled, and the email is released once even when several runners compete.
 * Fixed: Connector settings no longer call the optional product-attributes API for connectors that do not implement it.
 * Added: Connector integrations can declare custom product or order settings fields without requiring a core-plugin change.
 * Added: Import a selected ERP attribute group as WooCommerce product brands when the product_brand taxonomy is available.
