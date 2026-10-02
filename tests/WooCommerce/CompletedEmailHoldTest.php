@@ -124,7 +124,7 @@ class CompletedEmailHoldTest extends WP_UnitTestCase {
 		$this->assertFalse( $orders->maybe_hold_completed_email( true, $order, null ) );
 		$this->assertEquals( 1, wc_get_order( $order->get_id() )->get_meta( '_conecom_test_email_held' ) );
 		$this->assertNotFalse( as_next_scheduled_action( 'conecom_async_send_order_erp', array( $order->get_id() ) ) );
-		$this->assertNotFalse( as_next_scheduled_action( 'conecom_release_held_email', array( $order->get_id() ) ) );
+		$this->assertNotFalse( as_next_scheduled_action( 'conecom_release_held_email', array( $order->get_id(), 'conecom_test' ) ) );
 	}
 
 	/**
@@ -196,7 +196,7 @@ class CompletedEmailHoldTest extends WP_UnitTestCase {
 
 		$this->assertSame( 1, $this->mails_sent );
 		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_conecom_test_email_held' ) );
-		$this->assertFalse( as_next_scheduled_action( 'conecom_release_held_email', array( $order->get_id() ) ) );
+		$this->assertFalse( as_next_scheduled_action( 'conecom_release_held_email', array( $order->get_id(), 'conecom_test' ) ) );
 	}
 
 	/**
@@ -212,5 +212,47 @@ class CompletedEmailHoldTest extends WP_UnitTestCase {
 
 		$this->assertSame( 1, $this->mails_sent );
 		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_conecom_test_email_held' ) );
+	}
+
+	/**
+	 * A zero-total order that will not get a document is not held.
+	 */
+	public function test_does_not_hold_free_order_without_document() {
+		$orders = $this->make_orders( new Conecom_Test_Pdf_Connector() );
+		$order  = $this->make_order( 0 );
+
+		$this->assertTrue( $orders->maybe_hold_completed_email( true, $order, null ) );
+		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_conecom_test_email_held' ) );
+	}
+
+	/**
+	 * The fallback releases the email for the connector that held it, even when another is now active.
+	 */
+	public function test_fallback_releases_email_of_holding_connector() {
+		$orders = $this->make_orders( new Conecom_Test_Pdf_Connector() );
+		$order  = $this->make_order();
+		$order->update_meta_data( '_previous_email_held', 1 );
+		$order->save();
+
+		$orders->release_held_email( $order->get_id(), 'previous' );
+
+		$this->assertSame( 1, $this->mails_sent );
+		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_previous_email_held' ) );
+	}
+
+	/**
+	 * A runner that cannot claim the release lock does not send a duplicate email.
+	 */
+	public function test_release_is_skipped_when_another_runner_holds_the_lock() {
+		$orders = $this->make_orders( new Conecom_Test_Pdf_Connector() );
+		$order  = $this->make_order();
+		$order->update_meta_data( '_conecom_test_email_held', 1 );
+		$order->save();
+		add_option( 'conecom_email_release_' . $order->get_id(), time(), '', 'no' );
+
+		$orders->release_held_email( $order->get_id() );
+
+		$this->assertSame( 0, $this->mails_sent );
+		delete_option( 'conecom_email_release_' . $order->get_id() );
 	}
 }

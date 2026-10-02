@@ -128,6 +128,7 @@ namespace {
 	if ( ! class_exists( 'ActionScheduler_Store' ) ) {
 		class ActionScheduler_Store {
 			const STATUS_PENDING = 'pending';
+			const STATUS_RUNNING = 'in-progress';
 		}
 	}
 

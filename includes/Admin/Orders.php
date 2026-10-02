@@ -133,7 +133,7 @@ class Orders {
 		if ( $this->options['order_send_attachments'] ) {
 			add_filter( 'woocommerce_email_attachments', array( $this, 'attach_file_woocommerce_email' ), 10, 3 );
 			add_filter( 'woocommerce_email_enabled_customer_completed_order', array( $this, 'maybe_hold_completed_email' ), 10, 3 );
-			add_action( 'conecom_release_held_email', array( $this, 'release_held_email' ) );
+			add_action( 'conecom_release_held_email', array( $this, 'release_held_email' ), 10, 2 );
 		}
 
 		// Order Columns HPOS.
@@ -248,54 +248,93 @@ class Orders {
 			return $enabled;
 		}
 
-		$order_id = $order->get_id();
-		// WooCommerce may fire the email before our status hook, so make sure the sync is queued.
-		$this->send_order_erp( $order_id );
-		$pending = as_get_scheduled_actions(
-			array(
-				'hook'   => 'conecom_async_send_order_erp',
-				'args'   => array( $order_id ),
-				'status' => \ActionScheduler_Store::STATUS_PENDING,
-			),
-			'ids'
-		);
-		if ( empty( $pending ) ) {
+		// A free order the connector will not create a document for never gets a PDF: do not delay its email.
+		$freeorder = isset( $this->settings['freeorder'] ) ? $this->settings['freeorder'] : $this->default_freeorder;
+		if ( 'no' === $freeorder && empty( (float) $order->get_total() ) ) {
 			return $enabled;
 		}
 
-		$order->update_meta_data( self::get_email_held_meta_key( $this->options['slug'] ), 1 );
-		$order->save();
-		as_schedule_single_action( time() + self::EMAIL_HOLD_TIMEOUT, 'conecom_release_held_email', array( $order_id ), 'connect-ecommerce' );
+		$order_id = $order->get_id();
+		// WooCommerce may fire the email before our status hook, so make sure the sync is queued.
+		$this->send_order_erp( $order_id );
+		if ( ! $this->has_active_erp_action( $order_id ) ) {
+			return $enabled;
+		}
 
+		$slug = $this->options['slug'];
+		$order->update_meta_data( self::get_email_held_meta_key( $slug ), 1 );
+		$order->save();
+		// The holding connector is part of the arguments: the active connector may change before this runs.
+		as_schedule_single_action( time() + self::EMAIL_HOLD_TIMEOUT, 'conecom_release_held_email', array( $order_id, $slug ), 'connect-ecommerce' );
+
+		return false;
+	}
+
+	/**
+	 * Whether an ERP sync action for the order is waiting or already running.
+	 *
+	 * A running action has left the pending state but its document does not exist yet.
+	 *
+	 * @param int $order_id Order id.
+	 * @return bool
+	 */
+	private function has_active_erp_action( $order_id ) {
+		foreach ( array( \ActionScheduler_Store::STATUS_PENDING, \ActionScheduler_Store::STATUS_RUNNING ) as $status ) {
+			$actions = as_get_scheduled_actions(
+				array(
+					'hook'     => 'conecom_async_send_order_erp',
+					'args'     => array( $order_id ),
+					'status'   => $status,
+					'per_page' => 1,
+				),
+				'ids'
+			);
+			if ( ! empty( $actions ) ) {
+				return true;
+			}
+		}
 		return false;
 	}
 
 	/**
 	 * Sends the "Order completed" email held by maybe_hold_completed_email(), once.
 	 *
-	 * @param int $order_id Order id.
+	 * @param int    $order_id Order id.
+	 * @param string $slug     Slug of the connector that holds the email (defaults to this connector).
 	 * @return void
 	 */
-	public function release_held_email( $order_id ) {
+	public function release_held_email( $order_id, $slug = '' ) {
+		$slug  = ! empty( $slug ) ? $slug : $this->options['slug'];
 		$order = wc_get_order( $order_id );
-		if ( ! $order || ! $order->get_meta( self::get_email_held_meta_key( $this->options['slug'] ) ) ) {
+		if ( ! $order || ! $order->get_meta( self::get_email_held_meta_key( $slug ) ) ) {
 			return;
-		}
-		$order->delete_meta_data( self::get_email_held_meta_key( $this->options['slug'] ) );
-		$order->save();
-		if ( function_exists( 'as_unschedule_all_actions' ) ) {
-			as_unschedule_all_actions( 'conecom_release_held_email', array( $order_id ), 'connect-ecommerce' );
 		}
 
-		$emails = WC()->mailer()->get_emails();
-		if ( empty( $emails['WC_Email_Customer_Completed_Order'] ) ) {
+		// Concurrent runners (async action and timeout fallback) must not both send: add_option() is
+		// atomic, so only the runner that inserts the lock sends the email.
+		$lock_key = 'conecom_email_release_' . (int) $order_id;
+		if ( ! add_option( $lock_key, time(), '', 'no' ) ) {
 			return;
 		}
-		self::$releasing = true;
+
 		try {
-			$emails['WC_Email_Customer_Completed_Order']->trigger( $order_id, $order );
+			$order->delete_meta_data( self::get_email_held_meta_key( $slug ) );
+			$order->save();
+			if ( function_exists( 'as_unschedule_all_actions' ) ) {
+				as_unschedule_all_actions( 'conecom_release_held_email', array( $order_id, $slug ), 'connect-ecommerce' );
+			}
+
+			$emails = WC()->mailer()->get_emails();
+			if ( ! empty( $emails['WC_Email_Customer_Completed_Order'] ) ) {
+				self::$releasing = true;
+				try {
+					$emails['WC_Email_Customer_Completed_Order']->trigger( $order_id, $order );
+				} finally {
+					self::$releasing = false;
+				}
+			}
 		} finally {
-			self::$releasing = false;
+			delete_option( $lock_key );
 		}
 	}
 
