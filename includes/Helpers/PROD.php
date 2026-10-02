@@ -1479,7 +1479,7 @@ class PROD {
 			);
 		}
 
-		$transient_key = 'conecom_all_product_skus_' . sanitize_key( $options['slug'] );
+		$transient_key = 'conecom_all_product_skus_v2_' . sanitize_key( $options['slug'] );
 		$api_result    = get_transient( $transient_key );
 		if ( false === $api_result ) {
 			$api_result = $connapi_erp->get_all_product_skus();
@@ -1527,6 +1527,13 @@ class PROD {
 		}
 
 		$api_total_count = count( $api_skus );
+		if ( isset( $api_result['total_count'] ) && is_numeric( $api_result['total_count'] ) ) {
+			$api_total_count = max( $api_total_count, absint( $api_result['total_count'] ) );
+		}
+		$products_without_sku_count = null;
+		if ( isset( $api_result['products_without_sku_count'] ) && is_numeric( $api_result['products_without_sku_count'] ) ) {
+			$products_without_sku_count = absint( $api_result['products_without_sku_count'] );
+		}
 
 		// Apply tag filter if configured (mirrors PROD::filter_product() logic).
 		$filter_tag = ! empty( $settings['filter'] ) ? $settings['filter'] : '';
@@ -1583,16 +1590,17 @@ class PROD {
 		$delete_count = count( $to_delete );
 
 		return array(
-			'status'          => 'success',
-			'api_count'       => $api_count,
-			'api_total_count' => $api_total_count,
-			'available_count' => $api_count,
-			'filter_tag'      => $filter_tag,
-			'wp_count'        => $wp_count,
-			'import_count'    => $import_count,
-			'new_count'       => $new_count,
-			'outdated_count'  => $outdated_count,
-			'delete_count'    => $delete_count,
+			'status'                     => 'success',
+			'api_count'                  => $api_count,
+			'api_total_count'            => $api_total_count,
+			'products_without_sku_count' => $products_without_sku_count,
+			'available_count'            => $api_count,
+			'filter_tag'                 => $filter_tag,
+			'wp_count'                   => $wp_count,
+			'import_count'               => $import_count,
+			'new_count'                  => $new_count,
+			'outdated_count'             => $outdated_count,
+			'delete_count'               => $delete_count,
 		);
 	}
 }

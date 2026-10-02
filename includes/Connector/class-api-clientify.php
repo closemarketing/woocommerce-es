@@ -254,30 +254,60 @@ class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 			'timeout' => 120,
 		);
 
-		$all_products = array();
-		$url          = 'https://api.clientify.net/v1/products/?page_size=' . $this->options['api_pagination'];
+		$page_size    = 250;
+		$products_url = 'https://api.clientify.net/v1/products/?page_size=' . $page_size;
+		$response     = wp_remote_request( $products_url, $args );
+		if ( is_wp_error( $response ) ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
+			);
+		}
 
-		while ( $url ) {
-			$response = wp_remote_request( $url, $args );
-			if ( is_wp_error( $response ) ) {
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+		$code = (int) round( wp_remote_retrieve_response_code( $response ) / 100 );
+		if ( 2 !== $code || ! isset( $body['results'] ) || ! isset( $body['count'] ) || ! is_numeric( $body['count'] ) ) {
+			return array(
+				'status'  => 'error',
+				'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
+			);
+		}
+
+		$total_count  = absint( $body['count'] );
+		$all_products = $body['results'];
+		$total_pages  = (int) ceil( $total_count / $page_size );
+
+		if ( $total_pages > 1 ) {
+			$requests = array();
+			for ( $page = 2; $page <= $total_pages; ++$page ) {
+				$requests[ $page ] = array(
+					'url'     => $products_url . '&page=' . $page,
+					'type'    => 'GET',
+					'headers' => $args['headers'],
+				);
+			}
+
+			try {
+				$responses = \WpOrg\Requests\Requests::request_multiple( $requests, array( 'timeout' => 120 ) );
+			} catch ( \Exception $exception ) {
 				return array(
 					'status'  => 'error',
 					'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
 				);
 			}
 
-			$body = json_decode( wp_remote_retrieve_body( $response ), true );
-			$code = (int) round( wp_remote_retrieve_response_code( $response ) / 100 );
+			foreach ( $responses as $response ) {
+				$page_body = isset( $response->body ) ? json_decode( $response->body, true ) : array();
+				$page_code = isset( $response->status_code ) ? (int) round( $response->status_code / 100 ) : 0;
+				if ( 2 !== $page_code || ! isset( $page_body['results'] ) ) {
+					return array(
+						'status'  => 'error',
+						'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
+					);
+				}
 
-			if ( 2 !== $code || ! isset( $body['results'] ) ) {
-				return array(
-					'status'  => 'error',
-					'message' => __( 'Error getting products from Clientify', 'woocommerce-es' ),
-				);
+				$all_products = array_merge( $all_products, $page_body['results'] );
 			}
-
-			$all_products = array_merge( $all_products, $body['results'] );
-			$url          = ! empty( $body['next'] ) ? $body['next'] : '';
 		}
 
 		$products_skus = array();
@@ -292,7 +322,15 @@ class Connect_Ecommerce_Clientify extends CONECOM_Abstract_Connector_API {
 			);
 		}
 
-		return $products_skus;
+		$total_count                = null !== $total_count ? $total_count : count( $all_products );
+		$products_without_sku_count = max( 0, $total_count - count( $products_skus ) );
+
+		return array(
+			'status'                     => 'ok',
+			'data'                       => $products_skus,
+			'total_count'                => $total_count,
+			'products_without_sku_count' => $products_without_sku_count,
+		);
 	}
 
 	/**
