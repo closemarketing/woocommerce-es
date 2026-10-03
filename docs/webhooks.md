@@ -242,6 +242,10 @@ the core stores it in `connect_ecommerce_webhook_secrets` and passes it to
 `verify_webhook()`. With the secret set, the URL no longer needs the token and a
 request with a wrong signature or a modified body is rejected with 401.
 
+Variable products (`kind: variants`) send their variants with `sku`, `price` and
+`stock` but without `categoryFields` (attributes), so they are always fetched from
+the API.
+
 Missing in the Holded webhook (would avoid the second request for variable
 products and stores with rates): `taxes`, `tags`, `rates`, `categoryFields` in
 variants and images.
@@ -250,7 +254,8 @@ variants and images.
 
 Odoo (17+) automation rules with "Send Webhook Notification" post the selected
 fields of the record plus `_model`, `_id` and `id`. Odoo does not sign webhooks,
-so paste the full URL (with `?token=`) in the action; no signing secret is needed. Many2many fields (variants,
+so paste the full URL (with `?token=`) in the action; no signing secret is needed. Odoo waits only 1 second for the response; the endpoint calls
+`ignore_user_abort( true )` so the sync finishes after Odoo closes the connection. Many2many fields (variants,
 taxes) only arrive as IDs, so variable products usually need the API fallback:
 
 ```php
@@ -293,6 +298,11 @@ public function parse_webhook_product( $payload, $headers = array() ) {
 
 Helper for connectors: `WEBHOOK::verify_hmac_signature( $raw_body, $signature, $secret, 'sha256' )`
 validates `sha256=<hex>` or bare hex HMAC signatures with `hash_equals()`.
+
+## Connector implementations
+
+- Holded: `closemarketing/connect-woocommerce-holded` (`docs/webhooks.md`).
+- Odoo: `closemarketing/connect-ecommerce-odoo` (`docs/webhooks.md`).
 
 ## Pending / future
 

@@ -245,6 +245,9 @@ class WEBHOOK {
 	 * @return \WP_REST_Response
 	 */
 	public static function handle_request( $request ) {
+		// Some ERPs close the connection early (Odoo waits 1 second): finish the sync anyway.
+		ignore_user_abort( true );
+
 		$connector_id = sanitize_key( (string) $request->get_param( 'connector_id' ) );
 		$connector    = HELPER::get_connector_by_id( $connector_id, self::$options );
 		$payload      = self::get_payload( $request );
