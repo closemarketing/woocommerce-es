@@ -69,6 +69,15 @@ class WebhookTest extends WP_UnitTestCase {
 		$this->assertSame( '15', WEBHOOK::extract_product_id( array( 'id' => 15 ) ) );
 		$this->assertSame( 'abc', WEBHOOK::extract_product_id( array( 'product_id' => 'abc' ) ) );
 		$this->assertSame( '7', WEBHOOK::extract_product_id( array( 'data' => array( 'id' => 7 ) ) ) );
+		$this->assertSame(
+			'product-42',
+			WEBHOOK::extract_product_id(
+				array(
+					'id'   => 'delivery-7',
+					'data' => array( 'id' => 'product-42' ),
+				)
+			)
+		);
 		$this->assertSame( '', WEBHOOK::extract_product_id( array( 'foo' => 'bar' ) ) );
 	}
 
@@ -388,14 +397,15 @@ class WebhookTest extends WP_UnitTestCase {
 		WEBHOOK::save_signing_secret( 'webhookstub', $secret );
 		$this->assertTrue( WEBHOOK::uses_signature( 'webhookstub' ) );
 		$this->assertStringNotContainsString( 'token=', WEBHOOK::get_webhook_url( 'webhookstub' ) );
-		$this->assertTrue( WEBHOOK::permission_check( $request ) );
 
-		// Unsigned request is rejected.
-		$response = WEBHOOK::handle_request( $request );
-		$this->assertSame( 401, $response->get_status() );
+		// Unsigned request is rejected at the door, without writing a log entry.
+		$this->assertWPError( WEBHOOK::permission_check( $request ) );
+		$this->assertSame( 401, WEBHOOK::handle_request( $request )->get_status() );
+		$this->assertSame( array(), WEBHOOK::get_logs( 'webhookstub' ) );
 
 		// Signed request is processed.
 		$request->set_header( 'X-Holded-Webhook-Signature', 'sha256=' . hash_hmac( 'sha256', $body, $secret ) );
+		$this->assertTrue( WEBHOOK::permission_check( $request ) );
 		$response = WEBHOOK::handle_request( $request );
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame( 'delete', $response->get_data()['action'] );
@@ -500,6 +510,30 @@ class WebhookTest extends WP_UnitTestCase {
 
 		$this->assertCount( WEBHOOK::LOG_LIMIT, WEBHOOK::get_logs( 'holded' ) );
 		$this->assertCount( 1, WEBHOOK::get_logs( 'odoo' ) );
+	}
+
+	/**
+	 * Without a signing secret the token fallback applies: verify_webhook() is not called.
+	 */
+	public function test_verify_webhook_not_called_without_secret() {
+		$connapi = new class() extends Webhook_Test_Connector {
+			/**
+			 * Strict verifier that rejects everything.
+			 *
+			 * @param string $raw_body Raw body.
+			 * @param array  $headers  Headers.
+			 * @param string $secret   Secret.
+			 * @return bool
+			 */
+			public function verify_webhook( $raw_body, $headers = array(), $secret = '' ) {
+				return false;
+			}
+		};
+
+		$result = WEBHOOK::process( $this->connector( $connapi ), array( 'id' => 'erp-9' ) );
+
+		$this->assertNotSame( 401, $result['code'] ?? null );
+		$this->assertSame( array( 'erp-9' ), $connapi->requested );
 	}
 
 	/**

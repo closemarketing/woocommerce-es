@@ -197,4 +197,66 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 
 		$this->assertSame( '', get_post_meta( $post_id, WEBHOOK::META_CONNECTOR, true ) );
 	}
+
+	/**
+	 * A SKU changed in the ERP updates the existing product (found by remote ID) instead of duplicating it.
+	 */
+	public function test_sku_change_updates_existing_product() {
+		$connector = $this->connector_context( 'holded' );
+		$payload   = array(
+			'id'    => 'erp-sku-change',
+			'name'  => 'Renamed SKU',
+			'kind'  => 'simple',
+			'sku'   => 'OLD-SKU',
+			'price' => '4',
+		);
+
+		$first = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $first['status'], $first['message'] );
+
+		$payload['sku'] = 'NEW-SKU';
+		$second         = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+
+		$this->assertSame( $first['post_id'], $second['post_id'] );
+		$this->assertSame( 'NEW-SKU', wc_get_product( $first['post_id'] )->get_sku() );
+	}
+
+	/**
+	 * A delete carrying a SKU never touches another connector's product with the same SKU.
+	 */
+	public function test_sku_delete_is_scoped_to_the_connector() {
+		$theirs = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $theirs, '_sku', 'SHARED-SKU' );
+		update_post_meta( $theirs, 'connect_ecommerce_id', 'odoo-1' );
+		update_post_meta( $theirs, WEBHOOK::META_CONNECTOR, 'odoo' );
+		$draft = function () {
+			return 'draft';
+		};
+		add_filter( 'conecom_webhook_delete_behaviour', $draft );
+
+		$connapi   = new class() extends Webhook_Test_Connector {
+			/**
+			 * Delete with SKU.
+			 *
+			 * @param array $payload Payload.
+			 * @param array $headers Headers.
+			 * @return array
+			 */
+			public function parse_webhook_product( $payload, $headers = array() ) {
+				return array(
+					'action' => 'delete',
+					'id'     => 'holded-1',
+					'item'   => array( 'sku' => 'SHARED-SKU' ),
+				);
+			}
+		};
+		$connector = $this->connector_context( 'holded' );
+
+		$connector['connapi_erp'] = $connapi;
+		$result                   = WEBHOOK::process( $connector, array( 'id' => 'holded-1' ) );
+		remove_filter( 'conecom_webhook_delete_behaviour', $draft );
+
+		$this->assertSame( 'ignored', $result['status'] );
+		$this->assertSame( 'publish', get_post_status( $theirs ) );
+	}
 }

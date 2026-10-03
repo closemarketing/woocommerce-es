@@ -273,8 +273,19 @@ class WEBHOOK {
 	 */
 	public static function permission_check( $request ) {
 		$connector_id = sanitize_key( (string) $request->get_param( 'connector_id' ) );
-		if ( self::uses_signature( $connector_id ) ) {
-			return true;
+		$connector    = HELPER::get_connector_by_id( $connector_id, self::$options );
+		$connapi_erp  = $connector['connapi_erp'] ?? null;
+
+		// Signed ERPs are authenticated here, before anything is processed or logged.
+		if ( self::uses_signature( $connector_id, $connapi_erp ) ) {
+			if ( self::is_signature_valid( $connector_id, $connapi_erp, (string) $request->get_body(), self::get_headers( $request ) ) ) {
+				return true;
+			}
+			return new \WP_Error(
+				'conecom_webhook_forbidden',
+				__( 'Webhook signature could not be verified.', 'woocommerce-es' ),
+				array( 'status' => 401 )
+			);
 		}
 
 		$expected = self::get_token( $connector_id, false );
@@ -293,6 +304,34 @@ class WEBHOOK {
 		}
 
 		return true;
+	}
+
+	/**
+	 * Checks the ERP signature with the connector and its signing secret.
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @param object $connapi_erp  Connector API object.
+	 * @param string $raw_body     Raw request body.
+	 * @param array  $headers      Request headers.
+	 * @return bool
+	 */
+	private static function is_signature_valid( $connector_id, $connapi_erp, $raw_body, $headers ) {
+		$secret = self::get_signing_secret( $connector_id );
+
+		return '' !== $secret && (bool) $connapi_erp->verify_webhook( $raw_body, $headers, $secret );
+	}
+
+	/**
+	 * Result for a rejected signature (not logged).
+	 *
+	 * @return array
+	 */
+	private static function signature_error() {
+		return array(
+			'status'  => 'error',
+			'code'    => 401,
+			'message' => __( 'Webhook signature could not be verified.', 'woocommerce-es' ),
+		);
 	}
 
 	/**
@@ -389,15 +428,10 @@ class WEBHOOK {
 			);
 		}
 
-		if ( HELPER::connector_supports( $connapi_erp, 'verify_webhook' ) && ! $connapi_erp->verify_webhook( $raw_body, $headers, self::get_signing_secret( $connector_id ) ) ) {
-			return self::finish(
-				$connector_id,
-				array(
-					'status'  => 'error',
-					'code'    => 401,
-					'message' => __( 'Webhook signature could not be verified.', 'woocommerce-es' ),
-				)
-			);
+		// Signature mode only (token fallback otherwise). Rejected requests are not logged,
+		// so forged deliveries cannot evict the legitimate execution history.
+		if ( self::uses_signature( $connector_id, $connapi_erp ) && ! self::is_signature_valid( $connector_id, $connapi_erp, $raw_body, $headers ) ) {
+			return self::signature_error();
 		}
 
 		$parsed = self::parse_payload( $connector, $payload, $headers );
@@ -485,7 +519,7 @@ class WEBHOOK {
 		 */
 		$item = apply_filters( 'conecom_webhook_product_item', self::sanitize_item( $item ), $source, $connector, $payload );
 
-		$post_id = self::find_post_id( $connector, $remote_id, $item );
+		$post_id = self::find_post_id( $connector, $remote_id );
 		$result  = PROD::sync_product_item( $connector['settings'] ?? array(), $item, $connapi_erp, false, $post_id );
 
 		// Remember which connector owns the product, so remote-ID lookups stay scoped.
@@ -606,24 +640,25 @@ class WEBHOOK {
 	/**
 	 * Extracts the remote product ID from a generic payload.
 	 *
-	 * Supports ?id=N, {"id": N} and the common nested variants.
+	 * Supports ?id=N, {"id": N}, product_id/productId and nested data/product/record
+	 * wrappers, which take priority over a top-level (delivery) id.
 	 *
 	 * @param array $payload Webhook payload.
 	 * @return string
 	 */
 	public static function extract_product_id( $payload ) {
-		$candidates = array( 'id', 'product_id', 'productId', '_id' );
-		foreach ( $candidates as $key ) {
-			if ( isset( $payload[ $key ] ) && is_scalar( $payload[ $key ] ) && '' !== (string) $payload[ $key ] ) {
-				return sanitize_text_field( (string) $payload[ $key ] );
-			}
-		}
+		// In envelopes (delivery id outside, product inside a data/product/record wrapper) the nested record wins.
 		foreach ( array( 'data', 'product', 'record' ) as $wrapper ) {
 			if ( isset( $payload[ $wrapper ] ) && is_array( $payload[ $wrapper ] ) ) {
 				$id = self::extract_product_id( $payload[ $wrapper ] );
 				if ( '' !== $id ) {
 					return $id;
 				}
+			}
+		}
+		foreach ( array( 'product_id', 'productId', 'id', '_id' ) as $key ) {
+			if ( isset( $payload[ $key ] ) && is_scalar( $payload[ $key ] ) && '' !== (string) $payload[ $key ] ) {
+				return sanitize_text_field( (string) $payload[ $key ] );
 			}
 		}
 
@@ -690,16 +725,14 @@ class WEBHOOK {
 	 * connector syncing products; otherwise the lookup is ambiguous and nothing
 	 * is returned.
 	 *
+	 * Looked up before the SKU, so a SKU changed in the ERP updates the existing
+	 * product instead of creating a duplicate (the sync falls back to the SKU).
+	 *
 	 * @param array  $connector Connector context.
 	 * @param string $remote_id Remote product ID.
-	 * @param array  $item      Universal product item.
 	 * @return int
 	 */
-	private static function find_post_id( $connector, $remote_id, $item ) {
-		if ( ! empty( $item['sku'] ) ) {
-			// The sync resolves the product by SKU.
-			return 0;
-		}
+	private static function find_post_id( $connector, $remote_id ) {
 		$posts = get_posts(
 			array(
 				'post_type'      => 'product',
@@ -762,8 +795,16 @@ class WEBHOOK {
 	 * @return array
 	 */
 	private static function delete_product( $connector, $remote_id, $item ) {
-		$post_id = ! empty( $item['sku'] ) ? PROD::find_product( $item['sku'] ) : 0;
-		$post_id = $post_id ? $post_id : self::find_post_id( $connector, $remote_id, array() );
+		$post_id = self::find_post_id( $connector, $remote_id );
+
+		// SKU fallback only for a product this connector owns: the same SKU may belong to another connector.
+		if ( ! $post_id && ! empty( $item['sku'] ) ) {
+			$by_sku = (int) PROD::find_product( $item['sku'] );
+			$owner  = $by_sku ? (string) get_post_meta( $by_sku, self::META_CONNECTOR, true ) : '';
+			if ( $by_sku && '' !== ( $connector['id'] ?? '' ) && $owner === $connector['id'] ) {
+				$post_id = $by_sku;
+			}
+		}
 
 		if ( ! $post_id ) {
 			return array(

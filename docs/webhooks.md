@@ -276,10 +276,12 @@ variants and images.
 ### Odoo
 
 Odoo (17+) automation rules with "Send Webhook Notification" post the selected
-fields of the record plus `_model`, `_id` and `id`. Odoo does not sign webhooks,
-so paste the full URL (with `?token=`) in the action; no signing secret is needed. Odoo waits only 1 second for the response; the endpoint calls
-`ignore_user_abort( true )` so the sync finishes after Odoo closes the connection. Many2many fields (variants,
-taxes) only arrive as IDs, so variable products usually need the API fallback:
+fields of the record (`read( fields, load=None )`: many2one as an ID, many2many as a
+list of IDs, empty values as `false`) plus `_model`, `_id`, `id` and `_action`.
+Odoo does not sign webhooks, so paste the full URL (with `?token=`) in the action;
+no signing secret is needed. Odoo waits only 1 second for the response; the
+endpoint calls `ignore_user_abort( true )` so the sync finishes after Odoo closes
+the connection. Implemented in `closemarketing/connect-ecommerce-odoo`; simplified:
 
 ```php
 public function parse_webhook_product( $payload, $headers = array() ) {
@@ -287,24 +289,45 @@ public function parse_webhook_product( $payload, $headers = array() ) {
 		return array( 'action' => 'ignore', 'id' => '' );
 	}
 
-	$item = array(
-		'id'      => (string) ( $payload['id'] ?? $payload['_id'] ?? '' ),
-		'name'    => $payload['name'] ?? '',
-		'desc'    => $payload['description_sale'] ?? '',
-		'sku'     => $payload['default_code'] ?? '',
-		'barcode' => $payload['barcode'] ?? '',
-		'price'   => $payload['list_price'] ?? 0,
-		'cost'    => $payload['standard_price'] ?? 0,
-		'stock'   => $payload['qty_available'] ?? 0,
-		'kind'    => ( $payload['product_variant_count'] ?? 1 ) > 1 ? 'variants' : 'simple',
+	$id = (string) ( $payload['id'] ?? $payload['_id'] ?? '' );
+	if ( array_key_exists( 'active', $payload ) && false === $payload['active'] ) {
+		return array( 'action' => 'delete', 'id' => $id );
+	}
+
+	$taxes = is_array( $payload['taxes_id'] ?? null ) ? $payload['taxes_id'] : array();
+	$item  = array(
+		'id'    => $id,
+		'name'  => $payload['name'] ?? '',
+		'desc'  => $payload['description'] ?: '',
+		'sku'   => $payload['default_code'] ?: '',
+		'price' => $payload['list_price'] ?? 0,
+		'stock' => $payload['qty_available'] ?? 0,
+		'kind'  => 'simple',
+		// The core maps the ERP tax ID to the WooCommerce tax class.
+		'taxes' => $taxes ? array( (string) reset( $taxes ) ) : array(),
 	);
 
 	return array(
-		'action'   => empty( $payload['active'] ) && isset( $payload['active'] ) ? 'delete' : 'upsert',
-		'id'       => $item['id'],
+		'action'   => 'upsert',
+		'id'       => $id,
 		'item'     => $item,
-		'complete' => 'simple' === $item['kind'],
+		'complete' => $this->is_webhook_payload_enough( $payload ),
 	);
+}
+
+public function is_webhook_payload_enough( $payload ) {
+	$settings = (array) $this->settings;
+	$required = array( 'name', 'default_code', 'list_price', 'product_variant_count' );
+	if ( wc_tax_enabled() ) {
+		$required[] = 'taxes_id';      // Without it the tax class would be reset.
+	}
+	if ( 'yes' === ( $settings['stock'] ?? '' ) ) {
+		$required[] = 'qty_available';
+	}
+
+	return empty( array_diff( $required, array_keys( $payload ) ) )
+		&& 1 >= (int) $payload['product_variant_count'] // Variants need the API.
+		&& empty( $settings['catattr'] );              // Category names are not in the payload.
 }
 ```
 
