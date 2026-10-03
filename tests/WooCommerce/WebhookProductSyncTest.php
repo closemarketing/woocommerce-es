@@ -359,4 +359,102 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 
 		$this->assertSame( '', get_post_meta( $post_id, WEBHOOK::META_CONNECTOR, true ) );
 	}
+
+	/**
+	 * Deliveries of the same remote product are serialized: a busy lock answers 409
+	 * without creating anything, and a stale lock is broken.
+	 */
+	public function test_same_product_deliveries_are_serialized() {
+		global $wpdb;
+		$lock    = 'conecom_webhook_lock_' . md5( 'holded|erp-locked' );
+		$payload = array(
+			'id'    => 'erp-locked',
+			'name'  => 'Locked',
+			'kind'  => 'simple',
+			'sku'   => 'LOCKED-1',
+			'price' => '1',
+		);
+
+		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		$start  = microtime( true );
+		$result = WEBHOOK::process( $this->connector_context( 'holded' ), $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 409, $result['code'] );
+		$this->assertSame( 0, (int) wc_get_product_id_by_sku( 'LOCKED-1' ) );
+		$this->assertLessThan( 2, microtime( true ) - $start );
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		// Stale lock (request died): it is broken and the delivery is processed.
+		$wpdb->update( $wpdb->options, array( 'option_value' => (string) ( time() - WEBHOOK::LOCK_TTL - 5 ) ), array( 'option_name' => $lock ) );
+		$result = WEBHOOK::process( $this->connector_context( 'holded' ), $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $result['status'], $result['message'] );
+		$this->assertNull( $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $lock ) ) );
+	}
+
+	/**
+	 * The connector's product is found even when many products share the remote ID.
+	 */
+	public function test_owned_product_found_among_many_with_same_remote_id() {
+		for ( $i = 0; $i < 12; $i++ ) {
+			$other = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+			update_post_meta( $other, 'connect_ecommerce_id', 'shared-7' );
+			update_post_meta( $other, WEBHOOK::META_CONNECTOR, 'other_' . $i );
+		}
+		$mine = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $mine, 'connect_ecommerce_id', 'shared-7' );
+		update_post_meta( $mine, WEBHOOK::META_CONNECTOR, 'holded' );
+
+		$connector                = $this->connector_context( 'holded' );
+		$connector['connapi_erp'] = new class() extends Webhook_Test_Connector {
+			/**
+			 * Delete without SKU.
+			 *
+			 * @param array $payload Payload.
+			 * @param array $headers Headers.
+			 * @return array
+			 */
+			public function parse_webhook_product( $payload, $headers = array() ) {
+				return array(
+					'action' => 'delete',
+					'id'     => 'shared-7',
+				);
+			}
+		};
+
+		$result = WEBHOOK::process( $connector, array( 'id' => 'shared-7' ) );
+
+		$this->assertSame( $mine, $result['post_id'] );
+	}
+
+	/**
+	 * Packs are not synced by webhook on multi-connector sites (components could belong to another connector).
+	 */
+	public function test_packs_ignored_on_multi_connector_sites() {
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'holded',
+				'connectors_meta' => array(
+					'holded' => array( 'type' => 'holded' ),
+					'odoo'   => array( 'type' => 'odoo' ),
+				),
+			)
+		);
+
+		$result = WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array(
+				'id'        => 'erp-pack-multi',
+				'name'      => 'Pack',
+				'kind'      => 'pack',
+				'sku'       => 'PACK-MULTI',
+				'price'     => '5',
+				'packItems' => array(),
+			),
+			array( 'x_holded_webhook_event' => 'product.update' )
+		);
+
+		$this->assertSame( 'ignored', $result['status'] );
+		delete_option( 'connect_ecommerce' );
+	}
 }

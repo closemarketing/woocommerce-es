@@ -28,6 +28,7 @@ Responses:
 | 400  | No product ID found / payload could not be parsed. |
 | 401  | Invalid token or connector signature. |
 | 404  | Connector not found or not configured. |
+| 409  | Another delivery for the same product is being processed (lock busy after `conecom_webhook_lock_wait` seconds, 10 by default). The ERP can retry. |
 
 ## Security per connector
 
@@ -116,6 +117,16 @@ attributes, rates or taxes the store is configured to use).
   (`wp_kses_post`), image URLs (`url`, `image`, `src` and `images[]`) keep their
   percent-encoding and signed query strings (`esc_url_raw`), other strings go
   through `sanitize_text_field`, and numbers/booleans/nulls keep their type.
+
+## Concurrency and packs
+
+- Deliveries of the same remote product are serialized with a lock row in
+  `wp_options` (`INSERT IGNORE`, atomic on the unique `option_name`; stale after
+  `WEBHOOK::LOCK_TTL` seconds). Create and update events sent back-to-back cannot
+  create duplicates. Log writes use the same lock.
+- On multi-connector sites packs are not synced by webhook (`ignored`): their
+  components are resolved by a global SKU lookup inside `PROD` that cannot be scoped
+  to a connector. The scheduled or manual import keeps syncing them.
 
 ## Universal product item
 
@@ -345,6 +356,7 @@ public function is_webhook_payload_enough( $payload ) {
 | `conecom_webhook_instructions` | filter | `( $html, $connector_id, $webhook_url, $connapi_erp )` — Webhooks tab instructions. |
 | `conecom_webhook_product_deleted` | action | `( $post_id, $remote_id, $connector )`. |
 | `conecom_webhook_processed` | action | `( $result, $connector_id )` after every webhook. |
+| `conecom_webhook_lock_wait` | filter | `( 10, $key )` — seconds to wait for a busy lock before answering 409. |
 
 Helper for connectors: `WEBHOOK::verify_hmac_signature( $raw_body, $signature, $secret, 'sha256' )`
 validates `sha256=<hex>` or bare hex HMAC signatures with `hash_equals()`.

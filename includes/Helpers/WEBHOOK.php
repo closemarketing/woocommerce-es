@@ -57,6 +57,11 @@ class WEBHOOK {
 	const META_CONNECTOR = 'connect_ecommerce_connector';
 
 	/**
+	 * Seconds after which a webhook lock is considered stale.
+	 */
+	const LOCK_TTL = 120;
+
+	/**
 	 * Connector definitions (conecom_options_plugin).
 	 *
 	 * @var array
@@ -481,7 +486,13 @@ class WEBHOOK {
 		}
 
 		if ( 'delete' === $action ) {
-			return self::finish( $connector_id, $base + self::delete_product( $connector, $remote_id, $parsed['item'] ?? array() ) );
+			$deleted = self::with_lock(
+				$connector_id . '|' . $remote_id,
+				function () use ( $connector, $remote_id, $parsed ) {
+					return self::delete_product( $connector, $remote_id, $parsed['item'] ?? array() );
+				}
+			);
+			return self::finish( $connector_id, $base + $deleted );
 		}
 
 		// Use the translated item when it is complete; otherwise ask the API (second request).
@@ -525,18 +536,52 @@ class WEBHOOK {
 		 */
 		$item = apply_filters( 'conecom_webhook_product_item', self::sanitize_item( $item ), $source, $connector, $payload );
 
+		// Pack components are synced by a global SKU lookup inside PROD, which cannot be
+		// scoped to a connector: on multi-connector sites packs stay with the scheduled import.
+		if ( 'pack' === ( $item['kind'] ?? '' ) && self::count_product_connectors() > 1 ) {
+			return self::finish(
+				$connector_id,
+				$base + array(
+					'status'  => 'ignored',
+					'source'  => $source,
+					'message' => __( 'Packs are not synced by webhook on multi-connector sites: their components could belong to another connector.', 'woocommerce-es' ),
+				)
+			);
+		}
+
+		// Lookup and creation are not atomic: serialize deliveries of the same remote product
+		// (e.g. create and update sent back-to-back), so they cannot create duplicates.
+		$synced = self::with_lock(
+			$connector_id . '|' . $remote_id,
+			function () use ( $connector, $connector_id, $connapi_erp, $item, $remote_id, $source ) {
+				return self::sync_item( $connector, $connector_id, $connapi_erp, $item, $remote_id, $source );
+			}
+		);
+
+		return self::finish( $connector_id, $base + $synced );
+	}
+
+	/**
+	 * Syncs a universal item after resolving the product scoped to the connector.
+	 *
+	 * @param array  $connector    Connector context.
+	 * @param string $connector_id Connector ID.
+	 * @param object $connapi_erp  Connector API object.
+	 * @param array  $item         Universal product item.
+	 * @param string $remote_id    Remote product ID.
+	 * @param string $source       'payload' or 'api'.
+	 * @return array
+	 */
+	private static function sync_item( $connector, $connector_id, $connapi_erp, $item, $remote_id, $source ) {
 		$post_id = self::find_post_id( $connector, $remote_id );
 
 		// The sync falls back to a global SKU lookup: never let it take another connector's product.
 		$sku_post = $post_id ? 0 : self::find_sku_post( $item );
 		if ( $sku_post && ! self::can_take_sku_post( $sku_post, $connector_id, $remote_id ) ) {
-			return self::finish(
-				$connector_id,
-				$base + array(
-					'status'  => 'error',
-					'source'  => $source,
-					'message' => __( 'A product with this SKU belongs to another connector (or its owner cannot be told on a multi-connector site). Not synced.', 'woocommerce-es' ),
-				)
+			return array(
+				'status'  => 'error',
+				'source'  => $source,
+				'message' => __( 'A product with this SKU belongs to another connector (or its owner cannot be told on a multi-connector site). Not synced.', 'woocommerce-es' ),
 			);
 		}
 
@@ -553,15 +598,90 @@ class WEBHOOK {
 			update_post_meta( (int) $result['post_id'], self::META_CONNECTOR, $connector_id );
 		}
 
-		return self::finish(
-			$connector_id,
-			$base + array(
-				'status'  => 'error' === ( $result['status'] ?? '' ) ? 'error' : 'ok',
-				'source'  => $source,
-				'post_id' => (int) ( $result['post_id'] ?? 0 ),
-				'message' => wp_strip_all_tags( (string) ( $result['message'] ?? '' ) ),
-			)
+		return array(
+			'status'  => 'error' === ( $result['status'] ?? '' ) ? 'error' : 'ok',
+			'source'  => $source,
+			'post_id' => (int) ( $result['post_id'] ?? 0 ),
+			'message' => wp_strip_all_tags( (string) ( $result['message'] ?? '' ) ),
 		);
+	}
+
+	/**
+	 * Runs a callback while holding a named lock.
+	 *
+	 * @param string   $key      Lock key.
+	 * @param callable $callback Callback returning a result array.
+	 * @return array Callback result, or a 409 error when the lock could not be acquired.
+	 */
+	private static function with_lock( $key, $callback ) {
+		$lock = self::acquire_lock( $key );
+		if ( '' === $lock ) {
+			return array(
+				'status'  => 'error',
+				'code'    => 409,
+				'message' => __( 'Another delivery for this product is being processed. Retry later.', 'woocommerce-es' ),
+			);
+		}
+
+		try {
+			return $callback();
+		} finally {
+			self::release_lock( $lock );
+		}
+	}
+
+	/**
+	 * Acquires a lock row in the options table (INSERT IGNORE is atomic on the unique option_name).
+	 *
+	 * @param string $key  Lock key.
+	 * @param int    $wait Seconds to wait for a busy lock.
+	 * @return string Lock name, or empty when it could not be acquired.
+	 */
+	private static function acquire_lock( $key, $wait = 10 ) {
+		global $wpdb;
+		$name = 'conecom_webhook_lock_' . md5( (string) $key );
+
+		/**
+		 * Filters how many seconds a webhook waits for a busy lock before answering 409.
+		 *
+		 * @param int    $wait Seconds.
+		 * @param string $key  Lock key (connector|remote ID, or "logs").
+		 */
+		$wait     = max( 0, (int) apply_filters( 'conecom_webhook_lock_wait', $wait, $key ) );
+		$deadline = microtime( true ) + $wait;
+
+		do {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic lock, must bypass the options API and its cache.
+			$inserted = $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $name, (string) time() ) );
+			if ( 1 === (int) $inserted ) {
+				return $name;
+			}
+
+			// Break stale locks left by a request that died before releasing them.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Lock row, read without cache.
+			$since = (int) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+			if ( $since && time() - $since > self::LOCK_TTL ) {
+				self::release_lock( $name );
+				continue;
+			}
+
+			usleep( 200000 );
+		} while ( microtime( true ) < $deadline );
+
+		return '';
+	}
+
+	/**
+	 * Releases a lock.
+	 *
+	 * @param string $name Lock name.
+	 * @return void
+	 */
+	private static function release_lock( $name ) {
+		global $wpdb;
+		if ( '' !== $name ) {
+			$wpdb->delete( $wpdb->options, array( 'option_name' => $name ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Lock row.
+		}
 	}
 
 	/**
@@ -782,34 +902,45 @@ class WEBHOOK {
 	 * @return int
 	 */
 	private static function find_post_id( $connector, $remote_id ) {
+		$connector_id = $connector['id'] ?? '';
+		$base_query   = array(
+			'post_type'   => 'product',
+			'post_status' => 'any',
+			'fields'      => 'ids',
+		);
+
+		// The connector's own product, filtered in SQL so no candidate is truncated away.
+		if ( '' !== $connector_id ) {
+			$owned = get_posts(
+				$base_query + array(
+					'posts_per_page' => 1,
+					'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+						array(
+							'key'   => 'connect_ecommerce_id',
+							'value' => $remote_id,
+						),
+						array(
+							'key'   => self::META_CONNECTOR,
+							'value' => $connector_id,
+						),
+					),
+				)
+			);
+			if ( ! empty( $owned ) ) {
+				return (int) $owned[0];
+			}
+		}
+
+		// An untagged product only when it is the only one with this remote ID (two rows are enough to tell).
 		$posts = get_posts(
-			array(
-				'post_type'      => 'product',
-				'post_status'    => 'any',
-				'posts_per_page' => 10,
-				'fields'         => 'ids',
+			$base_query + array(
+				'posts_per_page' => 2,
 				'meta_key'       => 'connect_ecommerce_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				'meta_value'     => $remote_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 			)
 		);
-		if ( empty( $posts ) ) {
-			return 0;
-		}
-
-		$connector_id = $connector['id'] ?? '';
-		$untagged     = array();
-		foreach ( $posts as $post_id ) {
-			$owner = (string) get_post_meta( $post_id, self::META_CONNECTOR, true );
-			if ( '' !== $connector_id && $owner === $connector_id ) {
-				return (int) $post_id;
-			}
-			if ( '' === $owner ) {
-				$untagged[] = (int) $post_id;
-			}
-		}
-
-		if ( 1 === count( $posts ) && 1 === count( $untagged ) && self::count_product_connectors() <= 1 ) {
-			return $untagged[0];
+		if ( 1 === count( $posts ) && '' === (string) get_post_meta( $posts[0], self::META_CONNECTOR, true ) && self::count_product_connectors() <= 1 ) {
+			return (int) $posts[0];
 		}
 
 		return 0;
@@ -976,6 +1107,9 @@ class WEBHOOK {
 	 * @return void
 	 */
 	public static function add_log( $connector_id, $result ) {
+		// Concurrent deliveries: append under a lock and read the option fresh from the database.
+		$lock = self::acquire_lock( 'logs', 5 );
+		wp_cache_delete( self::OPTION_LOGS, 'options' );
 		$logs = get_option( self::OPTION_LOGS, array() );
 		$logs = is_array( $logs ) ? $logs : array();
 
@@ -1006,6 +1140,7 @@ class WEBHOOK {
 		}
 
 		update_option( self::OPTION_LOGS, $kept, false );
+		self::release_lock( $lock );
 	}
 
 	/**
