@@ -520,7 +520,22 @@ class WEBHOOK {
 		$item = apply_filters( 'conecom_webhook_product_item', self::sanitize_item( $item ), $source, $connector, $payload );
 
 		$post_id = self::find_post_id( $connector, $remote_id );
-		$result  = PROD::sync_product_item( $connector['settings'] ?? array(), $item, $connapi_erp, false, $post_id );
+
+		// The sync falls back to a global SKU lookup: never let it take another connector's product.
+		$sku_owner = $post_id ? '' : self::get_sku_owner( $item );
+		if ( '' !== $sku_owner && $sku_owner !== $connector_id ) {
+			return self::finish(
+				$connector_id,
+				$base + array(
+					'status'  => 'error',
+					'source'  => $source,
+					/* translators: %s: connector ID owning the product. */
+					'message' => sprintf( __( 'A product with this SKU belongs to the connector "%s". Not synced.', 'woocommerce-es' ), $sku_owner ),
+				)
+			);
+		}
+
+		$result = PROD::sync_product_item( $connector['settings'] ?? array(), $item, $connapi_erp, false, $post_id );
 
 		// Remember which connector owns the product, so remote-ID lookups stay scoped.
 		$synced = ! empty( $result['post_id'] ) && 'error' !== ( $result['status'] ?? '' ) && ! PROD::filter_product( $connector['settings'] ?? array(), $item );
@@ -684,7 +699,8 @@ class WEBHOOK {
 	}
 
 	/**
-	 * Sanitizes the universal item, keeping HTML in descriptions, URL encoding in images and scalar types.
+	 * Sanitizes the universal item, keeping HTML in descriptions, URL encoding in images,
+	 * identifiers (id, sku, pid, barcode) verbatim and scalar types.
 	 *
 	 * @param array  $item       Universal product item.
 	 * @param string $parent_key Key of the parent array, used to detect image lists.
@@ -696,6 +712,7 @@ class WEBHOOK {
 		}
 		$html_keys  = array( 'desc', 'description', 'shortDesc', 'short_description' );
 		$url_keys   = array( 'url', 'image', 'src' );
+		$id_keys    = array( 'id', 'sku', 'pid', 'barcode' );
 		$image_list = in_array( $parent_key, array( 'images', 'image' ), true );
 		foreach ( $item as $key => $value ) {
 			if ( is_array( $value ) ) {
@@ -706,6 +723,9 @@ class WEBHOOK {
 				} elseif ( in_array( $key, $url_keys, true ) || ( $image_list && is_int( $key ) ) ) {
 					// Keeps percent-encoding and signed query strings (sanitize_text_field strips %xx).
 					$item[ $key ] = esc_url_raw( $value );
+				} elseif ( in_array( $key, $id_keys, true ) ) {
+					// Opaque identifiers must match the stored remote ID/SKU: only control characters and tags are removed.
+					$item[ $key ] = trim( preg_replace( '/[\x00-\x1F\x7F]/', '', wp_strip_all_tags( $value ) ) );
 				} else {
 					$item[ $key ] = sanitize_text_field( $value );
 				}
@@ -764,6 +784,26 @@ class WEBHOOK {
 		}
 
 		return 0;
+	}
+
+	/**
+	 * Gets the connector owning the product that matches the item SKU (or its variants' SKUs).
+	 *
+	 * @param array $item Universal product item.
+	 * @return string Connector ID, or empty when no product matches or it has no owner.
+	 */
+	private static function get_sku_owner( $item ) {
+		$post_id = ! empty( $item['sku'] ) ? (int) PROD::find_product( $item['sku'] ) : 0;
+		if ( ! $post_id && ! empty( $item['variants'] ) && is_array( $item['variants'] ) ) {
+			foreach ( $item['variants'] as $variant ) {
+				$post_id = ! empty( $variant['sku'] ) ? (int) PROD::find_parent_product( $variant['sku'] ) : 0;
+				if ( $post_id ) {
+					break;
+				}
+			}
+		}
+
+		return $post_id ? (string) get_post_meta( $post_id, self::META_CONNECTOR, true ) : '';
 	}
 
 	/**

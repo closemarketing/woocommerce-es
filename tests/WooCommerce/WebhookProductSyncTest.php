@@ -259,4 +259,37 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'ignored', $result['status'] );
 		$this->assertSame( 'publish', get_post_status( $theirs ) );
 	}
+
+	/**
+	 * An upsert never takes another connector's product through the global SKU fallback.
+	 */
+	public function test_upsert_does_not_take_another_connectors_sku() {
+		$theirs = self::factory()->post->create(
+			array(
+				'post_type'   => 'product',
+				'post_status' => 'publish',
+				'post_title'  => 'Odoo product',
+			)
+		);
+		update_post_meta( $theirs, '_sku', 'SHARED-UPSERT' );
+		update_post_meta( $theirs, 'connect_ecommerce_id', 'odoo-7' );
+		update_post_meta( $theirs, WEBHOOK::META_CONNECTOR, 'odoo' );
+
+		$result = WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array(
+				'id'    => 'holded-new',
+				'name'  => 'Holded product',
+				'kind'  => 'simple',
+				'sku'   => 'SHARED-UPSERT',
+				'price' => '9',
+			),
+			array( 'x_holded_webhook_event' => 'product.update' )
+		);
+
+		$this->assertSame( 'error', $result['status'] );
+		$this->assertSame( 'Odoo product', get_the_title( $theirs ) );
+		$this->assertSame( 'odoo', get_post_meta( $theirs, WEBHOOK::META_CONNECTOR, true ) );
+		$this->assertSame( 'odoo-7', get_post_meta( $theirs, 'connect_ecommerce_id', true ) );
+	}
 }

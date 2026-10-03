@@ -429,6 +429,26 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Identifiers are opaque: percent-encoded-looking sequences are kept, tags and control characters removed.
+	 */
+	public function test_sanitize_item_keeps_identifiers_verbatim() {
+		$item = WEBHOOK::sanitize_item(
+			array(
+				'id'        => "erp%2F42\n",
+				'sku'       => 'SKU%20<b>1</b>',
+				'variants'  => array( array( 'id' => 'v%2F1', 'sku' => 'V%2F1' ) ),
+				'packItems' => array( array( 'pid' => 'p%2F1#v%2F2' ) ),
+			)
+		);
+
+		$this->assertSame( 'erp%2F42', $item['id'] );
+		$this->assertSame( 'SKU%201', $item['sku'] );
+		$this->assertSame( 'v%2F1', $item['variants'][0]['id'] );
+		$this->assertSame( 'V%2F1', $item['variants'][0]['sku'] );
+		$this->assertSame( 'p%2F1#v%2F2', $item['packItems'][0]['pid'] );
+	}
+
+	/**
 	 * Signing secrets are opaque: percent-encoded-looking sequences are kept verbatim.
 	 */
 	public function test_signing_secret_is_kept_verbatim() {
