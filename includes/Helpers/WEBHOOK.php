@@ -37,6 +37,11 @@ class WEBHOOK {
 	const OPTION_TOKENS = 'connect_ecommerce_webhook_tokens';
 
 	/**
+	 * Option that stores the signing secret given by the ERP for each connector.
+	 */
+	const OPTION_SECRETS = 'connect_ecommerce_webhook_secrets';
+
+	/**
 	 * Option that stores the latest webhook executions.
 	 */
 	const OPTION_LOGS = 'connect_ecommerce_webhook_logs';
@@ -122,6 +127,40 @@ class WEBHOOK {
 		update_option( self::OPTION_TOKENS, $tokens, false );
 
 		return $tokens[ $connector_id ];
+	}
+
+	/**
+	 * Gets the signing secret given by the ERP (e.g. Holded "whsec_...").
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @return string Empty when not configured.
+	 */
+	public static function get_signing_secret( $connector_id ) {
+		$secrets = get_option( self::OPTION_SECRETS, array() );
+		$secrets = is_array( $secrets ) ? $secrets : array();
+
+		return (string) ( $secrets[ sanitize_key( $connector_id ) ] ?? '' );
+	}
+
+	/**
+	 * Saves the signing secret given by the ERP. An empty value removes it.
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @param string $secret       Signing secret.
+	 * @return void
+	 */
+	public static function save_signing_secret( $connector_id, $secret ) {
+		$connector_id = sanitize_key( $connector_id );
+		$secrets      = get_option( self::OPTION_SECRETS, array() );
+		$secrets      = is_array( $secrets ) ? $secrets : array();
+		$secret       = trim( sanitize_text_field( (string) $secret ) );
+
+		if ( '' === $secret ) {
+			unset( $secrets[ $connector_id ] );
+		} else {
+			$secrets[ $connector_id ] = $secret;
+		}
+		update_option( self::OPTION_SECRETS, $secrets, false );
 	}
 
 	/**
@@ -253,7 +292,7 @@ class WEBHOOK {
 			);
 		}
 
-		if ( HELPER::connector_supports( $connapi_erp, 'verify_webhook' ) && ! $connapi_erp->verify_webhook( $raw_body, $headers ) ) {
+		if ( HELPER::connector_supports( $connapi_erp, 'verify_webhook' ) && ! $connapi_erp->verify_webhook( $raw_body, $headers, self::get_signing_secret( $connector_id ) ) ) {
 			return self::finish(
 				$connector_id,
 				array(

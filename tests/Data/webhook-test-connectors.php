@@ -6,6 +6,7 @@
  */
 
 use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
+use CLOSE\ConnectEcommerce\Helpers\WEBHOOK;
 
 /**
  * Connector stub that records API requests.
@@ -70,5 +71,22 @@ class Webhook_Test_Holded_Connector extends Webhook_Test_Connector {
 			'item'     => $item,
 			'complete' => true,
 		);
+	}
+
+	/**
+	 * Verifies the Holded signature: HMAC-SHA256 of the raw body with the full
+	 * "whsec_..." secret, sent as "X-Holded-Webhook-Signature: sha256=<hex>".
+	 *
+	 * @param string $raw_body Raw body.
+	 * @param array  $headers  Headers.
+	 * @param string $secret   Signing secret.
+	 * @return bool
+	 */
+	public function verify_webhook( $raw_body, $headers = array(), $secret = '' ) {
+		if ( '' === $secret ) {
+			return true;
+		}
+
+		return WEBHOOK::verify_hmac_signature( $raw_body, $headers['x_holded_webhook_signature'] ?? '', $secret );
 	}
 }

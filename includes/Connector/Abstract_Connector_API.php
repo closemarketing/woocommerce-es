@@ -257,16 +257,19 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * Verifies the authenticity of a webhook request (e.g. an HMAC signature header).
 	 *
 	 * The core always validates its own secret token first. Override this method
-	 * only when the remote API signs its webhook deliveries.
+	 * only when the remote API signs its webhook deliveries. The signing secret is
+	 * the one the user pastes in the Webhooks tab (e.g. Holded's "whsec_..." key);
+	 * use WEBHOOK::verify_hmac_signature() to check HMAC signatures.
 	 *
 	 * @since 3.5.1
 	 *
 	 * @param string $raw_body Raw request body.
 	 * @param array  $headers  Request headers, keys lowercased with underscores.
+	 * @param string $secret   Signing secret configured for this connector, empty when not set.
 	 * @return bool True when the request is authentic.
 	 */
-	public function verify_webhook( $raw_body, $headers = array() ) {
-		unset( $raw_body, $headers );
+	public function verify_webhook( $raw_body, $headers = array(), $secret = '' ) {
+		unset( $raw_body, $headers, $secret );
 		return true;
 	}
 

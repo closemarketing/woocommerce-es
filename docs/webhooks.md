@@ -33,7 +33,8 @@ Responses:
 1. Validate the token (`WEBHOOK::permission_check()`).
 2. Resolve the connector context (`HELPER::get_connector_by_id()`); skip when the
    connector is inactive or its `products` workflow is disabled.
-3. If the connector implements `verify_webhook()`, validate its signature.
+3. If the connector implements `verify_webhook()`, validate its signature with the
+   signing secret configured in the Webhooks tab (`WEBHOOK::get_signing_secret()`).
 4. Translate the payload:
    - Connector implements `parse_webhook_product()` → use it.
    - Otherwise, generic parser: extract the ID from `?id=N`, `{"id": N}`,
@@ -57,8 +58,8 @@ Three optional methods in `CONECOM_Abstract_Connector_API`:
  */
 public function parse_webhook_product( $payload, $headers = array() );
 
-/** Optional signature validation (HMAC, etc.). */
-public function verify_webhook( $raw_body, $headers = array() );
+/** Optional signature validation (HMAC, etc.). $secret is the signing secret pasted in the Webhooks tab. */
+public function verify_webhook( $raw_body, $headers = array(), $secret = '' );
 
 /** HTML instructions for the Webhooks tab. */
 public function get_webhook_instructions( $webhook_url = '' );
@@ -200,19 +201,23 @@ public function parse_webhook_product( $payload, $headers = array() ) {
 	);
 }
 
-public function verify_webhook( $raw_body, $headers = array() ) {
-	$secret = $this->settings['webhook_secret'] ?? '';
+public function verify_webhook( $raw_body, $headers = array(), $secret = '' ) {
 	if ( '' === $secret ) {
-		return true; // Only the core token is checked until a secret is configured.
+		return true; // Only the URL token is checked until the signing secret is pasted.
 	}
 
 	return WEBHOOK::verify_hmac_signature( $raw_body, $headers['x_holded_webhook_signature'] ?? '', $secret );
 }
 ```
 
-> To confirm: which secret Holded uses to sign (the one shown when the webhook is
-> created in Holded, or the API key). The algorithm is HMAC-SHA256 of the raw body,
-> sent as `sha256=<hex>`.
+**Signing secret (confirmed with real deliveries):** when the webhook is created,
+Holded shows a signing key like `whsec_2494…`. The signature is
+`HMAC-SHA256( raw body, full key including the "whsec_" prefix )` in hex, sent as
+`X-Holded-Webhook-Signature: sha256=<hex>`. The date and webhook ID headers are
+not part of the signed content. Paste the key in **Webhooks > Signing secret**;
+the core stores it in `connect_ecommerce_webhook_secrets` and passes it to
+`verify_webhook()`. With the secret set, a request with a wrong signature or a
+modified body is rejected with 401.
 
 Missing in the Holded webhook (would avoid the second request for variable
 products and stores with rates): `taxes`, `tags`, `rates`, `categoryFields` in

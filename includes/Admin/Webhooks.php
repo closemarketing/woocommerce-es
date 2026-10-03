@@ -27,10 +27,16 @@ class Webhooks {
 	const ACTION_REGENERATE = 'conecom_webhook_regenerate_token';
 
 	/**
+	 * Admin post action to save the signing secret.
+	 */
+	const ACTION_SECRET = 'conecom_webhook_save_secret';
+
+	/**
 	 * Construct of class.
 	 */
 	public function __construct() {
 		add_action( 'admin_post_' . self::ACTION_REGENERATE, array( $this, 'regenerate_token' ) );
+		add_action( 'admin_post_' . self::ACTION_SECRET, array( $this, 'save_secret' ) );
 	}
 
 	/**
@@ -54,6 +60,35 @@ class Webhooks {
 					'tab'     => 'connector_' . $connector_id,
 					'subtab'  => 'sync_products',
 					'webhook' => 'regenerated',
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
+	}
+
+	/**
+	 * Saves the signing secret given by the ERP.
+	 *
+	 * @return void
+	 */
+	public function save_secret() {
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_key( wp_unslash( $_POST['connector_id'] ) ) : '';
+		check_admin_referer( self::ACTION_SECRET . '_' . $connector_id );
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to do this.', 'woocommerce-es' ) );
+		}
+
+		$secret = isset( $_POST['webhook_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['webhook_secret'] ) ) : '';
+		WEBHOOK::save_signing_secret( $connector_id, $secret );
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'    => 'connect_ecommerce',
+					'tab'     => 'connector_' . $connector_id,
+					'subtab'  => 'sync_products',
+					'webhook' => 'secret_saved',
 				),
 				admin_url( 'admin.php' )
 			)
@@ -109,11 +144,16 @@ class Webhooks {
 		$webhook_url = WEBHOOK::get_webhook_url( $connector_id );
 		$logs        = WEBHOOK::get_logs( $connector_id );
 		$native      = HELPER::connector_supports( $connapi_erp, 'parse_webhook_product' );
+		$verifies    = HELPER::connector_supports( $connapi_erp, 'verify_webhook' );
+		$secret      = WEBHOOK::get_signing_secret( $connector_id );
 		$date_format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 		?>
 		<div class="conecom-webhooks">
-			<?php if ( isset( $_GET['webhook'] ) && 'regenerated' === sanitize_key( wp_unslash( $_GET['webhook'] ) ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php $notice = isset( $_GET['webhook'] ) ? sanitize_key( wp_unslash( $_GET['webhook'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
+			<?php if ( 'regenerated' === $notice ) : ?>
 				<div class="notice notice-success inline"><p><?php esc_html_e( 'Webhook token regenerated. Update the URL in your ERP.', 'woocommerce-es' ); ?></p></div>
+			<?php elseif ( 'secret_saved' === $notice ) : ?>
+				<div class="notice notice-success inline"><p><?php esc_html_e( 'Signing secret saved.', 'woocommerce-es' ); ?></p></div>
 			<?php endif; ?>
 			<p>
 				<label for="conecom-webhook-url-<?php echo esc_attr( $connector_id ); ?>"><strong><?php esc_html_e( 'Webhook URL', 'woocommerce-es' ); ?></strong></label><br/>
@@ -140,6 +180,23 @@ class Webhooks {
 				<?php wp_nonce_field( self::ACTION_REGENERATE . '_' . $connector_id ); ?>
 				<?php submit_button( __( 'Regenerate token', 'woocommerce-es' ), 'secondary small', 'submit_webhook_token', false ); ?>
 			</form>
+
+			<?php if ( $verifies ) : ?>
+				<h4><?php esc_html_e( 'Signing secret', 'woocommerce-es' ); ?></h4>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_SECRET ); ?>" />
+					<input type="hidden" name="connector_id" value="<?php echo esc_attr( $connector_id ); ?>" />
+					<?php wp_nonce_field( self::ACTION_SECRET . '_' . $connector_id ); ?>
+					<input type="password" class="regular-text code" name="webhook_secret" autocomplete="off" value="<?php echo esc_attr( $secret ); ?>" placeholder="whsec_..." />
+					<?php submit_button( __( 'Save secret', 'woocommerce-es' ), 'secondary small', 'submit_webhook_secret', false ); ?>
+					<?php if ( '' !== $secret ) : ?>
+						<span style="color: green; margin-left: 8px;">● <?php esc_html_e( 'Signatures are verified.', 'woocommerce-es' ); ?></span>
+					<?php else : ?>
+						<span style="color: #b32d2e; margin-left: 8px;">○ <?php esc_html_e( 'Not set: only the URL token protects the endpoint.', 'woocommerce-es' ); ?></span>
+					<?php endif; ?>
+					<p class="description"><?php esc_html_e( 'Paste the signing secret your ERP shows when creating the webhook. It is used to check that every request really comes from the ERP and has not been altered.', 'woocommerce-es' ); ?></p>
+				</form>
+			<?php endif; ?>
 
 			<h4><?php esc_html_e( 'Latest webhooks', 'woocommerce-es' ); ?></h4>
 			<?php if ( empty( $logs ) ) : ?>

@@ -21,6 +21,7 @@ class WebhookTest extends WP_UnitTestCase {
 	 */
 	public function tearDown(): void {
 		delete_option( WEBHOOK::OPTION_TOKENS );
+		delete_option( WEBHOOK::OPTION_SECRETS );
 		delete_option( WEBHOOK::OPTION_LOGS );
 		parent::tearDown();
 	}
@@ -294,13 +295,44 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The signing secret configured in the Webhooks tab is checked against the Holded signature.
+	 */
+	public function test_holded_signature_with_configured_secret() {
+		$body    = file_get_contents( UNIT_TESTS_DATA_PLUGIN_DIR . 'webhook-holded-product-delete.json' );
+		$payload = json_decode( $body, true );
+		$secret  = 'whsec_' . str_repeat( 'ab', 32 );
+		$headers = array(
+			'x_holded_webhook_event'     => 'product.delete',
+			'x_holded_webhook_signature' => 'sha256=' . hash_hmac( 'sha256', $body, $secret ),
+		);
+		$connector = $this->connector( new Webhook_Test_Holded_Connector() );
+
+		// Without secret only the URL token protects the endpoint.
+		$this->assertSame( 'ignored', WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_signature' => 'sha256=bad' ), $body )['status'] );
+
+		WEBHOOK::save_signing_secret( 'holded', $secret );
+		$this->assertSame( $secret, WEBHOOK::get_signing_secret( 'holded' ) );
+
+		// Valid signature.
+		$this->assertSame( 'ignored', WEBHOOK::process( $connector, $payload, $headers, $body )['status'] );
+
+		// Tampered body or wrong signature.
+		$result = WEBHOOK::process( $connector, $payload, $headers, $body . ' ' );
+		$this->assertSame( 'error', $result['status'] );
+		$this->assertSame( 401, $result['code'] );
+
+		WEBHOOK::save_signing_secret( 'holded', '' );
+		$this->assertSame( '', WEBHOOK::get_signing_secret( 'holded' ) );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {
 		$connector = new class() extends CONECOM_Abstract_Connector_API {};
 
 		$this->assertSame( 'error', $connector->parse_webhook_product( array() )['status'] );
-		$this->assertTrue( $connector->verify_webhook( '' ) );
+		$this->assertTrue( $connector->verify_webhook( '', array(), 'whsec_x' ) );
 		$this->assertSame( '', $connector->get_webhook_instructions( 'https://example.com' ) );
 		$this->assertFalse( $connector->supports_capability( 'parse_webhook_product' ) );
 		$this->assertTrue( ( new Webhook_Test_Holded_Connector() )->supports_capability( 'parse_webhook_product' ) );
