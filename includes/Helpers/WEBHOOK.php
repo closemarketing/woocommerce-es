@@ -434,7 +434,10 @@ class WEBHOOK {
 			return self::signature_error();
 		}
 
-		$parsed = self::parse_payload( $connector, $payload, $headers );
+		// Headers are not covered by the signature: in signature mode only the signed body drives
+		// the action, so a replayed body with a forged event header cannot become a deletion.
+		$parse_headers = self::uses_signature( $connector_id, $connapi_erp ) ? array() : $headers;
+		$parsed        = self::parse_payload( $connector, $payload, $parse_headers );
 		if ( isset( $parsed['status'] ) && 'error' === $parsed['status'] ) {
 			return self::finish(
 				$connector_id,
@@ -522,15 +525,14 @@ class WEBHOOK {
 		$post_id = self::find_post_id( $connector, $remote_id );
 
 		// The sync falls back to a global SKU lookup: never let it take another connector's product.
-		$sku_owner = $post_id ? '' : self::get_sku_owner( $item );
-		if ( '' !== $sku_owner && $sku_owner !== $connector_id ) {
+		$sku_post = $post_id ? 0 : self::find_sku_post( $item );
+		if ( $sku_post && ! self::can_take_sku_post( $sku_post, $connector_id, $remote_id ) ) {
 			return self::finish(
 				$connector_id,
 				$base + array(
 					'status'  => 'error',
 					'source'  => $source,
-					/* translators: %s: connector ID owning the product. */
-					'message' => sprintf( __( 'A product with this SKU belongs to the connector "%s". Not synced.', 'woocommerce-es' ), $sku_owner ),
+					'message' => __( 'A product with this SKU belongs to another connector (or its owner cannot be told on a multi-connector site). Not synced.', 'woocommerce-es' ),
 				)
 			);
 		}
@@ -649,6 +651,13 @@ class WEBHOOK {
 			return 'delete';
 		}
 
+		// Same wrappers extract_product_id() looks into.
+		foreach ( array( 'data', 'product', 'record' ) as $wrapper ) {
+			if ( isset( $payload[ $wrapper ] ) && is_array( $payload[ $wrapper ] ) && 'delete' === self::detect_action( $payload[ $wrapper ] ) ) {
+				return 'delete';
+			}
+		}
+
 		return 'upsert';
 	}
 
@@ -673,7 +682,7 @@ class WEBHOOK {
 		}
 		foreach ( array( 'product_id', 'productId', 'id', '_id' ) as $key ) {
 			if ( isset( $payload[ $key ] ) && is_scalar( $payload[ $key ] ) && '' !== (string) $payload[ $key ] ) {
-				return sanitize_text_field( (string) $payload[ $key ] );
+				return self::clean_identifier( (string) $payload[ $key ] );
 			}
 		}
 
@@ -725,7 +734,7 @@ class WEBHOOK {
 					$item[ $key ] = esc_url_raw( $value );
 				} elseif ( in_array( $key, $id_keys, true ) ) {
 					// Opaque identifiers must match the stored remote ID/SKU: only control characters and tags are removed.
-					$item[ $key ] = trim( preg_replace( '/[\x00-\x1F\x7F]/', '', wp_strip_all_tags( $value ) ) );
+					$item[ $key ] = self::clean_identifier( $value );
 				} else {
 					$item[ $key ] = sanitize_text_field( $value );
 				}
@@ -733,6 +742,18 @@ class WEBHOOK {
 		}
 
 		return $item;
+	}
+
+	/**
+	 * Cleans an opaque identifier (remote ID, SKU): removes tags and control characters only.
+	 *
+	 * Unlike sanitize_text_field(), %xx sequences are kept, so the value still matches the stored one.
+	 *
+	 * @param string $value Identifier.
+	 * @return string
+	 */
+	public static function clean_identifier( $value ) {
+		return trim( preg_replace( '/[\x00-\x1F\x7F]/', '', wp_strip_all_tags( (string) $value ) ) );
 	}
 
 	/**
@@ -787,12 +808,12 @@ class WEBHOOK {
 	}
 
 	/**
-	 * Gets the connector owning the product that matches the item SKU (or its variants' SKUs).
+	 * Finds the product matching the item SKU (or its variants' SKUs).
 	 *
 	 * @param array $item Universal product item.
-	 * @return string Connector ID, or empty when no product matches or it has no owner.
+	 * @return int
 	 */
-	private static function get_sku_owner( $item ) {
+	private static function find_sku_post( $item ) {
 		$post_id = ! empty( $item['sku'] ) ? (int) PROD::find_product( $item['sku'] ) : 0;
 		if ( ! $post_id && ! empty( $item['variants'] ) && is_array( $item['variants'] ) ) {
 			foreach ( $item['variants'] as $variant ) {
@@ -803,7 +824,28 @@ class WEBHOOK {
 			}
 		}
 
-		return $post_id ? (string) get_post_meta( $post_id, self::META_CONNECTOR, true ) : '';
+		return $post_id;
+	}
+
+	/**
+	 * Checks whether a connector may sync over the product matched by SKU.
+	 *
+	 * Allowed when the connector owns it, or when it has no owner (manual/cron
+	 * imports) and either it already has this remote ID or the site has at most
+	 * one connector syncing products.
+	 *
+	 * @param int    $post_id      Product matched by SKU.
+	 * @param string $connector_id Connector ID.
+	 * @param string $remote_id    Remote product ID.
+	 * @return bool
+	 */
+	private static function can_take_sku_post( $post_id, $connector_id, $remote_id ) {
+		$owner = (string) get_post_meta( $post_id, self::META_CONNECTOR, true );
+		if ( '' !== $owner ) {
+			return $owner === $connector_id;
+		}
+
+		return (string) get_post_meta( $post_id, 'connect_ecommerce_id', true ) === (string) $remote_id || self::count_product_connectors() <= 1;
 	}
 
 	/**

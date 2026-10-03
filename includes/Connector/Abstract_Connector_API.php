@@ -242,7 +242,8 @@ abstract class CONECOM_Abstract_Connector_API {
 	 * @since 3.5.1
 	 *
 	 * @param array $payload Decoded webhook body merged with the query parameters (the token is removed).
-	 * @param array $headers Request headers, keys lowercased with underscores (e.g. 'x_holded_signature').
+	 * @param array $headers Request headers, keys lowercased with underscores (e.g. 'x_holded_webhook_event').
+	 *                       Empty when the request is authenticated by signature (headers are not signed).
 	 * @return array{action: string, id: string|int, item?: array, complete?: bool}|array{status: string, message: string}
 	 *         'action' is 'upsert', 'delete' or 'ignore'. 'item' is the universal product item. 'complete' tells
 	 *         the core whether 'item' can be synced as is (true) or must be fetched with get_products() (false).
@@ -256,10 +257,13 @@ abstract class CONECOM_Abstract_Connector_API {
 	/**
 	 * Verifies the authenticity of a webhook request (e.g. an HMAC signature header).
 	 *
-	 * The core always validates its own secret token first. Override this method
-	 * only when the remote API signs its webhook deliveries. The signing secret is
-	 * the one the user pastes in the Webhooks tab (e.g. Holded's "whsec_..." key);
-	 * use WEBHOOK::verify_hmac_signature() to check HMAC signatures.
+	 * Override this method only when the remote API signs its webhook deliveries.
+	 * It is called only once a signing secret is saved in the Webhooks tab (e.g.
+	 * Holded's "whsec_..." key). From then on it is the SOLE authentication of the
+	 * endpoint: the URL token is no longer required, so it must return false for any
+	 * missing or invalid signature. Use WEBHOOK::verify_hmac_signature() for HMAC.
+	 * Headers are not covered by the signature, so in this mode
+	 * parse_webhook_product() receives no headers: derive the action from the body.
 	 *
 	 * @since 3.5.1
 	 *

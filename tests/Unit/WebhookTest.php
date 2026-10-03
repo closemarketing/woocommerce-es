@@ -79,6 +79,7 @@ class WebhookTest extends WP_UnitTestCase {
 			)
 		);
 		$this->assertSame( '', WEBHOOK::extract_product_id( array( 'foo' => 'bar' ) ) );
+		$this->assertSame( 'erp%2F42', WEBHOOK::extract_product_id( array( 'id' => 'erp%2F42' ) ) );
 	}
 
 	/**
@@ -278,6 +279,18 @@ class WebhookTest extends WP_UnitTestCase {
 		$this->assertSame( 'upsert', WEBHOOK::detect_action( array( 'id' => '1' ), array( 'x_holded_webhook_event' => 'product.create' ) ) );
 		$this->assertSame( 'delete', WEBHOOK::detect_action( $this->fixture( 'webhook-holded-product-delete.json' ) ) );
 		$this->assertSame( 'delete', WEBHOOK::detect_action( array( 'event' => 'product_deleted' ) ) );
+		$this->assertSame(
+			'delete',
+			WEBHOOK::detect_action(
+				array(
+					'id'   => 'delivery-1',
+					'data' => array(
+						'id'        => '42',
+						'deletedAt' => '2026-10-03T10:08:38+00:00',
+					),
+				)
+			)
+		);
 		$this->assertSame( 'upsert', WEBHOOK::detect_action( array( 'event' => 'undeleted_flag' ) ) );
 	}
 
@@ -420,6 +433,11 @@ class WebhookTest extends WP_UnitTestCase {
 		$replay->set_header( 'X-Holded-Webhook-Signature', 'sha256=' . hash_hmac( 'sha256', $update, $secret ) );
 		$replay->set_body( $update );
 		$this->assertArrayNotHasKey( 'deletedAt', WEBHOOK::get_payload( $replay, true ) );
+		$this->assertSame( 'upsert', WEBHOOK::handle_request( $replay )->get_data()['action'] );
+
+		// Unsigned headers cannot turn it into a deletion either.
+		$replay->set_query_params( array() );
+		$replay->set_header( 'X-Holded-Webhook-Event', 'product.delete' );
 		$this->assertSame( 'upsert', WEBHOOK::handle_request( $replay )->get_data()['action'] );
 
 		// A connector that does not verify signatures keeps requiring the token, even with a secret saved.

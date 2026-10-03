@@ -292,4 +292,48 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'odoo', get_post_meta( $theirs, WEBHOOK::META_CONNECTOR, true ) );
 		$this->assertSame( 'odoo-7', get_post_meta( $theirs, 'connect_ecommerce_id', true ) );
 	}
+
+	/**
+	 * On a multi-connector site an unowned product matched only by SKU is ambiguous,
+	 * unless it already has the incoming remote ID.
+	 */
+	public function test_unowned_sku_is_ambiguous_on_multi_connector_sites() {
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'holded',
+				'connectors_meta' => array(
+					'holded' => array( 'type' => 'holded' ),
+					'odoo'   => array( 'type' => 'odoo' ),
+				),
+			)
+		);
+		$imported = self::factory()->post->create(
+			array(
+				'post_type'   => 'product',
+				'post_status' => 'publish',
+				'post_title'  => 'Imported manually',
+			)
+		);
+		update_post_meta( $imported, '_sku', 'UNOWNED-1' );
+		update_post_meta( $imported, 'connect_ecommerce_id', 'odoo-55' );
+		$payload = array(
+			'id'    => 'holded-55',
+			'name'  => 'Holded takeover',
+			'kind'  => 'simple',
+			'sku'   => 'UNOWNED-1',
+			'price' => '2',
+		);
+
+		$result = WEBHOOK::process( $this->connector_context( 'holded' ), $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'error', $result['status'] );
+		$this->assertSame( 'Imported manually', get_the_title( $imported ) );
+
+		// Same remote ID: it is this connector's product, imported before webhooks existed.
+		update_post_meta( $imported, 'connect_ecommerce_id', 'holded-55' );
+		$result = WEBHOOK::process( $this->connector_context( 'holded' ), $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $result['status'], $result['message'] );
+
+		delete_option( 'connect_ecommerce' );
+	}
 }
