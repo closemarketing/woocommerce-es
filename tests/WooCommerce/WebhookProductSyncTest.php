@@ -175,4 +175,26 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 			'connapi_erp' => new Webhook_Test_Holded_Connector(),
 		);
 	}
+
+	/**
+	 * A product excluded by the connector filters is not claimed by the connector.
+	 */
+	public function test_filtered_product_is_not_claimed() {
+		$post_id = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $post_id, '_sku', 'EXCLUDED-1' );
+
+		$connector             = $this->connector_context( 'holded' );
+		$connector['settings'] = array( 'filter_sku' => 'ONLY-*' );
+		$payload               = array(
+			'id'    => 'erp-excluded',
+			'name'  => 'Excluded',
+			'kind'  => 'simple',
+			'sku'   => 'EXCLUDED-1',
+			'price' => '1',
+		);
+
+		WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+
+		$this->assertSame( '', get_post_meta( $post_id, WEBHOOK::META_CONNECTOR, true ) );
+	}
 }

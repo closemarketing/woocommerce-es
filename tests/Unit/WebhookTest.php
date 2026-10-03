@@ -400,6 +400,18 @@ class WebhookTest extends WP_UnitTestCase {
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame( 'delete', $response->get_data()['action'] );
 
+		// Unsigned query parameters cannot turn a signed update into a deletion.
+		$update  = '{"id":"6ac0c0726e2bde0e6408ad90","name":"Signed","kind":"simple","sku":"SIGNED-1","price":"3"}';
+		$replay  = new WP_REST_Request( 'POST', '/conecom/v1/webhooks/products/webhookstub' );
+		$replay->set_url_params( array( 'connector_id' => 'webhookstub' ) );
+		$replay->set_query_params( array( 'deletedAt' => '1' ) );
+		$replay->set_header( 'Content-Type', 'application/json' );
+		$replay->set_header( 'X-Holded-Webhook-Event', 'product.update' );
+		$replay->set_header( 'X-Holded-Webhook-Signature', 'sha256=' . hash_hmac( 'sha256', $update, $secret ) );
+		$replay->set_body( $update );
+		$this->assertArrayNotHasKey( 'deletedAt', WEBHOOK::get_payload( $replay, true ) );
+		$this->assertSame( 'upsert', WEBHOOK::handle_request( $replay )->get_data()['action'] );
+
 		// A connector that does not verify signatures keeps requiring the token, even with a secret saved.
 		$this->assertFalse( WEBHOOK::uses_signature( 'webhookstub', new Webhook_Test_Connector() ) );
 
@@ -456,6 +468,25 @@ class WebhookTest extends WP_UnitTestCase {
 		$this->assertNotSame( '', WEBHOOK::get_token( 'holded', false ) );
 
 		delete_option( 'connect_ecommerce' );
+	}
+
+	/**
+	 * forget_connector() (used by the AJAX removal, which writes the option directly) revokes everything.
+	 */
+	public function test_forget_connector() {
+		WEBHOOK::get_token( 'odoo' );
+		WEBHOOK::get_token( 'holded' );
+		WEBHOOK::save_signing_secret( 'odoo', 'secret' );
+		WEBHOOK::add_log( 'odoo', array( 'status' => 'ok' ) );
+		WEBHOOK::add_log( 'holded', array( 'status' => 'ok' ) );
+
+		WEBHOOK::forget_connector( 'odoo' );
+
+		$this->assertSame( '', WEBHOOK::get_token( 'odoo', false ) );
+		$this->assertSame( '', WEBHOOK::get_signing_secret( 'odoo' ) );
+		$this->assertSame( array(), WEBHOOK::get_logs( 'odoo' ) );
+		$this->assertNotSame( '', WEBHOOK::get_token( 'holded', false ) );
+		$this->assertCount( 1, WEBHOOK::get_logs( 'holded' ) );
 	}
 
 	/**

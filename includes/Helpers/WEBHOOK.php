@@ -305,9 +305,11 @@ class WEBHOOK {
 		// Some ERPs close the connection early (Odoo waits 1 second): finish the sync anyway.
 		ignore_user_abort( true );
 
+		// The signature only covers the body: never mix unsigned query parameters into a signed payload.
 		$connector_id = sanitize_key( (string) $request->get_param( 'connector_id' ) );
 		$connector    = HELPER::get_connector_by_id( $connector_id, self::$options );
-		$payload      = self::get_payload( $request );
+		$body_only    = self::uses_signature( $connector_id, $connector['connapi_erp'] ?? null );
+		$payload      = self::get_payload( $request, $body_only );
 		$headers      = self::get_headers( $request );
 
 		$result = self::process( $connector, $payload, $headers, (string) $request->get_body() );
@@ -320,11 +322,12 @@ class WEBHOOK {
 	/**
 	 * Builds the payload: JSON or form body merged with the query parameters.
 	 *
-	 * @param \WP_REST_Request $request Request.
+	 * @param \WP_REST_Request $request   Request.
+	 * @param bool             $body_only Only the body (signed requests: the query string is not authenticated).
 	 * @return array
 	 */
-	public static function get_payload( $request ) {
-		$query = $request->get_query_params();
+	public static function get_payload( $request, $body_only = false ) {
+		$query = $body_only ? array() : $request->get_query_params();
 		$body  = $request->get_json_params();
 		if ( empty( $body ) || ! is_array( $body ) ) {
 			$body = $request->get_body_params();
@@ -486,7 +489,8 @@ class WEBHOOK {
 		$result  = PROD::sync_product_item( $connector['settings'] ?? array(), $item, $connapi_erp, false, $post_id );
 
 		// Remember which connector owns the product, so remote-ID lookups stay scoped.
-		if ( ! empty( $result['post_id'] ) && 'error' !== ( $result['status'] ?? '' ) && '' !== $connector_id ) {
+		$synced = ! empty( $result['post_id'] ) && 'error' !== ( $result['status'] ?? '' ) && ! PROD::filter_product( $connector['settings'] ?? array(), $item );
+		if ( $synced && '' !== $connector_id ) {
 			update_post_meta( (int) $result['post_id'], self::META_CONNECTOR, $connector_id );
 		}
 
@@ -855,7 +859,7 @@ class WEBHOOK {
 				'post_id'      => (int) ( $result['post_id'] ?? 0 ),
 				'status'       => $result['status'] ?? '',
 				'source'       => $result['source'] ?? '',
-				'message'      => mb_substr( (string) ( $result['message'] ?? '' ), 0, 500 ),
+				'message'      => function_exists( 'mb_substr' ) ? mb_substr( (string) ( $result['message'] ?? '' ), 0, 500 ) : substr( (string) ( $result['message'] ?? '' ), 0, 500 ),
 			)
 		);
 
