@@ -1,0 +1,23 @@
+{
+  "id": "6ac0c0726e2bde0e6408ad90",
+  "name": "prueba producto webhook",
+  "description": "En un lugar de la Mancha, de cuyo nombre no quiero acordarme.",
+  "kind": "simple",
+  "sku": "234234234",
+  "barcode": "4342324234324234234324234234",
+  "price": "10",
+  "cost": "10.00000",
+  "stock": "0",
+  "variants": [
+    {
+      "id": "6ac0c0726e2bde0e6408ad91",
+      "sku": null,
+      "barcode": null,
+      "price": null,
+      "cost": null,
+      "stock": null,
+      "description": null
+    }
+  ],
+  "packItems": []
+}
