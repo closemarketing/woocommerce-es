@@ -22,7 +22,9 @@ use CLOSE\ConnectEcommerce\Admin\Orders;
 use CLOSE\ConnectEcommerce\Admin\Notices;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Rates;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Types_ERP;
+use CLOSE\ConnectEcommerce\Admin\Webhooks;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\WEBHOOK;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
 
@@ -63,7 +65,11 @@ class Base {
 			new Notices();
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );
+			new Webhooks();
 		}
+
+		// Product webhooks endpoint (REST API).
+		WEBHOOK::init( $options );
 
 		new Orders( $connector, $connectors_data );
 		new Checkout( $connector );
