@@ -411,15 +411,21 @@ class WebhookTest extends WP_UnitTestCase {
 		$this->assertTrue( WEBHOOK::uses_signature( 'webhookstub' ) );
 		$this->assertStringNotContainsString( 'token=', WEBHOOK::get_webhook_url( 'webhookstub' ) );
 
-		// Unsigned request is rejected at the door, without writing a log entry.
+		// Unsigned request is rejected at the door (real REST flow), without writing a log entry.
 		$this->assertWPError( WEBHOOK::permission_check( $request ) );
-		$this->assertSame( 401, WEBHOOK::handle_request( $request )->get_status() );
+		global $wp_rest_server;
+		$wp_rest_server = new WP_REST_Server(); // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+		do_action( 'rest_api_init', $wp_rest_server );
+		$this->assertSame( 401, rest_get_server()->dispatch( $request )->get_status() );
 		$this->assertSame( array(), WEBHOOK::get_logs( 'webhookstub' ) );
+		$wp_rest_server = null; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
 
-		// Signed request is processed.
+		// Signed request is processed, verifying the signature once per delivery.
 		$request->set_header( 'X-Holded-Webhook-Signature', 'sha256=' . hash_hmac( 'sha256', $body, $secret ) );
+		Webhook_Test_Holded_Connector::$verify_calls = 0;
 		$this->assertTrue( WEBHOOK::permission_check( $request ) );
 		$response = WEBHOOK::handle_request( $request );
+		$this->assertSame( 1, Webhook_Test_Holded_Connector::$verify_calls );
 		$this->assertSame( 200, $response->get_status() );
 		$this->assertSame( 'delete', $response->get_data()['action'] );
 

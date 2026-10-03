@@ -351,7 +351,8 @@ class WEBHOOK {
 		$payload      = self::get_payload( $request, $body_only );
 		$headers      = self::get_headers( $request );
 
-		$result = self::process( $connector, $payload, $headers, (string) $request->get_body() );
+		// permission_check() already authenticated the request (token or signature).
+		$result = self::process( $connector, $payload, $headers, (string) $request->get_body(), true );
 		$status = self::get_http_status( $result );
 		unset( $result['code'] );
 
@@ -396,13 +397,15 @@ class WEBHOOK {
 	/**
 	 * Processes a webhook for a connector.
 	 *
-	 * @param array|null $connector Connector context from HELPER::get_connector_by_id().
-	 * @param array      $payload   Webhook payload.
-	 * @param array      $headers   Request headers.
-	 * @param string     $raw_body  Raw request body.
+	 * @param array|null $connector     Connector context from HELPER::get_connector_by_id().
+	 * @param array      $payload       Webhook payload.
+	 * @param array      $headers       Request headers.
+	 * @param string     $raw_body      Raw request body.
+	 * @param bool       $authenticated True when permission_check() already verified the signature,
+	 *                                  so verify_webhook() runs once per delivery (replay protection).
 	 * @return array{status: string, message: string, code?: int, action?: string, id?: string, post_id?: int, source?: string}
 	 */
-	public static function process( $connector, $payload, $headers = array(), $raw_body = '' ) {
+	public static function process( $connector, $payload, $headers = array(), $raw_body = '', $authenticated = false ) {
 		$connector_id = $connector['id'] ?? '';
 		$connapi_erp  = $connector['connapi_erp'] ?? null;
 
@@ -430,7 +433,7 @@ class WEBHOOK {
 
 		// Signature mode only (token fallback otherwise). Rejected requests are not logged,
 		// so forged deliveries cannot evict the legitimate execution history.
-		if ( self::uses_signature( $connector_id, $connapi_erp ) && ! self::is_signature_valid( $connector_id, $connapi_erp, $raw_body, $headers ) ) {
+		if ( ! $authenticated && self::uses_signature( $connector_id, $connapi_erp ) && ! self::is_signature_valid( $connector_id, $connapi_erp, $raw_body, $headers ) ) {
 			return self::signature_error();
 		}
 
@@ -540,7 +543,12 @@ class WEBHOOK {
 		$result = PROD::sync_product_item( $connector['settings'] ?? array(), $item, $connapi_erp, false, $post_id );
 
 		// Remember which connector owns the product, so remote-ID lookups stay scoped.
-		$synced = ! empty( $result['post_id'] ) && 'error' !== ( $result['status'] ?? '' ) && ! PROD::filter_product( $connector['settings'] ?? array(), $item );
+		// The sync can answer "ok" without touching the product (filtered item, pack without
+		// WPC Product Bundles): only a sync that wrote this remote ID proves it actually ran.
+		$synced = ! empty( $result['post_id'] )
+			&& 'error' !== ( $result['status'] ?? '' )
+			&& ! PROD::filter_product( $connector['settings'] ?? array(), $item )
+			&& (string) get_post_meta( (int) $result['post_id'], 'connect_ecommerce_id', true ) === (string) ( $item['id'] ?? '' );
 		if ( $synced && '' !== $connector_id ) {
 			update_post_meta( (int) $result['post_id'], self::META_CONNECTOR, $connector_id );
 		}

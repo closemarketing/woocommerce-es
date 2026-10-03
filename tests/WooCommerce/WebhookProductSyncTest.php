@@ -336,4 +336,27 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 
 		delete_option( 'connect_ecommerce' );
 	}
+
+	/**
+	 * A pack that cannot be synced (WPC Product Bundles inactive) is not claimed by the connector.
+	 */
+	public function test_unsynced_pack_is_not_claimed() {
+		$post_id = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $post_id, '_sku', 'PACK-NOPLUGIN' );
+
+		WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array(
+				'id'        => 'erp-pack',
+				'name'      => 'Pack',
+				'kind'      => 'pack',
+				'sku'       => 'PACK-NOPLUGIN',
+				'price'     => '10',
+				'packItems' => array(),
+			),
+			array( 'x_holded_webhook_event' => 'product.update' )
+		);
+
+		$this->assertSame( '', get_post_meta( $post_id, WEBHOOK::META_CONNECTOR, true ) );
+	}
 }

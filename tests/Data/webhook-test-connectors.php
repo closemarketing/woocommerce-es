@@ -40,6 +40,13 @@ class Webhook_Test_Connector extends CONECOM_Abstract_Connector_API {
  */
 class Webhook_Test_Holded_Connector extends Webhook_Test_Connector {
 	/**
+	 * Number of verify_webhook() calls.
+	 *
+	 * @var int
+	 */
+	public static $verify_calls = 0;
+
+	/**
 	 * Translates the Holded webhook payload.
 	 *
 	 * @param array $payload Payload.
@@ -83,6 +90,7 @@ class Webhook_Test_Holded_Connector extends Webhook_Test_Connector {
 	 * @return bool
 	 */
 	public function verify_webhook( $raw_body, $headers = array(), $secret = '' ) {
+		++self::$verify_calls;
 		if ( '' === $secret ) {
 			return true;
 		}
