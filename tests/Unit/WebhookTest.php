@@ -236,6 +236,16 @@ class WebhookTest extends WP_UnitTestCase {
 		$request->set_query_params( array( 'token' => $token ) );
 		$this->assertTrue( WEBHOOK::permission_check( $request ) );
 
+		// The connector comes from the route, never from a payload/query field.
+		$request->set_query_params(
+			array(
+				'token'        => $token,
+				'connector_id' => 'odoo',
+			)
+		);
+		$this->assertTrue( WEBHOOK::permission_check( $request ) );
+		$request->set_query_params( array( 'token' => $token ) );
+
 		$request->set_query_params( array() );
 		$request->set_header( 'X-Conecom-Token', $token );
 		$this->assertTrue( WEBHOOK::permission_check( $request ) );
@@ -578,6 +588,52 @@ class WebhookTest extends WP_UnitTestCase {
 
 		$this->assertNotSame( 401, $result['code'] ?? null );
 		$this->assertSame( array( 'erp-9' ), $connapi->requested );
+	}
+
+	/**
+	 * Connectors declaring "product" in disable_modules never sync products by webhook.
+	 */
+	public function test_connector_without_products_module_is_ignored() {
+		$connapi   = new Webhook_Test_Connector();
+		$connector = $this->connector( $connapi );
+
+		$connector['options'] = array( 'disable_modules' => array( 'product' ) );
+		$result               = WEBHOOK::process( $connector, array( 'id' => 'erp-1' ) );
+
+		$this->assertSame( 'ignored', $result['status'] );
+		$this->assertSame( array(), $connapi->requested );
+	}
+
+	/**
+	 * Locks are released only by their owner, and a stale lock is evicted only if unchanged.
+	 */
+	public function test_lock_release_is_ownership_aware() {
+		global $wpdb;
+		$acquire = new ReflectionMethod( WEBHOOK::class, 'acquire_lock' );
+		$release = new ReflectionMethod( WEBHOOK::class, 'release_lock' );
+		$acquire->setAccessible( true );
+		$release->setAccessible( true );
+		$read = function ( $name ) use ( $wpdb ) {
+			return $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+		};
+
+		$first = $acquire->invoke( null, 'owner-test', 0 );
+		$this->assertNotEmpty( $first );
+		$this->assertSame( array(), $acquire->invoke( null, 'owner-test', 0 ) );
+
+		// Another request took over the row (e.g. after evicting it): the first owner cannot delete it.
+		$wpdb->update( $wpdb->options, array( 'option_value' => time() . ':other' ), array( 'option_name' => $first['name'] ) );
+		$release->invoke( null, $first );
+		$this->assertSame( time() . ':other', $read( $first['name'] ) );
+
+		// A stale lock is evicted and replaced by a new owner.
+		$wpdb->update( $wpdb->options, array( 'option_value' => ( time() - WEBHOOK::LOCK_TTL - 5 ) . ':dead' ), array( 'option_name' => $first['name'] ) );
+		$second = $acquire->invoke( null, 'owner-test', 0 );
+		$this->assertNotEmpty( $second );
+		$this->assertSame( $second['value'], $read( $second['name'] ) );
+
+		$release->invoke( null, $second );
+		$this->assertNull( $read( $second['name'] ) );
 	}
 
 	/**

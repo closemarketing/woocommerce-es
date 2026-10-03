@@ -59,7 +59,7 @@ class WEBHOOK {
 	/**
 	 * Seconds after which a webhook lock is considered stale.
 	 */
-	const LOCK_TTL = 120;
+	const LOCK_TTL = 600;
 
 	/**
 	 * Connector definitions (conecom_options_plugin).
@@ -277,7 +277,7 @@ class WEBHOOK {
 	 * @return true|\WP_Error
 	 */
 	public static function permission_check( $request ) {
-		$connector_id = sanitize_key( (string) $request->get_param( 'connector_id' ) );
+		$connector_id = self::get_route_connector_id( $request );
 		$connector    = HELPER::get_connector_by_id( $connector_id, self::$options );
 		$connapi_erp  = $connector['connapi_erp'] ?? null;
 
@@ -340,6 +340,19 @@ class WEBHOOK {
 	}
 
 	/**
+	 * Gets the connector ID from the route, never from the body or the query string
+	 * (get_param() checks those first, so a payload field could redirect the request).
+	 *
+	 * @param \WP_REST_Request $request Request.
+	 * @return string
+	 */
+	private static function get_route_connector_id( $request ) {
+		$url_params = $request->get_url_params();
+
+		return sanitize_key( (string) ( $url_params['connector_id'] ?? '' ) );
+	}
+
+	/**
 	 * Handles a webhook request.
 	 *
 	 * @param \WP_REST_Request $request Request.
@@ -350,7 +363,7 @@ class WEBHOOK {
 		ignore_user_abort( true );
 
 		// The signature only covers the body: never mix unsigned query parameters into a signed payload.
-		$connector_id = sanitize_key( (string) $request->get_param( 'connector_id' ) );
+		$connector_id = self::get_route_connector_id( $request );
 		$connector    = HELPER::get_connector_by_id( $connector_id, self::$options );
 		$body_only    = self::uses_signature( $connector_id, $connector['connapi_erp'] ?? null );
 		$payload      = self::get_payload( $request, $body_only );
@@ -426,7 +439,7 @@ class WEBHOOK {
 		}
 
 		$meta = $connector['meta'] ?? array();
-		if ( 'active' !== ( $meta['status'] ?? 'active' ) || ! HELPER::is_workflow_enabled_for_connector( $meta, 'products' ) ) {
+		if ( ! self::accepts_products( $connector ) ) {
 			return self::finish(
 				$connector_id,
 				array(
@@ -615,7 +628,7 @@ class WEBHOOK {
 	 */
 	private static function with_lock( $key, $callback ) {
 		$lock = self::acquire_lock( $key );
-		if ( '' === $lock ) {
+		if ( empty( $lock ) ) {
 			return array(
 				'status'  => 'error',
 				'code'    => 409,
@@ -633,9 +646,12 @@ class WEBHOOK {
 	/**
 	 * Acquires a lock row in the options table (INSERT IGNORE is atomic on the unique option_name).
 	 *
+	 * The row value is "<time>:<owner token>", so only its owner releases it and a stale
+	 * lock is evicted with a compare-and-delete on the exact value observed.
+	 *
 	 * @param string $key  Lock key.
 	 * @param int    $wait Seconds to wait for a busy lock.
-	 * @return string Lock name, or empty when it could not be acquired.
+	 * @return array{name: string, value: string}|array{} Lock handle, or empty when it could not be acquired.
 	 */
 	private static function acquire_lock( $key, $wait = 10 ) {
 		global $wpdb;
@@ -651,36 +667,55 @@ class WEBHOOK {
 		$deadline = microtime( true ) + $wait;
 
 		do {
+			$evicted = false;
+			$value   = time() . ':' . wp_generate_password( 20, false, false );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Atomic lock, must bypass the options API and its cache.
-			$inserted = $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $name, (string) time() ) );
+			$inserted = $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO {$wpdb->options} (option_name, option_value, autoload) VALUES (%s, %s, 'no')", $name, $value ) );
 			if ( 1 === (int) $inserted ) {
-				return $name;
+				return array(
+					'name'  => $name,
+					'value' => $value,
+				);
 			}
 
-			// Break stale locks left by a request that died before releasing them.
+			// Evict a stale lock (its request died) only if it is still the very row we observed.
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Lock row, read without cache.
-			$since = (int) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+			$current = (string) $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+			$since   = (int) strtok( $current, ':' );
 			if ( $since && time() - $since > self::LOCK_TTL ) {
-				self::release_lock( $name );
+				self::release_lock(
+					array(
+						'name'  => $name,
+						'value' => $current,
+					)
+				);
+				// Retry right away, even when the wait is over.
+				$evicted = true;
 				continue;
 			}
 
 			usleep( 200000 );
-		} while ( microtime( true ) < $deadline );
+		} while ( $evicted || microtime( true ) < $deadline );
 
-		return '';
+		return array();
 	}
 
 	/**
-	 * Releases a lock.
+	 * Releases a lock only when the row still holds this owner's value.
 	 *
-	 * @param string $name Lock name.
+	 * @param array $lock Lock handle from acquire_lock().
 	 * @return void
 	 */
-	private static function release_lock( $name ) {
+	private static function release_lock( $lock ) {
 		global $wpdb;
-		if ( '' !== $name ) {
-			$wpdb->delete( $wpdb->options, array( 'option_name' => $name ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Lock row.
+		if ( ! empty( $lock['name'] ) && isset( $lock['value'] ) ) {
+			$wpdb->delete( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Lock row.
+				$wpdb->options,
+				array(
+					'option_name'  => $lock['name'],
+					'option_value' => $lock['value'],
+				)
+			);
 		}
 	}
 
@@ -995,13 +1030,29 @@ class WEBHOOK {
 	private static function count_product_connectors() {
 		$connectors = HELPER::get_connectors( self::$options );
 		$count      = 0;
-		foreach ( $connectors['meta'] ?? array() as $meta ) {
-			if ( 'active' === ( $meta['status'] ?? 'active' ) && HELPER::is_workflow_enabled_for_connector( $meta, 'products' ) ) {
+		foreach ( $connectors['items'] ?? array() as $item ) {
+			if ( self::accepts_products( $item ) ) {
 				++$count;
 			}
 		}
 
 		return $count;
+	}
+
+	/**
+	 * Checks whether a connector syncs products: active, products workflow enabled and
+	 * "product" not in its disable_modules (same rule as the manual import).
+	 *
+	 * @param array $connector Connector context.
+	 * @return bool
+	 */
+	private static function accepts_products( $connector ) {
+		$meta = $connector['meta'] ?? array();
+		if ( 'active' !== ( $meta['status'] ?? 'active' ) || ! HELPER::is_workflow_enabled_for_connector( $meta, 'products' ) ) {
+			return false;
+		}
+
+		return ! in_array( 'product', (array) ( $connector['options']['disable_modules'] ?? array() ), true );
 	}
 
 	/**
