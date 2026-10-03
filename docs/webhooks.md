@@ -95,11 +95,23 @@ public function get_webhook_instructions( $webhook_url = '' );
 | `action`   | `upsert` (create/update), `delete` or `ignore`. |
 | `id`       | Remote product ID. Always required (except for `ignore`). |
 | `item`     | The universal product item (see below). Optional. |
-| `complete` | `true` when `item` has everything needed. `false` forces `get_products( $id )`. When omitted, the core decides: `id` + `name` + `sku` (simple) or `variants` (variable). |
+| `complete` | `true` when `item` has everything needed. `false` **or omitted** forces `get_products( $id )`: only an explicit `true` is trusted, because a sparse item would reset data the sync writes (price, tax class, stock). |
 
 **Rule of thumb:** map everything the webhook carries. Only return
 `complete => false` when something the sync really needs is missing (e.g. variant
 attributes, rates or taxes the store is configured to use).
+
+## Product lookup and sanitization
+
+- Products are found by SKU. Without SKU (e.g. a delete payload), the remote ID
+  (`connect_ecommerce_id`) is used, scoped to the connector: products synced by a
+  webhook store their connector in `connect_ecommerce_connector`. A product without
+  that meta is only used when it is the only one with that remote ID and the site has
+  at most one connector syncing products; otherwise the webhook is `ignored`.
+- The item is sanitized before syncing: descriptions keep their HTML
+  (`wp_kses_post`), image URLs (`url`, `image`, `src` and `images[]`) keep their
+  percent-encoding and signed query strings (`esc_url_raw`), other strings go
+  through `sanitize_text_field`, and numbers/booleans/nulls keep their type.
 
 ## Universal product item
 

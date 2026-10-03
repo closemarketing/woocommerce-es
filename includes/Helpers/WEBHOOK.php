@@ -52,6 +52,11 @@ class WEBHOOK {
 	const LOG_LIMIT = 50;
 
 	/**
+	 * Product meta storing the connector that synced it through a webhook.
+	 */
+	const META_CONNECTOR = 'connect_ecommerce_connector';
+
+	/**
 	 * Connector definitions (conecom_options_plugin).
 	 *
 	 * @var array
@@ -425,8 +430,13 @@ class WEBHOOK {
 		 */
 		$item = apply_filters( 'conecom_webhook_product_item', self::sanitize_item( $item ), $source, $connector, $payload );
 
-		$post_id = self::find_post_id( $remote_id, $item );
+		$post_id = self::find_post_id( $connector, $remote_id, $item );
 		$result  = PROD::sync_product_item( $connector['settings'] ?? array(), $item, $connapi_erp, false, $post_id );
+
+		// Remember which connector owns the product, so remote-ID lookups stay scoped.
+		if ( ! empty( $result['post_id'] ) && 'error' !== ( $result['status'] ?? '' ) && '' !== $connector_id ) {
+			update_post_meta( (int) $result['post_id'], self::META_CONNECTOR, $connector_id );
+		}
 
 		return self::finish(
 			$connector_id,
@@ -567,44 +577,47 @@ class WEBHOOK {
 	/**
 	 * Checks whether a translated item can be synced without asking the API.
 	 *
+	 * Only an explicit 'complete' => true from the connector is trusted: a sparse
+	 * item would reset data the sync writes (price, tax class, stock).
+	 *
 	 * @param array     $item     Universal product item.
-	 * @param bool|null $complete Completeness declared by the connector, null when unknown.
+	 * @param bool|null $complete Completeness declared by the connector, null when not declared.
 	 * @return bool
 	 */
 	public static function is_item_complete( $item, $complete = null ) {
 		if ( empty( $item ) || ! is_array( $item ) || empty( $item['id'] ) ) {
 			return false;
 		}
-		if ( null !== $complete ) {
-			return (bool) $complete;
-		}
 
-		$kind = $item['kind'] ?? 'simple';
-		if ( empty( $item['name'] ) ) {
-			return false;
-		}
-		if ( 'variants' === $kind || 'variable' === $kind ) {
-			return ! empty( $item['variants'] );
-		}
-
-		return ! empty( $item['sku'] );
+		return true === $complete;
 	}
 
 	/**
-	 * Sanitizes the universal item, keeping HTML in descriptions and scalar types.
+	 * Sanitizes the universal item, keeping HTML in descriptions, URL encoding in images and scalar types.
 	 *
-	 * @param array $item Universal product item.
+	 * @param array  $item       Universal product item.
+	 * @param string $parent_key Key of the parent array, used to detect image lists.
 	 * @return array
 	 */
-	public static function sanitize_item( $item ) {
+	public static function sanitize_item( $item, $parent_key = '' ) {
 		if ( ! is_array( $item ) ) {
 			return array();
 		}
+		$html_keys  = array( 'desc', 'description', 'shortDesc', 'short_description' );
+		$url_keys   = array( 'url', 'image', 'src' );
+		$image_list = in_array( $parent_key, array( 'images', 'image' ), true );
 		foreach ( $item as $key => $value ) {
 			if ( is_array( $value ) ) {
-				$item[ $key ] = self::sanitize_item( $value );
+				$item[ $key ] = self::sanitize_item( $value, (string) $key );
 			} elseif ( is_string( $value ) ) {
-				$item[ $key ] = in_array( $key, array( 'desc', 'description', 'shortDesc', 'short_description' ), true ) ? wp_kses_post( $value ) : sanitize_text_field( $value );
+				if ( in_array( $key, $html_keys, true ) ) {
+					$item[ $key ] = wp_kses_post( $value );
+				} elseif ( in_array( $key, $url_keys, true ) || ( $image_list && is_int( $key ) ) ) {
+					// Keeps percent-encoding and signed query strings (sanitize_text_field strips %xx).
+					$item[ $key ] = esc_url_raw( $value );
+				} else {
+					$item[ $key ] = sanitize_text_field( $value );
+				}
 			}
 		}
 
@@ -612,13 +625,21 @@ class WEBHOOK {
 	}
 
 	/**
-	 * Finds the WooCommerce product linked to a remote ID.
+	 * Finds the WooCommerce product linked to a remote ID of this connector.
 	 *
+	 * The remote ID (connect_ecommerce_id) is not unique across connectors, so
+	 * products synced by webhooks also store their connector
+	 * (connect_ecommerce_connector). A product without that meta is only used
+	 * when it is the only one with that remote ID and the site has at most one
+	 * connector syncing products; otherwise the lookup is ambiguous and nothing
+	 * is returned.
+	 *
+	 * @param array  $connector Connector context.
 	 * @param string $remote_id Remote product ID.
 	 * @param array  $item      Universal product item.
 	 * @return int
 	 */
-	private static function find_post_id( $remote_id, $item ) {
+	private static function find_post_id( $connector, $remote_id, $item ) {
 		if ( ! empty( $item['sku'] ) ) {
 			// The sync resolves the product by SKU.
 			return 0;
@@ -627,14 +648,50 @@ class WEBHOOK {
 			array(
 				'post_type'      => 'product',
 				'post_status'    => 'any',
-				'posts_per_page' => 1,
+				'posts_per_page' => 10,
 				'fields'         => 'ids',
 				'meta_key'       => 'connect_ecommerce_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
 				'meta_value'     => $remote_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
 			)
 		);
+		if ( empty( $posts ) ) {
+			return 0;
+		}
 
-		return ! empty( $posts ) ? (int) $posts[0] : 0;
+		$connector_id = $connector['id'] ?? '';
+		$untagged     = array();
+		foreach ( $posts as $post_id ) {
+			$owner = (string) get_post_meta( $post_id, self::META_CONNECTOR, true );
+			if ( '' !== $connector_id && $owner === $connector_id ) {
+				return (int) $post_id;
+			}
+			if ( '' === $owner ) {
+				$untagged[] = (int) $post_id;
+			}
+		}
+
+		if ( 1 === count( $posts ) && 1 === count( $untagged ) && self::count_product_connectors() <= 1 ) {
+			return $untagged[0];
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Counts the active connectors with the products workflow enabled.
+	 *
+	 * @return int
+	 */
+	private static function count_product_connectors() {
+		$connectors = HELPER::get_connectors( self::$options );
+		$count      = 0;
+		foreach ( $connectors['meta'] ?? array() as $meta ) {
+			if ( 'active' === ( $meta['status'] ?? 'active' ) && HELPER::is_workflow_enabled_for_connector( $meta, 'products' ) ) {
+				++$count;
+			}
+		}
+
+		return $count;
 	}
 
 	/**
@@ -650,7 +707,7 @@ class WEBHOOK {
 	 */
 	private static function delete_product( $connector, $remote_id, $item ) {
 		$post_id = ! empty( $item['sku'] ) ? PROD::find_product( $item['sku'] ) : 0;
-		$post_id = $post_id ? $post_id : self::find_post_id( $remote_id, array() );
+		$post_id = $post_id ? $post_id : self::find_post_id( $connector, $remote_id, array() );
 
 		if ( ! $post_id ) {
 			return array(

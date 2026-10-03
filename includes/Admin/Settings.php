@@ -1532,6 +1532,13 @@ class Settings {
 							</a>
 						</p>
 					</div>
+					<?php if ( ! $is_orders && ! empty( $selected_connapi ) ) : ?>
+						<?php // Webhook URL, secret and logs stay available to diagnose API outages. ?>
+						<fieldset class="conecom-webhooks-fieldset" style="margin-top: 20px;">
+							<legend><strong><?php esc_html_e( 'Webhooks', 'woocommerce-es' ); ?></strong></legend>
+							<?php Webhooks::render_panel( $selected_id, $selected_connapi ); ?>
+						</fieldset>
+					<?php endif; ?>
 				<?php else : ?>
 					<?php
 					$has_get_all_product_skus = ! $is_orders && ! empty( $selected_connapi ) && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );

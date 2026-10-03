@@ -73,38 +73,62 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
-	 * Completeness is detected from the item when the connector does not declare it.
+	 * Only an explicit complete => true is trusted; undeclared completeness asks the API.
 	 */
 	public function test_is_item_complete() {
-		$this->assertFalse( WEBHOOK::is_item_complete( array( 'id' => '1' ) ) );
-		$this->assertTrue(
-			WEBHOOK::is_item_complete(
-				array(
-					'id'   => '1',
-					'name' => 'Product',
-					'sku'  => 'SKU',
-				)
+		$item = array(
+			'id'   => '1',
+			'name' => 'Product',
+			'sku'  => 'SKU',
+		);
+		$this->assertFalse( WEBHOOK::is_item_complete( array( 'name' => 'No ID' ), true ) );
+		$this->assertFalse( WEBHOOK::is_item_complete( $item ) );
+		$this->assertFalse( WEBHOOK::is_item_complete( $item, false ) );
+		$this->assertTrue( WEBHOOK::is_item_complete( $item, true ) );
+	}
+
+	/**
+	 * A sparse item without declared completeness is fetched from the API.
+	 */
+	public function test_undeclared_completeness_requests_api() {
+		$connapi = new Webhook_Test_Connector();
+		add_filter(
+			'conecom_webhook_parse_request',
+			$parse = function () {
+				return array(
+					'action' => 'upsert',
+					'id'     => 'erp-7',
+					'item'   => array(
+						'id'   => 'erp-7',
+						'name' => 'Renamed',
+						'sku'  => 'SKU-7',
+					),
+				);
+			}
+		);
+		$result = WEBHOOK::process( $this->connector( $connapi ), array( 'id' => 'erp-7' ) );
+		remove_filter( 'conecom_webhook_parse_request', $parse );
+
+		$this->assertSame( 'api', $result['source'] );
+		$this->assertSame( array( 'erp-7' ), $connapi->requested );
+	}
+
+	/**
+	 * Image URLs keep their percent-encoding and signatures.
+	 */
+	public function test_sanitize_item_keeps_encoded_image_urls() {
+		$signed = 'https://cdn.example.com/img/caf%C3%A9%20negro.jpg?X-Amz-Signature=ab%2Fcd&X-Amz-Expires=60';
+		$item   = WEBHOOK::sanitize_item(
+			array(
+				'images'   => array( $signed, array( 'url' => $signed ) ),
+				'variants' => array( array( 'image' => $signed ) ),
+				'name'     => 'Caf%C3%A9',
 			)
 		);
-		$this->assertFalse(
-			WEBHOOK::is_item_complete(
-				array(
-					'id'   => '1',
-					'name' => 'Product',
-					'kind' => 'variants',
-				)
-			)
-		);
-		$this->assertFalse(
-			WEBHOOK::is_item_complete(
-				array(
-					'id'   => '1',
-					'name' => 'Product',
-					'sku'  => 'SKU',
-				),
-				false
-			)
-		);
+
+		$this->assertSame( $signed, $item['images'][0] );
+		$this->assertSame( $signed, $item['images'][1]['url'] );
+		$this->assertSame( $signed, $item['variants'][0]['image'] );
 	}
 
 	/**

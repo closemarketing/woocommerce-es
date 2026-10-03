@@ -112,4 +112,67 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'draft', get_post_status( $post_id ) );
 		$this->assertSame( array(), $connapi->requested );
 	}
+
+	/**
+	 * Remote-ID lookups are scoped to the connector: the same remote ID in another
+	 * connector is never touched, and untagged products are only used when unambiguous.
+	 */
+	public function test_delete_lookup_is_scoped_to_the_connector() {
+		$delete = json_decode( file_get_contents( UNIT_TESTS_DATA_PLUGIN_DIR . 'webhook-holded-product-delete.json' ), true );
+		$draft  = function () {
+			return 'draft';
+		};
+		add_filter( 'conecom_webhook_delete_behaviour', $draft );
+
+		$mine   = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		$theirs = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		foreach ( array( $mine => 'holded', $theirs => 'odoo' ) as $post_id => $owner ) {
+			update_post_meta( $post_id, 'connect_ecommerce_id', $delete['id'] );
+			update_post_meta( $post_id, WEBHOOK::META_CONNECTOR, $owner );
+		}
+
+		$result = WEBHOOK::process( $this->connector_context( 'holded' ), $delete, array( 'x_holded_webhook_event' => 'product.delete' ) );
+		$this->assertSame( $mine, $result['post_id'] );
+		$this->assertSame( 'draft', get_post_status( $mine ) );
+		$this->assertSame( 'publish', get_post_status( $theirs ) );
+
+		// Untagged product of another connector with the same remote ID: ambiguous on a multi-connector site.
+		delete_post_meta( $theirs, WEBHOOK::META_CONNECTOR );
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'holded',
+				'connectors_meta' => array(
+					'holded' => array( 'type' => 'holded' ),
+					'odoo'   => array( 'type' => 'odoo' ),
+				),
+			)
+		);
+		wp_delete_post( $mine, true );
+		$result = WEBHOOK::process( $this->connector_context( 'holded' ), $delete, array( 'x_holded_webhook_event' => 'product.delete' ) );
+		$this->assertSame( 'ignored', $result['status'] );
+		$this->assertSame( 'publish', get_post_status( $theirs ) );
+
+		remove_filter( 'conecom_webhook_delete_behaviour', $draft );
+		delete_option( 'connect_ecommerce' );
+	}
+
+	/**
+	 * Connector context with the Holded test translator.
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @return array
+	 */
+	private function connector_context( $connector_id ) {
+		return array(
+			'id'          => $connector_id,
+			'connector'   => 'holded',
+			'meta'        => array(
+				'status'    => 'active',
+				'workflows' => array( 'products' => 'yes' ),
+			),
+			'settings'    => array(),
+			'connapi_erp' => new Webhook_Test_Holded_Connector(),
+		);
+	}
 }
