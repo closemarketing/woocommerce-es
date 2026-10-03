@@ -326,6 +326,63 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * With a signing secret the URL token is not needed; the signature is mandatory instead.
+	 */
+	public function test_signing_secret_replaces_url_token() {
+		$options = array( 'webhookstub' => array( 'name' => 'Webhookstub' ) );
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'webhookstub',
+				'connectors_meta' => array(
+					'webhookstub' => array(
+						'type'      => 'webhookstub',
+						'status'    => 'active',
+						'workflows' => array(
+							'products' => 'yes',
+							'orders'   => 'yes',
+						),
+					),
+				),
+			)
+		);
+		WEBHOOK::init( $options );
+
+		$body    = file_get_contents( UNIT_TESTS_DATA_PLUGIN_DIR . 'webhook-holded-product-delete.json' );
+		$secret  = 'whsec_' . str_repeat( 'cd', 32 );
+		$request = new WP_REST_Request( 'POST', '/conecom/v1/webhooks/products/webhookstub' );
+		$request->set_url_params( array( 'connector_id' => 'webhookstub' ) );
+		$request->set_header( 'Content-Type', 'application/json' );
+		$request->set_header( 'X-Holded-Webhook-Event', 'product.delete' );
+		$request->set_body( $body );
+
+		// Without secret (e.g. Odoo): the token is required and the URL carries it.
+		$this->assertWPError( WEBHOOK::permission_check( $request ) );
+		$this->assertStringContainsString( 'token=', WEBHOOK::get_webhook_url( 'webhookstub' ) );
+
+		// With secret (e.g. Holded): no token in the URL, the signature decides.
+		WEBHOOK::save_signing_secret( 'webhookstub', $secret );
+		$this->assertTrue( WEBHOOK::uses_signature( 'webhookstub' ) );
+		$this->assertStringNotContainsString( 'token=', WEBHOOK::get_webhook_url( 'webhookstub' ) );
+		$this->assertTrue( WEBHOOK::permission_check( $request ) );
+
+		// Unsigned request is rejected.
+		$response = WEBHOOK::handle_request( $request );
+		$this->assertSame( 401, $response->get_status() );
+
+		// Signed request is processed.
+		$request->set_header( 'X-Holded-Webhook-Signature', 'sha256=' . hash_hmac( 'sha256', $body, $secret ) );
+		$response = WEBHOOK::handle_request( $request );
+		$this->assertSame( 200, $response->get_status() );
+		$this->assertSame( 'delete', $response->get_data()['action'] );
+
+		// A connector that does not verify signatures keeps requiring the token, even with a secret saved.
+		$this->assertFalse( WEBHOOK::uses_signature( 'webhookstub', new Webhook_Test_Connector() ) );
+
+		delete_option( 'connect_ecommerce' );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {

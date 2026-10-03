@@ -164,30 +164,64 @@ class WEBHOOK {
 	}
 
 	/**
-	 * Gets the webhook URL of a connector, token included.
+	 * Checks whether a connector authenticates webhooks with the ERP signature.
 	 *
-	 * @param string $connector_id Connector ID.
-	 * @return string
+	 * True when the connector implements verify_webhook() and a signing secret
+	 * is configured. Then the signature is mandatory and the URL token optional.
+	 *
+	 * @param string      $connector_id Connector ID.
+	 * @param object|null $connapi_erp  Connector API object, resolved when null.
+	 * @return bool
 	 */
-	public static function get_webhook_url( $connector_id ) {
-		$connector_id = sanitize_key( $connector_id );
-		return add_query_arg(
-			'token',
-			self::get_token( $connector_id ),
-			rest_url( self::REST_NAMESPACE . self::REST_ROUTE . '/' . $connector_id )
-		);
+	public static function uses_signature( $connector_id, $connapi_erp = null ) {
+		if ( '' === self::get_signing_secret( $connector_id ) ) {
+			return false;
+		}
+		if ( null === $connapi_erp ) {
+			$connector   = HELPER::get_connector_by_id( sanitize_key( $connector_id ), self::$options );
+			$connapi_erp = $connector['connapi_erp'] ?? null;
+		}
+
+		return HELPER::connector_supports( $connapi_erp, 'verify_webhook' );
 	}
 
 	/**
-	 * Validates the secret token (query parameter "token" or header "X-Conecom-Token").
+	 * Gets the webhook URL of a connector.
+	 *
+	 * The token is left out when the connector authenticates with the ERP signature.
+	 *
+	 * @param string      $connector_id Connector ID.
+	 * @param object|null $connapi_erp  Connector API object, resolved when null.
+	 * @return string
+	 */
+	public static function get_webhook_url( $connector_id, $connapi_erp = null ) {
+		$connector_id = sanitize_key( $connector_id );
+		$url          = rest_url( self::REST_NAMESPACE . self::REST_ROUTE . '/' . $connector_id );
+		if ( self::uses_signature( $connector_id, $connapi_erp ) ) {
+			return $url;
+		}
+
+		return add_query_arg( 'token', self::get_token( $connector_id ), $url );
+	}
+
+	/**
+	 * Authorizes the request.
+	 *
+	 * Connectors with a signing secret are authenticated by the ERP signature in
+	 * process(), so the token is optional for them. The rest need the secret
+	 * token (query parameter "token" or header "X-Conecom-Token").
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return true|\WP_Error
 	 */
 	public static function permission_check( $request ) {
 		$connector_id = sanitize_key( (string) $request->get_param( 'connector_id' ) );
-		$expected     = self::get_token( $connector_id, false );
-		$received     = (string) $request->get_header( 'x_conecom_token' );
+		if ( self::uses_signature( $connector_id ) ) {
+			return true;
+		}
+
+		$expected = self::get_token( $connector_id, false );
+		$received = (string) $request->get_header( 'x_conecom_token' );
 		if ( '' === $received ) {
 			$query    = $request->get_query_params();
 			$received = isset( $query['token'] ) ? (string) $query['token'] : '';

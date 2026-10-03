@@ -141,11 +141,12 @@ class Webhooks {
 		if ( '' === (string) $connector_id ) {
 			return;
 		}
-		$webhook_url = WEBHOOK::get_webhook_url( $connector_id );
+		$webhook_url = WEBHOOK::get_webhook_url( $connector_id, $connapi_erp );
 		$logs        = WEBHOOK::get_logs( $connector_id );
 		$native      = HELPER::connector_supports( $connapi_erp, 'parse_webhook_product' );
 		$verifies    = HELPER::connector_supports( $connapi_erp, 'verify_webhook' );
 		$secret      = WEBHOOK::get_signing_secret( $connector_id );
+		$signed      = WEBHOOK::uses_signature( $connector_id, $connapi_erp );
 		$date_format = get_option( 'date_format' ) . ' ' . get_option( 'time_format' );
 		?>
 		<div class="conecom-webhooks">
@@ -167,19 +168,25 @@ class Webhooks {
 					<span style="color: #646970; margin-left: 8px;">○ <?php esc_html_e( 'Generic mode: the product is requested to the API using the received ID.', 'woocommerce-es' ); ?></span>
 				<?php endif; ?>
 			</p>
-			<p class="description"><?php esc_html_e( 'Keep this URL secret: it includes the token that authorizes the requests. The token can also be sent in the X-Conecom-Token header.', 'woocommerce-es' ); ?></p>
+			<?php if ( $signed ) : ?>
+				<p class="description"><?php esc_html_e( 'Requests are authenticated with the ERP signature, so the URL does not need a token. Requests without a valid signature are rejected.', 'woocommerce-es' ); ?></p>
+			<?php else : ?>
+				<p class="description"><?php esc_html_e( 'Keep this URL secret: it includes the token that authorizes the requests. The token can also be sent in the X-Conecom-Token header.', 'woocommerce-es' ); ?></p>
+			<?php endif; ?>
 
 			<div class="conecom-webhook-instructions">
 				<h4><?php esc_html_e( 'How to configure it', 'woocommerce-es' ); ?></h4>
 				<?php echo wp_kses_post( self::get_instructions( $connector_id, $connapi_erp, $webhook_url ) ); ?>
 			</div>
 
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('<?php echo esc_js( __( 'The current URL will stop working. Continue?', 'woocommerce-es' ) ); ?>');">
-				<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_REGENERATE ); ?>" />
-				<input type="hidden" name="connector_id" value="<?php echo esc_attr( $connector_id ); ?>" />
-				<?php wp_nonce_field( self::ACTION_REGENERATE . '_' . $connector_id ); ?>
-				<?php submit_button( __( 'Regenerate token', 'woocommerce-es' ), 'secondary small', 'submit_webhook_token', false ); ?>
-			</form>
+			<?php if ( ! $signed ) : ?>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('<?php echo esc_js( __( 'The current URL will stop working. Continue?', 'woocommerce-es' ) ); ?>');">
+					<input type="hidden" name="action" value="<?php echo esc_attr( self::ACTION_REGENERATE ); ?>" />
+					<input type="hidden" name="connector_id" value="<?php echo esc_attr( $connector_id ); ?>" />
+					<?php wp_nonce_field( self::ACTION_REGENERATE . '_' . $connector_id ); ?>
+					<?php submit_button( __( 'Regenerate token', 'woocommerce-es' ), 'secondary small', 'submit_webhook_token', false ); ?>
+				</form>
+			<?php endif; ?>
 
 			<?php if ( $verifies ) : ?>
 				<h4><?php esc_html_e( 'Signing secret', 'woocommerce-es' ); ?></h4>
@@ -190,9 +197,9 @@ class Webhooks {
 					<input type="password" class="regular-text code" name="webhook_secret" autocomplete="off" value="<?php echo esc_attr( $secret ); ?>" placeholder="whsec_..." />
 					<?php submit_button( __( 'Save secret', 'woocommerce-es' ), 'secondary small', 'submit_webhook_secret', false ); ?>
 					<?php if ( '' !== $secret ) : ?>
-						<span style="color: green; margin-left: 8px;">● <?php esc_html_e( 'Signatures are verified.', 'woocommerce-es' ); ?></span>
+						<span style="color: green; margin-left: 8px;">● <?php esc_html_e( 'Signatures are verified; the URL token is not needed.', 'woocommerce-es' ); ?></span>
 					<?php else : ?>
-						<span style="color: #b32d2e; margin-left: 8px;">○ <?php esc_html_e( 'Not set: only the URL token protects the endpoint.', 'woocommerce-es' ); ?></span>
+						<span style="color: #b32d2e; margin-left: 8px;">○ <?php esc_html_e( 'Not set: the URL token protects the endpoint.', 'woocommerce-es' ); ?></span>
 					<?php endif; ?>
 					<p class="description"><?php esc_html_e( 'Paste the signing secret your ERP shows when creating the webhook. It is used to check that every request really comes from the ERP and has not been altered.', 'woocommerce-es' ); ?></p>
 				</form>

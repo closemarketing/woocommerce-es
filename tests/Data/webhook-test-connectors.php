@@ -90,3 +90,10 @@ class Webhook_Test_Holded_Connector extends Webhook_Test_Connector {
 		return WEBHOOK::verify_hmac_signature( $raw_body, $headers['x_holded_webhook_signature'] ?? '', $secret );
 	}
 }
+
+/**
+ * Registered connector type ("Webhookstub") so HELPER::get_connector_by_id() resolves it.
+ */
+class Connect_Ecommerce_Webhookstub extends Webhook_Test_Holded_Connector {
+}
+
