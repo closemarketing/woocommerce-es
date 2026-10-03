@@ -47,7 +47,7 @@ class WEBHOOK {
 	const OPTION_LOGS = 'connect_ecommerce_webhook_logs';
 
 	/**
-	 * Maximum number of log entries kept.
+	 * Maximum number of log entries kept per connector.
 	 */
 	const LOG_LIMIT = 50;
 
@@ -72,6 +72,57 @@ class WEBHOOK {
 	public static function init( $options ) {
 		self::$options = is_array( $options ) ? $options : array();
 		add_action( 'rest_api_init', array( __CLASS__, 'register_routes' ) );
+		add_action( 'update_option_connect_ecommerce', array( __CLASS__, 'cleanup_removed_connectors' ), 10, 2 );
+	}
+
+	/**
+	 * Revokes the webhook credentials and logs of connectors removed from the settings.
+	 *
+	 * Tokens and secrets live outside connect_ecommerce, so a connector added later
+	 * with the same instance ID must not inherit the old credentials.
+	 *
+	 * @param mixed $old_value Previous connect_ecommerce value.
+	 * @param mixed $new_value New connect_ecommerce value.
+	 * @return void
+	 */
+	public static function cleanup_removed_connectors( $old_value, $new_value ) {
+		$old_ids = array_keys( (array) ( $old_value['connectors_meta'] ?? array() ) );
+		$new_ids = array_keys( (array) ( $new_value['connectors_meta'] ?? array() ) );
+		foreach ( array_diff( $old_ids, $new_ids ) as $connector_id ) {
+			self::forget_connector( (string) $connector_id );
+		}
+	}
+
+	/**
+	 * Deletes the token, signing secret and logs of a connector.
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @return void
+	 */
+	public static function forget_connector( $connector_id ) {
+		$connector_id = sanitize_key( $connector_id );
+		foreach ( array( self::OPTION_TOKENS, self::OPTION_SECRETS ) as $option ) {
+			$values = get_option( $option, array() );
+			if ( is_array( $values ) && isset( $values[ $connector_id ] ) ) {
+				unset( $values[ $connector_id ] );
+				update_option( $option, $values, false );
+			}
+		}
+
+		$logs = get_option( self::OPTION_LOGS, array() );
+		if ( is_array( $logs ) ) {
+			$kept = array_values(
+				array_filter(
+					$logs,
+					function ( $log ) use ( $connector_id ) {
+						return ( $log['connector_id'] ?? '' ) !== $connector_id;
+					}
+				)
+			);
+			if ( count( $kept ) !== count( $logs ) ) {
+				update_option( self::OPTION_LOGS, $kept, false );
+			}
+		}
 	}
 
 	/**
@@ -158,7 +209,8 @@ class WEBHOOK {
 		$connector_id = sanitize_key( $connector_id );
 		$secrets      = get_option( self::OPTION_SECRETS, array() );
 		$secrets      = is_array( $secrets ) ? $secrets : array();
-		$secret       = trim( sanitize_text_field( (string) $secret ) );
+		// Opaque credential: keep it verbatim (sanitize_text_field would strip %xx sequences).
+		$secret = trim( preg_replace( '/[\x00-\x1F\x7F]/', '', (string) $secret ) );
 
 		if ( '' === $secret ) {
 			unset( $secrets[ $connector_id ] );
@@ -807,7 +859,18 @@ class WEBHOOK {
 			)
 		);
 
-		update_option( self::OPTION_LOGS, array_slice( $logs, 0, self::LOG_LIMIT ), false );
+		// Keep the latest entries of each connector, so a busy one does not evict the others.
+		$counts = array();
+		$kept   = array();
+		foreach ( $logs as $log ) {
+			$owner            = $log['connector_id'] ?? '';
+			$counts[ $owner ] = ( $counts[ $owner ] ?? 0 ) + 1;
+			if ( $counts[ $owner ] <= self::LOG_LIMIT ) {
+				$kept[] = $log;
+			}
+		}
+
+		update_option( self::OPTION_LOGS, $kept, false );
 	}
 
 	/**

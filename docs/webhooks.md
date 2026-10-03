@@ -68,7 +68,7 @@ whose signature does not match; a token-carrying request still has to be signed.
 5. If the translated item is **complete**, sync it directly. If not, fall back to
    `get_products( $id )` (second request — not ideal, but always works).
    Simple products without SKU are answered `ignored` until an update sets it.
-6. Log the execution (`connect_ecommerce_webhook_logs`, last 50 entries) and show
+6. Log the execution (`connect_ecommerce_webhook_logs`, last 50 entries per connector) and show
    it in the Webhooks tab.
 
 ## Connector contract
@@ -225,15 +225,26 @@ public function parse_webhook_product( $payload, $headers = array() ) {
 		$item['variants'] = array();
 	}
 
-	// The webhook does not send taxes, tags, attributes or variant categoryFields.
-	$needs_api = 'variants' === ( $item['kind'] ?? '' ) || ( ! empty( $this->settings['rates'] ) && 'default' !== $this->settings['rates'] );
-
 	return array(
 		'action'   => 'upsert',
 		'id'       => $payload['id'] ?? '',
 		'item'     => $item,
-		'complete' => ! $needs_api,
+		// The webhook has no taxes, tags, attributes, rates or variant categoryFields:
+		// only trust it when the store settings do not need them (see below).
+		'complete' => $this->is_webhook_payload_enough( $item ),
 	);
+}
+
+public function is_webhook_payload_enough( $item ) {
+	$settings = (array) $this->settings;
+	$enough   = 'simple' === ( $item['kind'] ?? 'simple' )                         // Variants need categoryFields.
+		&& ! wc_tax_enabled()                                                       // Without taxes the tax class is reset.
+		&& empty( $settings['filter'] )                                             // Tag filter needs tags.
+		&& empty( $settings['catattr'] ) && empty( $settings['catattr_brand'] )     // Categories/brands need attributes.
+		&& empty( get_option( 'connect_ecommerce_prod_mergevars' )['prod_mergevars'] )
+		&& ( empty( $settings['rates'] ) || 'default' === $settings['rates'] );     // Rates need rates.
+
+	return (bool) apply_filters( 'conhold_webhook_payload_complete', $enough, $item );
 }
 
 public function verify_webhook( $raw_body, $headers = array(), $secret = '' ) {

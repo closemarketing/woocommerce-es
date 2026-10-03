@@ -79,7 +79,8 @@ class Webhooks {
 			wp_die( esc_html__( 'You do not have permission to do this.', 'woocommerce-es' ) );
 		}
 
-		$secret = isset( $_POST['webhook_secret'] ) ? sanitize_text_field( wp_unslash( $_POST['webhook_secret'] ) ) : '';
+		// Opaque credential kept verbatim; WEBHOOK::save_signing_secret() trims it and drops control characters.
+		$secret = isset( $_POST['webhook_secret'] ) ? (string) wp_unslash( $_POST['webhook_secret'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		WEBHOOK::save_signing_secret( $connector_id, $secret );
 
 		wp_safe_redirect(

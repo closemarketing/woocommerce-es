@@ -407,6 +407,71 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Signing secrets are opaque: percent-encoded-looking sequences are kept verbatim.
+	 */
+	public function test_signing_secret_is_kept_verbatim() {
+		WEBHOOK::save_signing_secret( 'holded', "  whsec_ab%2Fcd+ef/gh=\n" );
+
+		$this->assertSame( 'whsec_ab%2Fcd+ef/gh=', WEBHOOK::get_signing_secret( 'holded' ) );
+	}
+
+	/**
+	 * Removing a connector revokes its webhook token, signing secret and logs.
+	 */
+	public function test_removed_connector_credentials_are_revoked() {
+		$meta = array(
+			'type'      => 'holded',
+			'status'    => 'active',
+			'workflows' => array(
+				'products' => 'yes',
+				'orders'   => 'yes',
+			),
+		);
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'holded',
+				'connectors_meta' => array(
+					'holded'   => $meta,
+					'holded_2' => $meta,
+				),
+			)
+		);
+		WEBHOOK::get_token( 'holded' );
+		WEBHOOK::get_token( 'holded_2' );
+		WEBHOOK::save_signing_secret( 'holded_2', 'whsec_old' );
+		WEBHOOK::add_log( 'holded_2', array( 'status' => 'ok' ) );
+
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'holded',
+				'connectors_meta' => array( 'holded' => $meta ),
+			)
+		);
+
+		$this->assertSame( '', WEBHOOK::get_token( 'holded_2', false ) );
+		$this->assertSame( '', WEBHOOK::get_signing_secret( 'holded_2' ) );
+		$this->assertSame( array(), WEBHOOK::get_logs( 'holded_2' ) );
+		$this->assertNotSame( '', WEBHOOK::get_token( 'holded', false ) );
+
+		delete_option( 'connect_ecommerce' );
+	}
+
+	/**
+	 * The log limit applies per connector: a busy connector does not evict the others.
+	 */
+	public function test_log_limit_is_per_connector() {
+		WEBHOOK::add_log( 'odoo', array( 'status' => 'ok' ) );
+		for ( $i = 0; $i < WEBHOOK::LOG_LIMIT + 10; $i++ ) {
+			WEBHOOK::add_log( 'holded', array( 'status' => 'ok' ) );
+		}
+
+		$this->assertCount( WEBHOOK::LOG_LIMIT, WEBHOOK::get_logs( 'holded' ) );
+		$this->assertCount( 1, WEBHOOK::get_logs( 'odoo' ) );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {
