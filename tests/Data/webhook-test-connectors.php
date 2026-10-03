@@ -46,6 +46,15 @@ class Webhook_Test_Holded_Connector extends Webhook_Test_Connector {
 	 * @return array
 	 */
 	public function parse_webhook_product( $payload, $headers = array() ) {
+		// Holded sends the event in the header: product.create, product.update or product.delete.
+		$event = $headers['x_holded_webhook_event'] ?? '';
+		if ( 'product.delete' === $event || ! empty( $payload['deletedAt'] ) ) {
+			return array(
+				'action' => 'delete',
+				'id'     => $payload['id'] ?? '',
+			);
+		}
+
 		$item = $payload;
 		// Holded webhooks send "description" while the API (universal item) uses "desc".
 		$item['desc'] = $payload['description'] ?? '';

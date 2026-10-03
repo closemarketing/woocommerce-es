@@ -326,6 +326,19 @@ class WEBHOOK {
 			}
 		}
 
+		// Products created without SKU yet (e.g. Holded product.create) wait for the update that sets it.
+		$kind = $item['kind'] ?? 'simple';
+		if ( empty( $item['sku'] ) && empty( $item['variants'] ) && 'variants' !== $kind && 'variable' !== $kind ) {
+			return self::finish(
+				$connector_id,
+				$base + array(
+					'status'  => 'ignored',
+					'source'  => $source,
+					'message' => __( 'Product without SKU. It will be synced when the ERP sends it with a SKU.', 'woocommerce-es' ),
+				)
+			);
+		}
+
 		/**
 		 * Filters the universal product item before it is synced from a webhook.
 		 *
@@ -366,7 +379,7 @@ class WEBHOOK {
 			$parsed = $connapi_erp->parse_webhook_product( $payload, $headers );
 		} else {
 			$parsed = array(
-				'action'   => 'upsert',
+				'action'   => self::detect_action( $payload, $headers ),
 				'id'       => self::extract_product_id( $payload ),
 				'complete' => false,
 			);
@@ -383,6 +396,69 @@ class WEBHOOK {
 		$parsed = apply_filters( 'conecom_webhook_parse_request', $parsed, $payload, $headers, $connector );
 
 		return is_array( $parsed ) ? $parsed : array();
+	}
+
+	/**
+	 * Verifies an HMAC signature header against the raw body.
+	 *
+	 * Helper for connectors implementing verify_webhook(). Accepts the value
+	 * with or without the algorithm prefix, e.g. Holded's
+	 * "X-Holded-Webhook-Signature: sha256=<hex>".
+	 *
+	 * @param string $raw_body  Raw request body.
+	 * @param string $signature Signature header value.
+	 * @param string $secret    Shared secret.
+	 * @param string $algo      Hash algorithm.
+	 * @return bool
+	 */
+	public static function verify_hmac_signature( $raw_body, $signature, $secret, $algo = 'sha256' ) {
+		$signature = trim( (string) $signature );
+		if ( '' === $signature || '' === (string) $secret ) {
+			return false;
+		}
+		if ( 0 === stripos( $signature, $algo . '=' ) ) {
+			$signature = substr( $signature, strlen( $algo ) + 1 );
+		}
+		$expected = hash_hmac( $algo, (string) $raw_body, (string) $secret );
+
+		return hash_equals( $expected, strtolower( $signature ) );
+	}
+
+	/**
+	 * Detects the generic event action from the headers or the payload.
+	 *
+	 * A product is considered deleted when an event header (e.g. Holded's
+	 * "X-Holded-Webhook-Event: product.delete") or the payload "event" key
+	 * mentions a deletion, or when the payload carries a deletion date
+	 * ("deletedAt" / "deleted_at").
+	 *
+	 * @param array $payload Webhook payload.
+	 * @param array $headers Request headers, keys lowercased with underscores.
+	 * @return string 'delete' or 'upsert'.
+	 */
+	public static function detect_action( $payload, $headers = array() ) {
+		$events = array();
+		foreach ( (array) $headers as $key => $value ) {
+			if ( '_event' === substr( (string) $key, -6 ) ) {
+				$events[] = (string) $value;
+			}
+		}
+		foreach ( array( 'event', 'action', 'type' ) as $key ) {
+			if ( isset( $payload[ $key ] ) && is_string( $payload[ $key ] ) ) {
+				$events[] = $payload[ $key ];
+			}
+		}
+		foreach ( $events as $event ) {
+			if ( preg_match( '/(^|[._:\-\s])(delete|deleted|remove|removed|unlink)($|[._:\-\s])/i', $event ) ) {
+				return 'delete';
+			}
+		}
+
+		if ( ! empty( $payload['deletedAt'] ) || ! empty( $payload['deleted_at'] ) ) {
+			return 'delete';
+		}
+
+		return 'upsert';
 	}
 
 	/**

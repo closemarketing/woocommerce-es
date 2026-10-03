@@ -1,0 +1,23 @@
+{
+  "id": "6ac0d41e5da01d285801216c",
+  "name": "producto borrar",
+  "description": null,
+  "kind": "simple",
+  "sku": null,
+  "barcode": null,
+  "price": null,
+  "cost": null,
+  "stock": "0",
+  "variants": [
+    {
+      "id": "6ac0d41e5da01d285801216d",
+      "sku": null,
+      "barcode": null,
+      "price": null,
+      "cost": null,
+      "stock": null,
+      "description": null
+    }
+  ],
+  "packItems": []
+}

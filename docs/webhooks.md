@@ -38,9 +38,12 @@ Responses:
    - Connector implements `parse_webhook_product()` → use it.
    - Otherwise, generic parser: extract the ID from `?id=N`, `{"id": N}`,
      `product_id`, `productId`, `_id`, or nested `data` / `product` / `record`.
+     The action is `delete` when a `*_event` header or the `event` / `action` /
+     `type` key mentions a deletion, or the payload has `deletedAt` / `deleted_at`.
    - Filter `conecom_webhook_parse_request` can override the result.
 5. If the translated item is **complete**, sync it directly. If not, fall back to
    `get_products( $id )` (second request — not ideal, but always works).
+   Simple products without SKU are answered `ignored` until an update sets it.
 6. Log the execution (`connect_ecommerce_webhook_logs`, last 50 entries) and show
    it in the Webhooks tab.
 
@@ -115,7 +118,19 @@ Variant:
 
 ### Holded
 
-Holded's product webhook already carries almost the whole item:
+Holded sends the event and a signature in the headers (normalized by WordPress to
+lowercase with underscores, e.g. `x_holded_webhook_event`):
+
+| Header | Example |
+|--------|---------|
+| `X-Holded-Webhook-Event` | `product.create`, `product.update`, `product.delete` |
+| `X-Holded-Webhook-Signature` | `sha256=3cce6ddb…` (HMAC-SHA256 of the raw body) |
+| `X-Holded-Webhook-Date` | `2026-10-03T08:50:55Z` |
+| `X-Holded-Webhook-Id` | Webhook subscription ID |
+| `X-Holded-Webhook-Account-Id` | Holded account ID |
+| `X-Holded-Webhook-Version` | `v1` |
+
+`product.update` payload (create sends the same structure):
 
 ```json
 {
@@ -135,10 +150,36 @@ Holded's product webhook already carries almost the whole item:
 }
 ```
 
+`product.create` usually arrives right after creating the product in Holded, often
+**without SKU** (`"sku": null`). The core answers `ignored` ("Product without SKU")
+and the product is created with the next `product.update` that carries the SKU.
+
+`product.delete` payload (no SKU, so the product is found by `connect_ecommerce_id`):
+
+```json
+{
+  "id": "6ac0d41e5da01d285801216c",
+  "kind": "simple",
+  "deletedAt": "2026-10-03T10:08:38+00:00"
+}
+```
+
+The generic parser already detects deletions from the `*_event` header or
+`deletedAt`, so even a Holded connector without translator never asks the API for a
+deleted product.
+
 Translation in the Holded connector:
 
 ```php
 public function parse_webhook_product( $payload, $headers = array() ) {
+	$event = $headers['x_holded_webhook_event'] ?? '';
+	if ( 'product.delete' === $event || ! empty( $payload['deletedAt'] ) ) {
+		return array(
+			'action' => 'delete',
+			'id'     => $payload['id'] ?? '',
+		);
+	}
+
 	$item         = $payload;
 	$item['desc'] = $payload['description'] ?? '';
 	unset( $item['description'] );
@@ -158,11 +199,24 @@ public function parse_webhook_product( $payload, $headers = array() ) {
 		'complete' => ! $needs_api,
 	);
 }
+
+public function verify_webhook( $raw_body, $headers = array() ) {
+	$secret = $this->settings['webhook_secret'] ?? '';
+	if ( '' === $secret ) {
+		return true; // Only the core token is checked until a secret is configured.
+	}
+
+	return WEBHOOK::verify_hmac_signature( $raw_body, $headers['x_holded_webhook_signature'] ?? '', $secret );
+}
 ```
 
-Missing in the current Holded webhook (would avoid the second request): `taxes`,
-`tags`, `rates`, `categoryFields` in variants, images and the event type
-(create/update/delete).
+> To confirm: which secret Holded uses to sign (the one shown when the webhook is
+> created in Holded, or the API key). The algorithm is HMAC-SHA256 of the raw body,
+> sent as `sha256=<hex>`.
+
+Missing in the Holded webhook (would avoid the second request for variable
+products and stores with rates): `taxes`, `tags`, `rates`, `categoryFields` in
+variants and images.
 
 ### Odoo
 
@@ -207,6 +261,9 @@ public function parse_webhook_product( $payload, $headers = array() ) {
 | `conecom_webhook_instructions` | filter | `( $html, $connector_id, $webhook_url, $connapi_erp )` — Webhooks tab instructions. |
 | `conecom_webhook_product_deleted` | action | `( $post_id, $remote_id, $connector )`. |
 | `conecom_webhook_processed` | action | `( $result, $connector_id )` after every webhook. |
+
+Helper for connectors: `WEBHOOK::verify_hmac_signature( $raw_body, $signature, $secret, 'sha256' )`
+validates `sha256=<hex>` or bare hex HMAC signatures with `hash_equals()`.
 
 ## Pending / future
 

@@ -226,6 +226,74 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Loads a JSON fixture.
+	 *
+	 * @param string $file File name in tests/Data.
+	 * @return array
+	 */
+	private function fixture( $file ) {
+		return json_decode( file_get_contents( UNIT_TESTS_DATA_PLUGIN_DIR . $file ), true );
+	}
+
+	/**
+	 * The generic parser detects deletions from the event header or the payload.
+	 */
+	public function test_detect_action() {
+		$this->assertSame( 'delete', WEBHOOK::detect_action( array( 'id' => '1' ), array( 'x_holded_webhook_event' => 'product.delete' ) ) );
+		$this->assertSame( 'upsert', WEBHOOK::detect_action( array( 'id' => '1' ), array( 'x_holded_webhook_event' => 'product.update' ) ) );
+		$this->assertSame( 'upsert', WEBHOOK::detect_action( array( 'id' => '1' ), array( 'x_holded_webhook_event' => 'product.create' ) ) );
+		$this->assertSame( 'delete', WEBHOOK::detect_action( $this->fixture( 'webhook-holded-product-delete.json' ) ) );
+		$this->assertSame( 'delete', WEBHOOK::detect_action( array( 'event' => 'product_deleted' ) ) );
+		$this->assertSame( 'upsert', WEBHOOK::detect_action( array( 'event' => 'undeleted_flag' ) ) );
+	}
+
+	/**
+	 * A Holded delete webhook never requests the (already deleted) product to the API.
+	 */
+	public function test_holded_delete_does_not_request_api() {
+		$headers = array( 'x_holded_webhook_event' => 'product.delete' );
+		foreach ( array( new Webhook_Test_Connector(), new Webhook_Test_Holded_Connector() ) as $connapi ) {
+			$result = WEBHOOK::process( $this->connector( $connapi ), $this->fixture( 'webhook-holded-product-delete.json' ), $headers );
+
+			$this->assertSame( 'delete', $result['action'] );
+			$this->assertSame( '6ac0d41e5da01d285801216c', $result['id'] );
+			$this->assertSame( 'ignored', $result['status'] );
+			$this->assertSame( array(), $connapi->requested );
+		}
+	}
+
+	/**
+	 * A Holded product created without SKU is ignored until an update brings the SKU.
+	 */
+	public function test_holded_create_without_sku_is_ignored() {
+		$connapi = new Webhook_Test_Holded_Connector();
+		$result  = WEBHOOK::process(
+			$this->connector( $connapi ),
+			$this->fixture( 'webhook-holded-product-create.json' ),
+			array( 'x_holded_webhook_event' => 'product.create' )
+		);
+
+		$this->assertSame( 'upsert', $result['action'] );
+		$this->assertSame( 'ignored', $result['status'] );
+		$this->assertSame( 'payload', $result['source'] );
+		$this->assertSame( array(), $connapi->requested );
+	}
+
+	/**
+	 * HMAC signatures are verified with or without the algorithm prefix.
+	 */
+	public function test_verify_hmac_signature() {
+		$body      = '{"id":"6ac0d41e5da01d285801216c","kind":"simple","deletedAt":"2026-10-03T10:08:38+00:00"}';
+		$signature = hash_hmac( 'sha256', $body, 'secret' );
+
+		$this->assertTrue( WEBHOOK::verify_hmac_signature( $body, 'sha256=' . $signature, 'secret' ) );
+		$this->assertTrue( WEBHOOK::verify_hmac_signature( $body, strtoupper( $signature ), 'secret' ) );
+		$this->assertFalse( WEBHOOK::verify_hmac_signature( $body . ' ', 'sha256=' . $signature, 'secret' ) );
+		$this->assertFalse( WEBHOOK::verify_hmac_signature( $body, 'sha256=' . $signature, 'other' ) );
+		$this->assertFalse( WEBHOOK::verify_hmac_signature( $body, '', 'secret' ) );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {
