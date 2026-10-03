@@ -50,5 +50,19 @@ function _manually_load_plugin() {
 
 tests_add_filter( 'muplugins_loaded', '_manually_load_plugin' );
 
+/**
+ * Never call the real VIES service from tests: every VAT number is invalid unless
+ * a test mocks it (cache via mock_vat_validation(), or its own filter callback).
+ *
+ * @return array
+ */
+function _conecom_fake_vies() {
+	return array(
+		'valid'   => false,
+		'message' => 'VAT number is invalid (fake VIES)',
+	);
+}
+tests_add_filter( 'conecom_pre_vies_validation', '_conecom_fake_vies' );
+
 // Start up the WP testing environment.
 require "{$_tests_dir}/includes/bootstrap.php";

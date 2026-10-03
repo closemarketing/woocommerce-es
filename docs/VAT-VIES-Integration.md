@@ -51,6 +51,26 @@ A new helper class has been created with the following functionality:
 - Logs errors when debug mode is enabled
 - Returns appropriate error messages
 
+#### Short-circuit filter (tests and custom validators):
+The VIES library talks SOAP directly, so `pre_http_request` cannot intercept it. The
+`conecom_pre_vies_validation` filter runs after the cache lookup and before the VIES
+request; return an array to skip VIES:
+
+```php
+add_filter(
+	'conecom_pre_vies_validation',
+	function ( $pre, $country_code, $vat_number ) {
+		return array( 'valid' => true, 'name' => 'Company', 'address' => 'Street 1' );
+	},
+	10,
+	3
+);
+```
+
+The result is cached like a real VIES answer. The test bootstrap registers a fake
+that answers "invalid" for every number, so the suite never reaches the real VIES
+service; tests mock valid numbers with `mock_vat_validation()` or their own callback.
+
 ### 3. Admin Settings Integration
 
 New settings added in `includes/Admin/Settings.php`:

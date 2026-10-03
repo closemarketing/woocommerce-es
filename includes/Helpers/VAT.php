@@ -109,6 +109,36 @@ class VAT {
 			return $cached_result;
 		}
 
+		/**
+		 * Short-circuits the VIES request, like pre_http_request does for HTTP calls.
+		 *
+		 * The VIES library talks SOAP directly, so pre_http_request cannot intercept it.
+		 * Return an array to skip VIES (tests, custom validators); null keeps the request.
+		 *
+		 * @since 3.5.1
+		 *
+		 * @param null|array $pre          Null, or array{valid: bool, name?: string, address?: string, message?: string}.
+		 * @param string     $country_code Country code (2 letters).
+		 * @param string     $vat_number   VAT number.
+		 */
+		$pre = apply_filters( 'conecom_pre_vies_validation', null, $country_code, $vat_number );
+		if ( is_array( $pre ) ) {
+			$is_valid          = ! empty( $pre['valid'] );
+			$validation_result = array(
+				'valid'        => $is_valid,
+				'country_code' => $country_code,
+				'vat_number'   => $vat_number,
+				'request_date' => gmdate( 'Y-m-d' ),
+				'name'         => $pre['name'] ?? '',
+				'address'      => $pre['address'] ?? '',
+				'message'      => $pre['message'] ?? ( $is_valid ? __( 'VAT number is valid', 'woocommerce-es' ) : __( 'VAT number is invalid', 'woocommerce-es' ) ),
+				'cached'       => false,
+			);
+			wp_cache_set( $cache_key, $validation_result, self::CACHE_GROUP, self::CACHE_EXPIRATION );
+
+			return $validation_result;
+		}
+
 		// Try to validate using VIES.
 		try {
 			// Check if VIES library is available.
