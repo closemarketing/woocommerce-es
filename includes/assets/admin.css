@@ -390,3 +390,1196 @@
 .connect-ecommerce-settings .add-connector-field input[type="text"] {
 	width: 100%;
 }
+
+/* Connect Ecommerce settings redesign. */
+.woocommerce_page_connect_ecommerce #wpcontent {
+	padding-left: 0;
+}
+
+.woocommerce_page_connect_ecommerce #wpbody-content {
+	padding-bottom: 0;
+}
+
+.woocommerce_page_connect_ecommerce .connect-ecommerce-settings {
+	color: #1d2327;
+	font-size: 13px;
+}
+
+.connect-ecommerce-settings *,
+.connect-ecommerce-settings *::before,
+.connect-ecommerce-settings *::after {
+	box-sizing: border-box;
+}
+
+.connect-ecommerce-settings .header-wrap,
+.connect-ecommerce-settings .header-wrap .wrapper {
+	background: #fff;
+}
+
+.connect-ecommerce-settings .connwoo-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	min-height: 62px;
+	margin: 0;
+	padding: 14px 24px;
+	color: #1d2327;
+	background: #fff;
+	border-bottom: 1px solid #dcdcde;
+}
+
+.connect-ecommerce-settings .connwoo-brand {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.connect-ecommerce-settings .connwoo-brand img {
+	display: block;
+	width: 138px;
+	height: auto;
+}
+
+.connect-ecommerce-settings .connwoo-header-divider,
+.connect-ecommerce-settings .connwoo-nav-divider {
+	display: block;
+	width: 1px;
+	background: #dcdcde;
+}
+
+.connect-ecommerce-settings .connwoo-header-divider {
+	height: 20px;
+}
+
+.connect-ecommerce-settings .connwoo-header h2 {
+	float: none;
+	padding: 0;
+	margin: 0;
+	color: #1d2327;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.35;
+}
+
+.connect-ecommerce-settings .connwoo-version {
+	padding: 2px 6px;
+	color: #646970;
+	font-size: 12px;
+	line-height: 1.4;
+	white-space: nowrap;
+	background: #f0f0f1;
+	border-radius: 2px;
+}
+
+.connect-ecommerce-settings .connwoo-header-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-left: auto;
+	white-space: nowrap;
+}
+
+.connect-ecommerce-settings .connwoo-docs-link {
+	text-decoration: none;
+}
+
+.connect-ecommerce-settings .connwoo-header .connwoo-header-btn {
+	min-height: 30px;
+	padding: 0 12px;
+	color: #2271b1;
+	line-height: 28px;
+	background: #f6f7f7;
+	border-color: #2271b1;
+}
+
+.connect-ecommerce-settings .connwoo-header .connwoo-header-btn:hover,
+.connect-ecommerce-settings .connwoo-header .connwoo-header-btn:focus {
+	color: #135e96;
+	background: #f0f6fc;
+	border-color: #135e96;
+}
+
+.connect-ecommerce-settings > .wrap {
+	max-width: none;
+	margin: 0;
+}
+
+.connect-ecommerce-settings .nav-tab-wrapper {
+	display: flex;
+	align-items: flex-end;
+	gap: 2px;
+	min-height: 48px;
+	margin: 0;
+	padding: 0 24px;
+	background: #fff;
+	border: 0;
+	border-bottom: 1px solid #dcdcde;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .nav-tab-wrapper .nav-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	min-height: 47px;
+	margin: 0 0 -1px;
+	padding: 11px 12px 10px;
+	color: #50575e;
+	font-size: 14px;
+	font-weight: 400;
+	line-height: 1.4;
+	text-decoration: none;
+	background: transparent;
+	border: 0;
+	border-bottom: 3px solid transparent;
+}
+
+.connect-ecommerce-settings .nav-tab-wrapper .nav-tab:hover,
+.connect-ecommerce-settings .nav-tab-wrapper .nav-tab:focus {
+	color: #1d2327;
+	background: #f6f7f7;
+}
+
+.connect-ecommerce-settings .nav-tab-wrapper .nav-tab-active {
+	color: #1d2327;
+	font-weight: 600;
+	background: transparent;
+	border-bottom-color: #2271b1;
+}
+
+.connect-ecommerce-settings .connwoo-nav-divider {
+	height: 18px;
+	margin: 0 10px 14px;
+}
+
+.connect-ecommerce-settings .connwoo-status-dot {
+	display: inline-block;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: #a7aaad;
+	flex: 0 0 auto;
+}
+
+.connect-ecommerce-settings .connwoo-status-dot.is-ready {
+	background: #00a32a;
+}
+
+.connect-ecommerce-settings .connwoo-status-dot.is-unavailable {
+	background: #d63638;
+}
+
+.connect-ecommerce-settings .connwoo-page-content {
+	width: 100%;
+	max-width: 1248px;
+	padding: 20px 24px 96px;
+}
+
+.connect-ecommerce-settings .connwoo-page-content > .notice {
+	margin: 0 0 16px;
+}
+
+.connect-ecommerce-settings .subsubsub {
+	display: inline-flex;
+	float: none;
+	width: auto;
+	margin: 0 0 20px;
+	padding: 3px;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .subsubsub li {
+	margin: 0;
+	padding: 0;
+	color: transparent;
+}
+
+.connect-ecommerce-settings .subsubsub a {
+	display: block;
+	padding: 6px 12px;
+	color: #2c3338;
+	line-height: 1.45;
+	text-decoration: none;
+	border-radius: 3px;
+}
+
+.connect-ecommerce-settings .subsubsub a:hover,
+.connect-ecommerce-settings .subsubsub a:focus {
+	color: #135e96;
+	background: #f0f6fc;
+}
+
+.connect-ecommerce-settings .subsubsub a.current {
+	color: #fff;
+	font-weight: 600;
+	background: #2271b1;
+}
+
+.connect-ecommerce-settings .subsubsub + .clear {
+	display: none;
+}
+
+/* Settings panels. */
+.connect-ecommerce-settings .connwoo-connector-settings > h2,
+.connect-ecommerce-settings .connwoo-panel-form > h2 {
+	margin: 20px 0 0;
+	padding: 12px 16px;
+	color: #1d2327;
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.4;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-bottom: 1px solid #f0f0f1;
+	border-radius: 0;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings > h2:first-child,
+.connect-ecommerce-settings .connwoo-panel-form > h2:first-of-type {
+	margin-top: 0;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings .connwoo-section-description,
+.connect-ecommerce-settings .connwoo-panel-form > h2 + p,
+.connect-ecommerce-settings .connwoo-panel-form > h2 + .notice {
+	margin: 0;
+	padding: 0 16px 12px;
+	color: #646970;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-top: 0;
+	border-bottom: 0;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table,
+.connect-ecommerce-settings .connwoo-panel-form table.form-table {
+	display: table;
+	width: 100%;
+	margin: 0 0 20px;
+	padding: 0;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-top: 0;
+	border-radius: 0;
+	border-collapse: collapse;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table tbody {
+	display: table-row-group;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table tr,
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table tr.connwoo-field-short,
+.connect-ecommerce-settings .connwoo-panel-form table.form-table tr {
+	display: table-row;
+	width: auto;
+	padding: 0;
+	border-top: 1px solid #f0f0f1;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings table.form-table tr:first-child,
+.connect-ecommerce-settings .connwoo-panel-form table.form-table tr:first-child {
+	border-top: 0;
+}
+
+.connect-ecommerce-settings table.form-table th,
+.connect-ecommerce-settings table.form-table td {
+	padding: 14px 16px;
+	vertical-align: top;
+}
+
+.connect-ecommerce-settings table.form-table th {
+	width: 300px;
+	color: #1d2327;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.connect-ecommerce-settings table.form-table td {
+	color: #50575e;
+}
+
+.connect-ecommerce-settings table.form-table input[type="text"],
+.connect-ecommerce-settings table.form-table input[type="email"],
+.connect-ecommerce-settings table.form-table input[type="url"],
+.connect-ecommerce-settings table.form-table input[type="password"],
+.connect-ecommerce-settings table.form-table input[type="date"],
+.connect-ecommerce-settings table.form-table select,
+.connect-ecommerce-settings table.form-table textarea {
+	max-width: 100%;
+	border-color: #8c8f94;
+	border-radius: 4px;
+}
+
+.connect-ecommerce-settings table.form-table input[type="text"],
+.connect-ecommerce-settings table.form-table input[type="email"],
+.connect-ecommerce-settings table.form-table input[type="url"],
+.connect-ecommerce-settings table.form-table input[type="password"],
+.connect-ecommerce-settings table.form-table input[type="date"],
+.connect-ecommerce-settings table.form-table select {
+	min-height: 32px;
+}
+
+.connect-ecommerce-settings table.form-table .description {
+	margin-top: 5px;
+	color: #646970;
+	font-size: 12px;
+}
+
+.connect-ecommerce-settings .connwoo-connector-settings > .submit {
+	display: none;
+}
+
+/* Binary selectors are enhanced by settings-ui.js while retaining native form values. */
+.connect-ecommerce-settings .conecom-toggle-select {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	padding: 0 !important;
+	margin: -1px !important;
+	overflow: hidden !important;
+	clip: rect(0, 0, 0, 0) !important;
+	white-space: nowrap !important;
+	border: 0 !important;
+}
+
+.connect-ecommerce-settings .conecom-toggle-control {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 32px;
+}
+
+.connect-ecommerce-settings .conecom-toggle {
+	position: relative;
+	width: 36px;
+	height: 20px;
+	padding: 0;
+	background: #8c8f94;
+	border: 0;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: background 0.15s;
+}
+
+.connect-ecommerce-settings .conecom-toggle:focus {
+	outline: 2px solid #2271b1;
+	outline-offset: 2px;
+}
+
+.connect-ecommerce-settings .conecom-toggle.is-active {
+	background: #2271b1;
+}
+
+.connect-ecommerce-settings .conecom-toggle-knob {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 16px;
+	height: 16px;
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	transition: left 0.15s;
+}
+
+.connect-ecommerce-settings .conecom-toggle.is-active .conecom-toggle-knob {
+	left: 18px;
+}
+
+.connect-ecommerce-settings .conecom-toggle-state {
+	color: #50575e;
+}
+
+.connect-ecommerce-settings table.form-table input[type="checkbox"]:not(:disabled) {
+	position: relative;
+	width: 36px;
+	height: 20px;
+	min-width: 36px;
+	margin: 0 8px 0 0;
+	background: #8c8f94;
+	border: 0;
+	border-radius: 10px;
+	box-shadow: none;
+	appearance: none;
+}
+
+.connect-ecommerce-settings table.form-table input[type="checkbox"]::before {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 16px;
+	height: 16px;
+	margin: 0;
+	background: #fff;
+	border-radius: 50%;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	content: "";
+	transition: left 0.15s;
+}
+
+.connect-ecommerce-settings table.form-table input[type="checkbox"]:checked {
+	background: #2271b1;
+}
+
+.connect-ecommerce-settings table.form-table input[type="checkbox"]:checked::before {
+	left: 18px;
+}
+
+/* Sticky form actions. */
+.connect-ecommerce-settings .connwoo-save-bar {
+	position: sticky;
+	z-index: 20;
+	bottom: 0;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-height: 57px;
+	margin: 20px -24px -96px;
+	padding: 12px 24px;
+	background: #fff;
+	border-top: 1px solid #c3c4c7;
+	box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.connect-ecommerce-settings .connwoo-save-state {
+	color: #646970;
+}
+
+.connect-ecommerce-settings .connwoo-save-bar .connwoo-discard {
+	margin-left: auto;
+}
+
+.connect-ecommerce-settings .connwoo-save-bar input[type="submit"],
+.connect-ecommerce-settings .connwoo-save-bar button[type="submit"] {
+	margin: 0;
+}
+
+/* Connector manager. */
+.connect-ecommerce-settings .connector-manager {
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .connector-manager-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 12px 16px;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.connect-ecommerce-settings .connector-manager-header h3 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.connect-ecommerce-settings .connector-manager-header p {
+	margin: 4px 0 0;
+	color: #646970;
+}
+
+.connect-ecommerce-settings .connector-active-count {
+	margin-left: auto;
+	color: #646970;
+	white-space: nowrap;
+}
+
+.connect-ecommerce-settings .connector-manager table.conecom-connectors-table {
+	width: 100%;
+	margin: 0;
+	border: 0;
+	border-collapse: collapse;
+	box-shadow: none;
+}
+
+.connect-ecommerce-settings .conecom-connectors-table tr {
+	display: grid;
+	grid-template-columns: minmax(240px, 1.4fr) minmax(100px, 0.6fr) minmax(200px, 1fr) minmax(130px, 0.8fr) 48px;
+	gap: 12px;
+	align-items: center;
+}
+
+.connect-ecommerce-settings .conecom-connectors-table th {
+	padding: 8px 16px;
+	color: #50575e;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+	background: #f6f7f7;
+	border: 0;
+}
+
+.connect-ecommerce-settings .conecom-connectors-table td {
+	padding: 12px 16px;
+	border-top: 1px solid #f0f0f1;
+}
+
+.connect-ecommerce-settings .conecom-connectors-table th:last-child,
+.connect-ecommerce-settings .conecom-connectors-table td:last-child {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding-right: 8px;
+	padding-left: 8px;
+}
+
+.connect-ecommerce-settings .conecom-connector-identity {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+}
+
+.connect-ecommerce-settings .conecom-connector-identity > div {
+	display: flex;
+	min-width: 0;
+	flex: 1;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.connect-ecommerce-settings .conecom-connector-mark {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	color: #135e96;
+	font-size: 14px;
+	font-weight: 700;
+	background: #f0f6fc;
+	border-radius: 4px;
+	flex: 0 0 auto;
+}
+
+.connect-ecommerce-settings .conecom-connector-mark.has-logo {
+	width: 56px;
+	padding: 5px;
+	background: #1d2327;
+	border: 1px solid #1d2327;
+}
+
+.connect-ecommerce-settings .conecom-connector-logo {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+.connect-ecommerce-settings .conecom-connector-identity input[type="text"] {
+	width: 100%;
+	min-height: 30px;
+	padding: 0 6px;
+	margin-left: -7px;
+	font-weight: 600;
+	background: transparent;
+	border-color: transparent;
+}
+
+.connect-ecommerce-settings .conecom-connector-identity input[type="text"]:hover {
+	background: #fff;
+	border-color: #8c8f94;
+}
+
+.connect-ecommerce-settings .conecom-connector-identity code {
+	align-self: flex-start;
+	padding: 0 5px;
+	color: #646970;
+	font-size: 11px;
+	background: #f0f0f1;
+	border-radius: 2px;
+}
+
+.connect-ecommerce-settings .conecom-workflows {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .conecom-workflow-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	min-height: 26px;
+	padding: 0 10px;
+	color: #8c8f94;
+	font-size: 12px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 13px;
+	cursor: pointer;
+}
+
+.connect-ecommerce-settings .conecom-workflow-chip input[type="checkbox"] {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.connect-ecommerce-settings .conecom-workflow-chip span {
+	display: none;
+}
+
+.connect-ecommerce-settings .conecom-workflow-chip:has(input:checked) {
+	color: #135e96;
+	background: #f0f6fc;
+	border-color: #2271b1;
+}
+
+.connect-ecommerce-settings .conecom-workflow-chip:has(input:checked) span {
+	display: inline;
+}
+
+.connect-ecommerce-settings .conecom-workflow-chip:has(input:disabled) {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.connect-ecommerce-settings .conecom-remove-connector {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	color: #b32d2e;
+	background: #fff;
+	border: 1px solid #dcdcde;
+	border-radius: 4px;
+	cursor: pointer;
+}
+
+.connect-ecommerce-settings .conecom-remove-connector .dashicons {
+	width: 18px;
+	height: 18px;
+	font-size: 18px;
+	line-height: 18px;
+}
+
+.connect-ecommerce-settings .conecom-remove-connector:hover,
+.connect-ecommerce-settings .conecom-remove-connector:focus {
+	background: #fcf0f1;
+	border-color: #b32d2e;
+}
+
+.connect-ecommerce-settings .add-connector-wrapper {
+	display: block;
+	padding: 14px 16px;
+	background: #f6f7f7;
+	border-top: 1px solid #dcdcde;
+}
+
+.connect-ecommerce-settings .add-connector-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .add-connector-field {
+	min-width: 200px;
+	flex: 1;
+}
+
+.connect-ecommerce-settings .add-connector-field label {
+	display: block;
+	margin-bottom: 6px;
+	font-weight: 600;
+}
+
+.connect-ecommerce-settings .add-connector-field select,
+.connect-ecommerce-settings .add-connector-field input[type="text"] {
+	width: 100%;
+	min-height: 32px;
+}
+
+.connect-ecommerce-settings .conecom-add-connector {
+	min-height: 32px;
+}
+
+.connect-ecommerce-settings .connector-manager-empty {
+	margin: 16px;
+}
+
+/* Sync dashboards. */
+.connect-ecommerce-settings .connwoo-sync-engine .sync-wrapper {
+	text-align: left;
+}
+
+.connect-ecommerce-settings .connwoo-connection-status {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 20px;
+	padding: 10px 14px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-left: 4px solid #00a32a;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .connwoo-connection-status > span:not(.connwoo-status-dot) {
+	color: #646970;
+}
+
+.connect-ecommerce-settings .connwoo-connection-status > a {
+	margin-left: auto;
+}
+
+.connect-ecommerce-settings .conecom-import-stats {
+	gap: 16px;
+	margin: 0 0 20px;
+}
+
+.connect-ecommerce-settings .conecom-stat-card {
+	display: block;
+	padding: 16px;
+	border-radius: 0;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .conecom-stat-card:hover {
+	transform: none;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .conecom-stat-icon {
+	display: none;
+}
+
+.connect-ecommerce-settings .conecom-stat-content {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.connect-ecommerce-settings .conecom-stat-value {
+	order: 2;
+	font-size: 28px;
+	font-weight: 600;
+	line-height: 1.1;
+}
+
+.connect-ecommerce-settings .conecom-stat-label {
+	order: 1;
+	margin: 0;
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.4px;
+}
+
+.connect-ecommerce-settings .conecom-stat-sublabel {
+	order: 3;
+	margin: 0;
+}
+
+.connect-ecommerce-settings .conecom-stat-import .conecom-stat-value {
+	color: #2271b1;
+}
+
+.connect-ecommerce-settings .conecom-stat-delete .conecom-stat-value {
+	color: #b32d2e;
+}
+
+.connect-ecommerce-settings .conecom-log-container,
+.connect-ecommerce-settings .connwoo-orders-card,
+.connect-ecommerce-settings .connect-payment-methods,
+.connect-ecommerce-settings .repeater-section,
+.connect-ecommerce-settings .connwoo-activity-log {
+	margin: 0 0 20px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 0;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .conecom-log-tabs {
+	background: #fff;
+	border-color: #f0f0f1;
+}
+
+.connect-ecommerce-settings .conecom-tab-button {
+	padding: 12px 16px;
+}
+
+.connect-ecommerce-settings .conecom-tab-button.active {
+	color: #1d2327;
+	background: #fff;
+	border-bottom: 3px solid #2271b1;
+}
+
+.connect-ecommerce-settings .conecom-tab-content {
+	padding: 16px;
+}
+
+.connect-ecommerce-settings .connwoo-sync-with-stats .import-button-wrapper .button,
+.connect-ecommerce-settings .connwoo-sync-with-stats #import-mode {
+	height: 32px;
+	min-height: 32px;
+	padding-top: 0;
+	padding-bottom: 0;
+	font-size: 13px;
+	line-height: 30px;
+}
+
+.connect-ecommerce-settings .connwoo-orders-card .connwoo-card-header,
+.connect-ecommerce-settings .connect-payment-methods > h2 {
+	margin: 0;
+	padding: 12px 16px;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.connect-ecommerce-settings .connwoo-card-header {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .connwoo-card-header h2,
+.connect-ecommerce-settings .connect-payment-methods > h2 {
+	margin: 0;
+	font-size: 14px;
+	font-weight: 600;
+}
+
+.connect-ecommerce-settings .connwoo-card-header p {
+	margin: 4px 0 0;
+	color: #646970;
+}
+
+.connect-ecommerce-settings .connwoo-order-status {
+	margin-left: auto;
+	color: #646970;
+}
+
+.connect-ecommerce-settings .connwoo-order-status strong {
+	color: #1d2327;
+}
+
+.connect-ecommerce-settings .connwoo-card-body {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	padding: 16px;
+}
+
+.connect-ecommerce-settings .connwoo-date-presets {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .connwoo-date-preset {
+	min-height: 28px;
+	padding: 0 12px;
+	color: #50575e;
+	font-size: 12px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 14px;
+	cursor: pointer;
+}
+
+.connect-ecommerce-settings .connwoo-date-preset:hover,
+.connect-ecommerce-settings .connwoo-date-preset.is-active {
+	color: #135e96;
+	background: #f0f6fc;
+	border-color: #2271b1;
+}
+
+.connect-ecommerce-settings .connwoo-orders-card .import-button-wrapper {
+	display: flex;
+	align-items: flex-end;
+	gap: 10px;
+	margin: 0;
+	flex-wrap: wrap;
+}
+
+.connect-ecommerce-settings .connwoo-orders-card .import-button-wrapper label {
+	padding-bottom: 7px;
+	font-weight: 600;
+}
+
+.connect-ecommerce-settings .connwoo-orders-card .orders-date-input {
+	min-height: 32px;
+}
+
+.connect-ecommerce-settings .connwoo-orders-card #sync-products {
+	margin-left: auto;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine .connwoo-activity-log {
+	width: 100%;
+	padding: 0;
+	margin: 0;
+}
+
+.connect-ecommerce-settings .connwoo-activity-log .connwoo-activity-log-title {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 10px 16px;
+	font-size: 14px;
+	font-weight: 600;
+	border-bottom: 1px solid #f0f0f1;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine .connwoo-activity-log #loglist {
+	height: 240px;
+	padding: 12px 16px;
+	color: #c3c4c7;
+	font-family: Menlo, Consolas, monospace;
+	font-size: 12px;
+	line-height: 1.8;
+	background: #1d2327;
+	border: 0;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine .connwoo-activity-log #loglist > p {
+	padding: 2px 0;
+	background: transparent;
+}
+
+.connect-ecommerce-settings .connwoo-sync-engine .connwoo-activity-log #loglist > p.finish {
+	color: #68de7c;
+	background: transparent;
+}
+
+/* Merge variables and payment mappings. */
+.connect-ecommerce-settings .connwoo-panel-form .repeater-section {
+	padding: 16px;
+}
+
+.connect-ecommerce-settings .repeater-section .wrap {
+	margin: 0;
+}
+
+.connect-ecommerce-settings .repeater-section .product-mergevars.repeating {
+	padding: 12px !important;
+	margin: 0 !important;
+	background: #fff;
+	border: 0 !important;
+	border-top: 1px solid #f0f0f1 !important;
+}
+
+.connect-ecommerce-settings .connect-payment-methods {
+	overflow: hidden;
+}
+
+.connect-ecommerce-settings .connect-payment-methods > p,
+.connect-ecommerce-settings .connect-payment-methods > .notice {
+	margin: 0;
+	padding: 0 16px 12px;
+}
+
+.connect-ecommerce-settings .connect-payment-methods form > table {
+	border-right: 0;
+	border-left: 0;
+	box-shadow: none;
+}
+
+.connect-ecommerce-settings .connect-payment-methods form > .submit {
+	padding: 12px 16px;
+	margin: 0;
+	border-top: 1px solid #f0f0f1;
+}
+
+/* License manager integration. */
+.connect-ecommerce-settings .connwoo-page-content .wplm-license-wrapper {
+	grid-template-columns: minmax(0, 1fr) minmax(240px, 300px);
+	gap: 20px;
+	max-width: none;
+	margin: 0;
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-card,
+.connect-ecommerce-settings .connwoo-page-content .wplm-info-card {
+	padding: 16px;
+	background: #fff;
+	border: 1px solid #c3c4c7;
+	border-radius: 0;
+	box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-card-header {
+	padding-bottom: 12px;
+	margin-bottom: 16px;
+	border-color: #f0f0f1;
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-card-header h2,
+.connect-ecommerce-settings .connwoo-page-content .wplm-info-card h3 {
+	font-size: 14px;
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-input,
+.connect-ecommerce-settings .connwoo-page-content .wplm-button,
+.connect-ecommerce-settings .connwoo-page-content .wplm-status-box,
+.connect-ecommerce-settings .connwoo-page-content .wplm-deactivate-label,
+.connect-ecommerce-settings .connwoo-page-content .wplm-notice {
+	border-radius: 4px;
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-input {
+	min-height: 32px;
+	padding: 0 8px;
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-button {
+	min-height: 32px;
+	padding: 0 14px;
+	font-size: 13px;
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-button-primary {
+	background: #2271b1;
+}
+
+.connect-ecommerce-settings .connwoo-page-content .wplm-button-primary:hover {
+	background: #135e96;
+}
+
+@media (max-width: 960px) {
+	.connect-ecommerce-settings .connwoo-header {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.connect-ecommerce-settings .connwoo-header-actions {
+		margin-left: 0;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table thead {
+		display: none;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table tr {
+		grid-template-columns: minmax(0, 1fr) minmax(160px, 0.7fr) 48px;
+		gap: 8px;
+		padding: 12px 0;
+		border-top: 1px solid #f0f0f1;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table td {
+		padding: 4px 16px;
+		border: 0;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table .conecom-connector-identity {
+		grid-column: 1 / 3;
+	}
+
+}
+
+@media (max-width: 782px) {
+	.woocommerce_page_connect_ecommerce #wpcontent {
+		padding-left: 0;
+	}
+
+	.connect-ecommerce-settings .connwoo-brand {
+		align-items: flex-start;
+		flex-wrap: wrap;
+	}
+
+	.connect-ecommerce-settings .connwoo-header-divider {
+		display: none;
+	}
+
+	.connect-ecommerce-settings .connwoo-brand h2 {
+		width: 100%;
+	}
+
+	.connect-ecommerce-settings .connwoo-header-actions {
+		width: 100%;
+		flex-wrap: wrap;
+	}
+
+	.connect-ecommerce-settings .nav-tab-wrapper,
+	.connect-ecommerce-settings .connwoo-page-content,
+	.connect-ecommerce-settings .connwoo-header {
+		padding-right: 16px;
+		padding-left: 16px;
+	}
+
+	.connect-ecommerce-settings .connwoo-nav-divider {
+		display: none;
+	}
+
+	.connect-ecommerce-settings table.form-table th,
+	.connect-ecommerce-settings table.form-table td {
+		display: block;
+		width: 100%;
+		padding: 10px 14px;
+	}
+
+	.connect-ecommerce-settings table.form-table td {
+		padding-top: 0;
+	}
+
+	.connect-ecommerce-settings .connector-manager-header,
+	.connect-ecommerce-settings .connwoo-card-header {
+		align-items: flex-start;
+		flex-direction: column;
+	}
+
+	.connect-ecommerce-settings .connector-active-count,
+	.connect-ecommerce-settings .connwoo-order-status {
+		margin-left: 0;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table tr {
+		grid-template-columns: minmax(0, 1fr) 48px;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table .conecom-connector-identity {
+		grid-column: 1 / 3;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table td:nth-child(2),
+	.connect-ecommerce-settings .conecom-connectors-table td:nth-child(3) {
+		grid-column: 1 / 3;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table td:nth-child(4) {
+		grid-column: 1;
+	}
+
+	.connect-ecommerce-settings .conecom-connectors-table td:nth-child(5) {
+		grid-column: 2;
+		grid-row: 4;
+	}
+
+	.connect-ecommerce-settings .conecom-workflows {
+		min-width: 0;
+	}
+
+	.connect-ecommerce-settings .connwoo-orders-card #sync-products,
+	.connect-ecommerce-settings .connwoo-connection-status > a {
+		margin-left: 0;
+	}
+
+	.connect-ecommerce-settings .connwoo-save-bar {
+		margin-right: -16px;
+		margin-left: -16px;
+		padding-right: 16px;
+		padding-left: 16px;
+		flex-wrap: wrap;
+	}
+
+	.connect-ecommerce-settings .connwoo-page-content .wplm-license-wrapper {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}

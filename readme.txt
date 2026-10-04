@@ -226,6 +226,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 
+* Enhancement: Redesigned the Connect Ecommerce admin interface with a clearer connector dashboard, segmented settings navigation, visual switches, synchronization cards, and unsaved-change controls.
 * Fixed: The "Order completed" email is held until the ERP document exists, so the PDF is attached to it; free orders without a document and orders already syncing are handled, and the email is released once even when several runners compete.
 * Fixed: Connector settings no longer call the optional product-attributes API for connectors that do not implement it.
 * Added: Connector integrations can declare custom product or order settings fields without requiring a core-plugin change.

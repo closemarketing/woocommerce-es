@@ -44,6 +44,25 @@
 	}
 
 	/**
+	 * Refresh the active/total summary after a connector is removed.
+	 */
+	function updateActiveCount() {
+		var summary = document.querySelector( '.connector-active-count' );
+		var rows = document.querySelectorAll( '.conecom-connectors-table tbody tr' );
+
+		if ( ! summary ) {
+			return;
+		}
+
+		var active = Array.from( rows ).filter( function ( row ) {
+			var status = row.querySelector( 'select[name$="[status]"]' );
+			return status && 'active' === status.value;
+		} ).length;
+		var template = ConecomConnectorManager.active_count || '%1$d of %2$d active';
+		summary.textContent = template.replace( '%1$d', active ).replace( '%2$d', rows.length );
+	}
+
+	/**
 	 * Handle click on a "Remove connector" button.
 	 *
 	 * @param {MouseEvent} e
@@ -84,6 +103,7 @@
 					if ( row ) {
 						row.parentNode.removeChild( row );
 					}
+					updateActiveCount();
 					showNotice( json.data.message, 'success' );
 				} else {
 					btn.disabled = false;
@@ -98,8 +118,12 @@
 
 	document.addEventListener( 'DOMContentLoaded', function () {
 		var buttons = document.querySelectorAll( '.conecom-remove-connector' );
+		var statusFields = document.querySelectorAll( '.conecom-connectors-table select[name$="[status]"]' );
 		buttons.forEach( function ( btn ) {
 			btn.addEventListener( 'click', onRemoveClick );
+		} );
+		statusFields.forEach( function ( field ) {
+			field.addEventListener( 'change', updateActiveCount );
 		} );
 	} );
 }() );
