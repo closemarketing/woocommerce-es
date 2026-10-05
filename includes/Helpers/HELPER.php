@@ -428,6 +428,7 @@ class HELPER {
 			'all_options'  => $options,
 		);
 
+		$connector['settings']['connector_id']      = $connector_id;
 		$connector['settings']['prod_mergevars']    = $prod_mergevar;
 		$connector['settings']['payment_methods']   = array();
 		$connector['settings']['treasury_accounts'] = array();
