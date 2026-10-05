@@ -406,7 +406,7 @@ class Import_Products {
 	 */
 	private function resolve_connector( $connector_id ) {
 		if ( ! empty( $connector_id ) ) {
-			$connector_definitions = apply_filters( 'conecom_options_plugin', array() );
+			$connector_definitions = conecom_get_options();
 			$connector_data        = HELPER::get_connector_by_id( $connector_id, $connector_definitions );
 			if ( ! $connector_data || ! HELPER::is_workflow_enabled_for_connector( $connector_data['meta'] ?? array(), 'products' ) ) {
 				return array( null, array(), array() );
@@ -414,6 +414,8 @@ class Import_Products {
 			if ( isset( $connector_data['connapi_erp'] ) ) {
 				return array( $connector_data['connapi_erp'], $connector_data['settings'], $connector_data['options'] );
 			}
+			// Never fall back to the default connector for an explicit, unusable connector ID.
+			return array( null, array(), array() );
 		}
 		return array( $this->connapi_erp, $this->settings, $this->options );
 	}
