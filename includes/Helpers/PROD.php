@@ -535,11 +535,6 @@ class PROD {
 		// Save ERP ID.
 		$product->update_meta_data( 'connect_ecommerce_id', $item['id'] );
 
-		// Remember which connector instance owns the product, so import stats stay per connector.
-		if ( ! empty( $settings['connector_id'] ) ) {
-			$product->update_meta_data( 'connect_ecommerce_connector', sanitize_key( $settings['connector_id'] ) );
-		}
-
 		// Save last updated date from API (timestamp) for import stats; fallback to current time.
 		$updated_ts = null;
 		if ( ! empty( $item['last_updated'] ) ) {
@@ -1035,35 +1030,17 @@ class PROD {
 	 * Gets WooCommerce product SKUs and last modified for import stats.
 	 * Only products with connect_ecommerce_id (linked to connector) are returned.
 	 * Uses conecom_updated (timestamp) when set, else post_modified.
+	 * It is universal: it counts the WooCommerce catalog linked to any connector, because the
+	 * counters that depend on a connector are the ones compared against its API.
 	 *
-	 * Products imported before connectors were tracked have no owner meta; they are attributed
-	 * to the currently active connector.
-	 *
-	 * @param string $connector_id Connector instance ID to scope the products to. Empty for all connectors.
 	 * @return array Associative array sku => [ 'post_id' => int, 'last_modified' => 'Y-m-d H:i:s' ].
 	 */
-	public static function get_woocommerce_product_data_for_import_stats( $connector_id = '' ) {
+	public static function get_woocommerce_product_data_for_import_stats() {
 		global $wpdb;
-		$meta_link      = 'connect_ecommerce_id';
-		$meta_sku       = '_sku';
-		$meta_updated   = 'conecom_updated';
-		$meta_connector = 'connect_ecommerce_connector';
-		$connector_id   = sanitize_key( $connector_id );
-		$owner_join     = '';
-		$owner_where    = '';
-		if ( '' !== $connector_id ) {
-			$settings_all = get_option( 'connect_ecommerce', array() );
-			$legacy_owner = is_array( $settings_all ) ? ( $settings_all['connector'] ?? '' ) : '';
-			$owner_join   = $wpdb->prepare( "LEFT JOIN {$wpdb->postmeta} AS PM_owner ON PM_owner.post_id = P.ID AND PM_owner.meta_key = %s", $meta_connector ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$owner_where  = $wpdb->prepare( 'AND ( PM_owner.meta_value = %s', $connector_id ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-			if ( $legacy_owner === $connector_id ) {
-				$owner_where .= ' OR PM_owner.meta_value IS NULL';
-			}
-			$owner_where .= ' )';
-		}
+		$meta_link    = 'connect_ecommerce_id';
+		$meta_sku     = '_sku';
+		$meta_updated = 'conecom_updated';
 		// Products with connect_ecommerce_id, SKU, and conecom_updated or post_modified for comparison.
-		// $owner_join and $owner_where are built above with $wpdb->prepare().
-		// phpcs:disable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT P.ID AS post_id, P.post_modified AS post_modified,
@@ -1072,18 +1049,15 @@ class PROD {
 				INNER JOIN {$wpdb->postmeta} AS PM_link ON PM_link.post_id = P.ID AND PM_link.meta_key = %s
 				INNER JOIN {$wpdb->postmeta} AS PM_sku ON PM_sku.post_id = P.ID AND PM_sku.meta_key = %s
 				LEFT JOIN {$wpdb->postmeta} AS PM_updated ON PM_updated.post_id = P.ID AND PM_updated.meta_key = %s
-				{$owner_join}
 				WHERE P.post_type IN ( 'product', 'product_variation' )
 				AND P.post_status != 'trash'
-				AND PM_sku.meta_value != ''
-				{$owner_where}",
+				AND PM_sku.meta_value != ''",
 				$meta_link,
 				$meta_sku,
 				$meta_updated
 			),
 			ARRAY_A
 		);
-		// phpcs:enable WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$data = array();
 		if ( ! empty( $results ) ) {
 			foreach ( $results as $row ) {
@@ -1589,7 +1563,7 @@ class PROD {
 		$api_count = count( $api_skus );
 		$api_ids   = array_keys( $api_skus );
 
-		$wp_products = self::get_woocommerce_product_data_for_import_stats( $connector_id );
+		$wp_products = self::get_woocommerce_product_data_for_import_stats();
 		$wp_count    = count( $wp_products );
 		$wp_skus     = array_keys( $wp_products );
 
