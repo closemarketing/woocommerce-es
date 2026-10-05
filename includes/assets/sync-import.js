@@ -219,6 +219,7 @@ function loadAsLogs() {
 	if ( typeof ConEcom_ajaxAction === 'undefined' ) { return; }
 	const container = document.getElementById('conecom-as-logs-container');
 	if ( ! container ) { return; }
+	const connectorId = document.querySelector('select[name="connwoo-connector-select"]')?.value || '';
 	const i18n = ConEcom_ajaxAction.i18n || {};
 	container.innerHTML = '<p style="color:#666;font-style:italic;padding:20px;text-align:center;">' + (i18n.loading || 'Loading…') + '</p>';
 
@@ -226,7 +227,7 @@ function loadAsLogs() {
 		method: 'POST',
 		credentials: 'same-origin',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-		body: 'action=connect_ecommerce_get_as_logs&security=' + encodeURIComponent(ConEcom_ajaxAction.as_logs_nonce)
+		body: 'action=connect_ecommerce_get_as_logs&security=' + encodeURIComponent(ConEcom_ajaxAction.as_logs_nonce) + '&connector_id=' + encodeURIComponent(connectorId)
 	})
 	.then(function(r){ return r.json(); })
 	.then(function(response) {

@@ -356,7 +356,7 @@ class CRON {
 	 *
 	 * @return array { status: 'success'|'error', actions?: array, message?: string }
 	 */
-	public static function get_sync_logs() {
+	public static function get_sync_logs( $connector_id = '' ) {
 		global $wpdb;
 		$actions_table = $wpdb->prefix . 'actionscheduler_actions';
 		$logs_table    = $wpdb->prefix . 'actionscheduler_logs';
@@ -373,15 +373,30 @@ class CRON {
 			$hook_labels[ $period['cron'] ] = $period['display'];
 		}
 
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- Table name from prefix.
+		// Each connector schedules its own actions with its ID as the only argument (stored as JSON).
+		// Actions scheduled before that carry no arguments and belong to the active connector.
+		$connector_id = sanitize_key( $connector_id );
+		$args_sql     = '';
+		$query_params = array( 'conecom_sync_%' );
+		if ( '' !== $connector_id ) {
+			$settings_all   = get_option( 'connect_ecommerce', array() );
+			$legacy_owner   = is_array( $settings_all ) ? ( $settings_all['connector'] ?? '' ) : '';
+			$args_sql       = $legacy_owner === $connector_id ? 'AND ( args = %s OR args = %s )' : 'AND args = %s';
+			$query_params[] = wp_json_encode( array( $connector_id ) );
+			if ( $legacy_owner === $connector_id ) {
+				$query_params[] = '[]';
+			}
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared -- Table name from prefix; $args_sql only holds placeholders.
 		$action_rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT id, hook, status, scheduled_date_gmt, last_attempt_gmt
+				"SELECT action_id AS id, hook, status, scheduled_date_gmt, last_attempt_gmt
 				 FROM {$actions_table}
-				 WHERE hook LIKE %s
+				 WHERE hook LIKE %s {$args_sql}
 				 ORDER BY scheduled_date_gmt DESC
 				 LIMIT 25",
-				'conecom_sync_%'
+				$query_params
 			),
 			ARRAY_A
 		);

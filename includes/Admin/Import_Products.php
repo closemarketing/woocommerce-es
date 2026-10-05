@@ -72,10 +72,11 @@ class Import_Products {
 	/**
 	 * Constructs of class
 	 *
-	 * @param array $connector Connector.
+	 * @param array $connector       Active connector.
+	 * @param array $connectors_data Connectors payload from HELPER::get_connectors(), to schedule one cron per connector.
 	 * @return void
 	 */
-	public function __construct( $connector ) {
+	public function __construct( $connector, $connectors_data = array() ) {
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) ) {
 			return;
@@ -90,10 +91,18 @@ class Import_Products {
 		add_action( 'wp_ajax_connect_ecommerce_get_import_stats', array( $this, 'get_import_stats' ) );
 		add_action( 'wp_ajax_connect_ecommerce_get_as_logs', array( $this, 'get_as_logs' ) );
 
-		// Schedule.
-		if ( $this->sync_period && 'no' !== $this->sync_period ) {
-			$this->cron_products();
-			add_action( $this->sync_period, array( $this, 'cron_sync_products' ) );
+		// Schedule one recurring sync per connector, identified by its ID as the action argument.
+		$cron_connectors = ! empty( $connectors_data['items'] ) ? $connectors_data['items'] : array( (string) ( $this->settings['connector_id'] ?? '' ) => $connector );
+		foreach ( $cron_connectors as $cron_connector_id => $cron_connector ) {
+			$cron_period = isset( $cron_connector['settings']['sync'] ) ? strval( $cron_connector['settings']['sync'] ) : 'no';
+			if ( empty( $cron_period ) || 'no' === $cron_period || empty( $cron_connector['connapi_erp'] ) ) {
+				continue;
+			}
+			if ( ! HELPER::is_workflow_enabled_for_connector( $cron_connector['meta'] ?? array(), 'products' ) ) {
+				continue;
+			}
+			$this->cron_products( (string) $cron_connector_id, $cron_period );
+			add_action( $cron_period, array( $this, 'cron_sync_products' ), 10, 1 );
 		}
 	}
 
@@ -473,7 +482,9 @@ class Import_Products {
 			return;
 		}
 
-		$result = CRON::get_sync_logs();
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- nonce verified above.
+		$connector_id = isset( $_POST['connector_id'] ) ? sanitize_key( wp_unslash( $_POST['connector_id'] ) ) : '';
+		$result       = CRON::get_sync_logs( $connector_id );
 
 		if ( 'error' === $result['status'] ) {
 			wp_send_json_error( array( 'message' => $result['message'] ) );
@@ -484,55 +495,95 @@ class Import_Products {
 	}
 
 	/**
-	 * Cron advanced with Action Scheduler
+	 * Cron advanced with Action Scheduler.
 	 *
+	 * The connector ID is the action argument, so each connector has its own recurring
+	 * action and the logs can be filtered by connector.
+	 *
+	 * @param string      $connector_id Connector instance ID. Empty for the default connector.
+	 * @param string|null $sync_period  Cron hook of the sync period. Defaults to this instance's period.
 	 * @return void
 	 */
-	public function cron_products() {
+	public function cron_products( $connector_id = '', $sync_period = null ) {
 		if ( ! function_exists( 'as_has_scheduled_action' ) ) {
 			return;
 		}
-		$cron_option = CRON::get_active_period( $this->sync_period );
+		$connector_id = '' !== $connector_id ? $connector_id : (string) ( $this->settings['connector_id'] ?? '' );
+		$cron_option  = CRON::get_active_period( null === $sync_period ? $this->sync_period : $sync_period );
+		$cron_args    = '' !== $connector_id ? array( $connector_id ) : array();
 
-		if ( isset( $cron_option['cron'] ) && false === as_has_scheduled_action( $cron_option['cron'] ) ) {
-			as_schedule_recurring_action( time(), $cron_option['interval'], $cron_option['cron'] );
+		if ( isset( $cron_option['cron'] ) && false === as_has_scheduled_action( $cron_option['cron'], $cron_args ) ) {
+			$this->cancel_legacy_cron( $cron_option['cron'] );
+			as_schedule_recurring_action( time(), $cron_option['interval'], $cron_option['cron'], $cron_args );
+		}
+	}
+
+	/**
+	 * Cancels the recurring actions scheduled before connectors had their own cron (no arguments).
+	 *
+	 * @param string $hook Cron hook.
+	 * @return void
+	 */
+	private function cancel_legacy_cron( $hook ) {
+		if ( ! function_exists( 'as_get_scheduled_actions' ) || ! class_exists( 'ActionScheduler' ) ) {
+			return;
+		}
+		$action_ids = as_get_scheduled_actions(
+			array(
+				'hook'     => $hook,
+				'status'   => \ActionScheduler_Store::STATUS_PENDING,
+				'per_page' => -1,
+			),
+			'ids'
+		);
+		foreach ( $action_ids as $action_id ) {
+			$action = \ActionScheduler::store()->fetch_action( $action_id );
+			if ( empty( $action->get_args() ) ) {
+				\ActionScheduler::store()->cancel_action( $action_id );
+			}
 		}
 	}
 
 	/**
 	 * Cron sync products
 	 *
+	 * @param string $connector_id Connector instance ID the scheduled action belongs to.
 	 * @return void
 	 */
-	public function cron_sync_products() {
-		if ( empty( $this->connapi_erp ) ) {
+	public function cron_sync_products( $connector_id = '' ) {
+		// Actions scheduled before per-connector cron carry no connector: the new ones replace them.
+		if ( empty( $connector_id ) && ! empty( $this->settings['connector_id'] ) ) {
 			return;
 		}
-		$is_table_sync = ! empty( $this->options['table_sync'] ) ? true : false;
+		list( $connapi_erp, $settings, $options ) = $this->resolve_connector( (string) $connector_id );
+		if ( empty( $connapi_erp ) ) {
+			return;
+		}
+		$is_table_sync = ! empty( $options['table_sync'] ) ? true : false;
 		if ( $is_table_sync ) {
-			HELPER::check_table_sync( $this->options['table_sync'] );
+			HELPER::check_table_sync( $options['table_sync'] );
 		} else {
 			// Check if the API method exists.
-			if ( ! HELPER::connector_supports( $this->connapi_erp, 'get_products_ids_since' ) ) {
+			if ( ! HELPER::connector_supports( $connapi_erp, 'get_products_ids_since' ) ) {
 				return;
 			}
 		}
 
 		// Get products to sync.
-		$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
+		$products_sync = CRON::get_products_sync( $settings, $options, $connapi_erp );
 		if ( empty( $products_sync ) && $is_table_sync ) {
-			CRON::send_sync_ended_products( $this->settings, $this->options['table_sync'], $this->options['name'], $this->options['slug'] );
-			CRON::fill_table_sync( $this->settings, $this->options, $this->connapi_erp );
-			$products_sync = CRON::get_products_sync( $this->settings, $this->options, $this->connapi_erp );
+			CRON::send_sync_ended_products( $settings, $options['table_sync'], $options['name'], $options['slug'] );
+			CRON::fill_table_sync( $settings, $options, $connapi_erp );
+			$products_sync = CRON::get_products_sync( $settings, $options, $connapi_erp );
 		}
 		if ( ! empty( $products_sync ) ) {
 			foreach ( $products_sync as $product_sync ) {
 				$product_id = isset( $product_sync['prod_id'] ) ? $product_sync['prod_id'] : $product_sync;
 
-				$product_api = $this->connapi_erp->get_products( $product_id );
-				$result      = PROD::sync_product_item( $this->settings, $product_api, $this->connapi_erp );
+				$product_api = $connapi_erp->get_products( $product_id );
+				$result      = PROD::sync_product_item( $settings, $product_api, $connapi_erp );
 				if ( $is_table_sync ) {
-					CRON::save_product_sync( $this->options['table_sync'], $result['prod_id'], $this->options['slug'] );
+					CRON::save_product_sync( $options['table_sync'], $result['prod_id'], $options['slug'] );
 				}
 			}
 		}

@@ -57,7 +57,7 @@ class Base {
 			new Settings_Payment_Methods();
 			new Settings( $connectors_data );
 			new Setup_Wizard( $options );
-			new Import_Products( $connector );
+			new Import_Products( $connector, $connectors_data );
 			new Widget_Product( $connector, $connectors_data );
 			new Widget_Order( $connector, $connectors_data );
 			new Notices();
