@@ -226,6 +226,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 
+* Added: Product webhooks. ERPs can notify product changes to a per-connector REST endpoint secured with a token; the connector translates the payload into the universal product item (new optional `parse_webhook_product()` contract method) and the core only asks the API again when data is missing. Deletions are detected from the event header or payload (e.g. Holded `product.delete`), products created without SKU wait for the update that sets it, and the ERP signing secret (e.g. Holded `whsec_...`) can be saved per connector: signed requests then need no URL token, while unsigned ERPs such as Odoo keep using the token. Includes a Webhooks tab with the URL, instructions and the latest executions.
 * Fixed: The "Order completed" email is held until the ERP document exists, so the PDF is attached to it; free orders without a document and orders already syncing are handled, and the email is released once even when several runners compete.
 * Fixed: Connector settings no longer call the optional product-attributes API for connectors that do not implement it.
 * Added: Connector integrations can declare custom product or order settings fields without requiring a core-plugin change.

@@ -375,7 +375,7 @@ class PROD {
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
 				'sold_individually'  => false,
-				'weight'             => $is_virtual ? '' : $item['weight'],
+				'weight'             => $is_virtual ? '' : ( $item['weight'] ?? '' ),
 				'upsell_ids'         => '',
 				'cross_sell_ids'     => '',
 				'parent_id'          => 0,
