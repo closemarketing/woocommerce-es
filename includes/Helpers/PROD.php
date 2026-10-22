@@ -74,6 +74,24 @@ class PROD {
 		$msg_product_created = __( 'Product created: ', 'woocommerce-es' );
 		$msg_product_synced  = __( 'Product synced: ', 'woocommerce-es' );
 
+		if ( ! $is_filtered && $item_sku && 'simple' === $item['kind'] && ! $post_id ) {
+			// The SKU may belong to an existing WooCommerce variation: do not create a duplicate simple product.
+			$variation_id = self::find_product( $item_sku, 'product_variation' );
+			if ( $variation_id ) {
+				return array(
+					'status'  => 'ok',
+					'post_id' => $variation_id,
+					'message' => sprintf(
+						/* translators: 1: product name, 2: SKU, 3: variation ID. */
+						__( 'Product skipped: %1$s. SKU %2$s already exists as a WooCommerce variation (#%3$d).', 'woocommerce-es' ),
+						$item['name'],
+						$item_sku,
+						$variation_id
+					) . '<br/>',
+				);
+			}
+		}
+
 		if ( ! $is_filtered && $item_sku && 'simple' === $item['kind'] ) {
 			$result_post = self::sync_product_simple( $settings, $item, $api_erp, false, $post_id );
 			$post_id     = $result_post['post_id'] ?? 0;
@@ -1028,31 +1046,27 @@ class PROD {
 
 	/**
 	 * Gets WooCommerce product SKUs and last modified for import stats.
-	 * Only products with connect_ecommerce_id (linked to connector) are returned.
+	 * Products and variations with a SKU are returned, keyed by SKU.
 	 * Uses conecom_updated (timestamp) when set, else post_modified.
-	 * It is universal: it counts the WooCommerce catalog linked to any connector, because the
-	 * counters that depend on a connector are the ones compared against its API.
+	 * The comparison is always by SKU, so products created outside the connector are counted too.
 	 *
 	 * @return array Associative array sku => [ 'post_id' => int, 'last_modified' => 'Y-m-d H:i:s' ].
 	 */
 	public static function get_woocommerce_product_data_for_import_stats() {
 		global $wpdb;
-		$meta_link    = 'connect_ecommerce_id';
 		$meta_sku     = '_sku';
 		$meta_updated = 'conecom_updated';
-		// Products with connect_ecommerce_id, SKU, and conecom_updated or post_modified for comparison.
+		// Products matched by SKU only (no connector link required), with conecom_updated or post_modified for comparison.
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT P.ID AS post_id, P.post_modified AS post_modified,
 				PM_sku.meta_value AS sku, PM_updated.meta_value AS conecom_updated
 				FROM {$wpdb->posts} AS P
-				INNER JOIN {$wpdb->postmeta} AS PM_link ON PM_link.post_id = P.ID AND PM_link.meta_key = %s
 				INNER JOIN {$wpdb->postmeta} AS PM_sku ON PM_sku.post_id = P.ID AND PM_sku.meta_key = %s
 				LEFT JOIN {$wpdb->postmeta} AS PM_updated ON PM_updated.post_id = P.ID AND PM_updated.meta_key = %s
 				WHERE P.post_type IN ( 'product', 'product_variation' )
 				AND P.post_status != 'trash'
 				AND PM_sku.meta_value != ''",
-				$meta_link,
 				$meta_sku,
 				$meta_updated
 			),
