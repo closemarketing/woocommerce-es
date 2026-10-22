@@ -1821,7 +1821,7 @@ class Settings {
 				</button>
 				<button type="button" class="conecom-tab-button" data-tab="webhooks">
 					<span class="dashicons dashicons-rss" style="vertical-align: middle;"></span>
-					<?php esc_html_e( 'Webhooks', 'woocommerce-es' ); ?>
+					<?php esc_html_e( 'Instant (webhooks)', 'woocommerce-es' ); ?>
 				</button>
 			</div>
 

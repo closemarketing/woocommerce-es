@@ -18,7 +18,7 @@ POST|PUT     /wp-json/conecom/v1/webhooks/products/{connector_id}      (signed E
 - `{secret}` is a per-connector token generated automatically and stored in the
   `connect_ecommerce_webhook_tokens` option. It can also be sent in the
   `X-Conecom-Token` header. It can be regenerated from the Webhooks tab.
-- The full URL is shown in **Connect Ecommerce > {Connector} > Products > Webhooks**.
+- The full URL is shown in **Connect Ecommerce > {Connector} > Products > Instant (webhooks)**.
 
 Responses:
 
