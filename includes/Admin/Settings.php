@@ -1609,7 +1609,7 @@ class Settings {
 						<a href="<?php echo esc_url( $connection_url ); ?>"><?php esc_html_e( 'View connection', 'woocommerce-es' ); ?></a>
 					</div>
 						<?php
-						$has_get_all_product_skus = ! $is_orders && ! empty( $selected_connapi ) && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );
+						$has_get_all_product_skus = ! $is_orders && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );
 						if ( $has_get_all_product_skus ) {
 							$this->render_import_stats_and_actions( $ajax_action, $selected_connapi, $selected_conn );
 						} elseif ( $is_orders ) {
