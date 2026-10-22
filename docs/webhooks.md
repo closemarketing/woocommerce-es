@@ -72,7 +72,11 @@ whose signature does not match; a token-carrying request still has to be signed.
    - Filter `conecom_webhook_parse_request` can override the result.
 5. If the translated item is **complete**, sync it directly. If not, fall back to
    `get_products( $id )` (second request — not ideal, but always works).
+   Connectors that answer with the whole catalogue (e.g. Clientify) are handled:
+   the entry whose `id` matches is used, and a missing one is an error.
    Simple products without SKU are answered `ignored` until an update sets it.
+   A SKU change to a SKU already used by another product is answered `error`
+   (WooCommerce would reject it and keep the old SKU).
 6. Log the execution (`connect_ecommerce_webhook_logs`, last 50 entries per connector) and show
    it in the Webhooks tab.
 
@@ -123,7 +127,12 @@ attributes, rates or taxes the store is configured to use).
 - Deliveries of the same remote product are serialized with a lock row in
   `wp_options` (`INSERT IGNORE`, atomic on the unique `option_name`; stale after
   `WEBHOOK::LOCK_TTL` seconds). Create and update events sent back-to-back cannot
-  create duplicates. Log writes use the same lock.
+  create duplicates. The fallback API read runs inside that lock, so a later
+  delete cannot overtake an earlier update. Log writes use their own lock and
+  are skipped rather than written without it.
+- `PROD::sync_product_item()` takes a product lock too (`product|<id or SKU>`), so
+  webhooks, manual, cron and CLI imports of the same product never run their
+  lookup and creation at the same time.
 - On multi-connector sites packs are not synced by webhook (`ignored`): their
   components are resolved by a global SKU lookup inside `PROD` that cannot be scoped
   to a connector. The scheduled or manual import keeps syncing them.

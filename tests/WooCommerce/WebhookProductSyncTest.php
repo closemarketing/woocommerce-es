@@ -457,4 +457,100 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 'ignored', $result['status'] );
 		delete_option( 'connect_ecommerce' );
 	}
+
+	/**
+	 * Connectors whose get_products() returns the whole catalogue (e.g. Clientify) sync the requested entry.
+	 */
+	public function test_catalogue_answer_picks_requested_product() {
+		$connector                = $this->connector_context( 'clientify' );
+		$connector['connapi_erp'] = new class() extends Webhook_Test_Connector {
+			/**
+			 * Returns the whole catalogue whatever the ID.
+			 *
+			 * @param string|int|null $product_id Remote product ID.
+			 * @param string|int|null $period     Period.
+			 * @return array
+			 */
+			public function get_products( $product_id = null, $period = null ) {
+				$this->requested[] = $product_id;
+				return array(
+					array(
+						'id'    => 'cat-1',
+						'name'  => 'First',
+						'kind'  => 'simple',
+						'sku'   => 'CAT-1',
+						'price' => '1',
+					),
+					array(
+						'id'    => 'cat-2',
+						'name'  => 'Second',
+						'kind'  => 'simple',
+						'sku'   => 'CAT-2',
+						'price' => '2',
+					),
+				);
+			}
+		};
+
+		$result = WEBHOOK::process( $connector, array( 'id' => 'cat-2' ) );
+
+		$this->assertSame( 'ok', $result['status'], $result['message'] );
+		$this->assertSame( 'CAT-2', wc_get_product( $result['post_id'] )->get_sku() );
+		$this->assertSame( 0, (int) wc_get_product_id_by_sku( 'CAT-1' ) );
+
+		$missing = WEBHOOK::process( $connector, array( 'id' => 'cat-404' ) );
+		$this->assertSame( 'error', $missing['status'] );
+	}
+
+	/**
+	 * A SKU change to a SKU used by another product is reported as an error, not as "ok".
+	 */
+	public function test_sku_collision_on_remote_id_match_is_an_error() {
+		$other = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $other, '_sku', 'TAKEN-SKU' );
+
+		$connector = $this->connector_context( 'holded' );
+		$payload   = array(
+			'id'    => 'erp-collision',
+			'name'  => 'Collision',
+			'kind'  => 'simple',
+			'sku'   => 'MINE-SKU',
+			'price' => '3',
+		);
+		$first     = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $first['status'], $first['message'] );
+
+		$payload['sku'] = 'TAKEN-SKU';
+		$second         = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+
+		$this->assertSame( 'error', $second['status'] );
+		$this->assertSame( 'MINE-SKU', wc_get_product( $first['post_id'] )->get_sku() );
+	}
+
+	/**
+	 * Manual, cron and CLI imports share the product lock through PROD::sync_product_item().
+	 */
+	public function test_import_paths_share_the_product_lock() {
+		global $wpdb;
+		$lock = 'conecom_webhook_lock_' . md5( 'product|imp-1' );
+		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		$result = CLOSE\ConnectEcommerce\Helpers\PROD::sync_product_item(
+			array(),
+			array(
+				'id'    => 'imp-1',
+				'name'  => 'Imported',
+				'kind'  => 'simple',
+				'sku'   => 'IMP-1',
+				'price' => '1',
+			),
+			new Webhook_Test_Connector()
+		);
+
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
+		$this->assertSame( 'error', $result['status'] );
+		$this->assertSame( 0, (int) wc_get_product_id_by_sku( 'IMP-1' ) );
+	}
 }

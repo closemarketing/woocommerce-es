@@ -32,6 +32,33 @@ class PROD {
 	 * @return array
 	 */
 	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
+		// Every import path (webhook, manual, cron, CLI) goes through here: serialize the same
+		// product, so overlapping imports cannot both miss the lookup and create duplicates.
+		$lock_key = $item['id'] ?? ( $item['sku'] ?? '' );
+		$lock_key = is_scalar( $lock_key ) ? (string) $lock_key : '';
+		if ( '' === $lock_key ) {
+			return self::sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai, $post_id );
+		}
+
+		return WEBHOOK::with_lock(
+			'product|' . $lock_key,
+			function () use ( $settings, $item, $api_erp, $generate_ai, $post_id ) {
+				return self::sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai, $post_id );
+			}
+		);
+	}
+
+	/**
+	 * Syncronizes the product without taking the product lock.
+	 *
+	 * @param array  $settings Settings of the plugin.
+	 * @param array  $item Item from API.
+	 * @param object $api_erp API Object.
+	 * @param bool   $generate_ai Force AI.
+	 * @param int    $post_id Post ID when it comes forced.
+	 * @return array
+	 */
+	private static function sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
 		// Prevent errors.
 		if ( empty( $item['kind'] ) ) {
 			$item['kind'] = 'simple';

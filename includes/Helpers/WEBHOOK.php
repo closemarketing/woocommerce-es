@@ -540,7 +540,7 @@ class WEBHOOK {
 		$source = 'payload';
 		if ( ! self::is_item_complete( $item, $parsed['complete'] ?? null ) ) {
 			$source = 'api';
-			$item   = $connapi_erp->get_products( $remote_id );
+			$item   = self::pick_remote_item( $connapi_erp->get_products( $remote_id ), $remote_id );
 			if ( empty( $item ) || ( isset( $item['status'] ) && 'error' === $item['status'] ) ) {
 				return array(
 					'status'  => 'error',
@@ -584,6 +584,33 @@ class WEBHOOK {
 	}
 
 	/**
+	 * Gets the requested product from a get_products() answer.
+	 *
+	 * Some connectors ignore the ID and return the whole catalogue (e.g. Clientify):
+	 * pick the entry of the remote product instead of treating the list as one item.
+	 *
+	 * @param mixed  $response  get_products() answer.
+	 * @param string $remote_id Remote product ID.
+	 * @return array Universal item, an error array, or an empty array when not found.
+	 */
+	private static function pick_remote_item( $response, $remote_id ) {
+		if ( ! is_array( $response ) || ! isset( $response[0] ) || isset( $response['id'] ) || isset( $response['status'] ) ) {
+			return is_array( $response ) ? $response : array();
+		}
+
+		foreach ( $response as $entry ) {
+			if ( is_array( $entry ) && isset( $entry['id'] ) && (string) $entry['id'] === (string) $remote_id ) {
+				return $entry;
+			}
+		}
+
+		return array(
+			'status'  => 'error',
+			'message' => __( 'Product not found in the API answer', 'woocommerce-es' ),
+		);
+	}
+
+	/**
 	 * Syncs a universal item after resolving the product scoped to the connector.
 	 *
 	 * @param array  $connector    Connector context.
@@ -596,6 +623,18 @@ class WEBHOOK {
 	 */
 	private static function sync_item( $connector, $connector_id, $connapi_erp, $item, $remote_id, $source ) {
 		$post_id = self::find_post_id( $connector, $remote_id );
+
+		// A new SKU already used by another product is rejected by WooCommerce, and the sync
+		// would report "ok" while keeping the old one: answer an error instead.
+		$sku_owner = ( $post_id && ! empty( $item['sku'] ) ) ? (int) PROD::find_product( $item['sku'] ) : 0;
+		if ( $sku_owner && $sku_owner !== (int) $post_id ) {
+			return array(
+				'status'  => 'error',
+				'source'  => $source,
+				'post_id' => (int) $post_id,
+				'message' => __( 'The new SKU is already used by another product. Not synced.', 'woocommerce-es' ),
+			);
+		}
 
 		// The sync falls back to a global SKU lookup: never let it take another connector's product.
 		$sku_post = $post_id ? 0 : self::find_sku_post( $item );
@@ -631,16 +670,20 @@ class WEBHOOK {
 	/**
 	 * Runs a callback while holding a named lock.
 	 *
+	 * Also used by PROD::sync_product_item(), so webhooks, manual, cron and CLI imports
+	 * of the same product never run their lookup and creation at the same time.
+	 *
 	 * @param string   $key      Lock key.
 	 * @param callable $callback Callback returning a result array.
 	 * @return array Callback result, or a 409 error when the lock could not be acquired.
 	 */
-	private static function with_lock( $key, $callback ) {
+	public static function with_lock( $key, $callback ) {
 		$lock = self::acquire_lock( $key );
 		if ( empty( $lock ) ) {
 			return array(
 				'status'  => 'error',
 				'code'    => 409,
+				'post_id' => 0,
 				'message' => __( 'Another delivery for this product is being processed. Retry later.', 'woocommerce-es' ),
 			);
 		}
