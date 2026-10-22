@@ -107,11 +107,13 @@ class WEBHOOK {
 	public static function forget_connector( $connector_id ) {
 		$connector_id = sanitize_key( $connector_id );
 		foreach ( array( self::OPTION_TOKENS, self::OPTION_SECRETS ) as $option ) {
-			$values = get_option( $option, array() );
-			if ( is_array( $values ) && isset( $values[ $connector_id ] ) ) {
-				unset( $values[ $connector_id ] );
-				update_option( $option, $values, false );
-			}
+			self::update_credentials(
+				$option,
+				function ( $values ) use ( $connector_id ) {
+					unset( $values[ $connector_id ] );
+					return $values;
+				}
+			);
 		}
 
 		$logs = get_option( self::OPTION_LOGS, array() );
@@ -166,8 +168,15 @@ class WEBHOOK {
 		$tokens       = is_array( $tokens ) ? $tokens : array();
 
 		if ( empty( $tokens[ $connector_id ] ) && $create && '' !== $connector_id ) {
-			$tokens[ $connector_id ] = wp_generate_password( 32, false, false );
-			update_option( self::OPTION_TOKENS, $tokens, false );
+			$tokens = self::update_credentials(
+				self::OPTION_TOKENS,
+				function ( $values ) use ( $connector_id ) {
+					if ( empty( $values[ $connector_id ] ) ) {
+						$values[ $connector_id ] = wp_generate_password( 32, false, false );
+					}
+					return $values;
+				}
+			);
 		}
 
 		return $tokens[ $connector_id ] ?? '';
@@ -181,13 +190,44 @@ class WEBHOOK {
 	 */
 	public static function regenerate_token( $connector_id ) {
 		$connector_id = sanitize_key( $connector_id );
-		$tokens       = get_option( self::OPTION_TOKENS, array() );
-		$tokens       = is_array( $tokens ) ? $tokens : array();
+		$token        = wp_generate_password( 32, false, false );
+		self::update_credentials(
+			self::OPTION_TOKENS,
+			function ( $values ) use ( $connector_id, $token ) {
+				$values[ $connector_id ] = $token;
+				return $values;
+			}
+		);
 
-		$tokens[ $connector_id ] = wp_generate_password( 32, false, false );
-		update_option( self::OPTION_TOKENS, $tokens, false );
+		return $token;
+	}
 
-		return $tokens[ $connector_id ];
+	/**
+	 * Read-modify-write of a credentials option (tokens, secrets) shared by every connector.
+	 *
+	 * Serialized with a lock and read fresh from the database, so two admins saving
+	 * different connectors at once cannot drop each other's change.
+	 *
+	 * @param string   $option Option name.
+	 * @param callable $mutate Receives the current array and returns the new one.
+	 * @return array Saved values.
+	 */
+	private static function update_credentials( $option, $mutate ) {
+		// A crashed request can leave the lock for LOCK_TTL: an admin action must not fail
+		// for minutes because of it, so after the wait the write goes ahead.
+		$lock = self::acquire_lock( 'credentials', 10 );
+		wp_cache_delete( $option, 'options' );
+		$values  = get_option( $option, array() );
+		$values  = is_array( $values ) ? $values : array();
+		$updated = (array) $mutate( $values );
+		if ( $updated !== $values ) {
+			update_option( $option, $updated, false );
+		}
+		if ( ! empty( $lock ) ) {
+			self::release_lock( $lock );
+		}
+
+		return $updated;
 	}
 
 	/**
@@ -212,17 +252,20 @@ class WEBHOOK {
 	 */
 	public static function save_signing_secret( $connector_id, $secret ) {
 		$connector_id = sanitize_key( $connector_id );
-		$secrets      = get_option( self::OPTION_SECRETS, array() );
-		$secrets      = is_array( $secrets ) ? $secrets : array();
 		// Opaque credential: keep it verbatim (sanitize_text_field would strip %xx sequences).
 		$secret = trim( preg_replace( '/[\x00-\x1F\x7F]/', '', (string) $secret ) );
 
-		if ( '' === $secret ) {
-			unset( $secrets[ $connector_id ] );
-		} else {
-			$secrets[ $connector_id ] = $secret;
-		}
-		update_option( self::OPTION_SECRETS, $secrets, false );
+		self::update_credentials(
+			self::OPTION_SECRETS,
+			function ( $secrets ) use ( $connector_id, $secret ) {
+				if ( '' === $secret ) {
+					unset( $secrets[ $connector_id ] );
+				} else {
+					$secrets[ $connector_id ] = $secret;
+				}
+				return $secrets;
+			}
+		);
 	}
 
 	/**
@@ -642,8 +685,8 @@ class WEBHOOK {
 			// Product and variation SKUs share the uniqueness rule (see PROD variation sync).
 			$sku_owner = (int) PROD::find_product( $item['sku'] );
 			if ( ! $sku_owner ) {
-				$variation = (int) PROD::find_product( $item['sku'], 'product_variation' );
-				$sku_owner = ( $variation && (int) wp_get_post_parent_id( $variation ) !== (int) $post_id ) ? $variation : 0;
+				// Even a variation of this product: WooCommerce wants parent and children distinct.
+				$sku_owner = (int) PROD::find_product( $item['sku'], 'product_variation' );
 			}
 		}
 		if ( $sku_owner && $sku_owner !== (int) $post_id ) {
@@ -1043,8 +1086,10 @@ class WEBHOOK {
 					'posts_per_page' => 1,
 					'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 						array(
-							'key'   => 'connect_ecommerce_id',
-							'value' => $remote_id,
+							'key'     => 'connect_ecommerce_id',
+							'value'   => $remote_id,
+							'type'    => 'BINARY',
+							'compare' => '=',
 						),
 						array(
 							'key'   => self::META_CONNECTOR,
@@ -1062,8 +1107,14 @@ class WEBHOOK {
 		$posts = get_posts(
 			$base_query + array(
 				'posts_per_page' => 2,
-				'meta_key'       => 'connect_ecommerce_id', // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
-				'meta_value'     => $remote_id, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_value
+				'meta_query'     => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					array(
+						'key'     => 'connect_ecommerce_id',
+						'value'   => $remote_id,
+						'type'    => 'BINARY',
+						'compare' => '=',
+					),
+				),
 			)
 		);
 		if ( 1 === count( $posts ) && '' === (string) get_post_meta( $posts[0], self::META_CONNECTOR, true ) && self::count_product_connectors() <= 1 ) {

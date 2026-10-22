@@ -734,6 +734,28 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Credential writes read the option fresh, so a concurrent change to another connector is kept.
+	 */
+	public function test_credential_write_keeps_concurrent_change() {
+		global $wpdb;
+		WEBHOOK::save_signing_secret( 'holded', 'whsec_a' );
+
+		// Another admin saved odoo's secret in a parallel request (this request's cache is stale).
+		$wpdb->update(
+			$wpdb->options,
+			array( 'option_value' => maybe_serialize( array( 'holded' => 'whsec_a', 'odoo' => 'secret_b' ) ) ),
+			array( 'option_name' => WEBHOOK::OPTION_SECRETS )
+		);
+
+		WEBHOOK::save_signing_secret( 'holded_2', 'whsec_c' );
+
+		wp_cache_delete( WEBHOOK::OPTION_SECRETS, 'options' );
+		$this->assertSame( 'secret_b', WEBHOOK::get_signing_secret( 'odoo' ) );
+		$this->assertSame( 'whsec_c', WEBHOOK::get_signing_secret( 'holded_2' ) );
+		delete_option( WEBHOOK::OPTION_SECRETS );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {

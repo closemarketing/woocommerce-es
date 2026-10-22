@@ -522,7 +522,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 	 */
 	public function test_import_paths_share_the_product_lock() {
 		global $wpdb;
-		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|IMP-1' );
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|imp-1' );
 		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
 		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
 
@@ -584,7 +584,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 	 */
 	public function test_webhook_blocked_by_import_lock_answers_409() {
 		global $wpdb;
-		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|BUSY-1' );
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|busy-1' );
 		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
 		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
 
@@ -620,7 +620,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		update_post_meta( $post_id, 'connect_ecommerce_id', 'erp-del-lock' );
 		update_post_meta( $post_id, WEBHOOK::META_CONNECTOR, 'holded' );
 
-		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|DEL-LOCK-1' );
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|del-lock-1' );
 		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
 		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
 
@@ -687,7 +687,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$first            = $key->invoke( null, $item, new Webhook_Test_Connector() );
 		$item['variants'] = array_reverse( $item['variants'] );
 
-		$this->assertSame( 'product|sku|VAR-A', $first );
+		$this->assertSame( 'product|sku|var-a', $first );
 		$this->assertSame( $first, $key->invoke( null, $item, new Webhook_Test_Connector() ) );
 	}
 
@@ -734,7 +734,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$first     = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
 		$this->assertSame( 'ok', $first['status'], $first['message'] );
 
-		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|OLD-LOCK' );
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|old-lock' );
 		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
 		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
 
@@ -805,7 +805,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 				);
 			}
 		};
-		$lock    = 'conecom_webhook_lock_' . md5( 'product|sku|COMP-1' );
+		$lock    = 'conecom_webhook_lock_' . md5( 'product|sku|comp-1' );
 		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
 		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
 
@@ -862,5 +862,92 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'ignored', $result['status'], $result['message'] );
 		$this->assertSame( '1', get_post_meta( $post_id, '_regular_price', true ) );
+	}
+
+	/**
+	 * A parent SKU equal to one of its own variations is a collision too.
+	 */
+	public function test_parent_sku_equal_to_child_variation_is_an_error() {
+		$parent    = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		$variation = self::factory()->post->create(
+			array(
+				'post_type'   => 'product_variation',
+				'post_status' => 'publish',
+				'post_parent' => $parent,
+			)
+		);
+		update_post_meta( $parent, '_sku', 'PARENT-OLD' );
+		update_post_meta( $parent, 'connect_ecommerce_id', 'erp-parent' );
+		update_post_meta( $parent, WEBHOOK::META_CONNECTOR, 'holded' );
+		update_post_meta( $variation, '_sku', 'CHILD-1' );
+
+		$result = WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array(
+				'id'    => 'erp-parent',
+				'name'  => 'Parent',
+				'kind'  => 'simple',
+				'sku'   => 'CHILD-1',
+				'price' => '1',
+			),
+			array( 'x_holded_webhook_event' => 'product.update' )
+		);
+
+		$this->assertSame( 'error', $result['status'] );
+		$this->assertSame( 'PARENT-OLD', get_post_meta( $parent, '_sku', true ) );
+	}
+
+	/**
+	 * SKUs differing only in case share the product lock, as the database lookup does.
+	 */
+	public function test_lock_key_ignores_sku_case() {
+		$key = new ReflectionMethod( CLOSE\ConnectEcommerce\Helpers\PROD::class, 'get_sync_lock_key' );
+		$key->setAccessible( true );
+
+		$this->assertSame(
+			$key->invoke( null, array( 'sku' => 'ABC-1' ), new Webhook_Test_Connector() ),
+			$key->invoke( null, array( 'sku' => 'abc-1' ), new Webhook_Test_Connector() )
+		);
+	}
+
+	/**
+	 * The fallback sync time is stored as a Unix (UTC) timestamp, whatever the site timezone.
+	 */
+	public function test_sync_time_is_stored_in_utc() {
+		update_option( 'gmt_offset', 2 );
+		$result = WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array(
+				'id'    => 'erp-utc',
+				'name'  => 'UTC',
+				'kind'  => 'simple',
+				'sku'   => 'UTC-1',
+				'price' => '1',
+			),
+			array( 'x_holded_webhook_event' => 'product.update' )
+		);
+		update_option( 'gmt_offset', 0 );
+
+		$this->assertSame( 'ok', $result['status'], $result['message'] );
+		$this->assertEqualsWithDelta( time(), (int) get_post_meta( $result['post_id'], 'conecom_updated', true ), 60 );
+	}
+
+	/**
+	 * Remote IDs are opaque: matching is exact, not case-insensitive.
+	 */
+	public function test_remote_id_matching_is_case_sensitive() {
+		$draft = function () {
+			return 'draft';
+		};
+		add_filter( 'conecom_webhook_delete_behaviour', $draft );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $post_id, 'connect_ecommerce_id', 'AbC' );
+		update_post_meta( $post_id, WEBHOOK::META_CONNECTOR, 'holded' );
+
+		$result = WEBHOOK::process( $this->connector_context( 'holded' ), array( 'id' => 'abc' ), array( 'x_holded_webhook_event' => 'product.delete' ) );
+
+		remove_filter( 'conecom_webhook_delete_behaviour', $draft );
+		$this->assertSame( 'ignored', $result['status'] );
+		$this->assertSame( 'publish', get_post_status( $post_id ) );
 	}
 }

@@ -92,7 +92,7 @@ class PROD {
 			$sku = self::get_lowest_sku( array_column( array_filter( $item['variants'], 'is_array' ), 'sku' ) );
 		}
 		if ( is_scalar( $sku ) && '' !== (string) $sku ) {
-			return 'product|sku|' . $sku;
+			return 'product|sku|' . self::normalize_lock_sku( $sku );
 		}
 
 		$id = $item['id'] ?? '';
@@ -127,7 +127,19 @@ class PROD {
 			$sku = self::get_lowest_sku( $skus );
 		}
 
-		return '' === $sku ? '' : 'product|sku|' . $sku;
+		return '' === $sku ? '' : 'product|sku|' . self::normalize_lock_sku( $sku );
+	}
+
+	/**
+	 * SKU as the database compares it (case-insensitive collation), so ABC and abc share a lock.
+	 *
+	 * @param string $sku SKU.
+	 * @return string
+	 */
+	private static function normalize_lock_sku( $sku ) {
+		$sku = trim( (string) $sku );
+
+		return function_exists( 'mb_strtolower' ) ? mb_strtolower( $sku, 'UTF-8' ) : strtolower( $sku );
 	}
 
 	/**
@@ -716,7 +728,8 @@ class PROD {
 			$updated_ts = is_numeric( $item['last_updated'] ) ? (int) $item['last_updated'] : strtotime( $item['last_updated'] );
 		}
 		if ( empty( $updated_ts ) || $updated_ts <= 0 ) {
-			$updated_ts = current_time( 'timestamp' );
+			// Unix (UTC) like the ERP timestamps it is compared with, never the site's local offset.
+			$updated_ts = time();
 		}
 		$product->update_meta_data( 'conecom_updated', $updated_ts );
 
