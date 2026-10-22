@@ -430,5 +430,48 @@ class VATValidationTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'valid', $result );
 		$this->assertArrayHasKey( 'message', $result );
 	}
-}
 
+	/**
+	 * The conecom_pre_vies_validation filter replaces the VIES request and its result is cached.
+	 */
+	public function test_pre_vies_validation_filter() {
+		delete_option( 'connect_ecommerce_public' );
+		VAT::clear_cache();
+
+		$calls  = 0;
+		$filter = function ( $pre, $country_code, $vat_number ) use ( &$calls ) {
+			++$calls;
+			return array(
+				'valid' => 'ES' === $country_code && 'B12345678' === $vat_number,
+				'name'  => 'Test Company',
+			);
+		};
+		add_filter( 'conecom_pre_vies_validation', $filter, 20, 3 );
+
+		$result = VAT::validate_vat_number( 'ESB12345678' );
+		$this->assertTrue( $result['valid'] );
+		$this->assertSame( 'Test Company', $result['name'] );
+		$this->assertSame( 'vies', $result['service_used'] );
+
+		// Second call is served from the cache.
+		VAT::validate_vat_number( 'ESB12345678' );
+		$this->assertSame( 1, $calls );
+
+		$this->assertFalse( VAT::validate_vat_number( 'ESB00000000' )['valid'] );
+
+		remove_filter( 'conecom_pre_vies_validation', $filter, 20 );
+	}
+
+	/**
+	 * Tests never reach the real VIES service: the bootstrap fake answers invalid.
+	 */
+	public function test_fake_vies_is_used_by_default() {
+		delete_option( 'connect_ecommerce_public' );
+		VAT::clear_cache();
+
+		$result = VAT::validate_vat_number( 'FR99999999999' );
+
+		$this->assertFalse( $result['valid'] );
+		$this->assertStringContainsString( 'fake VIES', $result['message'] );
+	}
+}
