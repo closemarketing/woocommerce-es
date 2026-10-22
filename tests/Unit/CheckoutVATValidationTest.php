@@ -285,16 +285,7 @@ class CheckoutVATValidationTest extends WP_UnitTestCase {
 		$checkout = new Checkout( array() );
 
 		// Mock invalid VAT validation result in cache.
-		$cache_key = md5( 'ES12345678A' );
-		wp_cache_set(
-			$cache_key,
-			array(
-				'valid'   => false,
-				'message' => 'Invalid VAT number',
-			),
-			'conecom_vat_validation',
-			DAY_IN_SECONDS
-		);
+		$this->mock_vat_validation( 'ES12345678A', false, 'ES' );
 
 		$data = array(
 			'billing_vat'     => 'ES12345678A',
@@ -330,16 +321,7 @@ class CheckoutVATValidationTest extends WP_UnitTestCase {
 		$checkout = new Checkout( array() );
 
 		// Mock invalid VAT validation result in cache.
-		$cache_key = md5( 'ES12345678A' );
-		wp_cache_set(
-			$cache_key,
-			array(
-				'valid'   => false,
-				'message' => 'Invalid VAT number',
-			),
-			'conecom_vat_validation',
-			DAY_IN_SECONDS
-		);
+		$this->mock_vat_validation( 'ES12345678A', false, 'ES' );
 
 		$data = array(
 			'billing_vat'     => 'ES12345678A',
@@ -445,16 +427,7 @@ class CheckoutVATValidationTest extends WP_UnitTestCase {
 		);
 
 		// Mock invalid VAT validation result in cache.
-		$cache_key = md5( 'FR99999999999' );
-		wp_cache_set(
-			$cache_key,
-			array(
-				'valid'   => false,
-				'message' => 'Invalid VAT number',
-			),
-			'conecom_vat_validation',
-			DAY_IN_SECONDS
-		);
+		$this->mock_vat_validation( 'FR99999999999', false, 'FR' );
 
 		$data = array(
 			'billing_vat'     => 'FR99999999999',
@@ -495,16 +468,7 @@ class CheckoutVATValidationTest extends WP_UnitTestCase {
 		);
 
 		// Mock invalid VAT validation result.
-		$cache_key = md5( 'FR99999999999' );
-		wp_cache_set(
-			$cache_key,
-			array(
-				'valid'   => false,
-				'message' => 'Invalid VAT number',
-			),
-			'conecom_vat_validation',
-			DAY_IN_SECONDS
-		);
+		$this->mock_vat_validation( 'FR99999999999', false, 'FR' );
 
 		$data = array(
 			'billing_vat'     => 'FR99999999999',
@@ -586,16 +550,7 @@ class CheckoutVATValidationTest extends WP_UnitTestCase {
 		);
 
 		// Mock invalid VAT validation result.
-		$cache_key = md5( 'FR99999999999' );
-		wp_cache_set(
-			$cache_key,
-			array(
-				'valid'   => false,
-				'message' => 'Invalid VAT number',
-			),
-			'conecom_vat_validation',
-			DAY_IN_SECONDS
-		);
+		$this->mock_vat_validation( 'FR99999999999', false, 'FR' );
 
 		$data = array(
 			'billing_vat'     => 'FR99999999999', // Invalid VAT.
