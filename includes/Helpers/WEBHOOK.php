@@ -659,12 +659,18 @@ class WEBHOOK {
 			update_post_meta( (int) $result['post_id'], self::META_CONNECTOR, $connector_id );
 		}
 
-		return array(
+		$synced_result = array(
 			'status'  => 'error' === ( $result['status'] ?? '' ) ? 'error' : 'ok',
 			'source'  => $source,
 			'post_id' => (int) ( $result['post_id'] ?? 0 ),
 			'message' => wp_strip_all_tags( (string) ( $result['message'] ?? '' ) ),
 		);
+		// An import holding the product lock answers 409: keep it, so the ERP retries.
+		if ( isset( $result['code'] ) ) {
+			$synced_result['code'] = (int) $result['code'];
+		}
+
+		return $synced_result;
 	}
 
 	/**

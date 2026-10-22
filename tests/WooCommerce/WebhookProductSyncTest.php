@@ -588,4 +588,31 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$this->assertNotSame( 'error', $result['status'], $result['message'] ?? '' );
 		$this->assertNotSame( 0, (int) wc_get_product_id_by_sku( 'OTHER-5' ) );
 	}
+
+	/**
+	 * A webhook blocked by an import holding the product lock answers 409 so the ERP retries.
+	 */
+	public function test_webhook_blocked_by_import_lock_answers_409() {
+		global $wpdb;
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|BUSY-1' );
+		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		$result = WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array(
+				'id'    => 'erp-busy',
+				'name'  => 'Busy',
+				'kind'  => 'simple',
+				'sku'   => 'BUSY-1',
+				'price' => '1',
+			),
+			array( 'x_holded_webhook_event' => 'product.update' )
+		);
+
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
+		$this->assertSame( 'error', $result['status'] );
+		$this->assertSame( 409, $result['code'] ?? null );
+	}
 }
