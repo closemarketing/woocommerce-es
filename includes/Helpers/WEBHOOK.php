@@ -508,6 +508,33 @@ class WEBHOOK {
 			return self::finish( $connector_id, $base + $deleted );
 		}
 
+		// The fallback API read, the lookup and the creation run under the per-product lock:
+		// a later delivery (e.g. a delete) cannot overtake an earlier update still fetching data,
+		// and create/update sent back-to-back cannot create duplicates.
+		$synced = self::with_lock(
+			$connector_id . '|' . $remote_id,
+			function () use ( $connector, $connector_id, $connapi_erp, $parsed, $payload, $remote_id ) {
+				return self::resolve_and_sync( $connector, $connector_id, $connapi_erp, $parsed, $payload, $remote_id );
+			}
+		);
+
+		return self::finish( $connector_id, $base + $synced );
+	}
+
+	/**
+	 * Builds the universal item (asking the API when the payload is incomplete) and syncs it.
+	 *
+	 * Runs under the per-product lock.
+	 *
+	 * @param array  $connector    Connector context.
+	 * @param string $connector_id Connector ID.
+	 * @param object $connapi_erp  Connector API object.
+	 * @param array  $parsed       Parsed webhook result.
+	 * @param array  $payload      Raw webhook payload.
+	 * @param string $remote_id    Remote product ID.
+	 * @return array
+	 */
+	private static function resolve_and_sync( $connector, $connector_id, $connapi_erp, $parsed, $payload, $remote_id ) {
 		// Use the translated item when it is complete; otherwise ask the API (second request).
 		$item   = isset( $parsed['item'] ) && is_array( $parsed['item'] ) ? $parsed['item'] : array();
 		$source = 'payload';
@@ -515,13 +542,10 @@ class WEBHOOK {
 			$source = 'api';
 			$item   = $connapi_erp->get_products( $remote_id );
 			if ( empty( $item ) || ( isset( $item['status'] ) && 'error' === $item['status'] ) ) {
-				return self::finish(
-					$connector_id,
-					$base + array(
-						'status'  => 'error',
-						'source'  => $source,
-						'message' => __( 'Error getting product from the API', 'woocommerce-es' ) . ( ! empty( $item['message'] ) ? ': ' . $item['message'] : '' ),
-					)
+				return array(
+					'status'  => 'error',
+					'source'  => $source,
+					'message' => __( 'Error getting product from the API', 'woocommerce-es' ) . ( ! empty( $item['message'] ) ? ': ' . $item['message'] : '' ),
 				);
 			}
 		}
@@ -529,13 +553,10 @@ class WEBHOOK {
 		// Products created without SKU yet (e.g. Holded product.create) wait for the update that sets it.
 		$kind = $item['kind'] ?? 'simple';
 		if ( empty( $item['sku'] ) && empty( $item['variants'] ) && 'variants' !== $kind && 'variable' !== $kind ) {
-			return self::finish(
-				$connector_id,
-				$base + array(
-					'status'  => 'ignored',
-					'source'  => $source,
-					'message' => __( 'Product without SKU. It will be synced when the ERP sends it with a SKU.', 'woocommerce-es' ),
-				)
+			return array(
+				'status'  => 'ignored',
+				'source'  => $source,
+				'message' => __( 'Product without SKU. It will be synced when the ERP sends it with a SKU.', 'woocommerce-es' ),
 			);
 		}
 
@@ -552,26 +573,14 @@ class WEBHOOK {
 		// Pack components are synced by a global SKU lookup inside PROD, which cannot be
 		// scoped to a connector: on multi-connector sites packs stay with the scheduled import.
 		if ( 'pack' === ( $item['kind'] ?? '' ) && self::count_product_connectors() > 1 ) {
-			return self::finish(
-				$connector_id,
-				$base + array(
-					'status'  => 'ignored',
-					'source'  => $source,
-					'message' => __( 'Packs are not synced by webhook on multi-connector sites: their components could belong to another connector.', 'woocommerce-es' ),
-				)
+			return array(
+				'status'  => 'ignored',
+				'source'  => $source,
+				'message' => __( 'Packs are not synced by webhook on multi-connector sites: their components could belong to another connector.', 'woocommerce-es' ),
 			);
 		}
 
-		// Lookup and creation are not atomic: serialize deliveries of the same remote product
-		// (e.g. create and update sent back-to-back), so they cannot create duplicates.
-		$synced = self::with_lock(
-			$connector_id . '|' . $remote_id,
-			function () use ( $connector, $connector_id, $connapi_erp, $item, $remote_id, $source ) {
-				return self::sync_item( $connector, $connector_id, $connapi_erp, $item, $remote_id, $source );
-			}
-		);
-
-		return self::finish( $connector_id, $base + $synced );
+		return self::sync_item( $connector, $connector_id, $connapi_erp, $item, $remote_id, $source );
 	}
 
 	/**
@@ -1160,6 +1169,10 @@ class WEBHOOK {
 	public static function add_log( $connector_id, $result ) {
 		// Concurrent deliveries: append under a lock and read the option fresh from the database.
 		$lock = self::acquire_lock( 'logs', 5 );
+		if ( empty( $lock ) ) {
+			// Never write the option unlocked: losing one diagnostic entry beats overwriting others.
+			return;
+		}
 		wp_cache_delete( self::OPTION_LOGS, 'options' );
 		$logs = get_option( self::OPTION_LOGS, array() );
 		$logs = is_array( $logs ) ? $logs : array();

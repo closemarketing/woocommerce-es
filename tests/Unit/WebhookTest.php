@@ -637,6 +637,61 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The fallback API read runs under the product lock, so a later delete cannot overtake it.
+	 */
+	public function test_api_fallback_runs_under_product_lock() {
+		global $wpdb;
+		$connapi = new class() extends Webhook_Test_Connector {
+			/**
+			 * Whether the product lock was held during the API read.
+			 *
+			 * @var bool|null
+			 */
+			public $locked = null;
+
+			/**
+			 * Records whether the product lock row exists while fetching.
+			 *
+			 * @param string|int|null $product_id Remote product ID.
+			 * @param string|int|null $period     Period.
+			 * @return array
+			 */
+			public function get_products( $product_id = null, $period = null ) {
+				global $wpdb;
+				$name         = 'conecom_webhook_lock_' . md5( 'holded|' . $product_id );
+				$this->locked = null !== $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ) );
+				return parent::get_products( $product_id, $period );
+			}
+		};
+
+		WEBHOOK::process( $this->connector( $connapi ), array( 'id' => 'erp-7' ) );
+
+		$this->assertTrue( $connapi->locked );
+		$name = 'conecom_webhook_lock_' . md5( 'holded|erp-7' );
+		$this->assertNull( $wpdb->get_var( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ) ) );
+	}
+
+	/**
+	 * When the log lock cannot be acquired, the log option is not rewritten without it.
+	 */
+	public function test_log_is_not_written_without_lock() {
+		$acquire = new ReflectionMethod( WEBHOOK::class, 'acquire_lock' );
+		$release = new ReflectionMethod( WEBHOOK::class, 'release_lock' );
+		$acquire->setAccessible( true );
+		$release->setAccessible( true );
+
+		WEBHOOK::add_log( 'holded', array( 'status' => 'ok' ) );
+		$busy = $acquire->invoke( null, 'logs', 0 );
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		WEBHOOK::add_log( 'holded', array( 'status' => 'error' ) );
+
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		$release->invoke( null, $busy );
+		$this->assertCount( 1, WEBHOOK::get_logs( 'holded' ) );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {
