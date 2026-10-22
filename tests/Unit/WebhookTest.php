@@ -724,6 +724,16 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * A remote ID 0 is a valid identifier for a complete item.
+	 */
+	public function test_zero_id_item_can_be_complete() {
+		$this->assertTrue( WEBHOOK::is_item_complete( array( 'id' => 0 ), true ) );
+		$this->assertTrue( WEBHOOK::is_item_complete( array( 'id' => '0' ), true ) );
+		$this->assertFalse( WEBHOOK::is_item_complete( array( 'id' => '' ), true ) );
+		$this->assertFalse( WEBHOOK::is_item_complete( array( 'name' => 'No ID' ), true ) );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {

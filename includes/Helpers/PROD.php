@@ -310,9 +310,18 @@ class PROD {
 								return self::sync_product_simple( $settings, $item_simple, $api_erp, true );
 							}
 						);
-						$product_pack_id  = $result_pack_item['post_id'] ?? 0;
-						$pack_items      .= $product_pack_id . '/' . $pack_item['u'] . ',';
-						$message         .= ' x ' . $pack_item['u'];
+						// A component being imported elsewhere: never save the pack without it.
+						if ( isset( $result_pack_item['code'] ) && 409 === (int) $result_pack_item['code'] ) {
+							return array(
+								'status'  => 'error',
+								'code'    => 409,
+								'post_id' => (int) $post_id,
+								'message' => $result_pack_item['message'] ?? '',
+							);
+						}
+						$product_pack_id = $result_pack_item['post_id'] ?? 0;
+						$pack_items     .= $product_pack_id . '/' . $pack_item['u'] . ',';
+						$message        .= ' x ' . $pack_item['u'];
 
 						$item_pack_product = $product_pack_id ? wc_get_product( $product_pack_id ) : null;
 						if ( $item_pack_product ) {

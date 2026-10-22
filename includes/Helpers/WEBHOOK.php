@@ -668,12 +668,13 @@ class WEBHOOK {
 		// ERPs retry and may deliver events out of order: a complete payload older than the
 		// stored product state must not roll it back (fetched items are always current).
 		$item_time   = ! empty( $item['last_updated'] ) ? ( is_numeric( $item['last_updated'] ) ? (int) $item['last_updated'] : (int) strtotime( (string) $item['last_updated'] ) ) : 0;
-		$stored_time = $post_id ? (int) get_post_meta( (int) $post_id, 'conecom_updated', true ) : 0;
+		$target_post = $post_id ? (int) $post_id : (int) $sku_post;
+		$stored_time = $target_post ? (int) get_post_meta( $target_post, 'conecom_updated', true ) : 0;
 		if ( 'payload' === $source && $item_time > 0 && $stored_time > 0 && $item_time < $stored_time ) {
 			return array(
 				'status'  => 'ignored',
 				'source'  => $source,
-				'post_id' => (int) $post_id,
+				'post_id' => $target_post,
 				'message' => __( 'The webhook is older than the product already synced. Not applied.', 'woocommerce-es' ),
 			);
 		}
@@ -953,7 +954,8 @@ class WEBHOOK {
 	 * @return bool
 	 */
 	public static function is_item_complete( $item, $complete = null ) {
-		if ( empty( $item ) || ! is_array( $item ) || empty( $item['id'] ) ) {
+		// A remote ID may legitimately be 0: only a missing or empty ID is incomplete.
+		if ( empty( $item ) || ! is_array( $item ) || ! isset( $item['id'] ) || '' === (string) $item['id'] ) {
 			return false;
 		}
 

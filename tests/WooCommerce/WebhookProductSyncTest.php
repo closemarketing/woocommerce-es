@@ -809,7 +809,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
 		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
 
-		CLOSE\ConnectEcommerce\Helpers\PROD::sync_product_item(
+		$result = CLOSE\ConnectEcommerce\Helpers\PROD::sync_product_item(
 			array(),
 			array(
 				'id'        => 'pack-1',
@@ -832,5 +832,35 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		remove_filter( 'active_plugins', $bundles );
 		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
 		$this->assertSame( 0, (int) wc_get_product_id_by_sku( 'COMP-1' ) );
+		// The pack is not saved without its component: the caller gets 409 to retry.
+		$this->assertSame( 409, $result['code'] ?? null );
+		$this->assertSame( '', (string) get_post_meta( (int) $result['post_id'], 'woosb_ids', true ) );
+	}
+
+	/**
+	 * The timestamp guard also covers products resolved through the SKU fallback.
+	 */
+	public function test_older_payload_ignored_on_sku_fallback() {
+		$post_id = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $post_id, '_sku', 'TS-SKU-1' );
+		update_post_meta( $post_id, 'connect_ecommerce_id', 'legacy-id' );
+		update_post_meta( $post_id, 'conecom_updated', 2000000000 );
+		update_post_meta( $post_id, '_regular_price', '1' );
+
+		$result = WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array(
+				'id'           => 'erp-ts',
+				'name'         => 'Older',
+				'kind'         => 'simple',
+				'sku'          => 'TS-SKU-1',
+				'price'        => '9',
+				'last_updated' => 1900000000,
+			),
+			array( 'x_holded_webhook_event' => 'product.update' )
+		);
+
+		$this->assertSame( 'ignored', $result['status'], $result['message'] );
+		$this->assertSame( '1', get_post_meta( $post_id, '_regular_price', true ) );
 	}
 }
