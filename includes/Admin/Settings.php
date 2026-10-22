@@ -245,28 +245,66 @@ class Settings {
 	 * Connector add-ons historically return either a boolean or an array with an
 	 * `ok`/`error` status, so both contracts must be supported here.
 	 *
-	 * @param array $connector Connector context.
+	 * @param string $conn_id   Connector ID.
+	 * @param array  $connector Connector context.
 	 * @return bool
 	 */
-	private function is_connector_connected( $connector ) {
+	private function is_connector_connected( $conn_id, $connector ) {
+		$status = $this->get_connection_status( (string) $conn_id, $connector );
+
+		return $status['connected'];
+	}
+
+	/**
+	 * Returns the cached result of the connector connection test.
+	 *
+	 * The test is a remote request, so it is cached to avoid stalling every settings page load.
+	 *
+	 * @param string $connector_id Connector ID, used as cache key.
+	 * @param array  $connector    Connector payload.
+	 * @return array{connected: bool, message: string}
+	 */
+	private function get_connection_status( $connector_id, $connector ) {
 		$api = $connector['connapi_erp'] ?? null;
 
 		if ( empty( $api ) || ! is_callable( array( $api, 'check_can_sync' ) ) ) {
-			return false;
+			return array(
+				'connected' => false,
+				'message'   => '',
+			);
 		}
 
+		$transient_key = '' !== $connector_id ? 'conecom_conn_status_' . md5( $connector_id ) : '';
+		if ( '' !== $transient_key ) {
+			$cached = get_transient( $transient_key );
+			if ( is_array( $cached ) && isset( $cached['connected'] ) ) {
+				return $cached;
+			}
+		}
+
+		$status = array(
+			'connected' => false,
+			'message'   => '',
+		);
 		try {
 			$result = $api->check_can_sync();
+			if ( is_array( $result ) ) {
+				$status['connected'] = 'ok' === ( $result['status'] ?? '' );
+				$status['message']   = (string) ( $result['message'] ?? '' );
+			} else {
+				$status['connected'] = (bool) $result;
+				$status['message']   = $result ? '' : __( 'We couldn\'t connect to the API', 'woocommerce-es' );
+			}
 		} catch ( \Throwable $exception ) {
 			unset( $exception );
-			return false;
 		}
 
-		if ( is_array( $result ) ) {
-			return 'ok' === ( $result['status'] ?? '' );
+		if ( '' !== $transient_key ) {
+			// Failures are cached for less time so a fixed connection is picked up quickly.
+			set_transient( $transient_key, $status, $status['connected'] ? 5 * MINUTE_IN_SECONDS : MINUTE_IN_SECONDS );
 		}
 
-		return (bool) $result;
+		return $status;
 	}
 
 	/**
@@ -407,7 +445,7 @@ class Settings {
 						$conn_is_active    = $conn_tab_slug === $active_tab ? 'nav-tab-active' : '';
 						$conn_no_products  = $conn_data['is_disabled_products'] ?? false;
 						$conn_tab_subtab   = $conn_no_products ? 'sync_orders' : 'sync_products';
-						$conn_is_connected = $this->is_connector_connected( $conn_data );
+						$conn_is_connected = $this->is_connector_connected( $conn_id, $conn_data );
 						$conn_dot_class    = $conn_is_connected ? 'is-ready' : 'is-unavailable';
 						$conn_status_label = $conn_is_connected ? __( 'Connected', 'woocommerce-es' ) : __( 'Connection failed', 'woocommerce-es' );
 						printf(
@@ -1502,14 +1540,9 @@ class Settings {
 		$can_sync         = false;
 		$message          = '';
 		if ( ! empty( $selected_connapi ) ) {
-			$login_api = $selected_connapi->check_can_sync();
-			if ( is_array( $login_api ) ) {
-				$message  = $login_api['message'] ?? '';
-				$can_sync = 'ok' === $login_api['status'];
-			} else {
-				$can_sync = (bool) $login_api;
-				$message  = $login_api ? '' : __( 'We couldn\'t connect to the API', 'woocommerce-es' );
-			}
+			$connection_status = $this->get_connection_status( (string) $selected_id, $selected_conn );
+			$can_sync          = $connection_status['connected'];
+			$message           = $connection_status['message'];
 		}
 
 		$tab_url = add_query_arg(
@@ -1609,7 +1642,7 @@ class Settings {
 						<a href="<?php echo esc_url( $connection_url ); ?>"><?php esc_html_e( 'View connection', 'woocommerce-es' ); ?></a>
 					</div>
 						<?php
-						$has_get_all_product_skus = ! $is_orders && ! empty( $selected_connapi ) && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );
+						$has_get_all_product_skus = ! $is_orders && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );
 						if ( $has_get_all_product_skus ) {
 							$this->render_import_stats_and_actions( $ajax_action, $selected_connapi, $selected_conn );
 						} elseif ( $is_orders ) {

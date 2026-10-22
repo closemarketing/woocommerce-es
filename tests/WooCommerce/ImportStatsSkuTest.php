@@ -114,6 +114,8 @@ class ImportStatsSkuTest extends WP_UnitTestCase {
 		$this->assertArrayHasKey( 'VAR-001', $data );
 		$this->assertSame( $this->simple->get_id(), $data['SIMPLE-001']['post_id'] );
 		$this->assertSame( $this->variation->get_id(), $data['VAR-001']['post_id'] );
+		$this->assertTrue( $data['VAR-001']['is_variation'] );
+		$this->assertFalse( $data['SIMPLE-001']['is_variation'] );
 	}
 
 	/**
@@ -164,6 +166,7 @@ class ImportStatsSkuTest extends WP_UnitTestCase {
 
 		$this->assertSame( 'ok', $result['status'] );
 		$this->assertSame( $this->variation->get_id(), $result['post_id'] );
+		$this->assertSame( '99', $result['prod_id'], 'The ERP id is needed to mark the table sync row as synced.' );
 		$this->assertStringContainsString( 'VAR-001', $result['message'] );
 		$this->assertSame( 0, PROD::find_product( 'VAR-001' ), 'No simple product must be created with the variation SKU.' );
 		$this->assertSame( $this->variation->get_id(), PROD::find_product( 'VAR-001', 'product_variation' ) );

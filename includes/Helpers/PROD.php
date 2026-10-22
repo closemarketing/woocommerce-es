@@ -78,9 +78,18 @@ class PROD {
 			// The SKU may belong to an existing WooCommerce variation: do not create a duplicate simple product.
 			$variation_id = self::find_product( $item_sku, 'product_variation' );
 			if ( $variation_id ) {
+				$variation_parent = wp_get_post_parent_id( $variation_id );
+				if ( ! $variation_parent || 'product' !== get_post_type( $variation_parent ) ) {
+					// Remove orphaned variation, as find_parent_product() does, so the simple product can be created.
+					wp_delete_post( $variation_id, true );
+					$variation_id = 0;
+				}
+			}
+			if ( $variation_id ) {
 				return array(
 					'status'  => 'ok',
 					'post_id' => $variation_id,
+					'prod_id' => ! empty( $item['id'] ) ? sanitize_text_field( $item['id'] ) : '',
 					'message' => sprintf(
 						/* translators: 1: product name, 2: SKU, 3: variation ID. */
 						__( 'Product skipped: %1$s. SKU %2$s already exists as a WooCommerce variation (#%3$d).', 'woocommerce-es' ),
@@ -1050,7 +1059,7 @@ class PROD {
 	 * Uses conecom_updated (timestamp) when set, else post_modified.
 	 * The comparison is always by SKU, so products created outside the connector are counted too.
 	 *
-	 * @return array Associative array sku => [ 'post_id' => int, 'last_modified' => 'Y-m-d H:i:s' ].
+	 * @return array Associative array sku => [ 'post_id' => int, 'is_variation' => bool, 'last_modified' => 'Y-m-d H:i:s' (GMT) ].
 	 */
 	public static function get_woocommerce_product_data_for_import_stats() {
 		global $wpdb;
@@ -1059,7 +1068,7 @@ class PROD {
 		// Products matched by SKU only (no connector link required), with conecom_updated or post_modified for comparison.
 		$results = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT P.ID AS post_id, P.post_modified AS post_modified,
+				"SELECT P.ID AS post_id, P.post_type AS post_type, P.post_modified_gmt AS post_modified,
 				PM_sku.meta_value AS sku, PM_updated.meta_value AS conecom_updated
 				FROM {$wpdb->posts} AS P
 				INNER JOIN {$wpdb->postmeta} AS PM_sku ON PM_sku.post_id = P.ID AND PM_sku.meta_key = %s
@@ -1081,6 +1090,7 @@ class PROD {
 					: null;
 				$data[ $sku ] = array(
 					'post_id'       => (int) $row['post_id'],
+					'is_variation'  => 'product_variation' === $row['post_type'],
 					'last_modified' => $ts ? gmdate( 'Y-m-d H:i:s', $ts ) : $row['post_modified'],
 				);
 			}
@@ -1586,7 +1596,8 @@ class PROD {
 
 		$outdated_count = 0;
 		foreach ( $wp_products as $sku => $wp_data ) {
-			if ( ! isset( $api_skus[ $sku ] ) ) {
+			// Variations are skipped on import, so they can never be brought up to date.
+			if ( ! isset( $api_skus[ $sku ] ) || ! empty( $wp_data['is_variation'] ) ) {
 				continue;
 			}
 			$api_date = isset( $api_skus_updated[ $sku ] ) ? $api_skus_updated[ $sku ] : null;
