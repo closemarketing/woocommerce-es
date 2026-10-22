@@ -1030,6 +1030,8 @@ class PROD {
 	 * Gets WooCommerce product SKUs and last modified for import stats.
 	 * Only products with connect_ecommerce_id (linked to connector) are returned.
 	 * Uses conecom_updated (timestamp) when set, else post_modified.
+	 * It is universal: it counts the WooCommerce catalog linked to any connector, because the
+	 * counters that depend on a connector are the ones compared against its API.
 	 *
 	 * @return array Associative array sku => [ 'post_id' => int, 'last_modified' => 'Y-m-d H:i:s' ].
 	 */
@@ -1479,7 +1481,8 @@ class PROD {
 			);
 		}
 
-		$transient_key = 'conecom_all_product_skus_v2_' . sanitize_key( $options['slug'] );
+		$connector_id  = isset( $settings['connector_id'] ) ? sanitize_key( $settings['connector_id'] ) : '';
+		$transient_key = 'conecom_all_product_skus_v2_' . sanitize_key( $options['slug'] ) . ( $connector_id ? '_' . $connector_id : '' );
 		$api_result    = get_transient( $transient_key );
 		if ( false === $api_result ) {
 			$api_result = $connapi_erp->get_all_product_skus();

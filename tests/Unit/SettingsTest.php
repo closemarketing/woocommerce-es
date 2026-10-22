@@ -145,6 +145,55 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The EU VAT section description is rendered inside the settings panel.
+	 */
+	public function test_public_section_description_uses_panel_markup() {
+		$settings = new Settings(
+			array(
+				'settings_all' => array(),
+				'connector'    => 'test',
+				'settings'     => array(),
+				'all_options'  => array(),
+				'options'      => array(),
+				'connapi_erp'  => null,
+			)
+		);
+
+		ob_start();
+		$settings->section_info_public();
+		$output = ob_get_clean();
+
+		$this->assertStringStartsWith( '<p class="connwoo-section-description">', $output );
+		$this->assertStringEndsWith( '</p>', $output );
+	}
+
+	/**
+	 * The AI model help text links to the WordPress connector settings.
+	 */
+	public function test_ai_model_help_links_to_wordpress_connectors() {
+		$settings = new Settings(
+			array(
+				'settings_all' => array(),
+				'connector'    => 'test',
+				'settings'     => array(),
+				'all_options'  => array(),
+				'options'      => array(),
+				'connapi_erp'  => null,
+			)
+		);
+
+		ob_start();
+		$settings->ai_model_callback();
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString(
+			'href="' . esc_url( admin_url( 'options-connectors.php' ) ) . '"',
+			$output
+		);
+		$this->assertStringContainsString( '>WordPress AI connectors</a>', $output );
+	}
+
+	/**
 	 * Order-only connectors do not expose ERP product attributes.
 	 */
 	public function test_category_attribute_callback_allows_connector_without_get_attributes() {
@@ -237,6 +286,88 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The requested connector tab must replace the complete active connector context.
+	 */
+	public function test_page_init_uses_requested_connector_api_and_settings() {
+		$previous_get = $_GET;
+		$_GET         = array( 'tab' => 'connector_clientify' );
+
+		$holded_api = new class() {
+			/**
+			 * Report the connector used by the connection check.
+			 *
+			 * @return array
+			 */
+			public function check_can_sync() {
+				return array(
+					'status'  => 'ok',
+					'message' => 'Holded connection',
+				);
+			}
+		};
+		$clientify_api = new class() {
+			/**
+			 * Report the connector used by the connection check.
+			 *
+			 * @return array
+			 */
+			public function check_can_sync() {
+				return array(
+					'status'  => 'ok',
+					'message' => 'Clientify connection',
+				);
+			}
+		};
+		$options = array(
+			'name'             => 'Test Connector',
+			'slug'             => 'test-connector',
+			'disable_modules'  => array(),
+			'settings_fields'  => array( 'apipassword' ),
+			'payment_methods'  => false,
+		);
+		$settings = new Settings(
+			array(
+				'active'       => 'holded',
+				'settings_all' => array(),
+				'items'        => array(
+					'holded'    => array(
+						'id'          => 'holded',
+						'connector'   => 'holded',
+						'settings'    => array( 'api' => 'holded-key' ),
+						'all_options' => array( 'holded' => $options, 'clientify' => $options ),
+						'options'     => $options,
+						'connapi_erp' => $holded_api,
+					),
+					'clientify' => array(
+						'id'          => 'clientify',
+						'connector'   => 'clientify',
+						'settings'    => array( 'api' => 'clientify-key' ),
+						'all_options' => array( 'holded' => $options, 'clientify' => $options ),
+						'options'     => $options,
+						'connapi_erp' => $clientify_api,
+					),
+				),
+			)
+		);
+
+		$settings->page_init();
+
+		ob_start();
+		$settings->api_callback();
+		$api_output = ob_get_clean();
+
+		ob_start();
+		$settings->api_status_callback();
+		$status_output = ob_get_clean();
+		$_GET          = $previous_get;
+
+		$this->assertStringContainsString( 'connect_ecommerce[clientify][api]', $api_output );
+		$this->assertStringContainsString( 'value="clientify-key"', $api_output );
+		$this->assertStringContainsString( 'Clientify connection', $status_output );
+		$this->assertStringNotContainsString( 'Holded connection', $status_output );
+	}
+
+	/**
 	 * Connectors can explicitly opt out of payment-method mappings.
 	 */
 	public function test_connector_can_disable_payment_method_mapping() {
@@ -266,6 +397,196 @@ class SettingsTest extends WP_UnitTestCase {
 		$property->setAccessible( true );
 
 		$this->assertFalse( $property->getValue( $settings ) );
+	}
+
+	/**
+	 * The central settings page uses the redesigned shell and connector manager.
+	 */
+	public function test_admin_page_uses_new_design_shell() {
+		$previous_get = $_GET;
+		$_GET         = array(
+			'page'   => 'connect_ecommerce',
+			'tab'    => 'general',
+			'subtab' => 'connectors',
+		);
+
+		$options = array(
+			'name'            => 'Test Connector',
+			'slug'            => 'test-connector',
+			'settings_logo'   => 'https://example.org/test-connector.svg',
+			'disable_modules' => array(),
+		);
+		$meta    = array(
+			'type'      => 'test',
+			'label'     => 'Test Store',
+			'status'    => 'active',
+			'workflows' => array(
+				'products' => 'yes',
+				'orders'   => 'yes',
+			),
+		);
+		$api     = new class() {
+			/**
+			 * Report a healthy connection.
+			 *
+			 * @return bool
+			 */
+			public function check_can_sync() {
+				return true;
+			}
+		};
+		$settings = new Settings(
+			array(
+				'active'       => 'test-store',
+				'settings_all' => array(),
+				'meta'         => array( 'test-store' => $meta ),
+				'items'        => array(
+					'test-store' => array(
+						'id'          => 'test-store',
+						'connector'   => 'test',
+						'meta'        => $meta,
+						'settings'    => array(),
+						'all_options' => array( 'test' => $options ),
+						'options'     => $options,
+						'connapi_erp' => $api,
+					),
+				),
+			)
+		);
+
+		ob_start();
+		$settings->create_admin_page();
+		$output = ob_get_clean();
+		$_GET   = $previous_get;
+
+		$this->assertStringContainsString( 'connwoo-brand', $output );
+		$this->assertStringContainsString( 'connwoo-page-content', $output );
+		$this->assertStringContainsString( 'connwoo-status-dot is-ready', $output );
+		$this->assertStringContainsString( 'aria-label="Connected"', $output );
+		$this->assertStringContainsString( 'connector-manager-header', $output );
+		$this->assertStringContainsString( 'conecom-connectors-table', $output );
+		$this->assertStringContainsString( 'conecom-connector-logo', $output );
+		$this->assertStringContainsString( 'https://example.org/test-connector.svg', $output );
+		$this->assertStringContainsString( 'connwoo-settings-form', $output );
+	}
+
+	/**
+	 * Connector tabs expose a failed live connection in red.
+	 */
+	public function test_admin_page_marks_failed_connector_connection_as_unavailable() {
+		$previous_get = $_GET;
+		$_GET         = array(
+			'page'   => 'connect_ecommerce',
+			'tab'    => 'general',
+			'subtab' => 'connectors',
+		);
+
+		$meta = array(
+			'type'      => 'test',
+			'label'     => 'Broken Store',
+			'status'    => 'active',
+			'workflows' => array(
+				'products' => 'yes',
+				'orders'   => 'yes',
+			),
+		);
+		$api  = new class() {
+			/**
+			 * Report a failed connection.
+			 *
+			 * @return array
+			 */
+			public function check_can_sync() {
+				return array( 'status' => 'error' );
+			}
+		};
+		$options  = array(
+			'name'            => 'Test Connector',
+			'disable_modules' => array(),
+		);
+		$settings = new Settings(
+			array(
+				'active'       => 'broken-store',
+				'settings_all' => array(),
+				'meta'         => array( 'broken-store' => $meta ),
+				'items'        => array(
+					'broken-store' => array(
+						'id'          => 'broken-store',
+						'connector'   => 'test',
+						'meta'        => $meta,
+						'settings'    => array(),
+						'all_options' => array( 'test' => $options ),
+						'options'     => $options,
+						'connapi_erp' => $api,
+					),
+				),
+			)
+		);
+
+		ob_start();
+		$settings->create_admin_page();
+		$output = ob_get_clean();
+		$_GET   = $previous_get;
+
+		$this->assertStringContainsString( 'connwoo-status-dot is-unavailable', $output );
+		$this->assertStringContainsString( 'aria-label="Connection failed"', $output );
+	}
+
+	/**
+	 * The order exporter exposes the redesigned range presets and activity panel.
+	 */
+	public function test_order_sync_page_uses_new_design_controls() {
+		$api = new class() {
+			/**
+			 * Report a usable connection.
+			 *
+			 * @return array
+			 */
+			public function check_can_sync() {
+				return array( 'status' => 'ok' );
+			}
+		};
+		$meta = array(
+			'type'      => 'test',
+			'label'     => 'Test Store',
+			'status'    => 'active',
+			'workflows' => array(
+				'products' => 'yes',
+				'orders'   => 'yes',
+			),
+		);
+		$connector = array(
+			'id'          => 'test-store',
+			'connector'   => 'test',
+			'meta'        => $meta,
+			'settings'    => array( 'ecstatus' => 'completed' ),
+			'all_options' => array(),
+			'options'     => array(
+				'name'            => 'Test Connector',
+				'disable_modules' => array(),
+			),
+			'connapi_erp' => $api,
+		);
+		$settings  = new Settings(
+			array(
+				'active'       => 'test-store',
+				'settings_all' => array(),
+				'meta'         => array( 'test-store' => $meta ),
+				'items'        => array( 'test-store' => $connector ),
+			)
+		);
+
+		ob_start();
+		$settings->page_get_sync( 'sync_orders', 'test-store' );
+		$output = ob_get_clean();
+
+		$this->assertStringContainsString( 'connwoo-connection-status', $output );
+		$this->assertStringContainsString( 'connwoo-orders-card', $output );
+		$this->assertStringContainsString( 'connwoo-date-preset', $output );
+		$this->assertStringContainsString( 'data-year-start="1"', $output );
+		$this->assertStringContainsString( 'connwoo-activity-log', $output );
+		$this->assertStringContainsString( 'connwoo-activity-log-title', $output );
+		$this->assertStringNotContainsString( '<legend', $output );
 	}
 
 	/**

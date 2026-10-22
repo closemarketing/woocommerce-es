@@ -48,6 +48,9 @@ function syncManualItems( element, action, loop = 0 ) {
  * Manual sync with mode (updated/all) and pagination. Used when get_all_product_skus exists.
  */
 function syncManualItemsWithMode( element, action, loop, pagination ) {
+	if ( ! element.dataset.idleLabel ) {
+		element.dataset.idleLabel = element.textContent;
+	}
 	const importMode = document.getElementById('import-mode');
 	const mode = importMode ? importMode.value : 'all';
 	const dateFrom = document.getElementById('orders-date-from');
@@ -109,7 +112,7 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 				syncManualItemsWithMode(element, action, results.data.loop, pagination);
 			} else {
 				element.disabled = false;
-				element.textContent = ConEcom_ajaxAction.label_sync;
+				element.textContent = element.dataset.idleLabel;
 				if ( importMode ) { importMode.disabled = false; }
 				if ( dateFrom ) { dateFrom.disabled = false; }
 				if ( dateTo ) { dateTo.disabled = false; }
@@ -121,7 +124,7 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 			}
 		} else {
 			element.disabled = false;
-			element.textContent = ConEcom_ajaxAction.label_sync;
+			element.textContent = element.dataset.idleLabel;
 			if ( importMode ) { importMode.disabled = false; }
 			if ( dateFrom ) { dateFrom.disabled = false; }
 			if ( dateTo ) { dateTo.disabled = false; }
@@ -144,8 +147,10 @@ function syncManualItemsWithMode( element, action, loop, pagination ) {
 	.catch(function(err) {
 		console.error('Import error:', err);
 		element.disabled = false;
-		element.textContent = ConEcom_ajaxAction.label_sync;
+		element.textContent = element.dataset.idleLabel;
 		if ( importMode ) { importMode.disabled = false; }
+		if ( dateFrom ) { dateFrom.disabled = false; }
+		if ( dateTo ) { dateTo.disabled = false; }
 		if ( refreshButton ) { refreshButton.disabled = false; }
 		if ( spinner ) { spinner.classList.remove('is-active'); }
 	});
@@ -214,6 +219,7 @@ function loadAsLogs() {
 	if ( typeof ConEcom_ajaxAction === 'undefined' ) { return; }
 	const container = document.getElementById('conecom-as-logs-container');
 	if ( ! container ) { return; }
+	const connectorId = document.querySelector('select[name="connwoo-connector-select"]')?.value || '';
 	const i18n = ConEcom_ajaxAction.i18n || {};
 	container.innerHTML = '<p style="color:#666;font-style:italic;padding:20px;text-align:center;">' + (i18n.loading || 'Loading…') + '</p>';
 
@@ -221,7 +227,7 @@ function loadAsLogs() {
 		method: 'POST',
 		credentials: 'same-origin',
 		headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-		body: 'action=connect_ecommerce_get_as_logs&security=' + encodeURIComponent(ConEcom_ajaxAction.as_logs_nonce)
+		body: 'action=connect_ecommerce_get_as_logs&security=' + encodeURIComponent(ConEcom_ajaxAction.as_logs_nonce) + '&connector_id=' + encodeURIComponent(connectorId)
 	})
 	.then(function(r){ return r.json(); })
 	.then(function(response) {
