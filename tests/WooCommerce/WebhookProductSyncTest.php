@@ -138,16 +138,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 
 		// Untagged product of another connector with the same remote ID: ambiguous on a multi-connector site.
 		delete_post_meta( $theirs, WEBHOOK::META_CONNECTOR );
-		update_option(
-			'connect_ecommerce',
-			array(
-				'connector'       => 'holded',
-				'connectors_meta' => array(
-					'holded' => array( 'type' => 'holded' ),
-					'odoo'   => array( 'type' => 'odoo' ),
-				),
-			)
-		);
+		$this->use_two_product_connectors();
 		wp_delete_post( $mine, true );
 		$result = WEBHOOK::process( $this->connector_context( 'holded' ), $delete, array( 'x_holded_webhook_event' => 'product.delete' ) );
 		$this->assertSame( 'ignored', $result['status'] );
@@ -155,6 +146,23 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 
 		remove_filter( 'conecom_webhook_delete_behaviour', $draft );
 		delete_option( 'connect_ecommerce' );
+	}
+
+	/**
+	 * Configures two product connectors ("holded" and "odoo") with a usable API object.
+	 */
+	private function use_two_product_connectors() {
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'holded',
+				'connectors_meta' => array(
+					'holded' => array( 'type' => 'webhookstub' ),
+					'odoo'   => array( 'type' => 'webhookstub' ),
+				),
+			)
+		);
+		WEBHOOK::init( array( 'webhookstub' => array( 'name' => 'Webhookstub' ) ) );
 	}
 
 	/**
@@ -298,16 +306,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 	 * unless it already has the incoming remote ID.
 	 */
 	public function test_unowned_sku_is_ambiguous_on_multi_connector_sites() {
-		update_option(
-			'connect_ecommerce',
-			array(
-				'connector'       => 'holded',
-				'connectors_meta' => array(
-					'holded' => array( 'type' => 'holded' ),
-					'odoo'   => array( 'type' => 'odoo' ),
-				),
-			)
-		);
+		$this->use_two_product_connectors();
 		$imported = self::factory()->post->create(
 			array(
 				'post_type'   => 'product',
@@ -430,16 +429,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 	 * Packs are not synced by webhook on multi-connector sites (components could belong to another connector).
 	 */
 	public function test_packs_ignored_on_multi_connector_sites() {
-		update_option(
-			'connect_ecommerce',
-			array(
-				'connector'       => 'holded',
-				'connectors_meta' => array(
-					'holded' => array( 'type' => 'holded' ),
-					'odoo'   => array( 'type' => 'odoo' ),
-				),
-			)
-		);
+		$this->use_two_product_connectors();
 
 		$result = WEBHOOK::process(
 			$this->connector_context( 'holded' ),
@@ -614,5 +604,117 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
 		$this->assertSame( 'error', $result['status'] );
 		$this->assertSame( 409, $result['code'] ?? null );
+	}
+
+	/**
+	 * A deletion waits for an import holding the product lock instead of racing it.
+	 */
+	public function test_delete_waits_for_product_lock() {
+		global $wpdb;
+		$draft = function () {
+			return 'draft';
+		};
+		add_filter( 'conecom_webhook_delete_behaviour', $draft );
+		$post_id = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		update_post_meta( $post_id, '_sku', 'DEL-LOCK-1' );
+		update_post_meta( $post_id, 'connect_ecommerce_id', 'erp-del-lock' );
+		update_post_meta( $post_id, WEBHOOK::META_CONNECTOR, 'holded' );
+
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|DEL-LOCK-1' );
+		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		$result = WEBHOOK::process(
+			$this->connector_context( 'holded' ),
+			array( 'id' => 'erp-del-lock' ),
+			array( 'x_holded_webhook_event' => 'product.delete' )
+		);
+
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		remove_filter( 'conecom_webhook_delete_behaviour', $draft );
+		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
+		$this->assertSame( 409, $result['code'] ?? null );
+		$this->assertSame( 'publish', get_post_status( $post_id ) );
+	}
+
+	/**
+	 * A SKU change to a SKU used by a variation is reported as an error, not as "ok".
+	 */
+	public function test_sku_collision_with_variation_is_an_error() {
+		$parent    = self::factory()->post->create( array( 'post_type' => 'product', 'post_status' => 'publish' ) );
+		$variation = self::factory()->post->create(
+			array(
+				'post_type'   => 'product_variation',
+				'post_status' => 'publish',
+				'post_parent' => $parent,
+			)
+		);
+		update_post_meta( $variation, '_sku', 'VAR-TAKEN' );
+
+		$connector = $this->connector_context( 'holded' );
+		$payload   = array(
+			'id'    => 'erp-var-collision',
+			'name'  => 'Collision',
+			'kind'  => 'simple',
+			'sku'   => 'MINE-VAR',
+			'price' => '3',
+		);
+		$first     = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $first['status'], $first['message'] );
+
+		$payload['sku'] = 'VAR-TAKEN';
+		$second         = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+
+		$this->assertSame( 'error', $second['status'] );
+		$this->assertSame( 'MINE-VAR', wc_get_product( $first['post_id'] )->get_sku() );
+	}
+
+	/**
+	 * The lock of a variable product without parent SKU does not depend on the variant order.
+	 */
+	public function test_variable_lock_key_ignores_variant_order() {
+		$key  = new ReflectionMethod( CLOSE\ConnectEcommerce\Helpers\PROD::class, 'get_sync_lock_key' );
+		$key->setAccessible( true );
+		$item = array(
+			'id'       => 'erp-var',
+			'kind'     => 'variants',
+			'variants' => array(
+				array( 'sku' => 'VAR-B' ),
+				array( 'sku' => 'VAR-A' ),
+			),
+		);
+
+		$first            = $key->invoke( null, $item, new Webhook_Test_Connector() );
+		$item['variants'] = array_reverse( $item['variants'] );
+
+		$this->assertSame( 'product|sku|VAR-A', $first );
+		$this->assertSame( $first, $key->invoke( null, $item, new Webhook_Test_Connector() ) );
+	}
+
+	/**
+	 * A connector entry whose integration plugin is unavailable is not counted as a product connector.
+	 */
+	public function test_unavailable_connector_is_not_counted() {
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'holded',
+				'connectors_meta' => array(
+					'holded' => array( 'type' => 'webhookstub' ),
+					'odoo'   => array( 'type' => 'missingplugin' ),
+				),
+			)
+		);
+		WEBHOOK::init(
+			array(
+				'webhookstub'   => array( 'name' => 'Webhookstub' ),
+				'missingplugin' => array( 'name' => 'Missingplugin' ),
+			)
+		);
+		$count = new ReflectionMethod( WEBHOOK::class, 'count_product_connectors' );
+		$count->setAccessible( true );
+
+		$this->assertSame( 1, $count->invoke( null ) );
+		delete_option( 'connect_ecommerce' );
 	}
 }

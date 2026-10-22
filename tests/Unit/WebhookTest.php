@@ -692,6 +692,38 @@ class WebhookTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Signed requests must carry the product in the body: an unsigned query ID is not used.
+	 */
+	public function test_signed_request_without_body_is_rejected() {
+		update_option(
+			'connect_ecommerce',
+			array(
+				'connector'       => 'webhookstub',
+				'connectors_meta' => array(
+					'webhookstub' => array(
+						'type'      => 'webhookstub',
+						'status'    => 'active',
+						'workflows' => array( 'products' => 'yes' ),
+					),
+				),
+			)
+		);
+		WEBHOOK::init( array( 'webhookstub' => array( 'name' => 'Webhookstub' ) ) );
+		WEBHOOK::save_signing_secret( 'webhookstub', 'whsec_' . str_repeat( 'ef', 32 ) );
+
+		$request = new WP_REST_Request( 'GET', '/conecom/v1/webhooks/products/webhookstub' );
+		$request->set_url_params( array( 'connector_id' => 'webhookstub' ) );
+		$request->set_query_params( array( 'id' => '42' ) );
+		$response = WEBHOOK::handle_request( $request );
+
+		$this->assertSame( 400, $response->get_status() );
+		$this->assertStringContainsString( 'body', $response->get_data()['message'] );
+
+		WEBHOOK::save_signing_secret( 'webhookstub', '' );
+		delete_option( 'connect_ecommerce' );
+	}
+
+	/**
 	 * Unsupported by default in the connector contract.
 	 */
 	public function test_contract_defaults() {

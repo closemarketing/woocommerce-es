@@ -369,6 +369,17 @@ class WEBHOOK {
 		$payload      = self::get_payload( $request, $body_only );
 		$headers      = self::get_headers( $request );
 
+		// Signed ERPs must send the product in the body: the query string is not signed.
+		if ( $body_only && '' === trim( (string) $request->get_body() ) ) {
+			return new \WP_REST_Response(
+				array(
+					'status'  => 'error',
+					'message' => __( 'Signed webhooks must send the product in the request body.', 'woocommerce-es' ),
+				),
+				400
+			);
+		}
+
 		// permission_check() already authenticated the request (token or signature).
 		$result = self::process( $connector, $payload, $headers, (string) $request->get_body(), true );
 		$status = self::get_http_status( $result );
@@ -626,7 +637,15 @@ class WEBHOOK {
 
 		// A new SKU already used by another product is rejected by WooCommerce, and the sync
 		// would report "ok" while keeping the old one: answer an error instead.
-		$sku_owner = ( $post_id && ! empty( $item['sku'] ) ) ? (int) PROD::find_product( $item['sku'] ) : 0;
+		$sku_owner = 0;
+		if ( $post_id && ! empty( $item['sku'] ) ) {
+			// Product and variation SKUs share the uniqueness rule (see PROD variation sync).
+			$sku_owner = (int) PROD::find_product( $item['sku'] );
+			if ( ! $sku_owner ) {
+				$variation = (int) PROD::find_product( $item['sku'], 'product_variation' );
+				$sku_owner = ( $variation && (int) wp_get_post_parent_id( $variation ) !== (int) $post_id ) ? $variation : 0;
+			}
+		}
 		if ( $sku_owner && $sku_owner !== (int) $post_id ) {
 			return array(
 				'status'  => 'error',
@@ -1089,7 +1108,8 @@ class WEBHOOK {
 		$connectors = HELPER::get_connectors( self::$options );
 		$count      = 0;
 		foreach ( $connectors['items'] ?? array() as $item ) {
-			if ( self::accepts_products( $item ) ) {
+			// An entry whose integration plugin is disabled has no API object and syncs nothing.
+			if ( ! empty( $item['connapi_erp'] ) && self::accepts_products( $item ) ) {
 				++$count;
 			}
 		}
@@ -1143,6 +1163,30 @@ class WEBHOOK {
 			);
 		}
 
+		// Imports of this product hold the shared product lock: never draft or trash it
+		// while one of them is saving it, or the stale import would restore it.
+		$lock_key = PROD::get_product_lock_key( $post_id );
+		if ( '' === $lock_key ) {
+			return self::apply_delete( $connector, $remote_id, $post_id );
+		}
+
+		return self::with_lock(
+			$lock_key,
+			function () use ( $connector, $remote_id, $post_id ) {
+				return self::apply_delete( $connector, $remote_id, $post_id );
+			}
+		);
+	}
+
+	/**
+	 * Applies the delete behaviour to a product deleted in the ERP.
+	 *
+	 * @param array  $connector Connector context.
+	 * @param string $remote_id Remote product ID.
+	 * @param int    $post_id   WooCommerce product ID.
+	 * @return array
+	 */
+	private static function apply_delete( $connector, $remote_id, $post_id ) {
 		/**
 		 * Filters what happens with a WooCommerce product deleted in the ERP.
 		 *

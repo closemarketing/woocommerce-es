@@ -11,7 +11,7 @@ Related issue: [#156](https://github.com/closemarketing/woocommerce-es/issues/15
 
 ```
 POST|GET|PUT /wp-json/conecom/v1/webhooks/products/{connector_id}?token={secret}
-POST|GET|PUT /wp-json/conecom/v1/webhooks/products/{connector_id}      (signed ERPs, see Security)
+POST|PUT     /wp-json/conecom/v1/webhooks/products/{connector_id}      (signed ERPs, see Security: the body carries the product)
 ```
 
 - `{connector_id}` is the configured connector instance (e.g. `holded`, `odoo`, `holded_2`).
@@ -131,7 +131,9 @@ attributes, rates or taxes the store is configured to use).
   delete cannot overtake an earlier update. Log writes use their own lock and
   are skipped rather than written without it.
 - `PROD::sync_product_item()` takes a product lock too (`product|sku|<SKU>`, the same
-  for every connector because SKUs are global; `product|id|<connector class>|<id>` only
+  for every connector because SKUs are global; variable products without parent SKU
+  use their lowest variant SKU, whatever the variant order; deletions take it too;
+  `product|id|<connector class>|<id>` only
   for items without any SKU), so
   webhooks, manual, cron and CLI imports of the same product never run their
   lookup and creation at the same time.

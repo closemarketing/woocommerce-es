@@ -61,8 +61,7 @@ class PROD {
 	private static function get_sync_lock_key( $item, $api_erp ) {
 		$sku = $item['sku'] ?? '';
 		if ( ( ! is_scalar( $sku ) || '' === (string) $sku ) && ! empty( $item['variants'] ) && is_array( $item['variants'] ) ) {
-			$first = reset( $item['variants'] );
-			$sku   = is_array( $first ) ? ( $first['sku'] ?? '' ) : '';
+			$sku = self::get_lowest_sku( array_column( array_filter( $item['variants'], 'is_array' ), 'sku' ) );
 		}
 		if ( is_scalar( $sku ) && '' !== (string) $sku ) {
 			return 'product|sku|' . $sku;
@@ -74,6 +73,57 @@ class PROD {
 		}
 
 		return '';
+	}
+
+	/**
+	 * Lock key of an existing WooCommerce product, matching the key its imports take.
+	 *
+	 * @param int $post_id WooCommerce product ID.
+	 * @return string Lock key, empty when the product has no SKU at all.
+	 */
+	public static function get_product_lock_key( $post_id ) {
+		$sku = (string) get_post_meta( (int) $post_id, '_sku', true );
+		if ( '' === $sku ) {
+			$variations = get_children(
+				array(
+					'post_parent' => (int) $post_id,
+					'post_type'   => 'product_variation',
+					'post_status' => 'any',
+					'fields'      => 'ids',
+				)
+			);
+			$skus       = array();
+			foreach ( $variations as $variation_id ) {
+				$skus[] = get_post_meta( (int) $variation_id, '_sku', true );
+			}
+			$sku = self::get_lowest_sku( $skus );
+		}
+
+		return '' === $sku ? '' : 'product|sku|' . $sku;
+	}
+
+	/**
+	 * Lowest non-empty SKU: an identity of a variable product that does not depend on variant order.
+	 *
+	 * @param array $skus SKUs.
+	 * @return string
+	 */
+	private static function get_lowest_sku( $skus ) {
+		$skus = array_filter(
+			array_map(
+				function ( $sku ) {
+					return is_scalar( $sku ) ? (string) $sku : '';
+				},
+				(array) $skus
+			),
+			'strlen'
+		);
+		if ( empty( $skus ) ) {
+			return '';
+		}
+		sort( $skus, SORT_STRING );
+
+		return reset( $skus );
 	}
 
 	/**
