@@ -1534,7 +1534,7 @@ class Settings {
 					</div>
 				<?php else : ?>
 					<?php
-					$has_get_all_product_skus = ! $is_orders && ! empty( $selected_connapi ) && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );
+					$has_get_all_product_skus = ! $is_orders && HELPER::connector_supports( $selected_connapi, 'get_all_product_skus' );
 					if ( $has_get_all_product_skus ) {
 						$this->render_import_stats_and_actions( $ajax_action, $selected_connapi, $selected_conn );
 					} elseif ( $is_orders ) {
