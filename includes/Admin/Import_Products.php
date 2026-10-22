@@ -95,12 +95,14 @@ class Import_Products {
 		$cron_connectors = ! empty( $connectors_data['items'] ) ? $connectors_data['items'] : array( (string) ( $this->settings['connector_id'] ?? '' ) => $connector );
 		foreach ( $cron_connectors as $cron_connector_id => $cron_connector ) {
 			$cron_period = isset( $cron_connector['settings']['sync'] ) ? strval( $cron_connector['settings']['sync'] ) : 'no';
-			if ( empty( $cron_period ) || 'no' === $cron_period || empty( $cron_connector['connapi_erp'] ) ) {
+			if ( empty( $cron_connector['connapi_erp'] ) ) {
 				continue;
 			}
-			if ( ! HELPER::is_workflow_enabled_for_connector( $cron_connector['meta'] ?? array(), 'products' ) ) {
+			if ( empty( $cron_period ) || 'no' === $cron_period || ! HELPER::is_workflow_enabled_for_connector( $cron_connector['meta'] ?? array(), 'products' ) ) {
+				$this->cancel_connector_crons( (string) $cron_connector_id );
 				continue;
 			}
+			$this->cancel_connector_crons( (string) $cron_connector_id, $cron_period );
 			$this->cron_products( (string) $cron_connector_id, $cron_period );
 			add_action( $cron_period, array( $this, 'cron_sync_products' ), 10, 1 );
 		}
@@ -515,6 +517,29 @@ class Import_Products {
 		if ( isset( $cron_option['cron'] ) && false === as_has_scheduled_action( $cron_option['cron'], $cron_args ) ) {
 			$this->cancel_legacy_cron( $cron_option['cron'] );
 			as_schedule_recurring_action( time(), $cron_option['interval'], $cron_option['cron'], $cron_args );
+		}
+	}
+
+	/**
+	 * Cancels the connector's recurring syncs scheduled with a period other than the current one.
+	 *
+	 * @param string $connector_id Connector ID.
+	 * @param string $keep_hook    Cron hook to keep scheduled; empty to cancel all periods.
+	 * @return void
+	 */
+	private function cancel_connector_crons( $connector_id, $keep_hook = '' ) {
+		if ( ! function_exists( 'as_unschedule_all_actions' ) || ! function_exists( 'as_has_scheduled_action' ) || '' === $connector_id ) {
+			return;
+		}
+		$keep_period = $keep_hook ? CRON::get_active_period( $keep_hook ) : false;
+		$keep_cron   = $keep_period ? $keep_period['cron'] : '';
+		foreach ( CRON::get_cron_periods() as $period ) {
+			if ( $period['cron'] === $keep_cron ) {
+				continue;
+			}
+			if ( as_has_scheduled_action( $period['cron'], array( $connector_id ) ) ) {
+				as_unschedule_all_actions( $period['cron'], array( $connector_id ) );
+			}
 		}
 	}
 
