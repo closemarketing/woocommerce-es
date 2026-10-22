@@ -130,7 +130,9 @@ attributes, rates or taxes the store is configured to use).
   create duplicates. The fallback API read runs inside that lock, so a later
   delete cannot overtake an earlier update. Log writes use their own lock and
   are skipped rather than written without it.
-- `PROD::sync_product_item()` takes a product lock too (`product|<id or SKU>`), so
+- `PROD::sync_product_item()` takes a product lock too (`product|sku|<SKU>`, the same
+  for every connector because SKUs are global; `product|id|<connector class>|<id>` only
+  for items without any SKU), so
   webhooks, manual, cron and CLI imports of the same product never run their
   lookup and creation at the same time.
 - On multi-connector sites packs are not synced by webhook (`ignored`): their

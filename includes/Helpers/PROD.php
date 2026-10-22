@@ -34,18 +34,46 @@ class PROD {
 	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
 		// Every import path (webhook, manual, cron, CLI) goes through here: serialize the same
 		// product, so overlapping imports cannot both miss the lookup and create duplicates.
-		$lock_key = $item['id'] ?? ( $item['sku'] ?? '' );
-		$lock_key = is_scalar( $lock_key ) ? (string) $lock_key : '';
+		$lock_key = self::get_sync_lock_key( $item, $api_erp );
 		if ( '' === $lock_key ) {
 			return self::sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai, $post_id );
 		}
 
 		return WEBHOOK::with_lock(
-			'product|' . $lock_key,
+			$lock_key,
 			function () use ( $settings, $item, $api_erp, $generate_ai, $post_id ) {
 				return self::sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai, $post_id );
 			}
 		);
+	}
+
+	/**
+	 * Lock key of the product a sync writes.
+	 *
+	 * The lookup is by SKU, which is unique across WooCommerce, so the SKU (or the first
+	 * variant SKU) identifies the product for every connector. Remote IDs are only used
+	 * without any SKU, scoped to the connector class because they repeat across ERPs.
+	 *
+	 * @param array  $item    Item from API.
+	 * @param object $api_erp API Object.
+	 * @return string Lock key, empty when the item cannot be identified.
+	 */
+	private static function get_sync_lock_key( $item, $api_erp ) {
+		$sku = $item['sku'] ?? '';
+		if ( ( ! is_scalar( $sku ) || '' === (string) $sku ) && ! empty( $item['variants'] ) && is_array( $item['variants'] ) ) {
+			$first = reset( $item['variants'] );
+			$sku   = is_array( $first ) ? ( $first['sku'] ?? '' ) : '';
+		}
+		if ( is_scalar( $sku ) && '' !== (string) $sku ) {
+			return 'product|sku|' . $sku;
+		}
+
+		$id = $item['id'] ?? '';
+		if ( is_scalar( $id ) && '' !== (string) $id ) {
+			return 'product|id|' . ( is_object( $api_erp ) ? get_class( $api_erp ) : '' ) . '|' . $id;
+		}
+
+		return '';
 	}
 
 	/**

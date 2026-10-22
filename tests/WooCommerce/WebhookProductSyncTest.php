@@ -532,7 +532,7 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 	 */
 	public function test_import_paths_share_the_product_lock() {
 		global $wpdb;
-		$lock = 'conecom_webhook_lock_' . md5( 'product|imp-1' );
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|IMP-1' );
 		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
 		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
 
@@ -552,5 +552,40 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
 		$this->assertSame( 'error', $result['status'] );
 		$this->assertSame( 0, (int) wc_get_product_id_by_sku( 'IMP-1' ) );
+	}
+
+	/**
+	 * The same remote ID in two connectors does not share the product lock: the key is the SKU.
+	 */
+	public function test_product_lock_is_not_shared_by_remote_id() {
+		global $wpdb;
+		// Another connector is syncing its own remote ID 5 (any key that ID alone could produce).
+		$locks = array(
+			'conecom_webhook_lock_' . md5( 'product|5' ),
+			'conecom_webhook_lock_' . md5( 'product|id|Other_Connector|5' ),
+		);
+		foreach ( $locks as $lock ) {
+			$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
+		}
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		$result = CLOSE\ConnectEcommerce\Helpers\PROD::sync_product_item(
+			array(),
+			array(
+				'id'    => '5',
+				'name'  => 'Other ERP product 5',
+				'kind'  => 'simple',
+				'sku'   => 'OTHER-5',
+				'price' => '1',
+			),
+			new Webhook_Test_Connector()
+		);
+
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		foreach ( $locks as $lock ) {
+			$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
+		}
+		$this->assertNotSame( 'error', $result['status'], $result['message'] ?? '' );
+		$this->assertNotSame( 0, (int) wc_get_product_id_by_sku( 'OTHER-5' ) );
 	}
 }
