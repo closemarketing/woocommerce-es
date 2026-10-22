@@ -665,6 +665,19 @@ class WEBHOOK {
 			);
 		}
 
+		// ERPs retry and may deliver events out of order: a complete payload older than the
+		// stored product state must not roll it back (fetched items are always current).
+		$item_time   = ! empty( $item['last_updated'] ) ? ( is_numeric( $item['last_updated'] ) ? (int) $item['last_updated'] : (int) strtotime( (string) $item['last_updated'] ) ) : 0;
+		$stored_time = $post_id ? (int) get_post_meta( (int) $post_id, 'conecom_updated', true ) : 0;
+		if ( 'payload' === $source && $item_time > 0 && $stored_time > 0 && $item_time < $stored_time ) {
+			return array(
+				'status'  => 'ignored',
+				'source'  => $source,
+				'post_id' => (int) $post_id,
+				'message' => __( 'The webhook is older than the product already synced. Not applied.', 'woocommerce-es' ),
+			);
+		}
+
 		$result = PROD::sync_product_item( $connector['settings'] ?? array(), $item, $connapi_erp, false, $post_id );
 
 		// Remember which connector owns the product, so remote-ID lookups stay scoped.

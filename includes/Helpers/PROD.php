@@ -34,15 +34,43 @@ class PROD {
 	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
 		// Every import path (webhook, manual, cron, CLI) goes through here: serialize the same
 		// product, so overlapping imports cannot both miss the lookup and create duplicates.
-		$lock_key = self::get_sync_lock_key( $item, $api_erp );
-		if ( '' === $lock_key ) {
-			return self::sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai, $post_id );
-		}
+		// A known product also locks its current SKU, so a SKU change still meets the imports
+		// and deletions that carry the old one.
+		$lock_keys = array_unique(
+			array_filter(
+				array(
+					self::get_sync_lock_key( $item, $api_erp ),
+					$post_id ? self::get_product_lock_key( $post_id ) : '',
+				)
+			)
+		);
+		sort( $lock_keys, SORT_STRING );
 
-		return WEBHOOK::with_lock(
-			$lock_key,
+		return self::with_locks(
+			$lock_keys,
 			function () use ( $settings, $item, $api_erp, $generate_ai, $post_id ) {
 				return self::sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai, $post_id );
+			}
+		);
+	}
+
+	/**
+	 * Runs a callback holding several product locks, taken in a fixed (sorted) order.
+	 *
+	 * @param array    $keys     Lock keys, sorted.
+	 * @param callable $callback Callback returning a result array.
+	 * @return array
+	 */
+	private static function with_locks( $keys, $callback ) {
+		if ( empty( $keys ) ) {
+			return $callback();
+		}
+		$key = array_shift( $keys );
+
+		return WEBHOOK::with_lock(
+			$key,
+			function () use ( $keys, $callback ) {
+				return self::with_locks( $keys, $callback );
 			}
 		);
 	}
@@ -274,8 +302,14 @@ class PROD {
 				$pack_items_sum  = 0;
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
 					foreach ( $item['packItems'] as $pack_item ) {
-						$item_simple      = $api_erp->get_products( $pack_item['pid'] );
-						$result_pack_item = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
+						$item_simple = $api_erp->get_products( $pack_item['pid'] );
+						// Components are products of their own: take their lock like any other import.
+						$result_pack_item = self::with_locks(
+							array_filter( array( is_array( $item_simple ) ? self::get_sync_lock_key( $item_simple, $api_erp ) : '' ) ),
+							function () use ( $settings, $item_simple, $api_erp ) {
+								return self::sync_product_simple( $settings, $item_simple, $api_erp, true );
+							}
+						);
 						$product_pack_id  = $result_pack_item['post_id'] ?? 0;
 						$pack_items      .= $product_pack_id . '/' . $pack_item['u'] . ',';
 						$message         .= ' x ' . $pack_item['u'];

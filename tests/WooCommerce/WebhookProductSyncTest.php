@@ -717,4 +717,120 @@ class WebhookProductSyncTest extends WP_UnitTestCase {
 		$this->assertSame( 1, $count->invoke( null ) );
 		delete_option( 'connect_ecommerce' );
 	}
+
+	/**
+	 * A SKU change still meets the lock of the current SKU held by an import.
+	 */
+	public function test_sku_change_takes_current_sku_lock() {
+		global $wpdb;
+		$connector = $this->connector_context( 'holded' );
+		$payload   = array(
+			'id'    => 'erp-sku-lock',
+			'name'  => 'SKU lock',
+			'kind'  => 'simple',
+			'sku'   => 'OLD-LOCK',
+			'price' => '1',
+		);
+		$first     = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $first['status'], $first['message'] );
+
+		$lock = 'conecom_webhook_lock_' . md5( 'product|sku|OLD-LOCK' );
+		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		$payload['sku'] = 'NEW-LOCK';
+		$second         = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
+		$this->assertSame( 409, $second['code'] ?? null );
+		$this->assertSame( 'OLD-LOCK', wc_get_product( $first['post_id'] )->get_sku() );
+	}
+
+	/**
+	 * A complete payload older than the stored product state does not roll it back.
+	 */
+	public function test_older_complete_payload_is_ignored() {
+		$connector = $this->connector_context( 'holded' );
+		$payload   = array(
+			'id'           => 'erp-order',
+			'name'         => 'Newest name',
+			'kind'         => 'simple',
+			'sku'          => 'ORDER-1',
+			'price'        => '1',
+			'last_updated' => 2000000000,
+		);
+		$first     = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $first['status'], $first['message'] );
+
+		$payload['price']        = '9';
+		$payload['last_updated'] = 1900000000;
+		$older                   = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ignored', $older['status'] );
+		$this->assertEquals( 1, (float) wc_get_product( $first['post_id'] )->get_regular_price() );
+
+		$payload['price']        = '7';
+		$payload['last_updated'] = 2000000100;
+		$newer                   = WEBHOOK::process( $connector, $payload, array( 'x_holded_webhook_event' => 'product.update' ) );
+		$this->assertSame( 'ok', $newer['status'], $newer['message'] );
+		$this->assertEquals( 7, (float) wc_get_product( $first['post_id'] )->get_regular_price() );
+	}
+
+	/**
+	 * Pack components take their own product lock.
+	 */
+	public function test_pack_components_take_their_lock() {
+		global $wpdb;
+		$bundles = function ( $plugins ) {
+			$plugins   = (array) $plugins;
+			$plugins[] = 'woo-product-bundle/wpc-product-bundles.php';
+			return $plugins;
+		};
+		add_filter( 'active_plugins', $bundles );
+		$connapi = new class() extends Webhook_Test_Connector {
+			/**
+			 * Returns the pack component.
+			 *
+			 * @param string|int|null $product_id Remote product ID.
+			 * @param string|int|null $period     Period.
+			 * @return array
+			 */
+			public function get_products( $product_id = null, $period = null ) {
+				return array(
+					'id'    => 'comp-1',
+					'name'  => 'Component',
+					'kind'  => 'simple',
+					'sku'   => 'COMP-1',
+					'price' => '2',
+				);
+			}
+		};
+		$lock    = 'conecom_webhook_lock_' . md5( 'product|sku|COMP-1' );
+		$wpdb->insert( $wpdb->options, array( 'option_name' => $lock, 'option_value' => (string) time(), 'autoload' => 'no' ) );
+		add_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+
+		CLOSE\ConnectEcommerce\Helpers\PROD::sync_product_item(
+			array(),
+			array(
+				'id'        => 'pack-1',
+				'name'      => 'Pack',
+				'desc'      => '',
+				'kind'      => 'pack',
+				'sku'       => 'PACK-1',
+				'price'     => '5',
+				'packItems' => array(
+					array(
+						'pid' => 'comp-1',
+						'u'   => 1,
+					),
+				),
+			),
+			$connapi
+		);
+
+		remove_filter( 'conecom_webhook_lock_wait', '__return_zero' );
+		remove_filter( 'active_plugins', $bundles );
+		$wpdb->delete( $wpdb->options, array( 'option_name' => $lock ) );
+		$this->assertSame( 0, (int) wc_get_product_id_by_sku( 'COMP-1' ) );
+	}
 }

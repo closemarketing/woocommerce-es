@@ -75,6 +75,8 @@ whose signature does not match; a token-carrying request still has to be signed.
    Connectors that answer with the whole catalogue (e.g. Clientify) are handled:
    the entry whose `id` matches is used, and a missing one is an error.
    Simple products without SKU are answered `ignored` until an update sets it.
+   A complete payload whose `last_updated` is older than the product's stored
+   `conecom_updated` is answered `ignored` (retries and out-of-order deliveries).
    A SKU change to a SKU already used by another product is answered `error`
    (WooCommerce would reject it and keep the old SKU).
 6. Log the execution (`connect_ecommerce_webhook_logs`, last 50 entries per connector) and show
@@ -132,7 +134,8 @@ attributes, rates or taxes the store is configured to use).
   are skipped rather than written without it.
 - `PROD::sync_product_item()` takes a product lock too (`product|sku|<SKU>`, the same
   for every connector because SKUs are global; variable products without parent SKU
-  use their lowest variant SKU, whatever the variant order; deletions take it too;
+  use their lowest variant SKU, whatever the variant order; deletions take it too, a
+  known product also locks its current SKU (SKU changes) and pack components take their own;
   `product|id|<connector class>|<id>` only
   for items without any SKU), so
   webhooks, manual, cron and CLI imports of the same product never run their
