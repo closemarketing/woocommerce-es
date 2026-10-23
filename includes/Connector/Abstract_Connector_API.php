@@ -229,6 +229,68 @@ abstract class CONECOM_Abstract_Connector_API {
 	}
 
 	/**
+	 * Translates an incoming product webhook into the universal product item.
+	 *
+	 * The universal item is the structure returned by get_products() for a single
+	 * product (historically the Holded product format): id, name, desc, kind, sku,
+	 * barcode, price, cost, stock, taxes, tags, attributes, images, variants and
+	 * packItems. Map as much of the webhook payload as possible so the core can
+	 * synchronize the product without a second API request. When the payload does
+	 * not carry enough data, return only the remote ID (or set 'complete' to false)
+	 * and the core will call get_products( $id ) as a fallback.
+	 *
+	 * @since 3.5.1
+	 *
+	 * @param array $payload Decoded webhook body merged with the query parameters (the token is removed).
+	 * @param array $headers Request headers, keys lowercased with underscores (e.g. 'x_holded_webhook_event').
+	 *                       Empty when the request is authenticated by signature (headers are not signed).
+	 * @return array{action: string, id: string|int, item?: array, complete?: bool}|array{status: string, message: string}
+	 *         'action' is 'upsert', 'delete' or 'ignore'. 'item' is the universal product item. 'complete' tells
+	 *         the core whether 'item' can be synced as is (true) or must be fetched with get_products() (false).
+	 * @example array( 'action' => 'upsert', 'id' => 'erp-123', 'complete' => true, 'item' => array( 'id' => 'erp-123', 'name' => 'Product', 'kind' => 'simple', 'sku' => 'SKU-123', 'price' => 10 ) ).
+	 */
+	public function parse_webhook_product( $payload, $headers = array() ) {
+		unset( $payload, $headers );
+		return $this->unsupported_capability( 'product webhooks' );
+	}
+
+	/**
+	 * Verifies the authenticity of a webhook request (e.g. an HMAC signature header).
+	 *
+	 * Override this method only when the remote API signs its webhook deliveries.
+	 * It is called only once a signing secret is saved in the Webhooks tab (e.g.
+	 * Holded's "whsec_..." key). From then on it is the SOLE authentication of the
+	 * endpoint: the URL token is no longer required, so it must return false for any
+	 * missing or invalid signature. Use WEBHOOK::verify_hmac_signature() for HMAC.
+	 * Headers are not covered by the signature, so in this mode
+	 * parse_webhook_product() receives no headers: derive the action from the body.
+	 *
+	 * @since 3.5.1
+	 *
+	 * @param string $raw_body Raw request body.
+	 * @param array  $headers  Request headers, keys lowercased with underscores.
+	 * @param string $secret   Signing secret configured for this connector, empty when not set.
+	 * @return bool True when the request is authentic.
+	 */
+	public function verify_webhook( $raw_body, $headers = array(), $secret = '' ) {
+		unset( $raw_body, $headers, $secret );
+		return true;
+	}
+
+	/**
+	 * Gets the instructions shown in the Webhooks tab to configure the webhook in the remote API.
+	 *
+	 * @since 3.5.1
+	 *
+	 * @param string $webhook_url Webhook URL (token included) that the remote API must call.
+	 * @return string HTML instructions, or an empty string to show the generic ones.
+	 */
+	public function get_webhook_instructions( $webhook_url = '' ) {
+		unset( $webhook_url );
+		return '';
+	}
+
+	/**
 	 * Indicates whether the remote API can report changed products.
 	 *
 	 * @return bool True only when get_products_ids_since() is implemented.

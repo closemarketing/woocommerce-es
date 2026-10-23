@@ -32,6 +32,151 @@ class PROD {
 	 * @return array
 	 */
 	public static function sync_product_item( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
+		// Every import path (webhook, manual, cron, CLI) goes through here: serialize the same
+		// product, so overlapping imports cannot both miss the lookup and create duplicates.
+		// A known product also locks its current SKU, so a SKU change still meets the imports
+		// and deletions that carry the old one.
+		$lock_keys = array_unique(
+			array_filter(
+				array(
+					self::get_sync_lock_key( $item, $api_erp ),
+					$post_id ? self::get_product_lock_key( $post_id ) : '',
+				)
+			)
+		);
+		sort( $lock_keys, SORT_STRING );
+
+		return self::with_locks(
+			$lock_keys,
+			function () use ( $settings, $item, $api_erp, $generate_ai, $post_id ) {
+				return self::sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai, $post_id );
+			}
+		);
+	}
+
+	/**
+	 * Runs a callback holding several product locks, taken in a fixed (sorted) order.
+	 *
+	 * @param array    $keys     Lock keys, sorted.
+	 * @param callable $callback Callback returning a result array.
+	 * @return array
+	 */
+	private static function with_locks( $keys, $callback ) {
+		if ( empty( $keys ) ) {
+			return $callback();
+		}
+		$key = array_shift( $keys );
+
+		return WEBHOOK::with_lock(
+			$key,
+			function () use ( $keys, $callback ) {
+				return self::with_locks( $keys, $callback );
+			}
+		);
+	}
+
+	/**
+	 * Lock key of the product a sync writes.
+	 *
+	 * The lookup is by SKU, which is unique across WooCommerce, so the SKU (or the first
+	 * variant SKU) identifies the product for every connector. Remote IDs are only used
+	 * without any SKU, scoped to the connector class because they repeat across ERPs.
+	 *
+	 * @param array  $item    Item from API.
+	 * @param object $api_erp API Object.
+	 * @return string Lock key, empty when the item cannot be identified.
+	 */
+	private static function get_sync_lock_key( $item, $api_erp ) {
+		$sku = $item['sku'] ?? '';
+		if ( ( ! is_scalar( $sku ) || '' === (string) $sku ) && ! empty( $item['variants'] ) && is_array( $item['variants'] ) ) {
+			$sku = self::get_lowest_sku( array_column( array_filter( $item['variants'], 'is_array' ), 'sku' ) );
+		}
+		if ( is_scalar( $sku ) && '' !== (string) $sku ) {
+			return 'product|sku|' . self::normalize_lock_sku( $sku );
+		}
+
+		$id = $item['id'] ?? '';
+		if ( is_scalar( $id ) && '' !== (string) $id ) {
+			return 'product|id|' . ( is_object( $api_erp ) ? get_class( $api_erp ) : '' ) . '|' . $id;
+		}
+
+		return '';
+	}
+
+	/**
+	 * Lock key of an existing WooCommerce product, matching the key its imports take.
+	 *
+	 * @param int $post_id WooCommerce product ID.
+	 * @return string Lock key, empty when the product has no SKU at all.
+	 */
+	public static function get_product_lock_key( $post_id ) {
+		$sku = (string) get_post_meta( (int) $post_id, '_sku', true );
+		if ( '' === $sku ) {
+			$variations = get_children(
+				array(
+					'post_parent' => (int) $post_id,
+					'post_type'   => 'product_variation',
+					'post_status' => 'any',
+					'fields'      => 'ids',
+				)
+			);
+			$skus       = array();
+			foreach ( $variations as $variation_id ) {
+				$skus[] = get_post_meta( (int) $variation_id, '_sku', true );
+			}
+			$sku = self::get_lowest_sku( $skus );
+		}
+
+		return '' === $sku ? '' : 'product|sku|' . self::normalize_lock_sku( $sku );
+	}
+
+	/**
+	 * SKU as the database compares it (case-insensitive collation), so ABC and abc share a lock.
+	 *
+	 * @param string $sku SKU.
+	 * @return string
+	 */
+	private static function normalize_lock_sku( $sku ) {
+		$sku = trim( (string) $sku );
+
+		return function_exists( 'mb_strtolower' ) ? mb_strtolower( $sku, 'UTF-8' ) : strtolower( $sku );
+	}
+
+	/**
+	 * Lowest non-empty SKU: an identity of a variable product that does not depend on variant order.
+	 *
+	 * @param array $skus SKUs.
+	 * @return string
+	 */
+	private static function get_lowest_sku( $skus ) {
+		$skus = array_filter(
+			array_map(
+				function ( $sku ) {
+					return is_scalar( $sku ) ? (string) $sku : '';
+				},
+				(array) $skus
+			),
+			'strlen'
+		);
+		if ( empty( $skus ) ) {
+			return '';
+		}
+		sort( $skus, SORT_STRING );
+
+		return reset( $skus );
+	}
+
+	/**
+	 * Syncronizes the product without taking the product lock.
+	 *
+	 * @param array  $settings Settings of the plugin.
+	 * @param array  $item Item from API.
+	 * @param object $api_erp API Object.
+	 * @param bool   $generate_ai Force AI.
+	 * @param int    $post_id Post ID when it comes forced.
+	 * @return array
+	 */
+	private static function sync_product_item_unlocked( $settings, $item, $api_erp, $generate_ai = false, $post_id = 0 ) {
 		// Prevent errors.
 		if ( empty( $item['kind'] ) ) {
 			$item['kind'] = 'simple';
@@ -169,11 +314,26 @@ class PROD {
 				$pack_items_sum  = 0;
 				if ( isset( $item['packItems'] ) && ! empty( $item['packItems'] ) ) {
 					foreach ( $item['packItems'] as $pack_item ) {
-						$item_simple      = $api_erp->get_products( $pack_item['pid'] );
-						$result_pack_item = self::sync_product_simple( $settings, $item_simple, $api_erp, true );
-						$product_pack_id  = $result_pack_item['post_id'] ?? 0;
-						$pack_items      .= $product_pack_id . '/' . $pack_item['u'] . ',';
-						$message         .= ' x ' . $pack_item['u'];
+						$item_simple = $api_erp->get_products( $pack_item['pid'] );
+						// Components are products of their own: take their lock like any other import.
+						$result_pack_item = self::with_locks(
+							array_filter( array( is_array( $item_simple ) ? self::get_sync_lock_key( $item_simple, $api_erp ) : '' ) ),
+							function () use ( $settings, $item_simple, $api_erp ) {
+								return self::sync_product_simple( $settings, $item_simple, $api_erp, true );
+							}
+						);
+						// A component being imported elsewhere: never save the pack without it.
+						if ( isset( $result_pack_item['code'] ) && 409 === (int) $result_pack_item['code'] ) {
+							return array(
+								'status'  => 'error',
+								'code'    => 409,
+								'post_id' => (int) $post_id,
+								'message' => $result_pack_item['message'] ?? '',
+							);
+						}
+						$product_pack_id = $result_pack_item['post_id'] ?? 0;
+						$pack_items     .= $product_pack_id . '/' . $pack_item['u'] . ',';
+						$message        .= ' x ' . $pack_item['u'];
 
 						$item_pack_product = $product_pack_id ? wc_get_product( $product_pack_id ) : null;
 						if ( $item_pack_product ) {
@@ -402,7 +562,7 @@ class PROD {
 				'total_sales'        => '',
 				'tax_status'         => 'taxable',
 				'sold_individually'  => false,
-				'weight'             => $is_virtual ? '' : $item['weight'],
+				'weight'             => $is_virtual ? '' : ( $item['weight'] ?? '' ),
 				'upsell_ids'         => '',
 				'cross_sell_ids'     => '',
 				'parent_id'          => 0,
@@ -568,7 +728,8 @@ class PROD {
 			$updated_ts = is_numeric( $item['last_updated'] ) ? (int) $item['last_updated'] : strtotime( $item['last_updated'] );
 		}
 		if ( empty( $updated_ts ) || $updated_ts <= 0 ) {
-			$updated_ts = current_time( 'timestamp' );
+			// Unix (UTC) like the ERP timestamps it is compared with, never the site's local offset.
+			$updated_ts = time();
 		}
 		$product->update_meta_data( 'conecom_updated', $updated_ts );
 

@@ -18,6 +18,7 @@ use CLOSE\ConnectEcommerce\Helpers\HELPER;
 use CLOSE\ConnectEcommerce\Helpers\AI;
 use CLOSE\ConnectEcommerce\Helpers\CRON;
 use CLOSE\ConnectEcommerce\Helpers\ALERT;
+use CLOSE\ConnectEcommerce\Helpers\WEBHOOK;
 use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
 
 /**
@@ -1615,6 +1616,13 @@ class Settings {
 							</a>
 						</p>
 					</div>
+					<?php if ( ! $is_orders && ! empty( $selected_connapi ) ) : ?>
+						<?php // Webhook URL, secret and logs stay available to diagnose API outages. ?>
+						<fieldset class="conecom-webhooks-fieldset" style="margin-top: 20px;">
+							<legend><strong><?php esc_html_e( 'Webhooks', 'woocommerce-es' ); ?></strong></legend>
+							<?php Webhooks::render_panel( $selected_id, $selected_connapi ); ?>
+						</fieldset>
+					<?php endif; ?>
 					<?php else : ?>
 						<?php
 						$connection_url  = add_query_arg(
@@ -1697,6 +1705,10 @@ class Settings {
 							?>
 						<br/>
 						<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
+						<fieldset class="conecom-webhooks-fieldset" style="margin-top: 20px;">
+							<legend><strong><?php esc_html_e( 'Webhooks', 'woocommerce-es' ); ?></strong></legend>
+							<?php Webhooks::render_panel( $selected_id, $selected_connapi ); ?>
+						</fieldset>
 							<?php
 						}
 						?>
@@ -1807,6 +1819,10 @@ class Settings {
 					<span class="dashicons dashicons-upload" style="vertical-align: middle;"></span>
 					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
 				</button>
+				<button type="button" class="conecom-tab-button" data-tab="webhooks">
+					<span class="dashicons dashicons-rss" style="vertical-align: middle;"></span>
+					<?php esc_html_e( 'Instant (webhooks)', 'woocommerce-es' ); ?>
+				</button>
 			</div>
 
 			<div class="conecom-tab-content">
@@ -1854,6 +1870,9 @@ class Settings {
 							</select>
 						</p>
 					<?php endif; ?>
+				</div>
+				<div class="conecom-tab-pane" id="tab-webhooks">
+					<?php Webhooks::render_panel( $selected_conn['id'] ?? '', $selected_connapi ); ?>
 				</div>
 			</div>
 		</div>
@@ -3329,6 +3348,9 @@ class Settings {
 		);
 		wp_cache_delete( 'connect_ecommerce', 'options' );
 		wp_cache_delete( 'alloptions', 'options' );
+
+		// The direct DB write skips update_option hooks: revoke the webhook credentials here.
+		WEBHOOK::forget_connector( $connector_id );
 
 		wp_send_json_success(
 			array(
