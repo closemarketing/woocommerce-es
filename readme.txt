@@ -5,12 +5,12 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 3.5.1-beta.1
-Version: 3.5.1-beta.1
+Stable tag: 3.5.0
+Version: 3.5.0
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Add VAT Fields, Import European Taxes and check VAT compliance. Connect WooCommerce with ERPs and CRMs. Products, Clients and Orders with ERP/CRM.
+Connect WooCommerce with multiple ERPs/CRMs at once. Instant product sync via webhooks. Products, clients, orders. EU VAT and Verifactu.
 
 == Description ==
 
@@ -42,12 +42,22 @@ Stay compliant with European tax regulations effortlessly. The plugin includes c
 
 **Key Benefits:**
 
+* **Multiple Connectors**: Connect several ERPs and CRMs to the same store, each with its own credentials and workflows
+* **Instant Product Updates**: Webhooks push price, stock and product changes from your ERP to WooCommerce in seconds
 * **Save Time & Reduce Errors**: Automate product, customer, and order synchronization between WooCommerce and your ERP/CRM
 * **EU VAT Compliance**: Full compliance with European tax regulations, including real-time VAT validation and automatic tax rate application
 * **Verifactu Ready**: Built-in support for Verifactu regulations, ensuring your invoices meet Spanish legal requirements
 * **GDPR Compliant**: Direct connection architecture ensures customer data never passes through third-party servers
 * **AI-Powered**: Generate compelling product descriptions automatically using AI technology
 * **Professional Integration**: Connect with leading ERP and CRM systems through our premium connector plugins
+
+**Multiple Connectors at the Same Time**
+
+Run more than one ERP or CRM on the same store. Each connector has its own credentials, settings and workflows, so you can import products from one ERP, send orders to another and add a CRM such as Clientify or Brevo, without conflicts between them. You can even configure the same ERP twice (for example, two Holded accounts). Add them in WooCommerce > Connect Ecommerce > Settings > Connection.
+
+**Instant Product Connection (Webhooks)**
+
+Don't wait for the next scheduled sync. Connect your ERP's webhooks and every product change (price, stock, data, deletions) reaches WooCommerce within seconds. Each connector gets its own secure endpoint, protected by the ERP signature (e.g. Holded) or a private token (e.g. Odoo), and the Webhooks tab shows the latest executions. Copy the URL from Products > Instant (webhooks) into your ERP. The scheduled and manual imports still work as a safety net.
 
 Perfect for businesses selling across Europe, B2B e-commerce operations, and any WooCommerce store that needs professional-grade integration and tax compliance capabilities.
 
@@ -101,25 +111,12 @@ The plugin includes advanced real-time VAT validation during checkout with the f
 - Detailed logging for debugging and audit compliance
 - Graceful handling of service unavailability
 
-**Connect your WooCommerce store to your ERP or CRM software.**
-Connect your WooCommerce store to your ERP or CRM software. This plugin makes it easy to connect your store by synchronizing products, customers, and orders.
-
-Save hours of administrative work by eliminating the need to manually enter products, customers, and orders.
-
-You can now use AI to generate product marketing descriptions based on information from your ERP/CRM.
-
-There’s no need for additional plugins to request VAT numbers from companies — this plugin has it covered.
-
 **How does it work the synchronization?**
 It synchronizes according to the natural workflow your business should have when connected to an online store.
 
 Products: Imports products from your ERP/CRM with all the necessary sales information, supporting variable products. Keeps prices, stock, and product details up to date.
 
 Orders and Customers: Once an order is placed, it is sent to the ERP/CRM. It creates a new customer or matches the existing one to the order in the ERP/CRM. Depending on the connector, you can choose the type of document to generate.
-
-This plugin is fully GDPR compliant. The synchronization between WooCommerce and your ERP/CRM is established through a direct connection, without intermediaries or third-party storage of personal data. This ensures maximum security and transparency, keeping customer information under your full control.
-
-This plugin also includes specific adjustments to comply with Verifactu regulations. Order and invoice data are processed and structured to meet the official requirements, ensuring your business adheres to current legal standards.
 
 **Main Benefits**
 - Imports simple, variable, and bundled products.
@@ -148,6 +145,12 @@ Connect Ecommerce allows you to import products from an ERP/CRM to your WooComme
 Products are synced from the ERP/CRM to WooCommerce because the ERP should always contain the most up-to-date business information. This ensures accurate management of products, prices, and other business data.
 
 Orders are synced from WooCommerce to the ERP/CRM so that every time a customer places an order, it is sent to your ERP for proper order and invoice management.
+
+= Can I connect more than one ERP or CRM? =
+Yes. Add several connectors from Settings > Connection, each with its own credentials and workflows. Inactive connectors keep their settings but do not sync.
+
+= How do I get product changes instantly from my ERP? =
+Register the connector's webhook URL in your ERP (e.g. Holded webhooks, or an Odoo automated action with "Send Webhook Notification"). Only the changed product is updated. If the ERP signs its webhooks (Holded), save the signing secret in the Webhooks tab; otherwise the URL token is used.
 
 = What happens when a product already exists in WooCommerce? =
 If the product already exists in WooCommerce, it will be updated with the new data from the ERP/CRM. It does not update marketing information like description, title, url, slug, etc. but it will update the product data like price, stock, etc.
@@ -224,9 +227,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= next =
-
-* Added: Product webhooks. ERPs can notify product changes to a per-connector REST endpoint secured with a token; the connector translates the payload into the universal product item (new optional `parse_webhook_product()` contract method) and the core only asks the API again when data is missing. Deletions are detected from the event header or payload (e.g. Holded `product.delete`), products created without SKU wait for the update that sets it, and the ERP signing secret (e.g. Holded `whsec_...`) can be saved per connector: signed requests then need no URL token, while unsigned ERPs such as Odoo keep using the token. Includes a Webhooks tab with the URL, instructions and the latest executions.
+= 3.5.0 =
+* Added: Multiple connectors. Configure several ERPs/CRMs on the same store (even the same ERP twice), each with its own credentials, settings and product/order workflows; order status and metadata are kept isolated per connector.
+* Added: Instant product connection. Product webhooks. ERPs can notify product changes to a per-connector REST endpoint secured with a token; the connector translates the payload into the universal product item (new optional `parse_webhook_product()` contract method) and the core only asks the API again when data is missing. Deletions are detected from the event header or payload (e.g. Holded `product.delete`), products created without SKU wait for the update that sets it, and the ERP signing secret (e.g. Holded `whsec_...`) can be saved per connector: signed requests then need no URL token, while unsigned ERPs such as Odoo keep using the token. Includes a Webhooks tab with the URL, instructions and the latest executions.
 * Enhancement: Redesigned the Connect Ecommerce admin interface with a clearer connector dashboard, segmented settings navigation, visual switches, synchronization cards, and unsaved-change controls.
 * Added: `conecom_pre_vies_validation` filter to short-circuit the VIES request (custom validators, tests). The test suite no longer calls the real VIES service, so it runs offline and faster; checkout tests that seeded the VAT cache with a wrong key now use the shared mock helper.
 * Fixed: The "Order completed" email is held until the ERP document exists, so the PDF is attached to it; free orders without a document and orders already syncing are handled, and the email is released once even when several runners compete.
