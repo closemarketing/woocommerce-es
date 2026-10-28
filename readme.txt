@@ -227,6 +227,14 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
+= next =
+* Added: EU VAT on orders created or edited in the admin. New "EU VAT" box in the order sidebar shows whether the VAT number is valid (VIES), the company name and whether the order is VAT exempt, with a button to validate it. A valid intra-community VAT number marks the order as VAT exempt, so the "Recalculate" button removes the VAT, and saving an editable order recalculates its taxes when the exemption changes.
+* Fixed: Orders exempted at checkout are flagged with the WooCommerce native `is_vat_exempt` meta, so later recalculations no longer add the VAT back. VAT validation and exemption meta are stored through the order object, compatible with HPOS.
+* Fixed: Order lines without taxes (VAT exempt orders) are sent to the ERP with an explicit 0% tax, instead of no tax data, which made the ERP (e.g. Holded) apply the product default VAT. Lines with an unmapped tax rate now send the tax percentage instead of the tax amount.
+* Fixed: VAT numbers typed with their country prefix (e.g. SE556805334101) are validated correctly when the country is also known.
+* Fixed: Removed the duplicated VAT No field from the shipping address in the admin order screen.
+* Enhancement: Customers keep the VAT number stored by the official WooCommerce EU VAT Number plugin (user profile, checkout pre-fill and order sync to the ERP).
+
 = 3.5.0 =
 * Added: Multiple connectors. Configure several ERPs/CRMs on the same store (even the same ERP twice), each with its own credentials, settings and product/order workflows; order status and metadata are kept isolated per connector.
 * Added: Instant product connection. Product webhooks. ERPs can notify product changes to a per-connector REST endpoint secured with a token; the connector translates the payload into the universal product item (new optional `parse_webhook_product()` contract method) and the core only asks the API again when data is missing. Deletions are detected from the event header or payload (e.g. Holded `product.delete`), products created without SKU wait for the update that sets it, and the ERP signing secret (e.g. Holded `whsec_...`) can be saved per connector: signed requests then need no URL token, while unsigned ERPs such as Odoo keep using the token. Includes a Webhooks tab with the URL, instructions and the latest executions.

@@ -31,6 +31,7 @@ define(
 		'_billing_vat',
 		'_billing_nif',
 		'_billing_vat_number',
+		'_vat_number',                                // Legacy WooCommerce EU VAT Number orders.
 		'billing_vat',
 		'billing_cif',
 		'_wc_billing/connect_ecommerce/billing_vat',  // Blocks checkout billing field.
