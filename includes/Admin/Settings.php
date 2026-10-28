@@ -1214,6 +1214,17 @@ class Settings {
 					$short_field
 				);
 
+				if ( ! empty( $this->options['order_send_attachments'] ) ) {
+					add_settings_field(
+						'wcpimh_refund_email_attachment',
+						__( 'Attach document to the refunded order email?', 'woocommerce-es' ),
+						array( $this, 'refund_email_attachment_callback' ),
+						'connect_ecommerce_admin',
+						'connect_woocommerce_setting_section_orders',
+						$short_field
+					);
+				}
+
 				add_settings_field(
 					'wcpimh_ecstatus',
 					__( 'Status to sync Orders?', 'woocommerce-es' ),
@@ -2544,6 +2555,22 @@ class Settings {
 	}
 
 	/**
+	 * Attach the ERP document to the "Refunded order" customer email
+	 *
+	 * @return void
+	 */
+	public function refund_email_attachment_callback() {
+		$value = isset( $this->settings['refund_email_attachment'] ) ? $this->settings['refund_email_attachment'] : 'yes';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][refund_email_attachment]" id="wcpimh_refund_email_attachment">
+			<option value="yes" <?php selected( $value, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $value, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'The refunded order email attaches the original order document, not the refund one. Choose No to send that email without attachment.', 'woocommerce-es' ); ?></p>
+		<?php
+	}
+
+	/**
 	 * Send API depending order status
 	 *
 	 * @return void
@@ -3693,46 +3720,47 @@ class Settings {
 	 */
 	private function get_connector_default_settings() {
 		return array(
-			'api'                  => '',
-			'idcentre'             => '',
-			'url'                  => '',
-			'username'             => '',
-			'password'             => '',
-			'company'              => '',
-			'company_id'           => '',
-			'domain'               => '',
-			'dbname'               => '',
-			'stock'                => 'no',
-			'stock_visibility'     => 'hide',
-			'prodst'               => 'draft',
-			'virtual'              => 'no',
-			'backorders'           => 'no',
-			'catsep'               => '',
-			'catattr'              => '',
-			'catattr_brand'        => '',
-			'filter'               => '',
-			'pricesale_discount'   => '',
-			'filter_sku'           => '',
-			'manufacturer_code'    => '',
-			'customer_code'        => '',
-			'tax_option'           => 'no',
-			'rates'                => 'default',
-			'catnp'                => 'yes',
-			'catmode'              => 'replace',
-			'doctype'              => 'invoice',
-			'cleanchars'           => '',
-			'approve_document'     => 'no',
-			'series'               => '',
-			'freeorder'            => 'no',
-			'ecstatus'             => 'all',
-			'order_tags'           => '',
-			'order_sync_from_date' => '',
-			'design_id'            => '',
-			'sync'                 => 'no',
-			'sync_num'             => 5,
-			'sync_email'           => 'yes',
-			'prod_weight_eq'       => '',
-			'debug_log'            => 'no',
+			'api'                     => '',
+			'idcentre'                => '',
+			'url'                     => '',
+			'username'                => '',
+			'password'                => '',
+			'company'                 => '',
+			'company_id'              => '',
+			'domain'                  => '',
+			'dbname'                  => '',
+			'stock'                   => 'no',
+			'stock_visibility'        => 'hide',
+			'prodst'                  => 'draft',
+			'virtual'                 => 'no',
+			'backorders'              => 'no',
+			'catsep'                  => '',
+			'catattr'                 => '',
+			'catattr_brand'           => '',
+			'filter'                  => '',
+			'pricesale_discount'      => '',
+			'filter_sku'              => '',
+			'manufacturer_code'       => '',
+			'customer_code'           => '',
+			'tax_option'              => 'no',
+			'rates'                   => 'default',
+			'catnp'                   => 'yes',
+			'catmode'                 => 'replace',
+			'doctype'                 => 'invoice',
+			'cleanchars'              => '',
+			'approve_document'        => 'no',
+			'series'                  => '',
+			'freeorder'               => 'no',
+			'refund_email_attachment' => 'yes',
+			'ecstatus'                => 'all',
+			'order_tags'              => '',
+			'order_sync_from_date'    => '',
+			'design_id'               => '',
+			'sync'                    => 'no',
+			'sync_num'                => 5,
+			'sync_email'              => 'yes',
+			'prod_weight_eq'          => '',
+			'debug_log'               => 'no',
 		);
 	}
 
