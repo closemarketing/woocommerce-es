@@ -571,9 +571,6 @@ class Orders {
 	 * @return file
 	 */
 	public function attach_file_woocommerce_email( $attachments, $action, $email_order ) {
-		if ( 'customer_refunded_order' === $action && isset( $this->settings['refund_email_attachment'] ) && 'no' === $this->settings['refund_email_attachment'] ) {
-			return $attachments;
-		}
 		$order = wc_get_order( $email_order );
 		if ( ! $order ) {
 			return $attachments;
