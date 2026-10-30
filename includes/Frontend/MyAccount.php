@@ -63,6 +63,13 @@ class MyAccount {
 	private $connector;
 
 	/**
+	 * User meta keys holding the VAT number, by priority.
+	 *
+	 * @var array
+	 */
+	const USER_VAT_META_KEYS = array( 'billing_vat', 'billing_vat_number', 'vat_number', 'billing_nif', 'billing_cif' );
+
+	/**
 	 * Construct of Class
 	 *
 	 * @param array $connector Connector.
@@ -92,6 +99,7 @@ class MyAccount {
 			add_action( 'personal_options_update', array( $this, 'save_vat_profile_field' ) );
 			add_action( 'edit_user_profile_update', array( $this, 'save_vat_profile_field' ) );
 			add_action( 'woocommerce_checkout_update_customer', array( $this, 'sync_vat_to_user_meta' ), 10, 2 );
+			add_filter( 'woocommerce_checkout_get_value', array( $this, 'prefill_legacy_vat_checkout' ), 10, 2 );
 		}
 	}
 
@@ -188,7 +196,7 @@ class MyAccount {
 	 * @return void
 	 */
 	public function show_vat_profile_field( $user ) {
-		$vat_number = get_user_meta( $user->ID, 'billing_vat', true );
+		$vat_number = self::get_user_vat_number( $user->ID );
 		?>
 		<h3><?php esc_html_e( 'Billing VAT', 'woocommerce-es' ); ?></h3>
 		<table class="form-table">
@@ -205,6 +213,41 @@ class MyAccount {
 			</tr>
 		</table>
 		<?php
+	}
+
+	/**
+	 * Get the VAT number of a user.
+	 *
+	 * Falls back to the meta keys used by other EU VAT plugins (e.g. the official
+	 * WooCommerce EU VAT Number), so customers keep their VAT number after switching.
+	 *
+	 * @param int $user_id User ID.
+	 * @return string
+	 */
+	public static function get_user_vat_number( $user_id ) {
+		foreach ( self::USER_VAT_META_KEYS as $meta_key ) {
+			$vat_number = get_user_meta( $user_id, $meta_key, true );
+			if ( ! empty( $vat_number ) && is_string( $vat_number ) ) {
+				return $vat_number;
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Pre-fill the checkout VAT field with the VAT number stored by other plugins.
+	 *
+	 * @param mixed  $value Current value (null when WooCommerce has none).
+	 * @param string $input Field key.
+	 * @return mixed
+	 */
+	public function prefill_legacy_vat_checkout( $value, $input ) {
+		if ( 'billing_vat' !== $input || ! empty( $value ) || ! is_user_logged_in() ) {
+			return $value;
+		}
+		$vat_number = self::get_user_vat_number( get_current_user_id() );
+
+		return '' !== $vat_number ? $vat_number : $value;
 	}
 
 	/**

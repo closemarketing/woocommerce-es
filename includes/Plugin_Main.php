@@ -19,6 +19,7 @@ use CLOSE\ConnectEcommerce\Admin\Import_Products;
 use CLOSE\ConnectEcommerce\Admin\Widget_Order;
 use CLOSE\ConnectEcommerce\Admin\Widget_Product;
 use CLOSE\ConnectEcommerce\Admin\Orders;
+use CLOSE\ConnectEcommerce\Admin\Order_VAT;
 use CLOSE\ConnectEcommerce\Admin\Notices;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Rates;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Types_ERP;
@@ -66,6 +67,7 @@ class Base {
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );
 			new Webhooks();
+			new Order_VAT();
 		}
 
 		// Product webhooks endpoint (REST API).

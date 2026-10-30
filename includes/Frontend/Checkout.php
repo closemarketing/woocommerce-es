@@ -45,7 +45,6 @@ class Checkout {
 		// EU VAT.
 		add_filter( 'woocommerce_billing_fields', array( $this, 'add_billing_fields' ) );
 		add_filter( 'woocommerce_admin_billing_fields', array( $this, 'add_billing_shipping_fields_admin' ) );
-		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'add_billing_shipping_fields_admin' ) );
 		add_filter( 'woocommerce_load_order_data', array( $this, 'add_var_load_order_data' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_key_notification' ), 10, 1 );
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ), 10, 2 );
@@ -248,7 +247,7 @@ class Checkout {
 	 */
 	public function email_key_notification( $order ) {
 		echo '<p><strong>' . esc_html__( 'VAT No', 'woocommerce-es' ) . ':</strong> ';
-		echo esc_html( get_post_meta( $order->get_id(), '_billing_vat', true ) ) . '</p>';
+		echo esc_html( ORDER::get_billing_vat( $order ) ) . '</p>';
 	}
 
 	/**
@@ -504,8 +503,13 @@ class Checkout {
 		// Get validation result from session.
 		$validation_result = WC()->session->get( 'vat_validation_result' );
 
+		$order = wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+
 		if ( ! empty( $validation_result ) ) {
-			VAT::save_vat_validation_result( $order_id, $validation_result );
+			VAT::save_vat_validation_result( $order, $validation_result );
 
 			// Clear session.
 			WC()->session->set( 'vat_validation_result', null );
@@ -514,24 +518,21 @@ class Checkout {
 		// Save VAT exemption info if applied.
 		if ( VAT::is_customer_vat_exempt() ) {
 			$exemption_info = VAT::get_vat_exemption_info();
-			
+
 			if ( $exemption_info ) {
-				update_post_meta( $order_id, '_vat_exempt_applied', 'yes' );
-				update_post_meta( $order_id, '_vat_exempt_country', $exemption_info['country'] );
-				update_post_meta( $order_id, '_vat_exempt_vat_number', $exemption_info['vat_number'] );
-				
+				// Persist the exemption on the order, so later recalculations keep it without VAT.
+				VAT::set_order_vat_exempt( $order, true, $exemption_info['country'], $exemption_info['vat_number'] );
+				$order->save();
+
 				// Add order note.
-				$order = wc_get_order( $order_id );
-				if ( $order ) {
-					$order->add_order_note(
-						sprintf(
-							// translators: 1: VAT number, 2: country code.
-							__( 'VAT exemption applied for B2B intra-community transaction. VAT: %1$s (%2$s)', 'woocommerce-es' ),
-							$exemption_info['vat_number'],
-							$exemption_info['country']
-						)
-					);
-				}
+				$order->add_order_note(
+					sprintf(
+						// translators: 1: VAT number, 2: country code.
+						__( 'VAT exemption applied for B2B intra-community transaction. VAT: %1$s (%2$s)', 'woocommerce-es' ),
+						$exemption_info['vat_number'],
+						$exemption_info['country']
+					)
+				);
 			}
 		}
 	}
@@ -739,7 +740,7 @@ class Checkout {
 		$validation_result = VAT::validate_vat_number( $vat_number, $country_code );
 
 		// Save validation result to order meta.
-		VAT::save_vat_validation_result( $order->get_id(), $validation_result );
+		VAT::save_vat_validation_result( $order, $validation_result );
 
 		// Apply or remove VAT exemption based on validation result.
 		$is_valid = isset( $validation_result['valid'] ) && $validation_result['valid'];
@@ -750,10 +751,10 @@ class Checkout {
 			
 			// Save exemption info to order if applied.
 			if ( VAT::is_customer_vat_exempt() ) {
-				update_post_meta( $order->get_id(), '_vat_exempt_applied', 'yes' );
-				update_post_meta( $order->get_id(), '_vat_exempt_country', $country_code );
-				update_post_meta( $order->get_id(), '_vat_exempt_vat_number', $vat_number );
-				
+				// Persist the exemption on the order, so later recalculations keep it without VAT.
+				VAT::set_order_vat_exempt( $order, true, $country_code, $vat_number );
+				$order->save_meta_data();
+
 				$order->add_order_note(
 					sprintf(
 						// translators: 1: VAT number, 2: country code.
