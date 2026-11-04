@@ -77,12 +77,11 @@ class CheckoutVATValidationTest extends WP_UnitTestCase {
 		}
 
 		// Step 2: Extract country code if not provided (lines 100-103 in VAT class).
-		$vat_for_cache = $vat_cleaned;
 		if ( empty( $country_code ) ) {
 			$country_code = VAT::extract_country_code( $vat_cleaned );
-			$vat_for_cache = substr( $vat_cleaned, 2 ); // Remove prefix when extracting.
 		}
-		// When country_code IS provided, VAT class keeps full VAT number (bug - doesn't remove prefix).
+		// The country prefix is always removed before calling VIES.
+		$vat_for_cache = VAT::strip_country_prefix( $vat_cleaned, $country_code );
 
 		// Step 3: Generate cache key using EXACT same logic (line 105 in VAT class).
 		$cache_key = md5( $country_code . $vat_for_cache );
@@ -137,11 +136,8 @@ class CheckoutVATValidationTest extends WP_UnitTestCase {
 	 */
 	public function test_save_vat_validation_result() {
 		// Create a test order.
-		$order_id = $this->factory->post->create(
-			array(
-				'post_type' => 'shop_order',
-			)
-		);
+		$order    = wc_create_order();
+		$order_id = $order->get_id();
 
 		$validation_result = array(
 			'valid'        => true,
