@@ -19,6 +19,7 @@ use CLOSE\ConnectEcommerce\Helpers\AI;
 use CLOSE\ConnectEcommerce\Helpers\CRON;
 use CLOSE\ConnectEcommerce\Helpers\ALERT;
 use CLOSE\ConnectEcommerce\Helpers\WEBHOOK;
+use CLOSE\ConnectEcommerce\Helpers\SECRETS;
 use CLOSE\ConnectEcommerce\Connector\CONECOM_Abstract_Connector_API;
 
 /**
@@ -3349,8 +3350,9 @@ class Settings {
 		wp_cache_delete( 'connect_ecommerce', 'options' );
 		wp_cache_delete( 'alloptions', 'options' );
 
-		// The direct DB write skips update_option hooks: revoke the webhook credentials here.
+		// The direct DB write skips update_option hooks: revoke the webhook and stored credentials here.
 		WEBHOOK::forget_connector( $connector_id );
+		SECRETS::forget_connector( $connector_id );
 
 		wp_send_json_success(
 			array(

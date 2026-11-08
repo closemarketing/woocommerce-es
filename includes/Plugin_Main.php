@@ -24,6 +24,7 @@ use CLOSE\ConnectEcommerce\Admin\Taxes_Rates;
 use CLOSE\ConnectEcommerce\Admin\Taxes_Types_ERP;
 use CLOSE\ConnectEcommerce\Admin\Webhooks;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\SECRETS;
 use CLOSE\ConnectEcommerce\Helpers\WEBHOOK;
 use CLOSE\ConnectEcommerce\Frontend\Checkout;
 use CLOSE\ConnectEcommerce\Frontend\MyAccount;
@@ -67,6 +68,9 @@ class Base {
 			new Taxes_Types_ERP( $connector );
 			new Webhooks();
 		}
+
+		// Mirror credentials into the WordPress Secrets API (7.2+), next to the options.
+		SECRETS::init();
 
 		// Product webhooks endpoint (REST API).
 		WEBHOOK::init( $options );
