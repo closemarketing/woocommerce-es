@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Base;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\VAT;
 /**
  * My Account.
  *
@@ -203,6 +204,19 @@ class MyAccount {
 					/>
 				</td>
 			</tr>
+			<?php if ( 'shipping' === VAT::get_vat_source() ) : ?>
+				<tr>
+					<th><label for="shipping_vat"><?php esc_html_e( 'Shipping VAT Number', 'woocommerce-es' ); ?></label></th>
+					<td>
+						<input type="text"
+							name="shipping_vat"
+							id="shipping_vat"
+							value="<?php echo esc_attr( get_user_meta( $user->ID, 'shipping_vat', true ) ); ?>"
+							class="regular-text"
+						/>
+					</td>
+				</tr>
+			<?php endif; ?>
 		</table>
 		<?php
 	}
@@ -219,6 +233,11 @@ class MyAccount {
 		}
 		$vat_number = isset( $_POST['billing_vat'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_vat'] ) ) : '';
 		update_user_meta( $user_id, 'billing_vat', $vat_number );
+
+		// WordPress verifies the user profile nonce before these hooks run.
+		if ( isset( $_POST['shipping_vat'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			update_user_meta( $user_id, 'shipping_vat', sanitize_text_field( wp_unslash( $_POST['shipping_vat'] ) ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		}
 	}
 
 	/**

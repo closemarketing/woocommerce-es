@@ -45,7 +45,7 @@ class Checkout {
 		// EU VAT.
 		add_filter( 'woocommerce_billing_fields', array( $this, 'add_billing_fields' ) );
 		add_filter( 'woocommerce_admin_billing_fields', array( $this, 'add_billing_fields_admin' ), 10, 2 );
-		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'add_billing_shipping_fields_admin' ) );
+		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'add_shipping_fields_admin' ), 10, 2 );
 		add_filter( 'woocommerce_load_order_data', array( $this, 'add_var_load_order_data' ) );
 		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_key_notification' ), 10, 3 );
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ), 10, 2 );
@@ -53,6 +53,11 @@ class Checkout {
 		$show_vat = isset( $this->setttings_public['vat_show'] ) ? $this->setttings_public['vat_show'] : 'yes';
 		if ( 'yes' === $show_vat ) {
 			add_filter( 'woocommerce_checkout_fields', array( $this, 'custom_override_checkout_fields' ) );
+
+			// Shipping VAT field when the VAT treatment follows the shipping address.
+			if ( 'shipping' === VAT::get_vat_source() ) {
+				add_filter( 'woocommerce_shipping_fields', array( $this, 'add_shipping_fields' ) );
+			}
 
 			// Gutenberg compatibility.
 			add_action( 'woocommerce_init', array( $this, 'add_vat_field_to_checkout' ), 99 );
@@ -162,6 +167,34 @@ class Checkout {
 	}
 
 	/**
+	 * Add the VAT field to the classic checkout shipping address.
+	 *
+	 * Used when the VAT treatment follows the shipping address. When the
+	 * customer does not ship to a different address, WooCommerce copies the
+	 * billing VAT number into this field.
+	 *
+	 * @param array $fields Shipping fields.
+	 * @return array
+	 */
+	public function add_shipping_fields( $fields ) {
+		$field = array(
+			'shipping_vat' => array(
+				'label'       => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) ),
+				'placeholder' => apply_filters( 'conecom_vatssn_label_x', __( 'VAT No', 'woocommerce-es' ) ),
+				'required'    => false,
+				'class'       => array( 'form-row-wide' ),
+				'clear'       => true,
+			),
+		);
+
+		if ( isset( $fields['shipping_country'] ) ) {
+			return $this->array_splice_assoc( $fields, $field, 'shipping_country' );
+		}
+
+		return array_merge( $fields, $field );
+	}
+
+	/**
 	 * Custom override checkout fields.
 	 *
 	 * @param array $fields Fields.
@@ -254,6 +287,29 @@ class Checkout {
 	}
 
 	/**
+	 * Add VAT field to the admin order shipping fields.
+	 *
+	 * The value is resolved with ORDER::get_shipping_vat() so shipping VAT
+	 * numbers stored by other VAT plugins are still shown.
+	 *
+	 * @param array          $fields Fields.
+	 * @param \WC_Order|bool $order  Order object, or false when not available.
+	 * @return array
+	 */
+	public function add_shipping_fields_admin( $fields, $order = false ) {
+		$fields = $this->add_billing_shipping_fields_admin( $fields );
+
+		if ( $order instanceof \WC_Order ) {
+			$vat_number = ORDER::get_shipping_vat( $order );
+			if ( '' !== $vat_number ) {
+				$fields['vat']['value'] = $vat_number;
+			}
+		}
+
+		return $fields;
+	}
+
+	/**
 	 * Add VAT field to order data.
 	 *
 	 * @param array $fields Fields.
@@ -273,7 +329,7 @@ class Checkout {
 	 * @return void
 	 */
 	public function email_key_notification( $order, $sent_to_admin = false, $plain_text = false ) {
-		$vat_number = ORDER::get_billing_vat( $order );
+		$vat_number = ORDER::get_order_vat( $order );
 		if ( '' === $vat_number ) {
 			return;
 		}
@@ -296,7 +352,8 @@ class Checkout {
 	 */
 	public function add_vat_invoices( $address, $document ) {
 		$vat_number = '';
-		if ( $document && is_callable( array( $document, 'get_custom_field' ) ) ) {
+		// Document custom fields only hold the billing VAT number.
+		if ( 'billing' === VAT::get_vat_source() && $document && is_callable( array( $document, 'get_custom_field' ) ) ) {
 			foreach ( CONECOM_VAT_FIELD_SLUGS as $vat_field_slug ) {
 				$vat_number = $document->get_custom_field( $vat_field_slug );
 				if ( ! empty( $vat_number ) ) {
@@ -312,7 +369,7 @@ class Checkout {
 		if ( empty( $document->order ) ) {
 			return $address;
 		}
-		$vat_number = ORDER::get_billing_vat( $document->order );
+		$vat_number = ORDER::get_order_vat( $document->order );
 		if ( ! empty( $vat_number ) ) {
 			$address .= sprintf(
 				/* translators: 1: VAT info label, 2: VAT number */
@@ -450,6 +507,15 @@ class Checkout {
 			$vat_number = sanitize_text_field( wp_unslash( $_POST['connect_ecommerce/billing_vat'] ) );
 		}
 
+		// Pick the billing or shipping VAT number and country, following the store setting.
+		$vat_context = VAT::resolve_vat_context(
+			$vat_number,
+			isset( $data['billing_country'] ) ? $data['billing_country'] : '',
+			isset( $data['shipping_vat'] ) ? sanitize_text_field( wp_unslash( $data['shipping_vat'] ) ) : '',
+			isset( $data['shipping_country'] ) ? $data['shipping_country'] : ''
+		);
+		$vat_number  = $vat_context['vat_number'];
+
 		// If no VAT number provided, remove any existing exemption and skip validation.
 		if ( empty( $vat_number ) ) {
 			VAT::remove_vat_exemption();
@@ -457,7 +523,7 @@ class Checkout {
 		}
 
 		// Get country code.
-		$country_code = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
+		$country_code = $vat_context['country'];
 
 		// Validate VAT number.
 		$validation_result = VAT::validate_vat_number( $vat_number, $country_code );
@@ -721,16 +787,24 @@ class Checkout {
 			$vat_number = sanitize_text_field( $data['connect_ecommerce/billing_vat'] );
 		}
 
+		// The shipping address only counts when the customer ships to a different address.
+		$billing_country  = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
+		$ship_elsewhere   = ! empty( $data['ship_to_different_address'] );
+		$shipping_vat     = $ship_elsewhere && isset( $data['shipping_vat'] ) ? sanitize_text_field( $data['shipping_vat'] ) : $vat_number;
+		$shipping_country = $ship_elsewhere && isset( $data['shipping_country'] ) ? $data['shipping_country'] : $billing_country;
+
+		$vat_context = VAT::resolve_vat_context( $vat_number, $billing_country, $shipping_vat, $shipping_country );
+
 		// If VAT field is now empty, remove exemption.
-		if ( empty( $vat_number ) ) {
+		if ( empty( $vat_context['vat_number'] ) ) {
 			VAT::remove_vat_exemption();
 			return;
 		}
 
 		// Check if country changed.
-		$billing_country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
+		$country = $vat_context['country'];
 
-		if ( ! empty( $billing_country ) && $billing_country !== $exemption_info['country'] ) {
+		if ( ! empty( $country ) && $country !== $exemption_info['country'] ) {
 			// Country changed - remove exemption and force revalidation.
 			VAT::remove_vat_exemption();
 		}
@@ -761,6 +835,20 @@ class Checkout {
 			$vat_number = sanitize_text_field( $billing_address['connect_ecommerce/billing_vat'] );
 		}
 
+		// The VAT field is an address field, so the shipping address has its own copy.
+		$shipping_address = $request->get_param( 'shipping_address' );
+		$shipping_address = is_array( $shipping_address ) ? $shipping_address : array();
+		$billing_address  = is_array( $billing_address ) ? $billing_address : array();
+
+		// Pick the billing or shipping VAT number and country, following the store setting.
+		$vat_context = VAT::resolve_vat_context(
+			$vat_number,
+			isset( $billing_address['country'] ) ? $billing_address['country'] : '',
+			isset( $shipping_address['connect_ecommerce/billing_vat'] ) ? sanitize_text_field( $shipping_address['connect_ecommerce/billing_vat'] ) : '',
+			isset( $shipping_address['country'] ) ? $shipping_address['country'] : ''
+		);
+		$vat_number  = $vat_context['vat_number'];
+
 		// If no VAT number provided, remove any existing exemption and skip validation.
 		if ( empty( $vat_number ) ) {
 			VAT::remove_vat_exemption();
@@ -768,7 +856,7 @@ class Checkout {
 		}
 
 		// Get country code.
-		$country_code = isset( $billing_address['country'] ) ? $billing_address['country'] : '';
+		$country_code = $vat_context['country'];
 
 		// Validate VAT number.
 		$validation_result = VAT::validate_vat_number( $vat_number, $country_code );

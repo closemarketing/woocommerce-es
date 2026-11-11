@@ -721,6 +721,83 @@ class VAT {
 	}
 
 	/**
+	 * Get the address whose VAT number and country decide the VAT treatment.
+	 *
+	 * VAT follows the goods, so stores can base the exemption on the shipping
+	 * address instead of the billing address.
+	 *
+	 * @return string 'billing' (default) or 'shipping'.
+	 */
+	public static function get_vat_source() {
+		$settings = get_option( 'connect_ecommerce_public' );
+		$source   = is_array( $settings ) && isset( $settings['vat_source'] ) ? $settings['vat_source'] : 'billing';
+
+		return 'shipping' === $source ? 'shipping' : 'billing';
+	}
+
+	/**
+	 * Resolve the VAT number and country used for the VAT treatment.
+	 *
+	 * With the billing source, the billing VAT number and country are used.
+	 *
+	 * With the shipping source, the shipping country is used (the billing
+	 * country when there is no shipping address). The shipping VAT number is
+	 * used when present. The billing VAT number is only reused when the goods
+	 * ship to the billing country, so a VAT number from one country is never
+	 * applied to a shipment to another one.
+	 *
+	 * @param string $billing_vat      Billing VAT number.
+	 * @param string $billing_country  Billing country code.
+	 * @param string $shipping_vat     Shipping VAT number.
+	 * @param string $shipping_country Shipping country code.
+	 * @param string $source           'billing' or 'shipping'. Defaults to the store setting.
+	 * @return array {
+	 *     @type string $vat_number VAT number to use, or '' when there is none.
+	 *     @type string $country    Country code to use.
+	 *     @type string $address    Address the VAT number comes from: 'billing' or 'shipping'.
+	 * }
+	 */
+	public static function resolve_vat_context( $billing_vat, $billing_country, $shipping_vat = '', $shipping_country = '', $source = '' ) {
+		$billing_vat      = (string) $billing_vat;
+		$billing_country  = strtoupper( (string) $billing_country );
+		$shipping_vat     = (string) $shipping_vat;
+		$shipping_country = strtoupper( (string) $shipping_country );
+		$source           = '' === $source ? self::get_vat_source() : $source;
+
+		if ( 'shipping' !== $source ) {
+			return array(
+				'vat_number' => $billing_vat,
+				'country'    => $billing_country,
+				'address'    => 'billing',
+			);
+		}
+
+		$country = '' !== $shipping_country ? $shipping_country : $billing_country;
+
+		if ( '' !== $shipping_vat ) {
+			return array(
+				'vat_number' => $shipping_vat,
+				'country'    => $country,
+				'address'    => 'shipping',
+			);
+		}
+
+		if ( $country === $billing_country ) {
+			return array(
+				'vat_number' => $billing_vat,
+				'country'    => $country,
+				'address'    => 'billing',
+			);
+		}
+
+		return array(
+			'vat_number' => '',
+			'country'    => $country,
+			'address'    => 'shipping',
+		);
+	}
+
+	/**
 	 * Check if VAT exemption should apply (B2B intra-community)
 	 *
 	 * @param string $customer_country Customer country code.
