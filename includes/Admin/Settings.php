@@ -1347,6 +1347,13 @@ class Settings {
 			'connect_ecommerce_public',
 			'imhset_pub_setting_section'
 		);
+		add_settings_field(
+			'wcpimh_vat_source',
+			__( 'VAT number source', 'woocommerce-es' ),
+			array( $this, 'vat_source_callback' ),
+			'connect_ecommerce_public',
+			'imhset_pub_setting_section'
+		);
 
 		add_settings_field(
 			'wcpimh_company_field',
@@ -3227,6 +3234,10 @@ class Settings {
 			$sanitary_values['remove_free'] = $input['remove_free'];
 		}
 
+		if ( isset( $input['vat_source'] ) ) {
+			$sanitary_values['vat_source'] = 'shipping' === $input['vat_source'] ? 'shipping' : 'billing';
+		}
+
 		if ( isset( $input['vat_vies_enabled'] ) ) {
 			$sanitary_values['vat_vies_enabled'] = $input['vat_vies_enabled'];
 		}
@@ -3761,6 +3772,24 @@ class Settings {
 		<select name="connect_ecommerce_public[vat_mandatory]" id="vat_mandatory">
 			<option value="no" <?php selected( $vat_mandatory, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $vat_mandatory, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
+		<?php
+	}
+
+	/**
+	 * VAT number source setting
+	 *
+	 * @return void
+	 */
+	public function vat_source_callback() {
+		$vat_source = isset( $this->settings_public['vat_source'] ) ? $this->settings_public['vat_source'] : 'billing';
+		?>
+		<select name="connect_ecommerce_public[vat_source]" id="vat_source">
+			<option value="billing" <?php selected( $vat_source, 'billing' ); ?>><?php esc_html_e( 'Billing address', 'woocommerce-es' ); ?></option>
+			<option value="shipping" <?php selected( $vat_source, 'shipping' ); ?>><?php esc_html_e( 'Shipping address', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description">
+			<?php esc_html_e( 'Address whose VAT number and country decide the VAT exemption and the VAT number sent to the ERP. VAT follows the goods, so choose the shipping address when customers ship to a different country than the billing one. Without a shipping VAT number, the billing one is used only when the goods ship to the billing country.', 'woocommerce-es' ); ?>
+		</p>
 		<?php
 	}
 

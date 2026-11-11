@@ -231,7 +231,7 @@ class ORDER {
 			$billing_state = self::clean_special_chars( $billing_state );
 		}
 
-		$contact_code = self::get_billing_vat( $order );
+		$contact_code = self::get_order_vat( $order );
 
 		// Order Reference.
 		$prefix = self::generate_prefix();
@@ -545,7 +545,7 @@ class ORDER {
 		$prefix         = self::generate_prefix();
 
 		// Check if contact has VAT number.
-		$contact_vat = self::get_billing_vat( $order );
+		$contact_vat = self::get_order_vat( $order );
 		if ( empty( $contact_vat ) ) {
 			return array(
 				'error'  => true,
@@ -661,6 +661,75 @@ class ORDER {
 		 * @param object $order           Order object.
 		 */
 		$vat_field_slugs = (array) apply_filters( 'conecom_vat_field_slugs', CONECOM_VAT_FIELD_SLUGS, $order );
+		return self::get_vat_from_meta( $order, $vat_field_slugs );
+	}
+
+	/**
+	 * Gets the shipping VAT number from the order.
+	 *
+	 * Reads the shipping VAT field of this plugin and the keys used by other
+	 * VAT plugins, so orders migrated from them keep their shipping VAT number.
+	 *
+	 * @param object $order Order object.
+	 * @return string
+	 */
+	public static function get_shipping_vat( $order ) {
+		if ( ! is_object( $order ) || ! is_callable( array( $order, 'get_meta' ) ) ) {
+			return '';
+		}
+
+		/**
+		 * Filters the order meta keys checked, in order, to find the shipping VAT number.
+		 *
+		 * @param array  $vat_field_slugs Meta keys or field slugs.
+		 * @param object $order           Order object.
+		 */
+		$vat_field_slugs = (array) apply_filters( 'conecom_shipping_vat_field_slugs', CONECOM_SHIPPING_VAT_FIELD_SLUGS, $order );
+		return self::get_vat_from_meta( $order, $vat_field_slugs );
+	}
+
+	/**
+	 * Gets the VAT number that applies to the order.
+	 *
+	 * Follows the "VAT number source" setting: the billing VAT number by
+	 * default, or the shipping one when the store bases VAT on the shipping
+	 * address. This is the VAT number sent to the ERP.
+	 *
+	 * @param object $order Order object.
+	 * @return string
+	 */
+	public static function get_order_vat( $order ) {
+		if ( ! is_object( $order ) || ! is_callable( array( $order, 'get_meta' ) ) ) {
+			return '';
+		}
+
+		$billing_vat = self::get_billing_vat( $order );
+		if ( 'shipping' !== VAT::get_vat_source() ) {
+			return $billing_vat;
+		}
+
+		$billing_country  = is_callable( array( $order, 'get_billing_country' ) ) ? $order->get_billing_country() : '';
+		$shipping_country = is_callable( array( $order, 'get_shipping_country' ) ) ? $order->get_shipping_country() : '';
+		$context          = VAT::resolve_vat_context(
+			$billing_vat,
+			$billing_country,
+			self::get_shipping_vat( $order ),
+			$shipping_country,
+			'shipping'
+		);
+
+		return $context['vat_number'];
+	}
+
+	/**
+	 * Returns the first non-empty VAT number found in the given meta keys.
+	 *
+	 * @param object $order           Order object.
+	 * @param array  $vat_field_slugs Meta keys or field slugs.
+	 * @return string
+	 */
+	private static function get_vat_from_meta( $order, $vat_field_slugs ) {
+		$vat_number = '';
 		foreach ( $vat_field_slugs as $code_label ) {
 			if ( ! is_string( $code_label ) || '' === $code_label ) {
 				continue;
@@ -672,12 +741,12 @@ class ORDER {
 			} else {
 				$meta_key = '_' . $code_label;
 			}
-			$contact_code = $order->get_meta( $meta_key );
-			if ( ! empty( $contact_code ) ) {
+			$vat_number = $order->get_meta( $meta_key );
+			if ( ! empty( $vat_number ) ) {
 				break;
 			}
 		}
-		return sanitize_text_field( $contact_code );
+		return sanitize_text_field( (string) $vat_number );
 	}
 
 	/**

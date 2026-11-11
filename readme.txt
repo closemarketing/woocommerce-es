@@ -229,6 +229,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 * Fixed: VAT number not shown on the admin order screen and in order emails for orders migrated from other VAT plugins. All VAT displays now use the same fallback as the ERP sync, which also reads the legacy WooCommerce EU VAT Number key `_vat_number`. New `conecom_vat_field_slugs` filter to add custom meta keys.
+* Added: "VAT number source" setting to base the VAT exemption and the VAT number sent to the ERP on the shipping address instead of the billing one, since VAT follows the goods. Adds a shipping VAT field to the classic checkout and the user profile, reads the shipping VAT number in the Blocks checkout, and shows shipping VAT numbers stored by other VAT plugins (`_shipping_vat_number`) on the admin order screen. New `conecom_shipping_vat_field_slugs` filter.
 
 = 3.5.0 =
 * Added: Multiple connectors. Configure several ERPs/CRMs on the same store (even the same ERP twice), each with its own credentials, settings and product/order workflows; order status and metadata are kept isolated per connector.

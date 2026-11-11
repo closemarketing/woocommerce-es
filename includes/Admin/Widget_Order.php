@@ -202,7 +202,7 @@ class Widget_Order {
 			echo '<tr><td colspan="2"><strong>' . esc_html__( 'Refunds', 'woocommerce-es' ) . '</strong></td></tr>';
 
 			// Check if order has VAT number.
-			$contact_vat = ORDER::get_billing_vat( $order );
+			$contact_vat = ORDER::get_order_vat( $order );
 			$has_vat     = ! empty( $contact_vat );
 
 			if ( ! $has_vat ) {

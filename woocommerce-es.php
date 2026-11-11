@@ -39,6 +39,15 @@ define(
 		'VAT Number',
 	)
 );
+define(
+	'CONECOM_SHIPPING_VAT_FIELD_SLUGS',
+	array(
+		'_shipping_vat',
+		'_shipping_vat_number',
+		'shipping_vat',
+		'_wc_shipping/connect_ecommerce/billing_vat', // Blocks checkout shipping field.
+	)
+);
 
 require_once CONECOM_PLUGIN_PATH . 'vendor/autoload.php';
 require_once CONECOM_PLUGIN_PATH . 'includes/Connector/Abstract_Connector_API.php';
