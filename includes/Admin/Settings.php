@@ -1231,6 +1231,23 @@ class Settings {
 					'connect_woocommerce_setting_section_orders',
 					$short_field
 				);
+
+				add_settings_field(
+					'wcpimh_item_meta_desc',
+					__( 'Add order item meta to the line description?', 'woocommerce-es' ),
+					array( $this, 'item_meta_desc_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section_orders',
+					$short_field
+				);
+
+				add_settings_field(
+					'wcpimh_item_meta_exclude',
+					__( 'Item meta keys to exclude', 'woocommerce-es' ),
+					array( $this, 'item_meta_exclude_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section_orders'
+				);
 			}
 
 			if ( ! empty( $this->options['order_tags'] ) ) {
@@ -2591,6 +2608,36 @@ class Settings {
 	}
 
 	/**
+	 * Add order item meta to the line description sent to the ERP.
+	 *
+	 * @return void
+	 */
+	public function item_meta_desc_callback() {
+		$item_meta_desc = isset( $this->settings['item_meta_desc'] ) ? $this->settings['item_meta_desc'] : 'no';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_attr( $this->connector ); ?>][item_meta_desc]" id="wcpimh_item_meta_desc">
+			<option value="no" <?php selected( $item_meta_desc, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+			<option value="yes" <?php selected( $item_meta_desc, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'Appends the custom data saved on each order line (e.g. product configurator or personalisation fields) to the line description sent to the ERP, one "Key: Value" per line.', 'woocommerce-es' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Item meta keys excluded from the line description.
+	 *
+	 * @return void
+	 */
+	public function item_meta_exclude_callback() {
+		printf(
+			'<input class="regular-text" type="text" name="connect_ecommerce[%s][item_meta_exclude]" id="wcpimh_item_meta_exclude" value="%s">',
+			esc_attr( $this->connector ),
+			isset( $this->settings['item_meta_exclude'] ) ? esc_attr( $this->settings['item_meta_exclude'] ) : ''
+		);
+		echo '<p class="description">' . esc_html__( 'Comma-separated item meta keys that are not sent to the ERP. Only used when the item meta is added to the line description.', 'woocommerce-es' ) . '</p>';
+	}
+
+	/**
 	 * Callback Billing nif key
 	 *
 	 * @return void
@@ -3727,6 +3774,8 @@ class Settings {
 			'ecstatus'             => 'all',
 			'order_tags'           => '',
 			'order_sync_from_date' => '',
+			'item_meta_desc'       => 'no',
+			'item_meta_exclude'    => '',
 			'design_id'            => '',
 			'sync'                 => 'no',
 			'sync_num'             => 5,

@@ -227,6 +227,9 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
+= next =
+* Added: "Add order item meta to the line description" setting. Custom data saved on each order line (product configurators, personalisation fields) is sent to the ERP in the line description as "Key: Value" lines, with an option to exclude keys. New `conecom_order_item_description` filter to customise the line description.
+
 = 3.5.0 =
 * Added: Multiple connectors. Configure several ERPs/CRMs on the same store (even the same ERP twice), each with its own credentials, settings and product/order workflows; order status and metadata are kept isolated per connector.
 * Added: Instant product connection. Product webhooks. ERPs can notify product changes to a per-connector REST endpoint secured with a token; the connector translates the payload into the universal product item (new optional `parse_webhook_product()` contract method) and the core only asks the API again when data is missing. Deletions are detected from the event header or payload (e.g. Holded `product.delete`), products created without SKU wait for the update that sets it, and the ERP signing secret (e.g. Holded `whsec_...`) can be saved per connector: signed requests then need no URL token, while unsigned ERPs such as Odoo keep using the token. Includes a Webhooks tab with the URL, instructions and the latest executions.

@@ -305,7 +305,7 @@ class ORDER {
 		// Treasury.
 		$order_data = array_merge( $order_data, PAYMENTS::get_equivalent_treasury( $order, $settings ) );
 
-		$result_items        = self::review_items( $order, $option_prefix );
+		$result_items        = self::review_items( $order, $option_prefix, $settings );
 		$order_data['items'] = $result_items['items'];
 
 		// Add shipping if products not virtual.
@@ -328,12 +328,13 @@ class ORDER {
 	/**
 	 * Review items
 	 *
-	 * @param object $order Order.
+	 * @param object $order         Order.
 	 * @param string $option_prefix Option prefix.
+	 * @param array  $settings      Connector settings.
 	 *
 	 * @return object
 	 */
-	private static function review_items( $order, $option_prefix ) {
+	private static function review_items( $order, $option_prefix, $settings = array() ) {
 		$subproducts  = 0;
 		$fields_items = array();
 		$index        = 0;
@@ -376,7 +377,7 @@ class ORDER {
 
 				$fields_items[ $index ] = array(
 					'name'     => $item['name'],
-					'desc'     => '',
+					'desc'     => self::get_item_description( $item, '', $order, $settings ),
 					'units'    => floatval( $item['qty'] ),
 					'subtotal' => 0,
 					'tax'      => 0,
@@ -410,7 +411,7 @@ class ORDER {
 
 				$item_data = array(
 					'name'      => $item->get_name(),
-					'desc'      => get_the_excerpt( $product_id ),
+					'desc'      => self::get_item_description( $item, get_the_excerpt( $product_id ), $order, $settings ),
 					'units'     => $item_qty,
 					'subtotal'  => (float) number_format( $price_line, 2, '.', '' ),
 					'sku'       => ! empty( $product ) ? $product->get_sku() : '',
@@ -483,6 +484,74 @@ class ORDER {
 			'items'       => $fields_items,
 			'has_virtual' => $has_virtual,
 		);
+	}
+
+	/**
+	 * Builds the description sent to the ERP for an order line.
+	 *
+	 * When the connector setting `item_meta_desc` is enabled, the visible item meta
+	 * (custom data stored on the line by configurators or personalisation plugins)
+	 * is appended as one "Key: Value" line each. Keys listed in `item_meta_exclude`
+	 * (comma-separated, case-insensitive) are skipped.
+	 *
+	 * @param \WC_Order_Item|array $item     Order item.
+	 * @param string               $desc     Base description (product excerpt).
+	 * @param \WC_Order|null       $order    Order.
+	 * @param array                $settings Connector settings.
+	 *
+	 * @return string
+	 */
+	public static function get_item_description( $item, $desc = '', $order = null, $settings = array() ) {
+		$desc = (string) $desc;
+
+		if ( isset( $settings['item_meta_desc'] ) && 'yes' === $settings['item_meta_desc'] && $item instanceof \WC_Order_Item ) {
+			$meta_lines = self::get_item_meta_lines( $item, $settings['item_meta_exclude'] ?? '' );
+			if ( ! empty( $meta_lines ) ) {
+				$desc = trim( $desc . "\n" . implode( "\n", $meta_lines ) );
+			}
+		}
+
+		/**
+		 * Filters the description sent to the ERP for an order line.
+		 *
+		 * @param string               $desc     Line description.
+		 * @param \WC_Order_Item|array $item     Order item.
+		 * @param \WC_Order|null       $order    Order.
+		 * @param array                $settings Connector settings.
+		 */
+		return (string) apply_filters( 'conecom_order_item_description', $desc, $item, $order, $settings );
+	}
+
+	/**
+	 * Returns the visible meta of an order item as "Key: Value" lines.
+	 *
+	 * Uses WooCommerce formatted meta, so hidden keys (starting with "_") and
+	 * variation attributes already included in the line name are skipped.
+	 *
+	 * @param \WC_Order_Item $item         Order item.
+	 * @param string         $exclude_keys Comma-separated meta keys to skip.
+	 *
+	 * @return array
+	 */
+	private static function get_item_meta_lines( $item, $exclude_keys = '' ) {
+		$exclude = array_filter( array_map( 'trim', explode( ',', strtolower( (string) $exclude_keys ) ) ) );
+		$lines   = array();
+
+		foreach ( $item->get_formatted_meta_data() as $meta ) {
+			$key   = trim( wp_strip_all_tags( (string) $meta->display_key ) );
+			$value = trim( wp_strip_all_tags( (string) $meta->display_value ) );
+
+			if ( '' === $key || '' === $value ) {
+				continue;
+			}
+			if ( in_array( strtolower( (string) $meta->key ), $exclude, true ) || in_array( strtolower( $key ), $exclude, true ) ) {
+				continue;
+			}
+
+			$lines[] = $key . ': ' . html_entity_decode( $value, ENT_QUOTES, 'UTF-8' );
+		}
+
+		return $lines;
 	}
 
 	/**
