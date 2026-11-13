@@ -648,7 +648,23 @@ class ORDER {
 	 */
 	public static function get_billing_vat( $order ) {
 		$contact_code = '';
-		foreach ( CONECOM_VAT_FIELD_SLUGS as $code_label ) {
+		if ( ! is_object( $order ) || ! is_callable( array( $order, 'get_meta' ) ) ) {
+			return $contact_code;
+		}
+
+		/**
+		 * Filters the order meta keys checked, in order, to find the billing VAT number.
+		 *
+		 * Lets stores add custom keys, e.g. the ones used by a VAT plugin they migrated from.
+		 *
+		 * @param array  $vat_field_slugs Meta keys or field slugs.
+		 * @param object $order           Order object.
+		 */
+		$vat_field_slugs = (array) apply_filters( 'conecom_vat_field_slugs', CONECOM_VAT_FIELD_SLUGS, $order );
+		foreach ( $vat_field_slugs as $code_label ) {
+			if ( ! is_string( $code_label ) || '' === $code_label ) {
+				continue;
+			}
 			// Slugs already starting with an underscore (or the literal "VAT Number" label)
 			// are meta keys as-is; other slugs need the underscore prefix added.
 			if ( 'VAT Number' === $code_label || '_' === $code_label[0] ) {

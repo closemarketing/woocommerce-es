@@ -44,10 +44,10 @@ class Checkout {
 
 		// EU VAT.
 		add_filter( 'woocommerce_billing_fields', array( $this, 'add_billing_fields' ) );
-		add_filter( 'woocommerce_admin_billing_fields', array( $this, 'add_billing_shipping_fields_admin' ) );
+		add_filter( 'woocommerce_admin_billing_fields', array( $this, 'add_billing_fields_admin' ), 10, 2 );
 		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'add_billing_shipping_fields_admin' ) );
 		add_filter( 'woocommerce_load_order_data', array( $this, 'add_var_load_order_data' ) );
-		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_key_notification' ), 10, 1 );
+		add_action( 'woocommerce_email_after_order_table', array( $this, 'email_key_notification' ), 10, 3 );
 		add_filter( 'wpo_wcpdf_billing_address', array( $this, 'add_vat_invoices' ), 10, 2 );
 
 		$show_vat = isset( $this->setttings_public['vat_show'] ) ? $this->setttings_public['vat_show'] : 'yes';
@@ -230,6 +230,30 @@ class Checkout {
 	}
 
 	/**
+	 * Add VAT field to the admin order billing fields.
+	 *
+	 * The value is resolved with ORDER::get_billing_vat() so orders whose VAT
+	 * number is stored under a legacy meta key (e.g. migrated from another VAT
+	 * plugin) still display it.
+	 *
+	 * @param array          $fields Fields.
+	 * @param \WC_Order|bool $order  Order object, or false when not available.
+	 * @return array
+	 */
+	public function add_billing_fields_admin( $fields, $order = false ) {
+		$fields = $this->add_billing_shipping_fields_admin( $fields );
+
+		if ( $order instanceof \WC_Order ) {
+			$vat_number = ORDER::get_billing_vat( $order );
+			if ( '' !== $vat_number ) {
+				$fields['vat']['value'] = $vat_number;
+			}
+		}
+
+		return $fields;
+	}
+
+	/**
 	 * Add VAT field to order data.
 	 *
 	 * @param array $fields Fields.
@@ -243,12 +267,23 @@ class Checkout {
 	/**
 	 * Adds NIF in email notification
 	 *
-	 * @param object $order Order object.
+	 * @param object $order         Order object.
+	 * @param bool   $sent_to_admin Whether the email is sent to the admin.
+	 * @param bool   $plain_text    Whether the email is plain text.
 	 * @return void
 	 */
-	public function email_key_notification( $order ) {
-		echo '<p><strong>' . esc_html__( 'VAT No', 'woocommerce-es' ) . ':</strong> ';
-		echo esc_html( get_post_meta( $order->get_id(), '_billing_vat', true ) ) . '</p>';
+	public function email_key_notification( $order, $sent_to_admin = false, $plain_text = false ) {
+		$vat_number = ORDER::get_billing_vat( $order );
+		if ( '' === $vat_number ) {
+			return;
+		}
+
+		$label = apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) );
+		if ( $plain_text ) {
+			echo esc_html( $label ) . ': ' . esc_html( $vat_number ) . "\n\n";
+			return;
+		}
+		echo '<p><strong>' . esc_html( $label ) . ':</strong> ' . esc_html( $vat_number ) . '</p>';
 	}
 
 	/**
@@ -265,7 +300,7 @@ class Checkout {
 			foreach ( CONECOM_VAT_FIELD_SLUGS as $vat_field_slug ) {
 				$vat_number = $document->get_custom_field( $vat_field_slug );
 				if ( ! empty( $vat_number ) ) {
-					$address .= sprintf( '<p>%s %s</p>', __( 'VAT info:', 'woocommerce-es' ), $vat_number );
+					$address .= sprintf( '<p>%s %s</p>', esc_html__( 'VAT info:', 'woocommerce-es' ), esc_html( $vat_number ) );
 					break;
 				}
 			}
@@ -282,8 +317,8 @@ class Checkout {
 			$address .= sprintf(
 				/* translators: 1: VAT info label, 2: VAT number */
 				'<p>%s %s</p>',
-				__( 'VAT info:', 'woocommerce-es' ),
-				$vat_number
+				esc_html__( 'VAT info:', 'woocommerce-es' ),
+				esc_html( $vat_number )
 			);
 		}
 		return $address;
