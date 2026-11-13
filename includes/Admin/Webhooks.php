@@ -132,6 +132,22 @@ class Webhooks {
 	}
 
 	/**
+	 * Whether the connector declares webhook support.
+	 *
+	 * Opt-in: the connector must register `'webhooks' => true` in its
+	 * `conecom_options_plugin` definition. Missing or false hides the panel.
+	 *
+	 * @param array $connector Connector context from HELPER::get_connectors().
+	 * @return bool
+	 */
+	public static function is_enabled( $connector ) {
+		$type    = $connector['connector'] ?? '';
+		$options = $connector['all_options'][ $type ] ?? array();
+
+		return ! empty( $options['webhooks'] );
+	}
+
+	/**
 	 * Renders the panel content.
 	 *
 	 * @param string $connector_id Connector ID.
