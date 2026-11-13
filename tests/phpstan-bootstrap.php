@@ -143,4 +143,34 @@ namespace {
 			}
 		}
 	}
+
+	// WordPress 7.2 Secrets API (proposed): https://make.wordpress.org/core/2026/08/25/proposal-a-secrets-api-for-wordpress-7-2/.
+	if ( ! class_exists( 'WP_Secret' ) ) {
+		final class WP_Secret {
+			public function reveal(): string {
+				return '';
+			}
+			public function fingerprint(): string {
+				return '';
+			}
+		}
+	}
+	if ( ! function_exists( 'wp_set_secret' ) ) {
+		/** @return bool|\WP_Error */
+		function wp_set_secret( string $name, string $value ) {
+			return true;
+		}
+	}
+	if ( ! function_exists( 'wp_get_secret' ) ) {
+		/** @return \WP_Secret|null|\WP_Error */
+		function wp_get_secret( string $name, string $version = 'current' ) {
+			return null;
+		}
+	}
+	if ( ! function_exists( 'wp_delete_secret' ) ) {
+		/** @return bool|\WP_Error */
+		function wp_delete_secret( string $name ) {
+			return true;
+		}
+	}
 }
