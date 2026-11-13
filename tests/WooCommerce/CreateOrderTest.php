@@ -1167,4 +1167,160 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$order->delete( true );
 		\WC_Tax::_delete_tax_rate( $tax_rate_id );
 	}
+
+	/**
+	 * Creates an order with one line that carries custom item meta.
+	 *
+	 * @param \WC_Product $product Product.
+	 *
+	 * @return \WC_Order
+	 */
+	private function create_order_with_item_meta( $product ) {
+		$order = new \WC_Order();
+		$order->set_billing_email( 'test@example.com' );
+
+		$item = new \WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		$item->add_meta_data( 'Rack', '42U' );
+		$item->add_meta_data( 'Color', 'Black' );
+		$item->add_meta_data( 'Position 1', 'Switch <b>24p</b>' );
+		$item->add_meta_data( 'Price', '100' );
+		$item->add_meta_data( '_internal_ref', 'hidden-value' );
+		$order->add_item( $item );
+
+		$order->calculate_totals();
+		$order->save();
+
+		return $order;
+	}
+
+	/**
+	 * Item meta is not added to the line description by default.
+	 */
+	public function test_item_meta_not_in_description_by_default() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->set_short_description( 'Rack excerpt' );
+		$product->save();
+
+		$order      = $this->create_order_with_item_meta( $product );
+		$order_data = ORDER::generate_order_data( $this->settings, $order, 'conecom-test' );
+
+		$this->assertSame( 'Rack excerpt', $order_data['items'][0]['desc'] );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
+
+	/**
+	 * Visible item meta is appended to the line description when enabled.
+	 */
+	public function test_item_meta_appended_to_description_when_enabled() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->set_short_description( 'Rack excerpt' );
+		$product->save();
+
+		$settings                      = $this->settings;
+		$settings['item_meta_desc']    = 'yes';
+		$settings['item_meta_exclude'] = 'price, Color';
+
+		$order      = $this->create_order_with_item_meta( $product );
+		$order_data = ORDER::generate_order_data( $settings, $order, 'conecom-test' );
+		$desc       = $order_data['items'][0]['desc'];
+
+		$this->assertSame( "Rack excerpt\nRack: 42U\nPosition 1: Switch 24p", $desc );
+		$this->assertStringNotContainsString( 'hidden-value', $desc, 'Hidden meta must not be sent' );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
+
+	/**
+	 * The line description can be changed with the conecom_order_item_description filter.
+	 */
+	public function test_item_description_filter() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		$callback = function ( $desc, $item ) {
+			return 'Ref: ' . $item->get_meta( 'Rack' );
+		};
+		add_filter( 'conecom_order_item_description', $callback, 10, 2 );
+
+		$order      = $this->create_order_with_item_meta( $product );
+		$order_data = ORDER::generate_order_data( $this->settings, $order, 'conecom-test' );
+
+		remove_filter( 'conecom_order_item_description', $callback, 10 );
+
+		$this->assertSame( 'Ref: 42U', $order_data['items'][0]['desc'] );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
+
+	/**
+	 * The line description is truncated to the maximum allowed length.
+	 */
+	public function test_item_description_is_truncated_to_max_length() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		$settings                   = $this->settings;
+		$settings['item_meta_desc'] = 'yes';
+
+		$callback = function () {
+			return 10;
+		};
+		add_filter( 'conecom_order_item_description_max_length', $callback );
+
+		$order      = $this->create_order_with_item_meta( $product );
+		$order_data = ORDER::generate_order_data( $settings, $order, 'conecom-test' );
+
+		remove_filter( 'conecom_order_item_description_max_length', $callback );
+
+		$this->assertSame( 10, mb_strlen( $order_data['items'][0]['desc'], 'UTF-8' ) );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
+
+	/**
+	 * Pdf and Price meta are excluded with the default exclude list.
+	 */
+	public function test_item_meta_default_exclude_skips_pdf_and_price() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		$settings                      = $this->settings;
+		$settings['item_meta_desc']    = 'yes';
+		$settings['item_meta_exclude'] = 'Pdf, Price';
+
+		$order = $this->create_order_with_item_meta( $product );
+		foreach ( $order->get_items() as $item ) {
+			$item->add_meta_data( 'Pdf', 'https://example.com/design.pdf' );
+			$item->save();
+		}
+
+		$order_data = ORDER::generate_order_data( $settings, wc_get_order( $order->get_id() ), 'conecom-test' );
+		$desc       = $order_data['items'][0]['desc'];
+
+		$this->assertStringContainsString( 'Rack: 42U', $desc );
+		$this->assertStringNotContainsString( 'Pdf', $desc );
+		$this->assertStringNotContainsString( 'Price', $desc );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
 }
