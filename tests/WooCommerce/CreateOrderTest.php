@@ -1293,4 +1293,34 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$product->delete( true );
 		$order->delete( true );
 	}
+
+	/**
+	 * Pdf and Price meta are excluded with the default exclude list.
+	 */
+	public function test_item_meta_default_exclude_skips_pdf_and_price() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		$settings                      = $this->settings;
+		$settings['item_meta_desc']    = 'yes';
+		$settings['item_meta_exclude'] = 'Pdf, Price';
+
+		$order = $this->create_order_with_item_meta( $product );
+		foreach ( $order->get_items() as $item ) {
+			$item->add_meta_data( 'Pdf', 'https://example.com/design.pdf' );
+			$item->save();
+		}
+
+		$order_data = ORDER::generate_order_data( $settings, wc_get_order( $order->get_id() ), 'conecom-test' );
+		$desc       = $order_data['items'][0]['desc'];
+
+		$this->assertStringContainsString( 'Rack: 42U', $desc );
+		$this->assertStringNotContainsString( 'Pdf', $desc );
+		$this->assertStringNotContainsString( 'Price', $desc );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
 }

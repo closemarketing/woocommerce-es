@@ -2632,7 +2632,7 @@ class Settings {
 		printf(
 			'<input class="regular-text" type="text" name="connect_ecommerce[%s][item_meta_exclude]" id="wcpimh_item_meta_exclude" value="%s">',
 			esc_attr( $this->connector ),
-			isset( $this->settings['item_meta_exclude'] ) ? esc_attr( $this->settings['item_meta_exclude'] ) : ''
+			isset( $this->settings['item_meta_exclude'] ) ? esc_attr( $this->settings['item_meta_exclude'] ) : 'Pdf, Price'
 		);
 		echo '<p class="description">' . esc_html__( 'Comma-separated item meta keys that are not sent to the ERP. Only used when the item meta is added to the line description.', 'woocommerce-es' ) . '</p>';
 	}
@@ -3775,7 +3775,7 @@ class Settings {
 			'order_tags'           => '',
 			'order_sync_from_date' => '',
 			'item_meta_desc'       => 'no',
-			'item_meta_exclude'    => '',
+			'item_meta_exclude'    => 'Pdf, Price',
 			'design_id'            => '',
 			'sync'                 => 'no',
 			'sync_num'             => 5,
