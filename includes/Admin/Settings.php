@@ -1616,7 +1616,7 @@ class Settings {
 							</a>
 						</p>
 					</div>
-					<?php if ( ! $is_orders && ! empty( $selected_connapi ) ) : ?>
+					<?php if ( ! $is_orders && ! empty( $selected_connapi ) && Webhooks::is_enabled( $selected_conn ) ) : ?>
 						<?php // Webhook URL, secret and logs stay available to diagnose API outages. ?>
 						<fieldset class="conecom-webhooks-fieldset" style="margin-top: 20px;">
 							<legend><strong><?php esc_html_e( 'Webhooks', 'woocommerce-es' ); ?></strong></legend>
@@ -1705,10 +1705,12 @@ class Settings {
 							?>
 						<br/>
 						<div id="sync-products" name="sync-products" class="button button-large button-primary" onclick="syncManualItems(this, '<?php echo esc_attr( $ajax_action ); ?>', 0);"><?php esc_html_e( 'Start Import', 'woocommerce-es' ); ?></div>
+						<?php if ( Webhooks::is_enabled( $selected_conn ) ) : ?>
 						<fieldset class="conecom-webhooks-fieldset" style="margin-top: 20px;">
 							<legend><strong><?php esc_html_e( 'Webhooks', 'woocommerce-es' ); ?></strong></legend>
 							<?php Webhooks::render_panel( $selected_id, $selected_connapi ); ?>
 						</fieldset>
+						<?php endif; ?>
 							<?php
 						}
 						?>
@@ -1819,10 +1821,12 @@ class Settings {
 					<span class="dashicons dashicons-upload" style="vertical-align: middle;"></span>
 					<?php esc_html_e( 'Manual Import', 'woocommerce-es' ); ?>
 				</button>
+				<?php if ( Webhooks::is_enabled( $selected_conn ) ) : ?>
 				<button type="button" class="conecom-tab-button" data-tab="webhooks">
 					<span class="dashicons dashicons-rss" style="vertical-align: middle;"></span>
 					<?php esc_html_e( 'Instant (webhooks)', 'woocommerce-es' ); ?>
 				</button>
+				<?php endif; ?>
 			</div>
 
 			<div class="conecom-tab-content">
@@ -1871,9 +1875,11 @@ class Settings {
 						</p>
 					<?php endif; ?>
 				</div>
+				<?php if ( Webhooks::is_enabled( $selected_conn ) ) : ?>
 				<div class="conecom-tab-pane" id="tab-webhooks">
 					<?php Webhooks::render_panel( $selected_conn['id'] ?? '', $selected_connapi ); ?>
 				</div>
+				<?php endif; ?>
 			</div>
 		</div>
 		</div>
