@@ -1265,4 +1265,32 @@ class CreateOrderTest extends WP_UnitTestCase {
 		$product->delete( true );
 		$order->delete( true );
 	}
+
+	/**
+	 * The line description is truncated to the maximum allowed length.
+	 */
+	public function test_item_description_is_truncated_to_max_length() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->save();
+
+		$settings                   = $this->settings;
+		$settings['item_meta_desc'] = 'yes';
+
+		$callback = function () {
+			return 10;
+		};
+		add_filter( 'conecom_order_item_description_max_length', $callback );
+
+		$order      = $this->create_order_with_item_meta( $product );
+		$order_data = ORDER::generate_order_data( $settings, $order, 'conecom-test' );
+
+		remove_filter( 'conecom_order_item_description_max_length', $callback );
+
+		$this->assertSame( 10, mb_strlen( $order_data['items'][0]['desc'], 'UTF-8' ) );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
 }

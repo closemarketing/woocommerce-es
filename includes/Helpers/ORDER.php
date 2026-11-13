@@ -519,7 +519,35 @@ class ORDER {
 		 * @param \WC_Order|null       $order    Order.
 		 * @param array                $settings Connector settings.
 		 */
-		return (string) apply_filters( 'conecom_order_item_description', $desc, $item, $order, $settings );
+		$desc = (string) apply_filters( 'conecom_order_item_description', $desc, $item, $order, $settings );
+
+		/**
+		 * Filters the maximum length (characters) of an order line description sent to the ERP.
+		 * Return 0 to disable truncation.
+		 *
+		 * @param int                  $max_length Maximum length.
+		 * @param \WC_Order_Item|array $item       Order item.
+		 * @param array                $settings   Connector settings.
+		 */
+		$max_length = (int) apply_filters( 'conecom_order_item_description_max_length', 1000, $item, $settings );
+
+		return self::truncate_text( $desc, $max_length );
+	}
+
+	/**
+	 * Truncates text to a maximum number of characters (multibyte safe).
+	 *
+	 * @param string $text       Text.
+	 * @param int    $max_length Maximum length. 0 or less disables truncation.
+	 *
+	 * @return string
+	 */
+	private static function truncate_text( $text, $max_length ) {
+		if ( $max_length <= 0 || mb_strlen( $text, 'UTF-8' ) <= $max_length ) {
+			return $text;
+		}
+
+		return rtrim( mb_substr( $text, 0, $max_length - 1, 'UTF-8' ) ) . '…';
 	}
 
 	/**
