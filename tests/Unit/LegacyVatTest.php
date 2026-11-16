@@ -244,4 +244,87 @@ class LegacyVatTest extends WP_UnitTestCase {
 		$this->assertSame( 'ES-2', $fields['vat']['value'] );
 		$this->assertNotSame( $plain, $fields['vat']['label'] );
 	}
+
+	/**
+	 * Classic checkout: shipping_vat field is added when VAT is shown, optional.
+	 */
+	public function test_classic_shipping_vat_field_added() {
+		update_option( 'connect_ecommerce_public', array( 'vat_show' => 'yes', 'vat_mandatory' => 'yes' ) );
+		$checkout = new Checkout( array() );
+
+		$fields = $checkout->add_shipping_fields( array( 'shipping_company' => array(), 'shipping_city' => array() ) );
+		$this->assertArrayHasKey( 'shipping_vat', $fields );
+		$this->assertFalse( $fields['shipping_vat']['required'] );
+
+		// Also added when shipping_company does not exist.
+		$this->assertArrayHasKey( 'shipping_vat', $checkout->add_shipping_fields( array( 'shipping_city' => array() ) ) );
+
+		update_option( 'connect_ecommerce_public', array( 'vat_show' => 'no' ) );
+		$checkout = new Checkout( array() );
+		$this->assertArrayNotHasKey( 'shipping_vat', $checkout->add_shipping_fields( array( 'shipping_company' => array() ) ) );
+	}
+
+	/**
+	 * Classic checkout: VAT and country come from the same address, by priority.
+	 */
+	public function test_classic_vat_and_country_follow_priority() {
+		$checkout = new Checkout( array() );
+		$data     = array(
+			'billing_vat'      => 'ESB1',
+			'billing_country'  => 'ES',
+			'shipping_vat'     => 'FR12345678901',
+			'shipping_country' => 'FR',
+		);
+
+		$this->set_priority( 'billing' );
+		$this->assertSame( array( 'vat' => 'ESB1', 'country' => 'ES' ), $checkout->get_vat_and_country_from_classic_data( $data ) );
+
+		$this->set_priority( 'shipping' );
+		$this->assertSame( array( 'vat' => 'FR12345678901', 'country' => 'FR' ), $checkout->get_vat_and_country_from_classic_data( $data ) );
+
+		// Shipping priority but no shipping VAT: billing fallback with billing country.
+		unset( $data['shipping_vat'] );
+		$this->assertSame( array( 'vat' => 'ESB1', 'country' => 'ES' ), $checkout->get_vat_and_country_from_classic_data( $data ) );
+
+		// Billing priority but only shipping VAT: uses it with the shipping country.
+		$this->set_priority( 'billing' );
+		$this->assertSame( array( 'vat' => 'FR9', 'country' => 'FR' ), $checkout->get_vat_and_country_from_classic_data( array( 'shipping_vat' => 'FR9', 'shipping_country' => 'FR', 'billing_country' => 'ES' ) ) );
+	}
+
+	/**
+	 * Store API: country is the one of the address the VAT comes from.
+	 */
+	public function test_store_api_country_follows_vat_source() {
+		$checkout = new Checkout( array() );
+		$billing  = array( 'country' => 'ES', 'connect_ecommerce/billing_vat' => 'ESB1' );
+		$shipping = array( 'country' => 'FR', 'connect_ecommerce/billing_vat' => 'FR1' );
+
+		$this->set_priority( 'billing' );
+		$this->assertSame( 'ES', $checkout->get_vat_and_country_from_addresses( $billing, $shipping )['country'] );
+
+		$this->set_priority( 'shipping' );
+		$this->assertSame( 'FR', $checkout->get_vat_and_country_from_addresses( $billing, $shipping )['country'] );
+
+		// Only shipping has VAT, billing priority: shipping country.
+		$this->set_priority( 'billing' );
+		$this->assertSame( 'FR', $checkout->get_vat_and_country_from_addresses( array( 'country' => 'ES' ), $shipping )['country'] );
+	}
+
+	/**
+	 * Classic shipping VAT in order meta is a fallback and is not shown in the billing admin field.
+	 */
+	public function test_order_shipping_vat_meta() {
+		$order = new WC_Order();
+		$order->update_meta_data( '_shipping_vat', 'SHIP-CLASSIC' );
+
+		$this->set_priority( 'billing' );
+		$this->assertSame( 'SHIP-CLASSIC', ORDER::get_billing_vat( $order ) );
+		$this->assertSame( '', ORDER::get_billing_vat( $order, true ) );
+
+		$order->update_meta_data( '_billing_vat', 'BILL-CLASSIC' );
+		$this->set_priority( 'shipping' );
+		$this->assertSame( 'SHIP-CLASSIC', ORDER::get_billing_vat( $order ) );
+		$this->set_priority( 'billing' );
+		$this->assertSame( 'BILL-CLASSIC', ORDER::get_billing_vat( $order ) );
+	}
 }

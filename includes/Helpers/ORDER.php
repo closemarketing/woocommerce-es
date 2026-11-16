@@ -677,7 +677,7 @@ class ORDER {
 	 * Gets Billing VAT info from order
 	 *
 	 * @param object $order         Order object to get info.
-	 * @param bool   $exclude_blocks True to ignore the checkout Blocks fields (keys with a namespace), e.g. to show only classic/legacy values.
+	 * @param bool   $exclude_blocks True to ignore the Blocks fields (namespaced keys) and the shipping keys, e.g. to show only classic/legacy billing values.
 	 *
 	 * @return string
 	 */
@@ -701,7 +701,7 @@ class ORDER {
 			$vat_field_slugs = array_filter(
 				$vat_field_slugs,
 				function ( $slug ) {
-					return is_string( $slug ) && false === strpos( $slug, '/' );
+					return is_string( $slug ) && false === strpos( $slug, '/' ) && false === strpos( $slug, 'shipping' );
 				}
 			);
 		}

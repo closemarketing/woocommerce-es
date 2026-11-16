@@ -36,6 +36,7 @@ define(
 		'billing_cif',
 		'_wc_billing/connect_ecommerce/billing_vat',  // Blocks checkout billing field.
 		'_wc_shipping/connect_ecommerce/billing_vat', // Blocks checkout shipping field.
+		'_shipping_vat',                              // Classic checkout shipping field.
 		'VAT Number',
 	)
 );

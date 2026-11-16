@@ -279,7 +279,7 @@ class MyAccount {
 
 		$vat_number = '';
 		foreach ( CONECOM_VAT_FIELD_SLUGS as $slug ) {
-			if ( 'VAT Number' === $slug ) {
+			if ( 'VAT Number' === $slug || false !== strpos( $slug, 'shipping' ) ) {
 				continue;
 			}
 			$key   = str_replace( '_billing_', 'billing_', ltrim( $slug, '_' ) );

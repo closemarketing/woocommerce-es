@@ -44,6 +44,7 @@ class Checkout {
 
 		// EU VAT.
 		add_filter( 'woocommerce_billing_fields', array( $this, 'add_billing_fields' ) );
+		add_filter( 'woocommerce_shipping_fields', array( $this, 'add_shipping_fields' ) );
 		add_filter( 'woocommerce_admin_billing_fields', array( $this, 'add_billing_fields_admin' ), 10, 2 );
 		add_filter( 'woocommerce_admin_shipping_fields', array( $this, 'add_billing_shipping_fields_admin' ) );
 		add_filter( 'woocommerce_load_order_data', array( $this, 'add_var_load_order_data' ) );
@@ -162,6 +163,35 @@ class Checkout {
 	}
 
 	/**
+	 * Adds the (optional) VAT field to the classic checkout shipping address.
+	 *
+	 * @param array $fields Shipping fields.
+	 * @return array
+	 */
+	public function add_shipping_fields( $fields ) {
+		$vatinfo_show = isset( $this->setttings_public['vat_show'] ) ? $this->setttings_public['vat_show'] : 'no';
+		if ( 'yes' !== $vatinfo_show ) {
+			return $fields;
+		}
+
+		$field = array(
+			'shipping_vat' => array(
+				'label'       => apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) ),
+				'placeholder' => apply_filters( 'conecom_vatssn_label_x', __( 'VAT No', 'woocommerce-es' ) ),
+				'required'    => false,
+				'class'       => array( 'form-row-wide' ),
+				'clear'       => true,
+			),
+		);
+
+		if ( ! isset( $fields['shipping_company'] ) ) {
+			return array_merge( $fields, $field );
+		}
+
+		return $this->array_splice_assoc( $fields, $field, 'shipping_company' );
+	}
+
+	/**
 	 * Custom override checkout fields.
 	 *
 	 * @param array $fields Fields.
@@ -277,7 +307,8 @@ class Checkout {
 	 * @return array
 	 */
 	public function add_var_load_order_data( $fields ) {
-		$fields['billing_vat'] = '';
+		$fields['billing_vat']  = '';
+		$fields['shipping_vat'] = '';
 		return $fields;
 	}
 
@@ -452,29 +483,21 @@ class Checkout {
 	 * @return void
 	 */
 	public function validate_vat_number_checkout( $data, $errors ) {
-		$vat_number = '';
-
-		// Check standard fields.
-		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
-			if ( isset( $data[ $field ] ) && ! empty( $data[ $field ] ) ) {
-				$vat_number = sanitize_text_field( wp_unslash( $data[ $field ] ) );
-				break;
-			}
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing
+		$posted_namespaced = isset( $_POST['connect_ecommerce/billing_vat'] ) ? sanitize_text_field( wp_unslash( $_POST['connect_ecommerce/billing_vat'] ) ) : '';
+		if ( '' !== $posted_namespaced && empty( $data['connect_ecommerce/billing_vat'] ) ) {
+			$data['connect_ecommerce/billing_vat'] = $posted_namespaced;
 		}
 
-		// Check custom checkout field (Gutenberg compatible).
-		if ( empty( $vat_number ) && isset( $_POST['connect_ecommerce/billing_vat'] ) ) {
-			$vat_number = sanitize_text_field( wp_unslash( $_POST['connect_ecommerce/billing_vat'] ) );
-		}
+		$resolved     = $this->get_vat_and_country_from_classic_data( $data );
+		$vat_number   = $resolved['vat'];
+		$country_code = $resolved['country'];
 
 		// If no VAT number provided, remove any existing exemption and skip validation.
 		if ( empty( $vat_number ) ) {
 			VAT::remove_vat_exemption();
 			return;
 		}
-
-		// Get country code.
-		$country_code = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
 
 		// Validate VAT number.
 		$validation_result = VAT::validate_vat_number( $vat_number, $country_code );
@@ -663,6 +686,7 @@ class Checkout {
 			'nonce'         => wp_create_nonce( 'conecom_vat_validation' ),
 			'enabled'       => true,
 			'vat_mandatory' => 'yes' === $vat_vies_mandatory,
+			'priority'      => ORDER::get_vat_priority(),
 			'minLengths'    => array(
 				'ES' => 9,
 				'FR' => 11,
@@ -725,18 +749,8 @@ class Checkout {
 		}
 
 		// Check if VAT field is empty.
-		$vat_number = '';
-		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
-			if ( isset( $data[ $field ] ) && ! empty( $data[ $field ] ) ) {
-				$vat_number = sanitize_text_field( $data[ $field ] );
-				break;
-			}
-		}
-
-		// Check custom field.
-		if ( empty( $vat_number ) && isset( $data['connect_ecommerce/billing_vat'] ) ) {
-			$vat_number = sanitize_text_field( $data['connect_ecommerce/billing_vat'] );
-		}
+		$resolved   = $this->get_vat_and_country_from_classic_data( $data );
+		$vat_number = $resolved['vat'];
 
 		// If VAT field is now empty, remove exemption.
 		if ( empty( $vat_number ) ) {
@@ -744,13 +758,64 @@ class Checkout {
 			return;
 		}
 
-		// Check if country changed.
-		$billing_country = isset( $data['billing_country'] ) ? $data['billing_country'] : '';
+		// Check if country changed (country of the address the VAT comes from).
+		$vat_country = $resolved['country'];
 
-		if ( ! empty( $billing_country ) && $billing_country !== $exemption_info['country'] ) {
+		if ( ! empty( $vat_country ) && $vat_country !== $exemption_info['country'] ) {
 			// Country changed - remove exemption and force revalidation.
 			VAT::remove_vat_exemption();
 		}
+	}
+
+	/**
+	 * Gets the VAT number and the country of the address it belongs to, from classic checkout data.
+	 *
+	 * Reads shipping_vat/shipping_country and the billing keys. The address chosen in the
+	 * "VAT priority" setting goes first; billing is always the fallback.
+	 *
+	 * @param array $data Posted checkout data.
+	 * @return array{vat: string, country: string}
+	 */
+	public function get_vat_and_country_from_classic_data( $data ) {
+		$data = is_array( $data ) ? $data : array();
+
+		$billing_vat = '';
+		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
+			if ( false !== strpos( $field, 'shipping' ) ) {
+				continue;
+			}
+			if ( isset( $data[ $field ] ) && is_scalar( $data[ $field ] ) && '' !== trim( (string) $data[ $field ] ) ) {
+				$billing_vat = sanitize_text_field( wp_unslash( (string) $data[ $field ] ) );
+				break;
+			}
+		}
+		if ( '' === $billing_vat && isset( $data['connect_ecommerce/billing_vat'] ) && is_scalar( $data['connect_ecommerce/billing_vat'] ) ) {
+			$billing_vat = sanitize_text_field( wp_unslash( (string) $data['connect_ecommerce/billing_vat'] ) );
+		}
+
+		$shipping_vat = isset( $data['shipping_vat'] ) && is_scalar( $data['shipping_vat'] ) ? sanitize_text_field( wp_unslash( (string) $data['shipping_vat'] ) ) : '';
+
+		$sources = array(
+			'billing'  => array(
+				'vat'     => $billing_vat,
+				'country' => isset( $data['billing_country'] ) ? sanitize_text_field( wp_unslash( (string) $data['billing_country'] ) ) : '',
+			),
+			'shipping' => array(
+				'vat'     => $shipping_vat,
+				'country' => isset( $data['shipping_country'] ) ? sanitize_text_field( wp_unslash( (string) $data['shipping_country'] ) ) : '',
+			),
+		);
+
+		$order = 'shipping' === ORDER::get_vat_priority() ? array( 'shipping', 'billing' ) : array( 'billing', 'shipping' );
+		foreach ( $order as $type ) {
+			if ( '' !== $sources[ $type ]['vat'] ) {
+				return $sources[ $type ];
+			}
+		}
+		return array(
+			'vat'     => '',
+			'country' => $sources['billing']['country'],
+		);
 	}
 
 	/**
@@ -767,6 +832,20 @@ class Checkout {
 	 * @return string
 	 */
 	public function get_vat_from_billing_address( $billing_address, $shipping_address = array() ) {
+		return $this->get_vat_and_country_from_addresses( $billing_address, $shipping_address )['vat'];
+	}
+
+	/**
+	 * Extracts the VAT number and the country of the address it comes from (Store API).
+	 *
+	 * @param array $billing_address  Billing address from the request.
+	 * @param array $shipping_address Shipping address from the request.
+	 * @return array{vat: string, country: string}
+	 */
+	public function get_vat_and_country_from_addresses( $billing_address, $shipping_address = array() ) {
+		$billing_address  = is_array( $billing_address ) ? $billing_address : array();
+		$shipping_address = is_array( $shipping_address ) ? $shipping_address : array();
+
 		$addresses = array( $billing_address, $shipping_address );
 		if ( 'shipping' === ORDER::get_vat_priority() ) {
 			$addresses = array( $shipping_address, $billing_address );
@@ -778,21 +857,24 @@ class Checkout {
 			$keys[] = $slug;
 			$keys[] = $bare;
 			$keys[] = (string) preg_replace( '/^wc_(billing|shipping)\\//', '', $bare );
-			$keys[] = (string) preg_replace( '/^billing_/', '', $bare );
+			$keys[] = (string) preg_replace( '/^(billing|shipping)_/', '', $bare );
 		}
 		$keys = array_unique( $keys );
 
 		foreach ( $addresses as $address ) {
-			if ( ! is_array( $address ) ) {
-				continue;
-			}
 			foreach ( $keys as $key ) {
 				if ( '' !== $key && isset( $address[ $key ] ) && is_scalar( $address[ $key ] ) && '' !== trim( (string) $address[ $key ] ) ) {
-					return sanitize_text_field( (string) $address[ $key ] );
+					return array(
+						'vat'     => sanitize_text_field( (string) $address[ $key ] ),
+						'country' => isset( $address['country'] ) ? sanitize_text_field( (string) $address['country'] ) : '',
+					);
 				}
 			}
 		}
-		return '';
+		return array(
+			'vat'     => '',
+			'country' => isset( $billing_address['country'] ) ? sanitize_text_field( (string) $billing_address['country'] ) : '',
+		);
 	}
 
 	/**
@@ -806,7 +888,8 @@ class Checkout {
 		// Get billing data from request.
 		$billing_address = $request->get_param( 'billing_address' );
 		$billing_address = is_array( $billing_address ) ? $billing_address : array();
-		$vat_number      = $this->get_vat_from_billing_address( $billing_address, $request->get_param( 'shipping_address' ) );
+		$resolved        = $this->get_vat_and_country_from_addresses( $billing_address, $request->get_param( 'shipping_address' ) );
+		$vat_number      = $resolved['vat'];
 
 		// If no VAT number provided, remove any existing exemption and skip validation.
 		if ( empty( $vat_number ) ) {
@@ -814,8 +897,8 @@ class Checkout {
 			return;
 		}
 
-		// Get country code.
-		$country_code = isset( $billing_address['country'] ) ? $billing_address['country'] : '';
+		// Country of the address the VAT comes from.
+		$country_code = $resolved['country'];
 
 		// Validate VAT number.
 		$validation_result = VAT::validate_vat_number( $vat_number, $country_code );
