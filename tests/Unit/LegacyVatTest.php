@@ -202,4 +202,46 @@ class LegacyVatTest extends WP_UnitTestCase {
 			'VAT Number'          => array( 'VAT Number' ),
 		);
 	}
+
+	/**
+	 * Excluding Blocks keys returns only classic/legacy values.
+	 */
+	public function test_exclude_blocks_returns_classic_only() {
+		$order = new WC_Order();
+		$order->update_meta_data( '_wc_billing/connect_ecommerce/billing_vat', 'BLOCKS' );
+		$this->assertSame( 'BLOCKS', ORDER::get_billing_vat( $order ) );
+		$this->assertSame( '', ORDER::get_billing_vat( $order, true ) );
+		$this->assertTrue( ORDER::has_blocks_vat( $order ) );
+
+		$order->update_meta_data( '_billing_nif', 'CLASSIC' );
+		$this->assertSame( 'CLASSIC', ORDER::get_billing_vat( $order, true ) );
+	}
+
+	/**
+	 * Admin billing field: only one when values match, both (distinct labels) when they differ.
+	 */
+	public function test_admin_field_same_or_different_value() {
+		$checkout = new Checkout( array() );
+		$order    = new WC_Order();
+
+		// No Blocks field: our field as usual.
+		$fields = $checkout->add_billing_fields_admin( array(), $order );
+		$plain  = $fields['vat']['label'];
+		$this->assertArrayHasKey( 'vat', $fields );
+
+		// Blocks only: ours is hidden.
+		$order->update_meta_data( '_wc_billing/connect_ecommerce/billing_vat', 'ES-1' );
+		$this->assertArrayNotHasKey( 'vat', $checkout->add_billing_fields_admin( array(), $order ) );
+
+		// Same value in classic meta: still only one.
+		$order->update_meta_data( '_billing_nif', 'ES-1' );
+		$this->assertArrayNotHasKey( 'vat', $checkout->add_billing_fields_admin( array(), $order ) );
+
+		// Different value: both, ours with a distinct label.
+		$order->update_meta_data( '_billing_nif', 'ES-2' );
+		$fields = $checkout->add_billing_fields_admin( array(), $order );
+		$this->assertArrayHasKey( 'vat', $fields );
+		$this->assertSame( 'ES-2', $fields['vat']['value'] );
+		$this->assertNotSame( $plain, $fields['vat']['label'] );
+	}
 }

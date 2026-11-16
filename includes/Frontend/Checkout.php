@@ -244,9 +244,26 @@ class Checkout {
 		$fields = $this->add_billing_shipping_fields_admin( $fields );
 
 		if ( $order instanceof \WC_Order ) {
-			$vat_number = ORDER::get_billing_vat( $order );
+			// Classic/legacy value only: the Blocks field is already shown by WooCommerce.
+			$vat_number   = ORDER::get_billing_vat( $order, true );
+			$blocks_value = sanitize_text_field( (string) $order->get_meta( '_wc_billing/connect_ecommerce/billing_vat' ) );
+
+			if ( '' !== $blocks_value && ( '' === $vat_number || $vat_number === $blocks_value ) ) {
+				// Same value (or nothing else stored): keep only the Blocks field.
+				unset( $fields['vat'] );
+				return $fields;
+			}
+
 			if ( '' !== $vat_number ) {
 				$fields['vat']['value'] = $vat_number;
+			}
+			// Different values: show both, telling them apart.
+			if ( '' !== $blocks_value ) {
+				$fields['vat']['label'] = sprintf(
+					/* translators: %s: VAT field label */
+					__( '%s (classic / legacy)', 'woocommerce-es' ),
+					$fields['vat']['label']
+				);
 			}
 		}
 

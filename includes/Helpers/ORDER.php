@@ -676,11 +676,12 @@ class ORDER {
 	/**
 	 * Gets Billing VAT info from order
 	 *
-	 * @param object $order Order object to get info.
+	 * @param object $order         Order object to get info.
+	 * @param bool   $exclude_blocks True to ignore the checkout Blocks fields (keys with a namespace), e.g. to show only classic/legacy values.
 	 *
 	 * @return string
 	 */
-	public static function get_billing_vat( $order ) {
+	public static function get_billing_vat( $order, $exclude_blocks = false ) {
 		$contact_code = '';
 		if ( ! is_object( $order ) || ! is_callable( array( $order, 'get_meta' ) ) ) {
 			return $contact_code;
@@ -696,6 +697,14 @@ class ORDER {
 		 */
 		$vat_field_slugs = (array) apply_filters( 'conecom_vat_field_slugs', CONECOM_VAT_FIELD_SLUGS, $order );
 		$vat_field_slugs = self::prioritize_vat_slugs( $vat_field_slugs );
+		if ( $exclude_blocks ) {
+			$vat_field_slugs = array_filter(
+				$vat_field_slugs,
+				function ( $slug ) {
+					return is_string( $slug ) && false === strpos( $slug, '/' );
+				}
+			);
+		}
 		foreach ( $vat_field_slugs as $code_label ) {
 			if ( ! is_string( $code_label ) || '' === $code_label ) {
 				continue;
@@ -716,6 +725,25 @@ class ORDER {
 			}
 		}
 		return sanitize_text_field( $contact_code );
+	}
+
+	/**
+	 * Whether the order has a value in the checkout Blocks VAT field (billing or shipping).
+	 *
+	 * @param object $order Order object.
+	 *
+	 * @return bool
+	 */
+	public static function has_blocks_vat( $order ) {
+		if ( ! is_object( $order ) || ! is_callable( array( $order, 'get_meta' ) ) ) {
+			return false;
+		}
+		foreach ( array( '_wc_billing/connect_ecommerce/billing_vat', '_wc_shipping/connect_ecommerce/billing_vat' ) as $key ) {
+			if ( '' !== (string) $order->get_meta( $key ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**
