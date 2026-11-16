@@ -96,6 +96,7 @@ class MyAccount {
 
 			// Legacy VAT: prefill checkout and show it in My Account (read-only, no migration).
 			add_filter( 'woocommerce_checkout_get_value', array( $this, 'prefill_vat_checkout' ), 10, 2 );
+			add_filter( 'woocommerce_get_default_value_for_connect_ecommerce/billing_vat', array( $this, 'prefill_vat_blocks' ), 10, 3 );
 			add_action( 'woocommerce_edit_account_form', array( $this, 'show_vat_account_field' ) );
 			add_action( 'woocommerce_save_account_details', array( $this, 'save_vat_profile_field' ) );
 		}
@@ -194,7 +195,7 @@ class MyAccount {
 	 * @return void
 	 */
 	public function show_vat_profile_field( $user ) {
-		$vat_number = ORDER::get_user_vat( $user?->ID );
+		$vat_number = ORDER::get_user_vat( isset( $user->ID ) ? $user->ID : 0 );
 		?>
 		<h3><?php esc_html_e( 'Billing VAT', 'woocommerce-es' ); ?></h3>
 		<table class="form-table">
@@ -225,6 +226,31 @@ class MyAccount {
 			return $value;
 		}
 		$vat_number = ORDER::get_user_vat( get_current_user_id() );
+		return '' !== $vat_number ? $vat_number : $value;
+	}
+
+	/**
+	 * Default value of the Blocks checkout VAT field for a customer with legacy VAT data.
+	 *
+	 * Only fills the billing address from the user meta (current or legacy keys) and the
+	 * shipping address from `shipping_vat`. Read-only: nothing is migrated.
+	 *
+	 * @param mixed  $value  Default value (null).
+	 * @param string $group  Address group: billing|shipping|other.
+	 * @param mixed  $object WC_Customer or WC_Order.
+	 * @return mixed
+	 */
+	public function prefill_vat_blocks( $value, $group, $object ) {
+		if ( null !== $value || ! $object instanceof \WC_Customer || ! $object->get_id() ) {
+			return $value;
+		}
+		if ( 'billing' === $group ) {
+			$vat_number = ORDER::get_user_vat( $object->get_id() );
+		} elseif ( 'shipping' === $group ) {
+			$vat_number = sanitize_text_field( (string) get_user_meta( $object->get_id(), 'shipping_vat', true ) );
+		} else {
+			return $value;
+		}
 		return '' !== $vat_number ? $vat_number : $value;
 	}
 

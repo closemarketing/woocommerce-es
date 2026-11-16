@@ -327,4 +327,26 @@ class LegacyVatTest extends WP_UnitTestCase {
 		$this->set_priority( 'billing' );
 		$this->assertSame( 'BILL-CLASSIC', ORDER::get_billing_vat( $order ) );
 	}
+
+	/**
+	 * Blocks checkout default for the VAT field uses legacy user meta, read-only.
+	 */
+	public function test_blocks_default_prefilled_from_legacy_user_meta() {
+		update_option( 'connect_ecommerce_public', array( 'vat_show' => 'yes' ) );
+		$my_account = new \CLOSE\ConnectEcommerce\Frontend\MyAccount( array( 'all_options' => array() ) );
+
+		$user_id = self::factory()->user->create();
+		update_user_meta( $user_id, 'billing_nif', 'ES-LEGACY1' );
+		update_user_meta( $user_id, 'shipping_vat', 'ES-SHIP1' );
+		$customer = new WC_Customer( $user_id );
+
+		$this->assertSame( 'ES-LEGACY1', $my_account->prefill_vat_blocks( null, 'billing', $customer ) );
+		$this->assertSame( 'ES-SHIP1', $my_account->prefill_vat_blocks( null, 'shipping', $customer ) );
+		$this->assertNull( $my_account->prefill_vat_blocks( null, 'other', $customer ) );
+		// Orders and guests are left alone.
+		$this->assertNull( $my_account->prefill_vat_blocks( null, 'billing', new WC_Order() ) );
+		$this->assertSame( 'KEEP', $my_account->prefill_vat_blocks( 'KEEP', 'billing', $customer ) );
+		// Nothing migrated.
+		$this->assertSame( '', get_user_meta( $user_id, 'billing_vat', true ) );
+	}
 }
