@@ -1349,6 +1349,14 @@ class Settings {
 		);
 
 		add_settings_field(
+			'wcpimh_vat_priority',
+			__( 'Priority VAT field', 'woocommerce-es' ),
+			array( $this, 'vat_priority_callback' ),
+			'connect_ecommerce_public',
+			'imhset_pub_setting_section'
+		);
+
+		add_settings_field(
 			'wcpimh_company_field',
 			__( 'Show Company field?', 'woocommerce-es' ),
 			array( $this, 'company_field_callback' ),
@@ -3211,6 +3219,10 @@ class Settings {
 			$sanitary_values['vat_mandatory'] = $input['vat_mandatory'];
 		}
 
+		if ( isset( $input['vat_priority'] ) ) {
+			$sanitary_values['vat_priority'] = 'shipping' === $input['vat_priority'] ? 'shipping' : 'billing';
+		}
+
 		if ( isset( $input['company_field'] ) ) {
 			$sanitary_values['company_field'] = $input['company_field'];
 		}
@@ -3761,6 +3773,22 @@ class Settings {
 		<select name="connect_ecommerce_public[vat_mandatory]" id="vat_mandatory">
 			<option value="no" <?php selected( $vat_mandatory, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>		<option value="yes" <?php selected( $vat_mandatory, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 		</select>
+		<?php
+	}
+
+	/**
+	 * VAT priority setting: which address VAT is used first.
+	 *
+	 * @return void
+	 */
+	public function vat_priority_callback() {
+		$vat_priority = isset( $this->settings_public['vat_priority'] ) && 'shipping' === $this->settings_public['vat_priority'] ? 'shipping' : 'billing';
+		?>
+		<select name="connect_ecommerce_public[vat_priority]" id="vat_priority">
+			<option value="billing" <?php selected( $vat_priority, 'billing' ); ?>><?php esc_html_e( 'Billing (default)', 'woocommerce-es' ); ?></option>
+			<option value="shipping" <?php selected( $vat_priority, 'shipping' ); ?>><?php esc_html_e( 'Shipping (billing as fallback)', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description"><?php esc_html_e( 'Which VAT number is used first when the checkout has a VAT field in both billing and shipping. Billing is always the fallback.', 'woocommerce-es' ); ?></p>
 		<?php
 	}
 

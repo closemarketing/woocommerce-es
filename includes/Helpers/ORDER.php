@@ -640,6 +640,40 @@ class ORDER {
 	}
 
 	/**
+	 * Which VAT field has priority: 'billing' (default and fallback) or 'shipping'.
+	 *
+	 * @return string
+	 */
+	public static function get_vat_priority() {
+		$settings = get_option( 'connect_ecommerce_public' );
+		$priority = is_array( $settings ) && isset( $settings['vat_priority'] ) ? $settings['vat_priority'] : 'billing';
+		return 'shipping' === $priority ? 'shipping' : 'billing';
+	}
+
+	/**
+	 * Moves shipping VAT slugs first when shipping has priority. Billing slugs stay as fallback.
+	 *
+	 * @param array $slugs Meta keys or field slugs.
+	 * @return array
+	 */
+	public static function prioritize_vat_slugs( $slugs ) {
+		$slugs = array_values( (array) $slugs );
+		if ( 'shipping' !== self::get_vat_priority() ) {
+			return $slugs;
+		}
+		$shipping = array();
+		$others   = array();
+		foreach ( $slugs as $slug ) {
+			if ( is_string( $slug ) && false !== strpos( $slug, 'shipping' ) ) {
+				$shipping[] = $slug;
+			} else {
+				$others[] = $slug;
+			}
+		}
+		return array_merge( $shipping, $others );
+	}
+
+	/**
 	 * Gets Billing VAT info from order
 	 *
 	 * @param object $order Order object to get info.
@@ -661,6 +695,7 @@ class ORDER {
 		 * @param object $order           Order object.
 		 */
 		$vat_field_slugs = (array) apply_filters( 'conecom_vat_field_slugs', CONECOM_VAT_FIELD_SLUGS, $order );
+		$vat_field_slugs = self::prioritize_vat_slugs( $vat_field_slugs );
 		foreach ( $vat_field_slugs as $code_label ) {
 			if ( ! is_string( $code_label ) || '' === $code_label ) {
 				continue;
@@ -668,16 +703,56 @@ class ORDER {
 			// Slugs already starting with an underscore (or the literal "VAT Number" label)
 			// are meta keys as-is; other slugs need the underscore prefix added.
 			if ( 'VAT Number' === $code_label || '_' === $code_label[0] ) {
-				$meta_key = $code_label;
+				$meta_keys = array( $code_label );
 			} else {
-				$meta_key = '_' . $code_label;
+				// Some plugins store the key without the underscore: try it as a fallback.
+				$meta_keys = array( '_' . $code_label, $code_label );
 			}
-			$contact_code = $order->get_meta( $meta_key );
-			if ( ! empty( $contact_code ) ) {
-				break;
+			foreach ( $meta_keys as $meta_key ) {
+				$contact_code = $order->get_meta( $meta_key );
+				if ( ! empty( $contact_code ) ) {
+					break 2;
+				}
 			}
 		}
 		return sanitize_text_field( $contact_code );
+	}
+
+	/**
+	 * Gets the billing VAT stored in user meta, including keys left by a previous VAT plugin.
+	 *
+	 * Read-only: never deletes or migrates the legacy keys.
+	 *
+	 * @param int $user_id User ID.
+	 *
+	 * @return string
+	 */
+	public static function get_user_vat( $user_id ) {
+		$user_id = absint( $user_id );
+		if ( ! $user_id ) {
+			return '';
+		}
+
+		// Current key first, then the legacy ones.
+		$slugs = array_merge( array( 'billing_vat' ), (array) apply_filters( 'conecom_vat_field_slugs', CONECOM_VAT_FIELD_SLUGS, null ) );
+		$keys  = array();
+		foreach ( $slugs as $slug ) {
+			if ( ! is_string( $slug ) || '' === $slug ) {
+				continue;
+			}
+			$bare   = ltrim( $slug, '_' );
+			$keys[] = $slug;
+			$keys[] = $bare;
+			$keys[] = '_' . $bare;
+		}
+
+		foreach( array_unique( $keys ) as $key ) {
+			$value = get_user_meta( $user_id, $key, true );
+			if ( is_string( $value ) && '' !== trim( $value ) ) {
+				return sanitize_text_field( $value );
+			}
+		}
+		return '';
 	}
 
 	/**

@@ -14,6 +14,7 @@ defined( 'ABSPATH' ) || exit;
 
 use CLOSE\ConnectEcommerce\Base;
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\ORDER;
 /**
  * My Account.
  *
@@ -92,6 +93,11 @@ class MyAccount {
 			add_action( 'personal_options_update', array( $this, 'save_vat_profile_field' ) );
 			add_action( 'edit_user_profile_update', array( $this, 'save_vat_profile_field' ) );
 			add_action( 'woocommerce_checkout_update_customer', array( $this, 'sync_vat_to_user_meta' ), 10, 2 );
+
+			// Legacy VAT: prefill checkout and show it in My Account (read-only, no migration).
+			add_filter( 'woocommerce_checkout_get_value', array( $this, 'prefill_vat_checkout' ), 10, 2 );
+			add_action( 'woocommerce_edit_account_form', array( $this, 'show_vat_account_field' ) );
+			add_action( 'woocommerce_save_account_details', array( $this, 'save_vat_profile_field' ) );
 		}
 	}
 
@@ -188,7 +194,7 @@ class MyAccount {
 	 * @return void
 	 */
 	public function show_vat_profile_field( $user ) {
-		$vat_number = get_user_meta( $user->ID, 'billing_vat', true );
+		$vat_number = ORDER::get_user_vat( $user?->ID );
 		?>
 		<h3><?php esc_html_e( 'Billing VAT', 'woocommerce-es' ); ?></h3>
 		<table class="form-table">
@@ -208,16 +214,53 @@ class MyAccount {
 	}
 
 	/**
-	 * Save the VAT number from the user profile page.
+	 * Prefill the checkout VAT field from user meta (current or legacy keys).
+	 *
+	 * @param mixed  $value Current value (null when WooCommerce has none).
+	 * @param string $input Field key.
+	 * @return mixed
+	 */
+	public function prefill_vat_checkout( $value, $input ) {
+		if ( 'billing_vat' !== $input || null !== $value || ! is_user_logged_in() ) {
+			return $value;
+		}
+		$vat_number = ORDER::get_user_vat( get_current_user_id() );
+		return '' !== $vat_number ? $vat_number : $value;
+	}
+
+	/**
+	 * Show the VAT number in the WooCommerce My Account "Account details" form.
+	 *
+	 * @return void
+	 */
+	public function show_vat_account_field() {
+		$vat_number = ORDER::get_user_vat( get_current_user_id() );
+		?>
+		<p class="woocommerce-form-row woocommerce-form-row--wide form-row form-row-wide">
+			<label for="billing_vat"><?php echo esc_html( apply_filters( 'conecom_vatssn_label', __( 'VAT No', 'woocommerce-es' ) ) ); ?></label>
+			<input type="text" class="woocommerce-Input woocommerce-Input--text input-text" name="billing_vat" id="billing_vat" value="<?php echo esc_attr( $vat_number ); ?>" />
+		</p>
+		<?php
+	}
+
+	/**
+	 * Save the VAT number from the user profile page or My Account form.
+	 *
+	 * Only writes the current key `billing_vat`; legacy keys are left untouched.
 	 *
 	 * @param int $user_id User ID being saved.
 	 * @return void
 	 */
 	public function save_vat_profile_field( $user_id ) {
-		if ( ! current_user_can( 'edit_user', $user_id ) ) {
+		if ( ! current_user_can( 'edit_user', $user_id ) || ! isset( $_POST['billing_vat'] ) ) {
 			return;
 		}
-		$vat_number = isset( $_POST['billing_vat'] ) ? sanitize_text_field( wp_unslash( $_POST['billing_vat'] ) ) : '';
+		// Nonce: core verifies it for the admin profile hooks and WooCommerce for woocommerce_save_account_details.
+		$vat_number = sanitize_text_field( wp_unslash( $_POST['billing_vat'] ) );
+		// Don't create an empty key just because a legacy value was displayed unchanged.
+		if ( '' === $vat_number && '' === (string) get_user_meta( $user_id, 'billing_vat', true ) ) {
+			return;
+		}
 		update_user_meta( $user_id, 'billing_vat', $vat_number );
 	}
 

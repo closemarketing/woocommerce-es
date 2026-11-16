@@ -737,6 +737,48 @@ class Checkout {
 	}
 
 	/**
+	 * Extracts the VAT number from the Store API addresses.
+	 *
+	 * Request keys have no meta prefix, so each slug is normalised: `_billing_vat`,
+	 * `billing_vat` and `_wc_billing/connect_ecommerce/billing_vat` map to `vat` and
+	 * `connect_ecommerce/billing_vat`. The raw slug is also tried.
+	 *
+	 * The address chosen in the "VAT priority" setting is read first; billing is always the fallback.
+	 *
+	 * @param array $billing_address  Billing address from the request.
+	 * @param array $shipping_address Shipping address from the request.
+	 * @return string
+	 */
+	public function get_vat_from_billing_address( $billing_address, $shipping_address = array() ) {
+		$addresses = array( $billing_address, $shipping_address );
+		if ( 'shipping' === ORDER::get_vat_priority() ) {
+			$addresses = array( $shipping_address, $billing_address );
+		}
+
+		$keys = array( 'connect_ecommerce/billing_vat' );
+		foreach ( CONECOM_VAT_FIELD_SLUGS as $slug ) {
+			$bare   = ltrim( $slug, '_' );
+			$keys[] = $slug;
+			$keys[] = $bare;
+			$keys[] = (string) preg_replace( '/^wc_(billing|shipping)\\//', '', $bare );
+			$keys[] = (string) preg_replace( '/^billing_/', '', $bare );
+		}
+		$keys = array_unique( $keys );
+
+		foreach ( $addresses as $address ) {
+			if ( ! is_array( $address ) ) {
+				continue;
+			}
+			foreach ( $keys as $key ) {
+				if ( '' !== $key && isset( $address[ $key ] ) && is_scalar( $address[ $key ] ) && '' !== trim( (string) $address[ $key ] ) ) {
+					return sanitize_text_field( (string) $address[ $key ] );
+				}
+			}
+		}
+		return '';
+	}
+
+	/**
 	 * Validate VAT number during checkout for WooCommerce Blocks.
 	 *
 	 * @param \WC_Order        $order Order object.
@@ -744,22 +786,10 @@ class Checkout {
 	 * @return void
 	 */
 	public function validate_vat_number_checkout_blocks( $order, $request ) {
-		$vat_number = '';
-
 		// Get billing data from request.
 		$billing_address = $request->get_param( 'billing_address' );
-		
-		// Check standard fields.
-		foreach ( CONECOM_VAT_FIELD_SLUGS as $field ) {
-			$field_name = str_replace( 'billing_', '', $field );
-			if ( isset( $billing_address[ $field_name ] ) && ! empty( $billing_address[ $field_name ] ) ) {
-				$vat_number = sanitize_text_field( $billing_address[ $field_name ] );
-				break;
-			}
-		}
-		if ( empty( $vat_number ) && isset( $billing_address['connect_ecommerce/billing_vat'] ) ) {
-			$vat_number = sanitize_text_field( $billing_address['connect_ecommerce/billing_vat'] );
-		}
+		$billing_address = is_array( $billing_address ) ? $billing_address : array();
+		$vat_number      = $this->get_vat_from_billing_address( $billing_address, $request->get_param( 'shipping_address' ) );
 
 		// If no VAT number provided, remove any existing exemption and skip validation.
 		if ( empty( $vat_number ) ) {
