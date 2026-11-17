@@ -1182,6 +1182,17 @@ class Settings {
 				);
 			}
 
+			if ( in_array( 'attach_pdf', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_attach_pdf',
+					__( 'Attach the document PDF to the WooCommerce completed order email?', 'woocommerce-es' ),
+					array( $this, 'attach_pdf_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section_orders',
+					$short_field
+				);
+			}
+
 			if ( ( ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] ) || in_array( 'doctype', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
@@ -2506,6 +2517,21 @@ class Settings {
 	}
 
 	/**
+	 * Call back for attach PDF to the completed order email
+	 *
+	 * @return void
+	 */
+	public function attach_pdf_callback() {
+		$attach_pdf = isset( $this->settings['attach_pdf'] ) ? $this->settings['attach_pdf'] : 'yes';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][attach_pdf]" id="wcpimh_attach_pdf">
+			<option value="yes" <?php selected( $attach_pdf, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $attach_pdf, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
 	 * Document type
 	 *
 	 * @return void
@@ -3728,6 +3754,7 @@ class Settings {
 			'doctype'              => 'invoice',
 			'cleanchars'           => '',
 			'approve_document'     => 'no',
+			'attach_pdf'           => 'yes',
 			'series'               => '',
 			'freeorder'            => 'no',
 			'ecstatus'             => 'all',
