@@ -275,4 +275,29 @@ class ImportProductsPaginationTest extends WP_UnitTestCase {
 			'Should FINISH immediately when sync_loop is -1 (single product import)'
 		);
 	}
+
+	/**
+	 * The log shows the real total when a paginated connector counted its products,
+	 * not the page size ("1418/50").
+	 */
+	public function test_progress_total_uses_the_connector_total_when_paginated() {
+		$this->assertSame( 481, Import_Products::get_progress_total( true, 481, 50 ) );
+		$this->assertSame( 481, Import_Products::get_progress_total( true, '481', 50 ) );
+	}
+
+	/**
+	 * Connectors that cannot count (or report 0) keep showing the batch size, exactly as before.
+	 */
+	public function test_progress_total_falls_back_to_the_batch_size() {
+		$this->assertSame( 50, Import_Products::get_progress_total( true, 0, 50 ) );
+		$this->assertSame( 50, Import_Products::get_progress_total( true, null, 50 ) );
+		$this->assertSame( 50, Import_Products::get_progress_total( true, -3, 50 ) );
+	}
+
+	/**
+	 * A non-paginated API already returns every product in the batch, so the batch size is the total.
+	 */
+	public function test_progress_total_ignores_a_stored_total_when_not_paginated() {
+		$this->assertSame( 120, Import_Products::get_progress_total( false, 481, 120 ) );
+	}
 }

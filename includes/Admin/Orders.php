@@ -249,7 +249,7 @@ class Orders {
 		if ( ! $enabled || self::$releasing || ! $order instanceof \WC_Order || 'shop_order' !== $order->get_type() ) {
 			return $enabled;
 		}
-		if ( 'manual' === $this->ecstatus || ! function_exists( 'as_schedule_single_action' ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
+		if ( 'manual' === $this->ecstatus || ! $this->should_attach_pdf() || ! function_exists( 'as_schedule_single_action' ) || ! HELPER::connector_supports( $this->connapi_erp, 'get_order_pdf' ) ) {
 			return $enabled;
 		}
 		if ( $order->get_meta( '_' . $this->order_meta_prefix . '_doc_id' ) || 'nocreate' === $order->get_meta( $this->meta_key_order ) ) {
@@ -571,6 +571,9 @@ class Orders {
 	 * @return file
 	 */
 	public function attach_file_woocommerce_email( $attachments, $action, $email_order ) {
+		if ( ! $this->should_attach_pdf() ) {
+			return $attachments;
+		}
 		$order = wc_get_order( $email_order );
 		if ( ! $order ) {
 			return $attachments;
@@ -588,6 +591,22 @@ class Orders {
 		}
 
 		return $attachments;
+	}
+
+	/**
+	 * Whether the ERP document PDF is attached to the WooCommerce completed order email.
+	 *
+	 * Never when an invoice phase is set. Otherwise controlled by the "attach_pdf" connector setting;
+	 * defaults to yes so existing sites keep their behaviour.
+	 *
+	 * @return bool
+	 */
+	private function should_attach_pdf() {
+		// With an invoice phase the connector sends the invoice itself, never WooCommerce.
+		if ( '' !== ORDER::get_invoice_phase( $this->settings ) ) {
+			return false;
+		}
+		return 'no' !== ( isset( $this->settings['attach_pdf'] ) ? $this->settings['attach_pdf'] : 'yes' );
 	}
 
 	/**

@@ -8,6 +8,7 @@
  */
 
 use CLOSE\ConnectEcommerce\Helpers\HELPER;
+use CLOSE\ConnectEcommerce\Helpers\ORDER;
 use CLOSE\ConnectEcommerce\Admin\Settings;
  
 class SettingsTest extends WP_UnitTestCase {
@@ -657,5 +658,61 @@ class SettingsTest extends WP_UnitTestCase {
 		$fields = $GLOBALS['wp_settings_fields']['connect_ecommerce_admin']['connect_woocommerce_setting_section_orders'];
 		$this->assertArrayHasKey( 'wcpimh_custom_select', $fields );
 		$this->assertArrayHasKey( 'wcpimh_custom_checkbox', $fields );
+	}
+	/**
+	 * Renders the invoice phase select.
+	 *
+	 * @param array $settings Saved connector settings.
+	 * @return string
+	 */
+	private function render_invoice_phase( $settings ) {
+		$page = $this->make_custom_fields_settings( $settings );
+		ob_start();
+		$page->invoice_phase_callback();
+		return ob_get_clean();
+	}
+
+	/**
+	 * The invoice phase select offers both phases and warns about the WooCommerce fallback.
+	 */
+	public function test_invoice_phase_field_shows_phases_and_fallback_notice() {
+		$html = $this->render_invoice_phase( array( 'invoice_phase' => 'draft' ) );
+
+		$this->assertStringContainsString( '[invoice_phase]', $html );
+		$this->assertMatchesRegularExpression( '/<option value="draft"\s+selected=\'selected\'/', $html );
+		$this->assertStringContainsString( 'value="auto"', $html );
+		$this->assertStringContainsString( 'Fallback:', $html );
+		$this->assertStringContainsString( 'WooCommerce completed order email is always sent', $html );
+	}
+
+	/**
+	 * A saved phase wins; a never-saved one mirrors the legacy approve document setting.
+	 */
+	public function test_invoice_phase_field_selection_and_legacy_fallback() {
+		$this->assertMatchesRegularExpression( '/<option value="auto"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'invoice_phase' => 'auto', 'approve_document' => 'no' ) ) );
+		$this->assertMatchesRegularExpression( '/<option value="draft"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'invoice_phase' => 'draft', 'approve_document' => 'yes' ) ) );
+		$this->assertMatchesRegularExpression( '/<option value="auto"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'approve_document' => 'yes' ) ) );
+		$this->assertMatchesRegularExpression( '/<option value="draft"\s+selected=\'selected\'/', $this->render_invoice_phase( array() ) );
+	}
+
+	/**
+	 * Changing only invoice_phase switches the behaviour between phase 1 and phase 2.
+	 */
+	public function test_changing_invoice_phase_alone_switches_phase() {
+		$page     = $this->make_custom_fields_settings();
+		$sanitize = new ReflectionMethod( $page, 'sanitize_connector_settings_values' );
+		$sanitize->setAccessible( true );
+		$existing = array( 'approve_document' => 'no', 'attach_pdf' => 'yes', 'invoice_phase' => 'draft' );
+
+		$auto  = $sanitize->invoke( $page, array( 'invoice_phase' => 'auto' ), $existing );
+		$draft = $sanitize->invoke( $page, array( 'invoice_phase' => 'draft' ), $auto );
+
+		$this->assertSame( 'auto', ORDER::get_invoice_phase( $auto ) );
+		$this->assertTrue( ORDER::should_approve_document( $auto ) );
+		$this->assertSame( 'draft', ORDER::get_invoice_phase( $draft ) );
+		$this->assertFalse( ORDER::should_approve_document( $draft ) );
+
+		$junk = $sanitize->invoke( $page, array( 'invoice_phase' => 'whatever' ), $existing );
+		$this->assertSame( '', ORDER::get_invoice_phase( $junk ) );
 	}
 }

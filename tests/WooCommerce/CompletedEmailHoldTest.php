@@ -27,6 +27,27 @@ class Conecom_Test_Pdf_Connector {
 }
 
 /**
+ * Fake connector that returns the path of a real PDF file.
+ */
+class Conecom_Test_File_Pdf_Connector {
+	/**
+	 * Path returned by get_order_pdf.
+	 *
+	 * @var string
+	 */
+	public $path = '';
+
+	/**
+	 * Returns the configured file path.
+	 *
+	 * @return string
+	 */
+	public function get_order_pdf() {
+		return $this->path;
+	}
+}
+
+/**
  * Fake connector without PDF support.
  */
 class Conecom_Test_No_Pdf_Connector {
@@ -81,9 +102,10 @@ class CompletedEmailHoldTest extends WP_UnitTestCase {
 	 *
 	 * @param object $connapi  Connector API object.
 	 * @param string $ecstatus Order sync status setting.
+	 * @param array  $extra    Extra connector settings.
 	 * @return Orders
 	 */
-	private function make_orders( $connapi, $ecstatus = 'completed' ) {
+	private function make_orders( $connapi, $ecstatus = 'completed', $extra = array() ) {
 		return new Orders(
 			array(
 				'connector'   => 'test',
@@ -94,7 +116,7 @@ class CompletedEmailHoldTest extends WP_UnitTestCase {
 					'order_only_order_completed' => $ecstatus,
 					'order_import_free_order'    => false,
 				),
-				'settings'    => array( 'ecstatus' => $ecstatus ),
+				'settings'    => array_merge( array( 'ecstatus' => $ecstatus ), $extra ),
 				'connapi_erp' => $connapi,
 			)
 		);
@@ -153,6 +175,65 @@ class CompletedEmailHoldTest extends WP_UnitTestCase {
 		$this->assertTrue( $this->make_orders( new Conecom_Test_Pdf_Connector() )->maybe_hold_completed_email( true, $order, null ) );
 
 		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_conecom_test_email_held' ) );
+	}
+
+	/**
+	 * With attach_pdf set to no the email is not held, even if the document is pending.
+	 */
+	public function test_does_not_hold_when_attach_pdf_is_disabled() {
+		$orders = $this->make_orders( new Conecom_Test_Pdf_Connector(), 'completed', array( 'attach_pdf' => 'no' ) );
+		$order  = $this->make_order();
+
+		$this->assertTrue( $orders->maybe_hold_completed_email( true, $order, null ) );
+		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_conecom_test_email_held' ) );
+		$this->assertFalse( as_next_scheduled_action( 'conecom_release_held_email', array( $order->get_id(), 'conecom_test' ) ) );
+	}
+
+	/**
+	 * Without the setting (existing sites) or with yes, the email is still held.
+	 */
+	public function test_holds_email_when_attach_pdf_is_yes_or_missing() {
+		$yes = $this->make_orders( new Conecom_Test_Pdf_Connector(), 'completed', array( 'attach_pdf' => 'yes' ) );
+		$this->assertFalse( $yes->maybe_hold_completed_email( true, $this->make_order(), null ) );
+
+		$missing = $this->make_orders( new Conecom_Test_Pdf_Connector() );
+		$this->assertFalse( $missing->maybe_hold_completed_email( true, $this->make_order(), null ) );
+	}
+
+	/**
+	 * The PDF is attached by default and when attach_pdf is yes.
+	 */
+	public function test_attaches_pdf_by_default() {
+		$file = wp_tempnam( 'conecom-test.pdf' );
+		$conn = new Conecom_Test_File_Pdf_Connector();
+		$conn->path = $file;
+		$order = $this->make_order();
+		$order->update_meta_data( '_conecom_test_doc_id', 'abc' );
+		$order->save();
+
+		$default = $this->make_orders( $conn )->attach_file_woocommerce_email( array(), 'customer_completed_order', $order->get_id() );
+		$yes     = $this->make_orders( $conn, 'completed', array( 'attach_pdf' => 'yes' ) )->attach_file_woocommerce_email( array(), 'customer_completed_order', $order->get_id() );
+		wp_delete_file( $file );
+
+		$this->assertSame( array( $file ), $default );
+		$this->assertSame( array( $file ), $yes );
+	}
+
+	/**
+	 * With attach_pdf set to no nothing is attached and existing attachments are kept.
+	 */
+	public function test_does_not_attach_pdf_when_disabled() {
+		$file = wp_tempnam( 'conecom-test.pdf' );
+		$conn = new Conecom_Test_File_Pdf_Connector();
+		$conn->path = $file;
+		$order = $this->make_order();
+		$order->update_meta_data( '_conecom_test_doc_id', 'abc' );
+		$order->save();
+
+		$result = $this->make_orders( $conn, 'completed', array( 'attach_pdf' => 'no' ) )->attach_file_woocommerce_email( array( 'other.txt' ), 'customer_completed_order', $order->get_id() );
+		wp_delete_file( $file );
+
+		$this->assertSame( array( 'other.txt' ), $result );
 	}
 
 	/**
