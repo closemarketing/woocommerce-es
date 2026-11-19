@@ -109,6 +109,23 @@ class Import_Products {
 	}
 
 	/**
+	 * Denominator shown in the import log ("n/total").
+	 *
+	 * A paginated connector that can count its products (get_product_count) gives the real total.
+	 * Otherwise, and for non-paginated APIs, it stays the size of the current batch, as before.
+	 *
+	 * @param bool $api_is_paginated Whether the remote API paginates products.
+	 * @param int  $stored_total     Total counted by the connector at the start of the import (0 if unknown).
+	 * @param int  $products_count   Number of products in the current batch/page.
+	 * @return int
+	 */
+	public static function get_progress_total( $api_is_paginated, $stored_total, $products_count ) {
+		$stored_total = (int) $stored_total;
+
+		return ( $api_is_paginated && $stored_total > 0 ) ? $stored_total : (int) $products_count;
+	}
+
+	/**
 	 * Determines if product import should finish based on pagination status.
 	 *
 	 * @param int       $sync_loop       Current loop iteration (0-indexed).
@@ -307,6 +324,14 @@ class Import_Products {
 			$page      = intval( $sync_loop / $api_pagination, 0 );
 		}
 
+		// Total to show in the log, only when the connector can count its products.
+		if ( 0 === $sync_loop ) {
+			unset( $_SESSION['conecom_api_total'] );
+			if ( $api_is_paginated && HELPER::connector_supports( $connapi_erp, 'get_product_count' ) ) {
+				$_SESSION['conecom_api_total'] = max( 0, (int) $connapi_erp->get_product_count() );
+			}
+		}
+
 		if ( 0 === $sync_loop || ( $api_is_paginated && $api_pagination && $api_pagination > 0 && 0 === $loop_page ) ) {
 			$api_products = $connapi_erp->get_products( null, $api_is_paginated ? $sync_loop : null );
 			if ( ! isset( $api_products['status'] ) || 'error' !== $api_products['status'] ) {
@@ -371,7 +396,8 @@ class Import_Products {
 
 		$res_message .= '[' . date_i18n( 'H:i:s' ) . ']';
 		if ( 0 <= $sync_loop ) {
-			$res_message .= '[' . $products_synced . '/' . $products_count . '] ';
+			$products_total = self::get_progress_total( $api_is_paginated, $_SESSION['conecom_api_total'] ?? 0, $products_count );
+			$res_message   .= '[' . $products_synced . '/' . $products_total . '] ';
 		}
 		$res_message .= $message;
 
