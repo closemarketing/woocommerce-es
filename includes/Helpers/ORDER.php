@@ -522,8 +522,13 @@ class ORDER {
 			if ( ! empty( $tax_key ) ) {
 				$item_taxes['taxes'] = array( trim( $tax_key ) );
 			} else {
-				$item_taxes['tax'] = ! empty( $item_tax_data['total'][ $tax_rate_id_from_item ] ) ? (float) number_format( (float) $item_tax_data['total'][ $tax_rate_id_from_item ], 2, '.', '' ) : 0;
+				// The ERP expects the tax percentage, not the tax amount of the line.
+				$item_taxes['tax'] = (float) number_format( (float) \WC_Tax::get_rate_percent_value( $tax_rate_id_from_item ), 2, '.', '' );
 			}
+		} elseif ( wc_tax_enabled() ) {
+			// Line without taxes (VAT exempt order, zero-rated item): send 0% explicitly,
+			// otherwise the ERP applies the default tax of the product.
+			$item_taxes['tax'] = 0.0;
 		}
 
 		return $item_taxes;

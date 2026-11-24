@@ -5,8 +5,8 @@ Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
 Tested up to: 7.1
-Stable tag: 3.5.0
-Version: 3.5.0
+Stable tag: 3.5.1
+Version: 3.5.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -226,6 +226,14 @@ The core connector also integrates with Brevo, an email marketing and marketing 
 This plugin uses the VIES (VAT Information Exchange System) service provided by the European Commission to validate EU VAT numbers. The VIES service is accessed through the dragonbe/vies PHP library. When a customer enters a VAT number during checkout, the plugin communicates with the VIES web service to verify the number's validity. This is an official EU service and does not store personal data. [VIES Information](https://ec.europa.eu/taxation_customs/vies/)
 
 == Changelog ==
+
+= 3.5.1 =
+* Added: EU VAT on orders created or edited in the admin. New "EU VAT" box in the order sidebar shows whether the VAT number is valid (VIES), the company name and whether the order is VAT exempt, with a button to validate it. A valid intra-community VAT number marks the order as VAT exempt, so the "Recalculate" button removes the VAT, and saving an editable order recalculates its taxes when the exemption changes.
+* Fixed: Orders exempted at checkout are flagged with the WooCommerce native `is_vat_exempt` meta, so later recalculations no longer add the VAT back. VAT validation and exemption meta are stored through the order object, compatible with HPOS.
+* Fixed: Order lines without taxes (VAT exempt orders) are sent to the ERP with an explicit 0% tax, instead of no tax data, which made the ERP (e.g. Holded) apply the product default VAT. Lines with an unmapped tax rate now send the tax percentage instead of the tax amount.
+* Fixed: VAT numbers typed with their country prefix (e.g. SE556805334101) are validated correctly when the country is also known.
+* Fixed: Removed the duplicated VAT No field from the shipping address in the admin order screen.
+* Enhancement: Customers keep the VAT number stored by the official WooCommerce EU VAT Number plugin (user profile, checkout pre-fill and order sync to the ERP).
 
 = 3.5.0 =
 * Added: Multiple connectors. Configure several ERPs/CRMs on the same store (even the same ERP twice), each with its own credentials, settings and product/order workflows; order status and metadata are kept isolated per connector.

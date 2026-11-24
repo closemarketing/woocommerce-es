@@ -100,6 +100,8 @@ class VAT {
 		if ( empty( $country_code ) ) {
 			$country_code = self::extract_country_code( $vat_number );
 			$vat_number   = substr( $vat_number, 2 );
+		} else {
+			$vat_number = self::strip_country_prefix( $vat_number, $country_code );
 		}
 
 		$cache_key    = md5( $country_code . $vat_number );
@@ -415,6 +417,28 @@ class VAT {
 	}
 
 	/**
+	 * Remove the country prefix from a VAT number (e.g. SE556805334101 → 556805334101).
+	 *
+	 * Greece uses the "EL" prefix in VIES while its ISO code is "GR".
+	 *
+	 * @param string $vat_number   VAT number.
+	 * @param string $country_code Country code (2 letters).
+	 * @return string VAT number without the country prefix.
+	 */
+	public static function strip_country_prefix( $vat_number, $country_code ) {
+		$vat_number = self::clean_vat_number( $vat_number );
+		$prefixes   = 'GR' === $country_code ? array( 'GR', 'EL' ) : array( $country_code );
+
+		foreach ( $prefixes as $prefix ) {
+			if ( '' !== $prefix && 0 === strpos( $vat_number, $prefix ) ) {
+				return substr( $vat_number, strlen( $prefix ) );
+			}
+		}
+
+		return $vat_number;
+	}
+
+	/**
 	 * Get list of EU countries
 	 *
 	 * @return array List of EU country codes.
@@ -501,8 +525,8 @@ class VAT {
 	/**
 	 * Save VAT validation result to order meta
 	 *
-	 * @param int   $order_id Order ID.
-	 * @param array $validation_result Validation result.
+	 * @param int|\WC_Order $order_id          Order ID or object.
+	 * @param array         $validation_result Validation result.
 	 * @return void
 	 */
 	public static function save_vat_validation_result( $order_id, $validation_result ) {
@@ -510,18 +534,25 @@ class VAT {
 			return;
 		}
 
-		update_post_meta( $order_id, '_vat_validation_result', $validation_result );
-		update_post_meta( $order_id, '_vat_number_validated', $validation_result['valid'] ? 'yes' : 'no' );
+		// Use the order object so the meta is stored in HPOS tables too.
+		$order = $order_id instanceof \WC_Order ? $order_id : wc_get_order( $order_id );
+		if ( ! $order ) {
+			return;
+		}
+
+		$order->update_meta_data( '_vat_validation_result', $validation_result );
+		$order->update_meta_data( '_vat_number_validated', ! empty( $validation_result['valid'] ) ? 'yes' : 'no' );
 
 		if ( isset( $validation_result['request_date'] ) ) {
-			update_post_meta( $order_id, '_vat_validation_date', $validation_result['request_date'] );
+			$order->update_meta_data( '_vat_validation_date', $validation_result['request_date'] );
 		}
+		$order->save_meta_data();
 	}
 
 	/**
 	 * Get VAT validation result from order meta
 	 *
-	 * @param int $order_id Order ID.
+	 * @param int|\WC_Order $order_id Order ID or object.
 	 * @return array|null Validation result or null.
 	 */
 	public static function get_vat_validation_result( $order_id ) {
@@ -529,7 +560,143 @@ class VAT {
 			return null;
 		}
 
-		return get_post_meta( $order_id, '_vat_validation_result', true );
+		$order = $order_id instanceof \WC_Order ? $order_id : wc_get_order( $order_id );
+		if ( ! $order ) {
+			return null;
+		}
+
+		$result = $order->get_meta( '_vat_validation_result' );
+
+		return is_array( $result ) ? $result : null;
+	}
+
+	/**
+	 * Get the country used to decide the VAT exemption of an order.
+	 *
+	 * Follows the WooCommerce "Calculate tax based on" setting, so when taxes
+	 * are calculated on the shipping address the exemption follows the goods.
+	 *
+	 * @param \WC_Order $order Order object.
+	 * @return string Country code.
+	 */
+	public static function get_order_tax_country( $order ) {
+		$tax_based_on = get_option( 'woocommerce_tax_based_on', 'shipping' );
+
+		if ( 'base' === $tax_based_on ) {
+			return WC()->countries->get_base_country();
+		}
+
+		if ( 'shipping' === $tax_based_on && $order->get_shipping_country() ) {
+			return $order->get_shipping_country();
+		}
+
+		return $order->get_billing_country();
+	}
+
+	/**
+	 * Validate the VAT number of an order and store the exemption on it.
+	 *
+	 * Sets the WooCommerce native "is_vat_exempt" meta, so every later
+	 * recalculation of the order (admin "Recalculate", status changes,
+	 * third-party integrations) keeps the order without VAT. The order is
+	 * not saved; call $order->save() afterwards.
+	 *
+	 * @param \WC_Order   $order      Order object.
+	 * @param string|null $vat_number VAT number. Defaults to the one stored in the order.
+	 * @param string|null $country    Tax country. Defaults to the order tax country.
+	 * @return array{status: string, vat_exempt: bool, message: string, result: array|null, country?: string}
+	 */
+	public static function update_order_vat_exemption( $order, $vat_number = null, $country = null ) {
+		if ( null === $vat_number ) {
+			$vat_number = ORDER::get_billing_vat( $order );
+		}
+		if ( null === $country ) {
+			$country = self::get_order_tax_country( $order );
+		}
+		$vat_number = self::clean_vat_number( (string) $vat_number );
+
+		$response = array(
+			'status'     => 'empty',
+			'vat_exempt' => false,
+			'message'    => '',
+			'result'     => null,
+		);
+
+		if ( '' === $vat_number ) {
+			self::set_order_vat_exempt( $order, false );
+			$order->delete_meta_data( '_vat_validation_result' );
+			$order->delete_meta_data( '_vat_number_validated' );
+			return $response;
+		}
+
+		// Fall back to the VAT number prefix when the order has no address yet.
+		if ( empty( $country ) ) {
+			$country = self::extract_country_code( $vat_number );
+		}
+
+		$result = self::validate_vat_number( self::strip_country_prefix( $vat_number, $country ), $country );
+
+		$order->update_meta_data( '_vat_validation_result', $result );
+		$order->update_meta_data( '_vat_number_validated', ! empty( $result['valid'] ) ? 'yes' : 'no' );
+		if ( isset( $result['request_date'] ) ) {
+			$order->update_meta_data( '_vat_validation_date', $result['request_date'] );
+		}
+
+		$is_valid  = ! empty( $result['valid'] );
+		$is_exempt = self::should_apply_vat_exemption( $country, $vat_number, $is_valid );
+
+		self::set_order_vat_exempt( $order, $is_exempt, $country, $vat_number );
+
+		$response['status']     = $is_valid ? 'valid' : 'invalid';
+		$response['vat_exempt'] = $is_exempt;
+		$response['result']     = $result;
+		$response['country']    = $country;
+
+		if ( $is_exempt ) {
+			$response['message'] = sprintf(
+				// translators: %s is the country code.
+				__( 'B2B intra-community transaction - Zero VAT rate applied (%s)', 'woocommerce-es' ),
+				$country
+			);
+		} elseif ( $is_valid ) {
+			$response['message'] = __( 'Valid VAT number, but the order is not intra-community (same country or outside the EU) - Standard VAT rate applies', 'woocommerce-es' );
+		} else {
+			$response['message'] = sprintf(
+				// translators: 1: validation message, 2: country code.
+				__( '%1$s - Standard VAT rate applies for %2$s', 'woocommerce-es' ),
+				$result['message'] ?? __( 'VAT number is invalid', 'woocommerce-es' ),
+				$country
+			);
+		}
+
+		return $response;
+	}
+
+	/**
+	 * Store (or clear) the VAT exemption flags on an order.
+	 *
+	 * @param \WC_Order $order      Order object.
+	 * @param bool      $is_exempt  Whether the order is VAT exempt.
+	 * @param string    $country    Country code.
+	 * @param string    $vat_number VAT number.
+	 * @return void
+	 */
+	public static function set_order_vat_exempt( $order, $is_exempt, $country = '', $vat_number = '' ) {
+		if ( $is_exempt ) {
+			$order->update_meta_data( 'is_vat_exempt', 'yes' );
+			$order->update_meta_data( '_vat_exempt_applied', 'yes' );
+			$order->update_meta_data( '_vat_exempt_country', $country );
+			$order->update_meta_data( '_vat_exempt_vat_number', $vat_number );
+			return;
+		}
+
+		// Only clear the native flag when this plugin set it, to respect manual changes.
+		if ( 'yes' === $order->get_meta( '_vat_exempt_applied' ) ) {
+			$order->update_meta_data( 'is_vat_exempt', 'no' );
+		}
+		$order->delete_meta_data( '_vat_exempt_applied' );
+		$order->delete_meta_data( '_vat_exempt_country' );
+		$order->delete_meta_data( '_vat_exempt_vat_number' );
 	}
 
 	/**
