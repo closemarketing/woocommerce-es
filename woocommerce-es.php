@@ -31,10 +31,12 @@ define(
 		'_billing_vat',
 		'_billing_nif',
 		'_billing_vat_number',
+		'_vat_number',                                // WooCommerce EU VAT Number < 2.3.
 		'billing_vat',
 		'billing_cif',
 		'_wc_billing/connect_ecommerce/billing_vat',  // Blocks checkout billing field.
 		'_wc_shipping/connect_ecommerce/billing_vat', // Blocks checkout shipping field.
+		'_shipping_vat',                              // Classic checkout shipping field.
 		'VAT Number',
 	)
 );

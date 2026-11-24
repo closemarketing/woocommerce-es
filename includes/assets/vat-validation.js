@@ -22,6 +22,8 @@
 		state: {
 			lastVAT: '',
 			lastCountry: '',
+			lastType: '',
+			activeType: 'billing',
 			validationTimer: null,
 			isValidating: false,
 			currentRequest: null,
@@ -47,19 +49,16 @@
 		 * Clean up duplicate feedback containers
 		 */
 		cleanupDuplicateContainers() {
-			// Find all feedback containers.
-			const containers = document.querySelectorAll( '.conecom-vat-feedback' );
-			
-			if ( containers.length > 1 ) {
-				// Keep only the one with ID, or the first one.
-				const mainContainer = document.querySelector( '#conecom-vat-feedback-container' ) || containers[0];
-				
-				containers.forEach( ( container ) => {
-					if ( container !== mainContainer ) {
-						container.remove();
-					}
-				} );
-			}
+			// One feedback container per address type (billing / shipping).
+			const seen = {};
+			document.querySelectorAll( '.conecom-vat-feedback' ).forEach( ( container ) => {
+				const type = container.dataset.addressType || 'billing';
+				if ( seen[ type ] ) {
+					container.remove();
+				} else {
+					seen[ type ] = true;
+				}
+			} );
 		},
 
 		/**
@@ -69,23 +68,35 @@
 			// Clean up any duplicate feedback containers first.
 			this.cleanupDuplicateContainers();
 			
-			// Find VAT input field - try multiple selectors.
-			const vatField = this.getVATField();
-			const countryField = this.getCountryField();
+			// Billing and shipping VAT fields (shipping only exists in some checkouts).
+			const vatFields = this.getVATFields();
 
-			if ( ! vatField ) {
+			if ( ! vatFields.length ) {
 				console.warn( 'WooCommerce ES: VAT field not found' );
 				return;
 			}
 
-			// Listen to input events (more modern than keyup).
-			vatField.addEventListener( 'input', ( e ) => this.handleVATInput( e ) );
-			vatField.addEventListener( 'blur', ( e ) => this.handleVATBlur( e ) );
+			vatFields.forEach( ( vatField ) => {
+				if ( vatField.dataset.conecomVatBound ) {
+					return;
+				}
+				vatField.dataset.conecomVatBound = 'true';
+				// Listen to input events (more modern than keyup).
+				vatField.addEventListener( 'input', ( e ) => this.handleVATInput( e ) );
+				vatField.addEventListener( 'blur', ( e ) => this.handleVATBlur( e ) );
+			} );
 
-			// Listen to country changes.
-			if ( countryField ) {
-				countryField.addEventListener( 'change', () => this.resetAndValidate() );
-			}
+			// Listen to country changes of both addresses.
+			[ 'billing', 'shipping' ].forEach( ( type ) => {
+				const countryField = this.getCountryField( type );
+				if ( countryField && ! countryField.dataset.conecomVatBound ) {
+					countryField.dataset.conecomVatBound = 'true';
+					countryField.addEventListener( 'change', () => {
+						this.state.activeType = type;
+						this.resetAndValidate();
+					} );
+				}
+			} );
 
 			// Listen to WooCommerce checkout updates.
 			document.body.addEventListener( 'updated_checkout', () => this.reattachListeners() );
@@ -98,42 +109,67 @@
 		},
 
 		/**
-		 * Get VAT input field
-		 * 
-		 * @return {HTMLElement|null}
+		 * Address type ('billing' | 'shipping') a field belongs to.
+		 *
+		 * @param {HTMLElement} field
+		 * @return {string}
 		 */
-		getVATField() {
-			// Try multiple selectors for compatibility (classic + blocks).
+		getAddressType( field ) {
+			const ref = ( ( field && ( field.id || '' ) ) + ' ' + ( field && ( field.name || '' ) ) ).toLowerCase();
+			return ref.indexOf( 'shipping' ) !== -1 ? 'shipping' : 'billing';
+		},
+
+		/**
+		 * Get all VAT input fields (billing and shipping, classic + blocks).
+		 *
+		 * @return {HTMLElement[]}
+		 */
+		getVATFields() {
 			const selectors = [
 				'#billing_vat',
+				'#shipping_vat',
 				'input[name="billing_vat"]',
+				'input[name="shipping_vat"]',
 				'input[name="connect_ecommerce/billing_vat"]',
 				'input[id*="billing_vat"]',
 				'input[id*="billing-vat"]',
 			];
-
-			for ( const selector of selectors ) {
-				const field = document.querySelector( selector );
-				if ( field ) {
-					return field;
-				}
-			}
-
-			return null;
+			const found = [];
+			selectors.forEach( ( selector ) => {
+				document.querySelectorAll( selector ).forEach( ( field ) => {
+					if ( found.indexOf( field ) === -1 ) {
+						found.push( field );
+					}
+				} );
+			} );
+			return found;
 		},
 
 		/**
-		 * Get country field
-		 * 
+		 * Get the VAT input field of an address type (defaults to the active one).
+		 *
+		 * @param {string} type
 		 * @return {HTMLElement|null}
 		 */
-		getCountryField() {
-			// Try multiple selectors for compatibility (classic + blocks).
+		getVATField( type ) {
+			const wanted = type || this.state.activeType || 'billing';
+			const fields = this.getVATFields();
+			return fields.find( ( f ) => this.getAddressType( f ) === wanted ) || fields[ 0 ] || null;
+		},
+
+		/**
+		 * Get country field of an address type (defaults to the active one).
+		 *
+		 * @param {string} type
+		 * @return {HTMLElement|null}
+		 */
+		getCountryField( type ) {
+			const t = type || this.state.activeType || 'billing';
 			const selectors = [
-				'#billing_country',
-				'select[name="billing_country"]',
-				'select[id*="billing-country"]',
-				'select[id*="billing_country"]',
+				'#' + t + '_country',
+				'select[name="' + t + '_country"]',
+				'select[id*="' + t + '-country"]',
+				'select[id*="' + t + '_country"]',
 			];
 
 			for ( const selector of selectors ) {
@@ -152,35 +188,25 @@
 		 * @return {HTMLElement}
 		 */
 		getFeedbackContainer() {
-			const vatField = this.getVATField();
+			const type     = this.state.activeType || 'billing';
+			const vatField = this.getVATField( type );
 			if ( ! vatField ) {
 				return null;
 			}
 
-			// Try to find existing container in multiple locations.
 			const fieldWrapper = vatField.closest( '.form-row' ) || vatField.parentElement;
-			
-			// Search in various locations.
-			let container = document.querySelector( '#conecom-vat-feedback-container' );
-			
-			if ( ! container ) {
-				container = fieldWrapper.querySelector( '.conecom-vat-feedback' );
-			}
-			
-			if ( ! container && fieldWrapper.nextElementSibling ) {
-				if ( fieldWrapper.nextElementSibling.classList.contains( 'conecom-vat-feedback' ) ) {
-					container = fieldWrapper.nextElementSibling;
-				}
-			}
+			const id           = 'conecom-vat-feedback-container-' + type;
+
+			let container = document.getElementById( id );
 
 			if ( ! container ) {
-				// Create new container with unique ID.
 				container = document.createElement( 'div' );
-				container.id = 'conecom-vat-feedback-container';
+				container.id = id;
 				container.className = 'conecom-vat-feedback';
+				container.dataset.addressType = type;
 				container.setAttribute( 'role', 'status' );
 				container.setAttribute( 'aria-live', 'polite' );
-				
+
 				// Insert after the field wrapper.
 				fieldWrapper.insertAdjacentElement( 'afterend', container );
 			}
@@ -194,6 +220,7 @@
 		 * @param {Event} e
 		 */
 		handleVATInput( e ) {
+			this.state.activeType = this.getAddressType( e.target );
 			const vatValue = e.target.value.trim().toUpperCase();
 
 			// Clear previous timer.
@@ -235,6 +262,7 @@
 		 * @param {Event} e
 		 */
 		handleVATBlur( e ) {
+			this.state.activeType = this.getAddressType( e.target );
 			const vatValue = e.target.value.trim().toUpperCase();
 
 			if ( vatValue && vatValue !== this.state.lastVAT ) {
@@ -252,17 +280,19 @@
 		 * @param {string} vatNumber
 		 */
 		async performValidation( vatNumber ) {
-			const countryField = this.getCountryField();
+			const type         = this.state.activeType || 'billing';
+			const countryField = this.getCountryField( type );
 			const countryCode = countryField ? countryField.value : '';
 
 			// Check if we've already validated this combination.
-			if ( this.state.lastVAT === vatNumber && this.state.lastCountry === countryCode ) {
+			if ( this.state.lastVAT === vatNumber && this.state.lastCountry === countryCode && this.state.lastType === type ) {
 				return;
 			}
 
 			this.state.isValidating = true;
 			this.state.lastVAT = vatNumber;
 			this.state.lastCountry = countryCode;
+			this.state.lastType = type;
 
 			// Create FormData.
 			const formData = new FormData();
@@ -440,6 +470,7 @@
 		resetAndValidate() {
 			this.state.lastVAT = '';
 			this.state.lastCountry = '';
+			this.state.lastType = '';
 			
 			const vatField = this.getVATField();
 			if ( vatField && vatField.value ) {
