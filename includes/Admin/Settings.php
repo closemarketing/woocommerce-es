@@ -532,6 +532,18 @@ class Settings {
 							<li><a href="<?php echo esc_attr( $tab_conn_prefix ); ?>&subtab=payment_methods" class="<?php echo 'payment_methods' === $active_subtab ? 'current' : ''; ?>"><?php esc_html_e( 'Payment Methods', 'woocommerce-es' ); ?></a></li>
 							<?php
 						}
+
+						/**
+						 * Lets a connector add its own subtab to the connector tab.
+						 *
+						 * Print an `<li><a>` item. Render its content on the
+						 * `connect_ecommerce_settings_tabs_content` action.
+						 *
+						 * @param string $active_connector_tab Connector ID of the active tab.
+						 * @param string $active_subtab        Active subtab slug.
+						 * @param string $tab_conn_prefix      URL prefix to build the subtab link (append `&subtab=slug`).
+						 */
+						do_action( 'connect_ecommerce_connector_subtabs', $active_connector_tab, $active_subtab, $tab_conn_prefix );
 						?>
 					</ul>
 					<br class="clear">
