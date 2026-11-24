@@ -54,6 +54,11 @@ class Base {
 
 		add_action( 'update_option_woocommerce_prices_include_tax', array( HELPER::class, 'sync_tax_option_with_woocommerce' ) );
 
+		// The recurring sync callbacks must exist outside the admin too: Action Scheduler runs them from WP-Cron / WP-CLI.
+		if ( ! is_admin() && ( wp_doing_cron() || ( defined( 'WP_CLI' ) && WP_CLI ) ) ) {
+			new Import_Products( $connector, $connectors_data );
+		}
+
 		if ( is_admin() ) {
 			// Register the form handler on every admin request, including admin-post.php.
 			new Settings_Payment_Methods();
