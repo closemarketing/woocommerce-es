@@ -45,12 +45,13 @@
 		setupBlocksListeners() {
 			// Use MutationObserver to detect when blocks are rendered.
 			const observer = new MutationObserver( () => {
-				const vatField = this.getVATField();
-				
-				if ( vatField && ! vatField.dataset.conecomVatListener ) {
-					vatField.dataset.conecomVatListener = 'true';
-					this.attachValidationToField( vatField );
-				}
+				// Billing and shipping VAT fields.
+				this.getVATFields().forEach( ( vatField ) => {
+					if ( ! vatField.dataset.conecomVatListener ) {
+						vatField.dataset.conecomVatListener = 'true';
+						this.attachValidationToField( vatField );
+					}
+				} );
 			} );
 
 			// Observe checkout block container.
@@ -64,37 +65,70 @@
 		},
 
 		/**
-		 * Get VAT field in blocks context
-		 * 
-		 * @return {HTMLElement|null}
+		 * Address type ('billing' | 'shipping') of a field.
+		 *
+		 * @param {HTMLElement} field
+		 * @return {string}
 		 */
-		getVATField() {
-			// Try multiple selectors for blocks.
+		getAddressType( field ) {
+			const ref = ( ( field.id || '' ) + ' ' + ( field.name || '' ) ).toLowerCase();
+			return ref.indexOf( 'shipping' ) !== -1 ? 'shipping' : 'billing';
+		},
+
+		/**
+		 * Get all VAT fields in blocks context (billing and shipping).
+		 *
+		 * @return {HTMLElement[]}
+		 */
+		getVATFields() {
 			const selectors = [
 				'input[id*="billing_vat"]',
 				'input[name*="billing_vat"]',
 				'input[id*="billing-vat"]',
 				'input[name*="connect_ecommerce/billing_vat"]',
 			];
-
-			for ( const selector of selectors ) {
-				const field = document.querySelector( selector );
-				if ( field ) {
-					return field;
-				}
-			}
-
-			return null;
+			const found = [];
+			selectors.forEach( ( selector ) => {
+				document.querySelectorAll( selector ).forEach( ( field ) => {
+					if ( found.indexOf( field ) === -1 ) {
+						found.push( field );
+					}
+				} );
+			} );
+			return found;
 		},
 
 		/**
-		 * Get country field in blocks
-		 * 
+		 * Get the VAT field to validate: the priority address first, billing as fallback.
+		 * Only fields with a value are considered; falls back to the first field found.
+		 *
 		 * @return {HTMLElement|null}
 		 */
-		getCountryField() {
-			return document.querySelector( 'select[id*="billing-country"]' ) ||
-				   document.querySelector( 'select[id*="billing_country"]' );
+		getVATField() {
+			const fields = this.getVATFields();
+			if ( ! fields.length ) {
+				return null;
+			}
+			const order = this.config.priority === 'shipping' ? [ 'shipping', 'billing' ] : [ 'billing', 'shipping' ];
+			for ( const type of order ) {
+				const match = fields.find( ( f ) => this.getAddressType( f ) === type && f.value.trim() );
+				if ( match ) {
+					return match;
+				}
+			}
+			return fields[ 0 ];
+		},
+
+		/**
+		 * Get country field of the same address type as a VAT field.
+		 *
+		 * @param {HTMLElement} vatField
+		 * @return {HTMLElement|null}
+		 */
+		getCountryField( vatField ) {
+			const type = vatField ? this.getAddressType( vatField ) : 'billing';
+			return document.querySelector( 'select[id*="' + type + '-country"]' ) ||
+				   document.querySelector( 'select[id*="' + type + '_country"]' );
 		},
 
 		/**
@@ -139,7 +173,7 @@
 			}
 
 			const vatNumber = vatField.value.trim();
-			const countryField = this.getCountryField();
+			const countryField = this.getCountryField( vatField );
 			const countryCode = countryField ? countryField.value : '';
 
 			if ( ! vatNumber ) {

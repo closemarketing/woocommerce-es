@@ -229,6 +229,7 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 = next =
 * Added: "Add order item meta to the line description" setting. Custom data saved on each order line (product configurators, personalisation fields) is sent to the ERP in the line description as "Key: Value" lines, with an option to exclude keys. New `conecom_order_item_description` filter to customise the line description.
+* Fixed: VAT number not shown on the admin order screen and in order emails for orders migrated from other VAT plugins. All VAT displays now use the same fallback as the ERP sync, which also reads the legacy WooCommerce EU VAT Number key `_vat_number`. New `conecom_vat_field_slugs` filter to add custom meta keys.
 
 = 3.5.0 =
 * Added: Multiple connectors. Configure several ERPs/CRMs on the same store (even the same ERP twice), each with its own credentials, settings and product/order workflows; order status and metadata are kept isolated per connector.
