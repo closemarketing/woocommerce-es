@@ -74,9 +74,11 @@ class Import_Products {
 	 *
 	 * @param array $connector       Active connector.
 	 * @param array $connectors_data Connectors payload from HELPER::get_connectors(), to schedule one cron per connector.
+	 * @param bool  $schedule        Whether to (re)schedule the recurring actions. False only registers the cron callbacks,
+	 *                               so WP Cron / WP-CLI requests can run them without extra queries on every request.
 	 * @return void
 	 */
-	public function __construct( $connector, $connectors_data = array() ) {
+	public function __construct( $connector, $connectors_data = array(), $schedule = true ) {
 		add_action( 'admin_enqueue_scripts', array( $this, 'admin_enqueues' ) );
 		if ( empty( $connector ) || empty( $connector['connector'] ) || empty( $connector['options'] ) ) {
 			return;
@@ -99,11 +101,15 @@ class Import_Products {
 				continue;
 			}
 			if ( empty( $cron_period ) || 'no' === $cron_period || ! HELPER::is_workflow_enabled_for_connector( $cron_connector['meta'] ?? array(), 'products' ) ) {
-				$this->cancel_connector_crons( (string) $cron_connector_id );
+				if ( $schedule ) {
+					$this->cancel_connector_crons( (string) $cron_connector_id );
+				}
 				continue;
 			}
-			$this->cancel_connector_crons( (string) $cron_connector_id, $cron_period );
-			$this->cron_products( (string) $cron_connector_id, $cron_period );
+			if ( $schedule ) {
+				$this->cancel_connector_crons( (string) $cron_connector_id, $cron_period );
+				$this->cron_products( (string) $cron_connector_id, $cron_period );
+			}
 			add_action( $cron_period, array( $this, 'cron_sync_products' ), 10, 1 );
 		}
 	}

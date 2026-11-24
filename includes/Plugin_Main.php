@@ -66,6 +66,9 @@ class Base {
 			new Taxes_Rates( $connector );
 			new Taxes_Types_ERP( $connector );
 			new Webhooks();
+		} else {
+			// Cron callbacks must exist outside the admin too: WP Cron and WP-CLI run Action Scheduler there.
+			new Import_Products( $connector, $connectors_data, false );
 		}
 
 		// Product webhooks endpoint (REST API).
