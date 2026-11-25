@@ -680,7 +680,7 @@ class SettingsTest extends WP_UnitTestCase {
 
 		$this->assertStringContainsString( '[invoice_phase]', $html );
 		$this->assertMatchesRegularExpression( '/<option value="draft"\s+selected=\'selected\'/', $html );
-		$this->assertStringContainsString( 'value="auto"', $html );
+		$this->assertStringContainsString( 'value="approve_send"', $html );
 		$this->assertStringContainsString( 'Fallback:', $html );
 		$this->assertStringContainsString( 'WooCommerce completed order email is always sent', $html );
 	}
@@ -689,9 +689,9 @@ class SettingsTest extends WP_UnitTestCase {
 	 * A saved phase wins; a never-saved one mirrors the legacy approve document setting.
 	 */
 	public function test_invoice_phase_field_selection_and_legacy_fallback() {
-		$this->assertMatchesRegularExpression( '/<option value="auto"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'invoice_phase' => 'auto', 'approve_document' => 'no' ) ) );
+		$this->assertMatchesRegularExpression( '/<option value="approve_send"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'invoice_phase' => 'approve_send', 'approve_document' => 'no' ) ) );
 		$this->assertMatchesRegularExpression( '/<option value="draft"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'invoice_phase' => 'draft', 'approve_document' => 'yes' ) ) );
-		$this->assertMatchesRegularExpression( '/<option value="auto"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'approve_document' => 'yes' ) ) );
+		$this->assertMatchesRegularExpression( '/<option value="approve_send"\s+selected=\'selected\'/', $this->render_invoice_phase( array( 'approve_document' => 'yes' ) ) );
 		$this->assertMatchesRegularExpression( '/<option value="draft"\s+selected=\'selected\'/', $this->render_invoice_phase( array() ) );
 	}
 
@@ -704,10 +704,10 @@ class SettingsTest extends WP_UnitTestCase {
 		$sanitize->setAccessible( true );
 		$existing = array( 'approve_document' => 'no', 'attach_pdf' => 'yes', 'invoice_phase' => 'draft' );
 
-		$auto  = $sanitize->invoke( $page, array( 'invoice_phase' => 'auto' ), $existing );
+		$auto  = $sanitize->invoke( $page, array( 'invoice_phase' => 'approve_send' ), $existing );
 		$draft = $sanitize->invoke( $page, array( 'invoice_phase' => 'draft' ), $auto );
 
-		$this->assertSame( 'auto', ORDER::get_invoice_phase( $auto ) );
+		$this->assertSame( 'approve_send', ORDER::get_invoice_phase( $auto ) );
 		$this->assertTrue( ORDER::should_approve_document( $auto ) );
 		$this->assertSame( 'draft', ORDER::get_invoice_phase( $draft ) );
 		$this->assertFalse( ORDER::should_approve_document( $draft ) );

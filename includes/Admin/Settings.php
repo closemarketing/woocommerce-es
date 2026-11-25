@@ -1185,7 +1185,7 @@ class Settings {
 			if ( in_array( 'invoice_phase', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_invoice_phase',
-					__( 'Invoice phase', 'woocommerce-es' ),
+					__( 'Invoice handling', 'woocommerce-es' ),
 					array( $this, 'invoice_phase_callback' ),
 					'connect_ecommerce_admin',
 					'connect_woocommerce_setting_section_orders',
@@ -2559,17 +2559,25 @@ class Settings {
 	 */
 	public function invoice_phase_callback() {
 		$phase = isset( $this->settings['invoice_phase'] ) ? $this->settings['invoice_phase'] : '';
-		if ( ! in_array( $phase, array( 'draft', 'auto' ), true ) ) {
+		if ( ! in_array( $phase, array( 'draft', 'approve_send' ), true ) ) {
 			// Never saved: show what the legacy "approve document" setting was already doing.
-			$phase = isset( $this->settings['approve_document'] ) && 'yes' === $this->settings['approve_document'] ? 'auto' : 'draft';
+			$phase = isset( $this->settings['approve_document'] ) && 'yes' === $this->settings['approve_document'] ? 'approve_send' : 'draft';
 		}
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][invoice_phase]" id="wcpimh_invoice_phase">
-			<option value="draft" <?php selected( $phase, 'draft' ); ?>><?php esc_html_e( 'Phase 1: draft document, no PDF attached', 'woocommerce-es' ); ?></option>
-			<option value="auto" <?php selected( $phase, 'auto' ); ?>><?php esc_html_e( 'Phase 2: approve and send the invoice from the connector', 'woocommerce-es' ); ?></option>
+			<option value="draft" <?php selected( $phase, 'draft' ); ?>><?php esc_html_e( 'Create as draft: nothing is sent to the customer', 'woocommerce-es' ); ?></option>
+			<option value="approve_send" <?php selected( $phase, 'approve_send' ); ?>>
+				<?php
+				printf(
+					// translators: %s: ERP name, e.g. Holded.
+					esc_html__( 'Approve and send from %s: replaces the WooCommerce invoice', 'woocommerce-es' ),
+					esc_html( ! empty( $this->options['name'] ) ? $this->options['name'] : __( 'the ERP', 'woocommerce-es' ) )
+				);
+				?>
+			</option>
 		</select>
 		<p class="description">
-			<?php esc_html_e( 'Phase 1 creates the document as a draft and WooCommerce never attaches its PDF to the completed order email. Phase 2 approves the document and sends the invoice to the customer from the connector.', 'woocommerce-es' ); ?>
+			<?php esc_html_e( 'Phase 1 (draft): the document is created as a draft and WooCommerce never attaches its PDF to the completed order email. Phase 2 (approve and send): the document is approved and the ERP sends the invoice to the customer.', 'woocommerce-es' ); ?>
 		</p>
 		<p class="description">
 			<strong><?php esc_html_e( 'Fallback:', 'woocommerce-es' ); ?></strong>

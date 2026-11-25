@@ -3,7 +3,7 @@
  * Class InvoicePhaseTest
  *
  * Phase 1 (draft): the document is not approved and WooCommerce attaches no PDF.
- * Phase 2 (auto): the document is approved and the connector sends it to the customer;
+ * Phase 2 (approve_send): the document is approved and the connector sends it to the customer;
  * any failure leaves an order note and the WooCommerce email stays as the fallback.
  *
  * Command: composer test -- --filter=InvoicePhaseTest
@@ -162,7 +162,7 @@ class InvoicePhaseTest extends WP_UnitTestCase {
 		$this->assertSame( 'draft', ORDER::get_invoice_phase( array( 'invoice_phase' => 'draft' ) ) );
 
 		$this->assertFalse( ORDER::should_approve_document( array( 'invoice_phase' => 'draft', 'approve_document' => 'yes' ) ) );
-		$this->assertTrue( ORDER::should_approve_document( array( 'invoice_phase' => 'auto', 'approve_document' => 'no' ) ) );
+		$this->assertTrue( ORDER::should_approve_document( array( 'invoice_phase' => 'approve_send', 'approve_document' => 'no' ) ) );
 		$this->assertTrue( ORDER::should_approve_document( array( 'approve_document' => 'yes' ) ) );
 		$this->assertFalse( ORDER::should_approve_document( array() ) );
 	}
@@ -174,7 +174,7 @@ class InvoicePhaseTest extends WP_UnitTestCase {
 		$order = $this->make_order();
 		$base  = array( 'doctype' => 'invoice' );
 
-		$auto  = ORDER::generate_order_data( array_merge( $base, array( 'invoice_phase' => 'auto' ) ), $order, 'test' );
+		$auto  = ORDER::generate_order_data( array_merge( $base, array( 'invoice_phase' => 'approve_send' ) ), $order, 'test' );
 		$draft = ORDER::generate_order_data( array_merge( $base, array( 'invoice_phase' => 'draft', 'approve_document' => 'yes' ) ), $order, 'test' );
 
 		$this->assertTrue( $auto['approveDoc'] );
@@ -195,7 +195,7 @@ class InvoicePhaseTest extends WP_UnitTestCase {
 					'order_only_order_completed' => 'completed',
 					'order_import_free_order'    => false,
 				),
-				'settings'    => array( 'ecstatus' => 'completed', 'invoice_phase' => 'auto', 'attach_pdf' => 'yes' ),
+				'settings'    => array( 'ecstatus' => 'completed', 'invoice_phase' => 'approve_send', 'attach_pdf' => 'yes' ),
 				'connapi_erp' => new Conecom_Test_Pdf_Connector(),
 			)
 		);
@@ -229,8 +229,8 @@ class InvoicePhaseTest extends WP_UnitTestCase {
 		$api->create_result = $this->approved_result();
 		$order              = $this->make_order( 'alex@example.com' );
 
-		$this->run_sync( $api, $order, 'auto' );
-		$this->run_sync( $api, wc_get_order( $order->get_id() ), 'auto' );
+		$this->run_sync( $api, $order, 'approve_send' );
+		$this->run_sync( $api, wc_get_order( $order->get_id() ), 'approve_send' );
 
 		$this->assertCount( 1, $api->sent );
 		$this->assertSame( 'invoice', $api->sent[0][0] );
@@ -249,7 +249,7 @@ class InvoicePhaseTest extends WP_UnitTestCase {
 		$api->create_result = array_merge( $this->approved_result(), array( 'approved' => false, 'approve_msg' => 'could not be approved: boom' ) );
 		$order              = $this->make_order();
 
-		$this->run_sync( $api, $order, 'auto' );
+		$this->run_sync( $api, $order, 'approve_send' );
 
 		$this->assertSame( array(), $api->sent );
 		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_test_doc_sent' ) );
@@ -268,12 +268,12 @@ class InvoicePhaseTest extends WP_UnitTestCase {
 		$api->send_result   = array( 'status' => 'error', 'message' => 'smtp down' );
 		$order              = $this->make_order();
 
-		$this->run_sync( $api, $order, 'auto' );
+		$this->run_sync( $api, $order, 'approve_send' );
 		$this->assertEmpty( wc_get_order( $order->get_id() )->get_meta( '_test_doc_sent' ) );
 		$this->assertStringContainsString( 'smtp down', implode( ' ', $this->notes( $order ) ) );
 
 		$api->send_result = array( 'status' => 'ok', 'message' => 'sent' );
-		$this->run_sync( $api, wc_get_order( $order->get_id() ), 'auto' );
+		$this->run_sync( $api, wc_get_order( $order->get_id() ), 'approve_send' );
 		$this->assertCount( 2, $api->sent );
 		$this->assertEquals( 1, wc_get_order( $order->get_id() )->get_meta( '_test_doc_sent' ) );
 	}
@@ -285,12 +285,12 @@ class InvoicePhaseTest extends WP_UnitTestCase {
 		$api                = new Conecom_Test_Phase_Connector();
 		$api->create_result = $this->approved_result();
 		$no_email           = $this->make_order( '' );
-		$this->run_sync( $api, $no_email, 'auto' );
+		$this->run_sync( $api, $no_email, 'approve_send' );
 		$this->assertSame( array(), $api->sent );
 		$this->assertStringContainsString( 'no valid billing email', implode( ' ', $this->notes( $no_email ) ) );
 
 		$order = $this->make_order();
-		$this->run_sync( new Conecom_Test_Phase_Connector_No_Send(), $order, 'auto' );
+		$this->run_sync( new Conecom_Test_Phase_Connector_No_Send(), $order, 'approve_send' );
 		$this->assertStringContainsString( 'cannot send documents', implode( ' ', $this->notes( $order ) ) );
 	}
 }

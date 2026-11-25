@@ -19,7 +19,7 @@ defined( 'ABSPATH' ) || exit;
  */
 class ORDER {
 	/**
-	 * Invoice phase of a connector: 'draft' (phase 1), 'auto' (phase 2) or '' when never set.
+	 * Invoice phase of a connector: 'draft' (phase 1), 'approve_send' (phase 2) or '' when never set.
 	 *
 	 * An empty value keeps the legacy behaviour driven by "approve_document" and "attach_pdf".
 	 *
@@ -28,7 +28,7 @@ class ORDER {
 	 */
 	public static function get_invoice_phase( $settings ) {
 		$phase = isset( $settings['invoice_phase'] ) ? $settings['invoice_phase'] : '';
-		return in_array( $phase, array( 'draft', 'auto' ), true ) ? $phase : '';
+		return in_array( $phase, array( 'draft', 'approve_send' ), true ) ? $phase : '';
 	}
 
 	/**
@@ -40,7 +40,7 @@ class ORDER {
 	public static function should_approve_document( $settings ) {
 		$phase = self::get_invoice_phase( $settings );
 		if ( '' !== $phase ) {
-			return 'auto' === $phase;
+			return 'approve_send' === $phase;
 		}
 		return isset( $settings['approve_document'] ) && 'yes' === $settings['approve_document'];
 	}
@@ -172,7 +172,7 @@ class ORDER {
 	 * @return void
 	 */
 	private static function maybe_send_document( $settings, $order, $result, $api_erp, $doctype, $meta_prefix, $connector_name ) {
-		if ( 'auto' !== self::get_invoice_phase( $settings ) ) {
+		if ( 'approve_send' !== self::get_invoice_phase( $settings ) ) {
 			return;
 		}
 		$sent_key = '_' . $meta_prefix . '_doc_sent';
