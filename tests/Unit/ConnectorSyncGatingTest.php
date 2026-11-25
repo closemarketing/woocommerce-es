@@ -157,6 +157,27 @@ class ConnectorSyncGatingTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * The cron callback must be registered with $schedule = false (WP Cron / WP-CLI, outside the admin),
+	 * and nothing must be scheduled in that case.
+	 *
+	 * @return void
+	 */
+	public function test_import_products_registers_cron_callback_without_scheduling(): void {
+		$mock_api  = $this->createMock( stdClass::class );
+		$connector = $this->make_default_connector( $mock_api );
+		$connector['settings']['sync'] = 'conecom_sync_thirty_minutes';
+		$data      = array( 'items' => array( 'default_connector' => $connector ) );
+
+		remove_all_actions( 'conecom_sync_thirty_minutes' );
+		new Import_Products( $connector, $data, false );
+
+		$this->assertNotFalse( has_action( 'conecom_sync_thirty_minutes' ) );
+		if ( function_exists( 'as_has_scheduled_action' ) ) {
+			$this->assertFalse( as_has_scheduled_action( 'conecom_sync_thirty_minutes', array( 'default_connector' ) ) );
+		}
+	}
+
+	/**
 	 * Same as above, for Orders.
 	 *
 	 * @return void
