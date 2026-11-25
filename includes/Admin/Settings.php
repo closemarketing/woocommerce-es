@@ -1194,6 +1194,28 @@ class Settings {
 				);
 			}
 
+			if ( in_array( 'invoice_phase', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_invoice_phase',
+					__( 'Invoice phase', 'woocommerce-es' ),
+					array( $this, 'invoice_phase_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section_orders',
+					$short_field
+				);
+			}
+
+			if ( in_array( 'attach_pdf', $settings_fields, true ) ) {
+				add_settings_field(
+					'wcpimh_attach_pdf',
+					__( 'Attach the document PDF to the WooCommerce completed order email?', 'woocommerce-es' ),
+					array( $this, 'attach_pdf_callback' ),
+					'connect_ecommerce_admin',
+					'connect_woocommerce_setting_section_orders',
+					$short_field
+				);
+			}
+
 			if ( ( ! empty( $this->options['name'] ) && 'Holded' === $this->options['name'] ) || in_array( 'doctype', $settings_fields, true ) ) {
 				add_settings_field(
 					'wcpimh_doctype',
@@ -2518,6 +2540,47 @@ class Settings {
 	}
 
 	/**
+	 * Call back for the invoice phase
+	 *
+	 * @return void
+	 */
+	public function invoice_phase_callback() {
+		$phase = isset( $this->settings['invoice_phase'] ) ? $this->settings['invoice_phase'] : '';
+		if ( ! in_array( $phase, array( 'draft', 'auto' ), true ) ) {
+			// Never saved: show what the legacy "approve document" setting was already doing.
+			$phase = isset( $this->settings['approve_document'] ) && 'yes' === $this->settings['approve_document'] ? 'auto' : 'draft';
+		}
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][invoice_phase]" id="wcpimh_invoice_phase">
+			<option value="draft" <?php selected( $phase, 'draft' ); ?>><?php esc_html_e( 'Phase 1: draft document, no PDF attached', 'woocommerce-es' ); ?></option>
+			<option value="auto" <?php selected( $phase, 'auto' ); ?>><?php esc_html_e( 'Phase 2: approve and send the invoice from the connector', 'woocommerce-es' ); ?></option>
+		</select>
+		<p class="description">
+			<?php esc_html_e( 'Phase 1 creates the document as a draft and WooCommerce never attaches its PDF to the completed order email. Phase 2 approves the document and sends the invoice to the customer from the connector.', 'woocommerce-es' ); ?>
+		</p>
+		<p class="description">
+			<strong><?php esc_html_e( 'Fallback:', 'woocommerce-es' ); ?></strong>
+			<?php esc_html_e( 'the WooCommerce completed order email is always sent, without the invoice. If the connector fails to approve or send the invoice in phase 2, the customer only gets that email, the order gets a note and an alert is sent to the administrator.', 'woocommerce-es' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Call back for attach PDF to the completed order email
+	 *
+	 * @return void
+	 */
+	public function attach_pdf_callback() {
+		$attach_pdf = isset( $this->settings['attach_pdf'] ) ? $this->settings['attach_pdf'] : 'yes';
+		?>
+		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][attach_pdf]" id="wcpimh_attach_pdf">
+			<option value="yes" <?php selected( $attach_pdf, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
+			<option value="no" <?php selected( $attach_pdf, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
+		</select>
+		<?php
+	}
+
+	/**
 	 * Document type
 	 *
 	 * @return void
@@ -3740,6 +3803,8 @@ class Settings {
 			'doctype'              => 'invoice',
 			'cleanchars'           => '',
 			'approve_document'     => 'no',
+			'attach_pdf'           => 'yes',
+			'invoice_phase'        => '',
 			'series'               => '',
 			'freeorder'            => 'no',
 			'ecstatus'             => 'all',
