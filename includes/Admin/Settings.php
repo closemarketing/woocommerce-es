@@ -2563,6 +2563,7 @@ class Settings {
 			// Never saved: show what the legacy "approve document" setting was already doing.
 			$phase = isset( $this->settings['approve_document'] ) && 'yes' === $this->settings['approve_document'] ? 'approve_send' : 'draft';
 		}
+		$erp_name = ! empty( $this->options['name'] ) ? $this->options['name'] : __( 'the ERP', 'woocommerce-es' );
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][invoice_phase]" id="wcpimh_invoice_phase">
 			<option value="draft" <?php selected( $phase, 'draft' ); ?>><?php esc_html_e( 'Create as draft: nothing is sent to the customer', 'woocommerce-es' ); ?></option>
@@ -2571,17 +2572,29 @@ class Settings {
 				printf(
 					// translators: %s: ERP name, e.g. Holded.
 					esc_html__( 'Approve and send from %s: replaces the WooCommerce invoice', 'woocommerce-es' ),
-					esc_html( ! empty( $this->options['name'] ) ? $this->options['name'] : __( 'the ERP', 'woocommerce-es' ) )
+					esc_html( $erp_name )
 				);
 				?>
 			</option>
 		</select>
 		<p class="description">
-			<?php esc_html_e( 'Phase 1 (draft): the document is created as a draft and WooCommerce never attaches its PDF to the completed order email. Phase 2 (approve and send): the document is approved and the ERP sends the invoice to the customer.', 'woocommerce-es' ); ?>
+			<?php
+			printf(
+				// translators: %s: ERP name, e.g. Holded.
+				esc_html__( 'Create as draft: the document is left as a draft in %1$s and WooCommerce does not attach any PDF to the completed order email. Approve and send: the document is approved in %1$s and %1$s emails the invoice to the customer, instead of WooCommerce.', 'woocommerce-es' ),
+				esc_html( $erp_name )
+			);
+			?>
 		</p>
 		<p class="description">
 			<strong><?php esc_html_e( 'Fallback:', 'woocommerce-es' ); ?></strong>
-			<?php esc_html_e( 'the WooCommerce completed order email is always sent, without the invoice. If the connector fails to approve or send the invoice in phase 2, the customer only gets that email, the order gets a note and an alert is sent to the administrator.', 'woocommerce-es' ); ?>
+			<?php
+			printf(
+				// translators: %s: ERP name, e.g. Holded.
+				esc_html__( 'the WooCommerce completed order email is always sent, without the invoice. If %s fails to approve or send the invoice, the customer only gets that email, the order gets a note and an alert is sent to the administrator.', 'woocommerce-es' ),
+				esc_html( $erp_name )
+			);
+			?>
 		</p>
 		<?php
 	}
