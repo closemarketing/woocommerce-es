@@ -4,9 +4,9 @@ Tags: connect, integrate, eu vat, vat compliance, woocommerce
 Donate link: https://close.marketing/go/donate/
 Requires at least: 5.0
 Requires PHP: 7.4
-Tested up to: 7.1
-Stable tag: 3.5.0
-Version: 3.5.0
+Tested up to: 7.2
+Stable tag: 3.5.1
+Version: 3.5.1
 License: GPL2
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -227,8 +227,10 @@ This plugin uses the VIES (VAT Information Exchange System) service provided by 
 
 == Changelog ==
 
-= next =
+= 3.5.1 =
 * Added: `connect_ecommerce_connector_subtabs` action so a connector can add its own subtab to its connector tab; the content is rendered on `connect_ecommerce_settings_tabs_content`.
+* Added: "Do not change (keep each existing product as it is)" option in the Allow backorders setting; the sync then leaves the backorders value of existing products untouched.
+* Fixed: Scheduled syncs (`conecom_sync_*`) no longer fail with "no callbacks are registered" when run by WP-Cron or WP-CLI; the callbacks are now registered outside the admin context without scheduling extra actions on front-end requests.
 
 = 3.5.0 =
 * Added: Multiple connectors. Configure several ERPs/CRMs on the same store (even the same ERP twice), each with its own credentials, settings and product/order workflows; order status and metadata are kept isolated per connector.
