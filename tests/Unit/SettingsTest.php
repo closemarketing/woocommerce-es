@@ -98,6 +98,39 @@ class SettingsTest extends WP_UnitTestCase {
 		);
 	}
 
+	/**
+	 * Renders the "Allow backorders" select.
+	 *
+	 * @param array $settings Saved connector settings.
+	 * @return string
+	 */
+	private function render_backorders( $settings ) {
+		$page = $this->make_custom_fields_settings( $settings );
+		ob_start();
+		$page->backorders_callback();
+		return ob_get_clean();
+	}
+
+	/**
+	 * With no saved value, "Do not change" is the selected option; a saved value still wins.
+	 */
+	public function test_backorders_defaults_to_keep_and_saved_value_wins() {
+		$this->assertMatchesRegularExpression( '/<option value="keep"\s+selected=\'selected\'/', $this->render_backorders( array() ) );
+		$this->assertMatchesRegularExpression( '/<option value="no"\s+selected=\'selected\'/', $this->render_backorders( array( 'backorders' => 'no' ) ) );
+		$this->assertMatchesRegularExpression( '/<option value="notify"\s+selected=\'selected\'/', $this->render_backorders( array( 'backorders' => 'notify' ) ) );
+	}
+
+	/**
+	 * The connector default settings store "keep" for backorders.
+	 */
+	public function test_connector_default_settings_use_keep_for_backorders() {
+		$page   = $this->make_custom_fields_settings();
+		$method = new \ReflectionMethod( $page, 'get_connector_default_settings' );
+		$method->setAccessible( true );
+
+		$this->assertSame( 'keep', $method->invoke( $page )['backorders'] );
+	}
+
 	public function test_move_settings_without_errors() {
 		$wces_settings = get_option( 'wces_settings' );
 

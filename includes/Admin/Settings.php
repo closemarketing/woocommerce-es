@@ -2253,7 +2253,7 @@ class Settings {
 	 * @return void
 	 */
 	public function backorders_callback() {
-		$backorders = isset( $this->settings['backorders'] ) ? $this->settings['backorders'] : 'no';
+		$backorders = isset( $this->settings['backorders'] ) ? $this->settings['backorders'] : 'keep';
 		?>
 		<select name="connect_ecommerce[<?php echo esc_html( $this->connector ); ?>][backorders]" id="wcpimh_backorders">
 			<option value="no" <?php selected( $backorders, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
@@ -3725,7 +3725,7 @@ class Settings {
 			'stock_visibility'     => 'hide',
 			'prodst'               => 'draft',
 			'virtual'              => 'no',
-			'backorders'           => 'no',
+			'backorders'           => 'keep',
 			'catsep'               => '',
 			'catattr'              => '',
 			'catattr_brand'        => '',
