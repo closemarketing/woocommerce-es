@@ -441,6 +441,47 @@ class CreateProductSimpleTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Content edited in WooCommerce is the source of truth: a resync of an existing
+	 * product must not overwrite name, description, short description, weight or status.
+	 * Title and content are also covered in test_create_product_simple_without_errors.
+	 */
+	public function test_resync_does_not_overwrite_woocommerce_content() {
+		$item_path = UNIT_TESTS_DATA_PLUGIN_DIR . 'product-simple.json';
+		$item      = file_get_contents( $item_path );
+		$item      = json_decode( $item, true )[0];
+
+		$result_sync    = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp );
+		$result_prod_id = $result_sync['post_id'];
+
+		// Edit everything in WooCommerce, as a shop manager would.
+		$product = wc_get_product( $result_prod_id );
+		$product->set_name( 'Name edited in WooCommerce' );
+		$product->set_description( 'Description edited in WooCommerce.' );
+		$product->set_short_description( 'Short description edited in WooCommerce.' );
+		$product->set_weight( '2.5' );
+		$product->set_status( 'publish' );
+		$product->save();
+
+		// ERP now sends different data for the same SKU.
+		$item['name']   = 'Name changed in ERP';
+		$item['desc']   = 'Description changed in ERP';
+		$item['weight'] = 9;
+
+		$result_sync_upd = PROD::sync_product_item( $this->settings, $item, $this->connapi_erp, false, $result_prod_id );
+		$this->assertEquals( 'ok', $result_sync_upd['status'] );
+		$this->assertEquals( $result_prod_id, $result_sync_upd['post_id'] );
+
+		$product = wc_get_product( $result_prod_id );
+		$this->assertEquals( 'Name edited in WooCommerce', $product->get_name() );
+		$this->assertEquals( 'Description edited in WooCommerce.', $product->get_description() );
+		$this->assertEquals( 'Short description edited in WooCommerce.', $product->get_short_description() );
+		$this->assertEquals( '2.5', $product->get_weight() );
+		$this->assertEquals( 'publish', $product->get_status() );
+
+		wp_delete_post( $result_prod_id, true ); // Clean up after test.
+	}
+
+	/**
 	 * With stock_visibility = 'no_change', running out of stock updates stock
 	 * status/quantity but must not touch catalog visibility, so manual admin
 	 * changes are preserved across syncs.

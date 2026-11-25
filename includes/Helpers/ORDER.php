@@ -19,6 +19,33 @@ defined( 'ABSPATH' ) || exit;
  */
 class ORDER {
 	/**
+	 * Invoice phase of a connector: 'draft' (phase 1), 'auto' (phase 2) or '' when never set.
+	 *
+	 * An empty value keeps the legacy behaviour driven by "approve_document" and "attach_pdf".
+	 *
+	 * @param array $settings Connector settings.
+	 * @return string
+	 */
+	public static function get_invoice_phase( $settings ) {
+		$phase = isset( $settings['invoice_phase'] ) ? $settings['invoice_phase'] : '';
+		return in_array( $phase, array( 'draft', 'auto' ), true ) ? $phase : '';
+	}
+
+	/**
+	 * Whether documents must be approved on creation.
+	 *
+	 * @param array $settings Connector settings.
+	 * @return bool
+	 */
+	public static function should_approve_document( $settings ) {
+		$phase = self::get_invoice_phase( $settings );
+		if ( '' !== $phase ) {
+			return 'auto' === $phase;
+		}
+		return isset( $settings['approve_document'] ) && 'yes' === $settings['approve_document'];
+	}
+
+	/**
 	 * Creates invoice data to API
 	 *
 	 * @param array  $settings Settings data.
@@ -103,6 +130,10 @@ class ORDER {
 				}
 
 				$order->add_order_note( $order_msg );
+
+				if ( ! $is_error ) {
+					self::maybe_send_document( $settings, $order, $result, $api_erp, $doctype, $meta_prefix, $connector_name );
+				}
 			} catch ( \Exception $e ) {
 				$result = array(
 					'status'  => 'error',
@@ -123,6 +154,65 @@ class ORDER {
 			ALERT::send_order_error_alert( $order_id, $result['message'] );
 		}
 		return $result;
+	}
+
+	/**
+	 * Phase 2: the connector approves the document and emails it to the customer.
+	 *
+	 * Any failure leaves an order note and sends an alert. The WooCommerce completed email
+	 * is never suppressed, so it is the fallback the customer always gets.
+	 *
+	 * @param array     $settings       Connector settings.
+	 * @param \WC_Order $order          Order.
+	 * @param array     $result         Result of the connector create_order().
+	 * @param object    $api_erp        API ERP.
+	 * @param string    $doctype        Document type.
+	 * @param string    $meta_prefix    Per-connector prefix for order metadata.
+	 * @param string    $connector_name Connector display name.
+	 * @return void
+	 */
+	private static function maybe_send_document( $settings, $order, $result, $api_erp, $doctype, $meta_prefix, $connector_name ) {
+		if ( 'auto' !== self::get_invoice_phase( $settings ) ) {
+			return;
+		}
+		$sent_key = '_' . $meta_prefix . '_doc_sent';
+		if ( $order->get_meta( $sent_key ) ) {
+			return;
+		}
+
+		$email = $order->get_billing_email();
+		$error = '';
+		if ( ! HELPER::connector_supports( $api_erp, 'send_document' ) ) {
+			$error = __( 'the connector cannot send documents', 'woocommerce-es' );
+		} elseif ( empty( $result['approved'] ) ) {
+			$error = ! empty( $result['approve_msg'] ) ? $result['approve_msg'] : __( 'the document is not approved', 'woocommerce-es' );
+		} elseif ( ! is_email( $email ) ) {
+			$error = __( 'the order has no valid billing email', 'woocommerce-es' );
+		} else {
+			$subject = sprintf(
+				/* translators: %1$s: document number, %2$s: store name. */
+				__( 'Invoice %1$s from %2$s', 'woocommerce-es' ),
+				$result['invoice_id'] ?? '',
+				get_bloginfo( 'name', 'display' )
+			);
+			$sent = $api_erp->send_document( $settings, $doctype, $result['document_id'] ?? '', $email, $subject );
+			if ( 'ok' !== ( $sent['status'] ?? 'error' ) ) {
+				$error = ! empty( $sent['message'] ) ? $sent['message'] : __( 'unknown error', 'woocommerce-es' );
+			}
+		}
+
+		if ( '' === $error ) {
+			$order->update_meta_data( $sent_key, 1 );
+			$order->save();
+			/* translators: %1$s: connector display name, %2$s: customer email. */
+			$order->add_order_note( sprintf( __( 'Invoice sent to the customer from %1$s (%2$s).', 'woocommerce-es' ), $connector_name, $email ) );
+			return;
+		}
+
+		/* translators: %1$s: connector display name, %2$s: error detail. */
+		$message = sprintf( __( 'Invoice NOT sent from %1$s: %2$s. The customer only got the WooCommerce email. Review it.', 'woocommerce-es' ), $connector_name, $error );
+		$order->add_order_note( $message );
+		ALERT::send_order_error_alert( $order->get_id(), $message );
 	}
 
 	/**
@@ -276,8 +366,7 @@ class ORDER {
 		);
 
 		// Approve document.
-		$approve_document = isset( $settings['approve_document'] ) ? $settings['approve_document'] : 'no';
-		if ( 'yes' === $approve_document ) {
+		if ( self::should_approve_document( $settings ) ) {
 			$order_data['approveDoc'] = true;
 		}
 
@@ -680,8 +769,7 @@ class ORDER {
 		);
 
 		// Approve document.
-		$approve_document = isset( $settings['approve_document'] ) ? $settings['approve_document'] : 'no';
-		if ( 'yes' === $approve_document ) {
+		if ( self::should_approve_document( $settings ) ) {
 			$refund_data['approveDoc'] = true;
 		}
 
