@@ -526,6 +526,11 @@ class PROD {
 		// never sets _manage_stock on a variable product's parent. Force this on
 		// every sync (not just at creation) so products that already had it
 		// enabled before this fix get corrected on their next sync too.
+		// Backorders set to "keep": do not touch existing products (new ones get the WooCommerce default).
+		if ( 'keep' === $allow_backorders ) {
+			unset( $product_props['backorders'] );
+		}
+
 		if ( 'variable' === $type ) {
 			$product_props['manage_stock']   = false;
 			$product_props['stock_quantity'] = null;
