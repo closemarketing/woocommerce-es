@@ -1295,6 +1295,44 @@ class CreateOrderTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Meta stored under an underscore key is hidden by WooCommerce and never reaches the ERP,
+	 * even when it is the only meta on the line (e.g. a configurator that hides its fields).
+	 */
+	public function test_item_with_only_hidden_meta_keeps_plain_description() {
+		$product = new \WC_Product_Simple();
+		$product->set_name( 'Configurable rack' );
+		$product->set_regular_price( 100 );
+		$product->set_short_description( 'Base excerpt' );
+		$product->save();
+
+		$order = new \WC_Order();
+		$order->set_billing_email( 'test@example.com' );
+		$item = new \WC_Order_Item_Product();
+		$item->set_product( $product );
+		$item->set_quantity( 1 );
+		$item->set_subtotal( 100 );
+		$item->set_total( 100 );
+		$item->add_meta_data( '_configurator_rack', '42U' );
+		$item->add_meta_data( '_configurator_color', 'Black' );
+		$order->add_item( $item );
+		$order->calculate_totals();
+		$order->save();
+
+		$settings                   = $this->settings;
+		$settings['item_meta_desc'] = 'yes';
+
+		$order_data = ORDER::generate_order_data( $settings, wc_get_order( $order->get_id() ), 'conecom-test' );
+		$desc       = $order_data['items'][0]['desc'];
+
+		$this->assertStringNotContainsString( '42U', $desc );
+		$this->assertStringNotContainsString( 'Black', $desc );
+		$this->assertStringNotContainsString( 'configurator', strtolower( $desc ) );
+
+		$product->delete( true );
+		$order->delete( true );
+	}
+
+	/**
 	 * Pdf and Price meta are excluded with the default exclude list.
 	 */
 	public function test_item_meta_default_exclude_skips_pdf_and_price() {

@@ -686,6 +686,36 @@ class SettingsTest extends WP_UnitTestCase {
 	}
 
 	/**
+	 * Labels and help text use the connector name instead of phases or "connector" jargon.
+	 */
+	public function test_invoice_phase_field_uses_erp_name_in_labels() {
+		$html = $this->render_invoice_phase( array( 'invoice_phase' => 'approve_send' ) );
+
+		$this->assertStringContainsString( 'Create as draft: nothing is sent to the customer', $html );
+		$this->assertStringContainsString( 'Approve and send from Test Connector: replaces the WooCommerce invoice', $html );
+		$this->assertStringContainsString( 'in Test Connector and WooCommerce does not attach any PDF', $html );
+		$this->assertStringContainsString( 'If Test Connector fails to approve or send the invoice', $html );
+		$this->assertStringNotContainsString( 'the ERP', $html );
+		$this->assertStringNotContainsString( 'from the connector', $html );
+	}
+
+	/**
+	 * Without a connector name the labels fall back to "the ERP".
+	 */
+	public function test_invoice_phase_field_falls_back_to_generic_erp_name() {
+		$page     = $this->make_custom_fields_settings( array( 'invoice_phase' => 'draft' ) );
+		$property = new \ReflectionProperty( $page, 'options' );
+		$property->setAccessible( true );
+		$property->setValue( $page, array( 'slug' => 'test-connector' ) );
+
+		ob_start();
+		$page->invoice_phase_callback();
+		$html = ob_get_clean();
+
+		$this->assertStringContainsString( 'Approve and send from the ERP: replaces the WooCommerce invoice', $html );
+	}
+
+	/**
 	 * A saved phase wins; a never-saved one mirrors the legacy approve document setting.
 	 */
 	public function test_invoice_phase_field_selection_and_legacy_fallback() {
