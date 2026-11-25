@@ -2294,6 +2294,7 @@ class Settings {
 			<option value="no" <?php selected( $backorders, 'no' ); ?>><?php esc_html_e( 'No', 'woocommerce-es' ); ?></option>
 			<option value="yes" <?php selected( $backorders, 'yes' ); ?>><?php esc_html_e( 'Yes', 'woocommerce-es' ); ?></option>
 			<option value="notify" <?php selected( $backorders, 'notify' ); ?>><?php esc_html_e( 'Notify', 'woocommerce-es' ); ?></option>
+			<option value="keep" <?php selected( $backorders, 'keep' ); ?>><?php esc_html_e( 'Do not change (keep each existing product as it is)', 'woocommerce-es' ); ?></option>
 		</select>
 		<?php
 	}
